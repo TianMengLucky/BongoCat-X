@@ -35,7 +35,7 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
         value->import_dialog = bongo_cat_preferences_import_create();
         if (!value->import_dialog) { free(value); return NULL; }
         value->sdk_import_event_type = SDL_RegisterEvents(1);
-        if (value->sdk_import_event_type == (Uint32)-1)
+        if (value->sdk_import_event_type == -1)
             value->sdk_import_event_type = 0; }
     if (value && app->smoke_preference_page >= 0)
         value->page = app->smoke_preference_page;

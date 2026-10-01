@@ -18,7 +18,7 @@ try {
         cmake -E tar xf $archivePath
         if ($LASTEXITCODE -ne 0) { throw 'Package extraction failed' }
         $roots = @(Get-ChildItem -LiteralPath $temporaryRoot -Directory)
-        if ($roots.Count -ne 1 -or $roots[0].Name -notmatch "^BongoCat-[0-9].*-$Platform$") {
+        if ($roots.Count -ne 1 -or $roots[0].Name -notmatch "^BongoCat(-Diagnostic)?-[0-9].*-$Platform$") {
             throw 'Expected one production BongoCat package directory'
         }
         $root = $roots[0].FullName

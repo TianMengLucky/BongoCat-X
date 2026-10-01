@@ -118,7 +118,7 @@ jobs:
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()
-          $expected = "BongoCat-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          $expected = "BongoCat-Diagnostic-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
           if ($name -ne $expected) {
             throw "Unexpected release package name: $name"
           }
@@ -163,7 +163,7 @@ jobs:
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()
-          $expected = "BongoCat-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          $expected = "BongoCat-Diagnostic-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
           if ($name -ne $expected) {
             throw "Unexpected release package name: $name"
           }

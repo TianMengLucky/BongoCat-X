@@ -34,6 +34,8 @@ jobs:
     needs: version-check
     if: github.repository == 'TianMengLucky/BongoCat-X'
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -212,6 +214,54 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # Every platform publishes its own assets straight to the tag's
+      # release, so one failing platform never blocks the others.
+      - name: Verify release checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem release-output -Filter *.sha256 | ForEach-Object {
+            $line = (Get-Content -LiteralPath $_.FullName -Raw).Trim()
+            if ($line -notmatch '^([0-9a-fA-F]{64})\s+(.+)$') {
+              throw "Invalid checksum file: $($_.Name)"
+            }
+            $payload = Join-Path release-output $Matches[2]
+            if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) {
+              throw "Checksum names a missing file: $Matches[2]"
+            }
+            $actual = (Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash
+            if ($actual -ne $Matches[1]) {
+              throw "Checksum mismatch: $payload"
+            }
+            Write-Host "Verified $($_.Name)"
+          }
+
+      - name: Extract release notes from CHANGELOG
+        shell: bash
+        run: |
+          python3 .github/scripts/extract-changelog.py \
+            --tag "$GITHUB_REF_NAME" \
+            --repository "$GITHUB_REPOSITORY" \
+            --output release-notes.md
+          cat >> release-notes.md <<'EOF'
+
+          ---
+
+          > 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，
+          > 如需启用 Live2D 模型，请按 README 的说明在本地自行构建。
+          EOF
+
+      - name: Publish release assets
+        if: github.repository == 'TianMengLucky/BongoCat-X'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: BongoCat v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          allow_updates: true
+          make_latest: true
+          files: release-output/*
+
   virus-total:
     name: security / virustotal
     needs: version-check
@@ -259,107 +309,3 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  publish:
-    name: publish / all platforms
-    needs: build
-    if: github.repository == 'TianMengLucky/BongoCat-X'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Download packaged releases
-        uses: actions/download-artifact@v8
-        with:
-          pattern: bongocat-release-*
-          path: release-output
-          merge-multiple: true
-
-      - name: Validate complete release
-        id: version
-        shell: pwsh
-        run: |
-          $projectVersion = & ./packaging/get-project-version.ps1
-          $version = $projectVersion.AppVersion
-          if ($env:GITHUB_REF_NAME -ne "v$version") {
-            throw "Tag $env:GITHUB_REF_NAME does not match project version $version"
-          }
-          $files = @()
-          foreach ($platform in 'windows-x64', 'windows-x86') {
-            $base = "BongoCat-$version-$platform"
-            $files += "release-output/$base-portable.exe"
-            $files += "release-output/$base-portable.exe.sha256"
-            $files += "release-output/$base-setup.exe"
-            $files += "release-output/$base-setup.exe.sha256"
-          }
-          $unixArchives = @{
-            'linux-x64' = 'tar.gz'
-            'macos-x64' = 'zip'
-            'macos-arm64' = 'zip'
-          }
-          foreach ($platform in $unixArchives.Keys) {
-            $archive = "release-output/BongoCat-$version-$platform.$($unixArchives[$platform])"
-            $files += $archive
-            $files += "$archive.sha256"
-          }
-          $files += "release-output/BongoCat-$version-linux-x64.AppImage"
-          $files += "release-output/BongoCat-$version-linux-x64.AppImage.sha256"
-          foreach ($file in $files) {
-            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
-              throw "Release is incomplete: $file"
-            }
-          }
-          foreach ($checksum in $files | Where-Object { $_ -like '*.sha256' }) {
-            $line = (Get-Content -LiteralPath $checksum -Raw).Trim()
-            if ($line -notmatch '^([0-9a-fA-F]{64})\s+(.+)$') {
-              throw "Invalid checksum file: $checksum"
-            }
-            $expectedHash = $Matches[1]
-            $checksumName = $Matches[2]
-            $payload = $checksum.Substring(0, $checksum.Length - 7)
-            $expectedName = Split-Path $payload -Leaf
-            if ($checksumName -ne $expectedName) {
-              throw "Checksum names the wrong file: $checksum"
-            }
-            $actual = (Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash
-            if ($actual -ne $expectedHash) {
-              throw "Checksum mismatch: $payload"
-            }
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
-            -Append -Encoding utf8
-
-      - name: Extract release notes from CHANGELOG
-        run: |
-          python3 .github/scripts/extract-changelog.py \
-            --tag "$GITHUB_REF_NAME" \
-            --repository "$GITHUB_REPOSITORY" \
-            --output release-notes.md
-
-      - name: Note the diagnostic backend in the release notes
-        run: |
-          cat >> release-notes.md <<'EOF'
-
-          ---
-
-          > 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，
-          > 如需启用 Live2D 模型，请按 README 的说明在本地自行构建。
-          EOF
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: BongoCat v${{ steps.version.outputs.version }}
-          body_path: release-notes.md
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          make_latest: true
-          files: |
-            release-output/*-portable.exe
-            release-output/*-setup.exe
-            release-output/*.zip
-            release-output/*.tar.gz
-            release-output/*.AppImage

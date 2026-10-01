@@ -22,6 +22,7 @@ try {
             throw 'Expected one production BongoCat package directory'
         }
         $root = $roots[0].FullName
+        $isDiagnostic = $root -match '-Diagnostic'
         if ($Platform.StartsWith('macos-')) {
             $executable = Join-Path $root 'BongoCat.app/Contents/MacOS/BongoCat'
             $assets = Join-Path $root 'BongoCat.app/Contents/Resources/assets'
@@ -33,12 +34,15 @@ try {
             'bongocat.png', 'locales/en-US.json',
             'models/standard/cat.model3.json',
             'models/standard/demomodel.moc3',
-            'models/standard/demomodel.1024/texture_00.png',
-            'FrameworkShaders/VertShaderSrc.vert',
-            'FrameworkShaders/FragShaderSrc.frag',
-            'FrameworkShaders/VertShaderSrcBlend.vert',
-            'FrameworkShaders/FragShaderSrcBlend.frag'
-        ) | ForEach-Object {
+            'models/standard/demomodel.1024/texture_00.png'
+        )
+        if (-not $isDiagnostic) {
+            $required += 'FrameworkShaders/VertShaderSrc.vert',
+                'FrameworkShaders/FragShaderSrc.frag',
+                'FrameworkShaders/VertShaderSrcBlend.vert',
+                'FrameworkShaders/FragShaderSrcBlend.frag'
+        }
+        $required = $required | ForEach-Object {
             if ([IO.Path]::IsPathRooted($_)) { $_ } else { Join-Path $assets $_ }
         }
         foreach ($path in $required) {
@@ -50,7 +54,10 @@ try {
         $licenses = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter LICENSE)
         if ($licenses.Count) { throw "Unexpected loose LICENSE files: $($licenses.FullName -join ', ')" }
         Write-Host "Package layout verified: $Platform"
-        if (-not $SkipSmoke) {
+        if ($isDiagnostic) {
+            Write-Host "Diagnostic package: skipping the Cubism smoke test"
+        }
+        if (-not $SkipSmoke -and -not $isDiagnostic) {
             $storage = Join-Path $temporaryRoot 'smoke-data'
             & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
                 $executable --ci-smoke --ci-ignore-global-input `

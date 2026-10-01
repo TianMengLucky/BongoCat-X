@@ -12,6 +12,7 @@
 #include "ui_native_theme.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 int bongo_cat_preferences_resolved_theme(const BongoCatPreferences *value) {
@@ -90,7 +91,7 @@ static void open_sdk_import_dialog(BongoCatPreferences *value) {
     const SDL_DialogFileFilter filters[] = {
         {"Live2DCubismCore.dll / SDK zip", "dll;zip"}, {NULL, NULL}};
     SDL_ShowOpenFileDialog(sdk_import_callback, value, value->window,
-        filters, NULL, false);
+        filters, 1, NULL, false);
 }
 void bongo_cat_preferences_request_sdk_import(BongoCatPreferences *value) {
     open_sdk_import_dialog(value);

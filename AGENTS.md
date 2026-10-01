@@ -69,8 +69,8 @@ Notes:
   (`cmake -DROOT=. -P cmake/CheckLines.cmake`).
 - **cppcheck** must stay clean for `src/` (see the `quality` job in
   `.github/workflows/ci.yml` for the exact invocation).
-- **Legacy product name:** the string `l2dcat` (case-insensitive) must not
-  appear anywhere in the repo.
+- **Legacy product name:** the string `l2d` + `cat` (case-insensitive) must
+  not appear anywhere in the repo.
 - **Publishing guards:** if you touch workflows, run
   `pwsh .github/scripts/check-publish-guards.ps1 -SelfTest`.
 - Build with `-DBONGO_CAT_WARNINGS_AS_ERRORS=ON` before pushing risky

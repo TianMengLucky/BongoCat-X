@@ -120,17 +120,6 @@ static int available_bounds(SDL_Rect bounds[DISPLAY_RECT_CAP]) {
     return found;
 }
 
-static bool available_displays_cover(BongoCatApp *app,
-    const SDL_Rect *window) {
-    if (app && app->window_drag_active && app->drag_display_bounds &&
-        app->drag_display_count > 0)
-        return bounds_cover_window(window, app->drag_display_bounds,
-            app->drag_display_count);
-    SDL_Rect bounds[DISPLAY_RECT_CAP];
-    int count = available_bounds(bounds);
-    return bounds_cover_window(window, bounds, count);
-}
-
 void bongo_cat_window_drag_bounds_refresh(BongoCatApp *app) {
     if (!app) return;
     bongo_cat_window_drag_bounds_clear(app);
@@ -147,19 +136,6 @@ void bongo_cat_window_drag_bounds_clear(BongoCatApp *app) {
     SDL_free(app->drag_display_bounds);
     app->drag_display_bounds = NULL;
     app->drag_display_count = 0;
-}
-
-static SDL_DisplayID target_display(BongoCatApp *app, const SDL_Rect *rect) {
-    if (app->window_drag_active || app->resize_gesture) {
-        float pointer_x = 0.0f, pointer_y = 0.0f;
-        SDL_GetGlobalMouseState(&pointer_x, &pointer_y);
-        SDL_Point pointer = {(int)pointer_x, (int)pointer_y};
-        SDL_DisplayID display = SDL_GetDisplayForPoint(&pointer);
-        if (display) return display;
-    }
-    SDL_DisplayID display = SDL_GetDisplayForWindow(app->window);
-    if (!display && rect) display = SDL_GetDisplayForRect(rect);
-    return display ? display : SDL_GetPrimaryDisplay();
 }
 
 static bool fit_to_display(BongoCatApp *app, SDL_DisplayID display,

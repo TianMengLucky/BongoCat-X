@@ -45,7 +45,9 @@ static void centered_wrapped(struct nk_command_buffer *canvas,
         float widest = NK_MAX(left, right);
         if (widest < best) { best = widest; split = i; }
     }
-    if (split < 0) { centered(canvas, bounds, value, font, color); return; }
+    if (split < 0) {
+        centered_span(canvas, bounds, value, length, font, color); return;
+    }
     struct nk_rect line = nk_rect(bounds.x,
         bounds.y + (bounds.h - font->height * 2) * .5f, bounds.w, font->height);
     centered_span(canvas, line, value, split, font, color); line.y += font->height;

@@ -1,5 +1,10 @@
 name: Release BongoCat
 
+# Releases are built WITHOUT the Live2D Cubism SDK (diagnostic rendering
+# backend). The SDK is proprietary and is never restored, built, or
+# distributed from CI - SDK-enabled binaries must be built locally by users
+# who accept the Live2D license (see README for the exact steps).
+
 on:
   push:
     tags:
@@ -48,11 +53,6 @@ jobs:
           - os: macos-15
             platform: macos-arm64
             cmake_arch: arm64
-    env:
-      CUBISM_SDK_ARCHIVE_URL: ${{ secrets.CUBISM_SDK_ARCHIVE_URL }}
-      CUBISM_SDK_ARCHIVE_SHA256: ${{ secrets.CUBISM_SDK_ARCHIVE_SHA256 }}
-      CUBISM_GLEW_ARCHIVE_URL: ${{ secrets.CUBISM_GLEW_ARCHIVE_URL }}
-      CUBISM_GLEW_ARCHIVE_SHA256: ${{ secrets.CUBISM_GLEW_ARCHIVE_SHA256 }}
 
     steps:
       - name: Checkout source
@@ -69,10 +69,6 @@ jobs:
           }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
             -Append -Encoding utf8
-
-      - name: Restore licensed Cubism SDK
-        shell: pwsh
-        run: ./.github/scripts/restore-cubism-sdk.ps1
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -92,7 +88,7 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DBONGO_CAT_REQUIRE_CUBISM=ON \
+            -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
 
       - name: Build Windows release
@@ -105,7 +101,6 @@ jobs:
             -Configuration Release `
             -Architecture '${{ matrix.cmake_arch }}' `
             -Jobs 2 `
-            -RequireCubism `
             -Target ALL_BUILD
 
       - name: Build Unix release
@@ -343,6 +338,16 @@ jobs:
             --tag "$GITHUB_REF_NAME" \
             --repository "$GITHUB_REPOSITORY" \
             --output release-notes.md
+
+      - name: Note the diagnostic backend in the release notes
+        run: |
+          cat >> release-notes.md <<'EOF'
+
+          ---
+
+          > 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，
+          > 如需启用 Live2D 模型，请按 README 的说明在本地自行构建。
+          EOF
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

@@ -1,3 +1,10 @@
+# Publishing guard policy for GitHub workflows.
+#
+# 1. Any job that publishes artifacts, scans them, or touches store
+#    packaging must be gated to a known upstream repository.
+# 2. The Live2D Cubism SDK is proprietary and must never be restored or
+#    built from CI. Only mac-app-store.yml is allowed to reference it;
+#    SDK-enabled binaries are built locally by users (see README).
 [CmdletBinding()]
 param([switch]$SelfTest)
 
@@ -16,41 +23,39 @@ $sensitiveMarkers = @(
     'actions/upload-artifact',
     'softprops/action-gh-release'
 )
-$runtimeArtifactMarkers = @(
-    'build-store-package.ps1',
-    'Upload desktop release',
-    'Upload Microsoft Store MSIX',
-    'Upload Windows desktop release',
-    'Upload Windows portable release',
-    'name: bongocat-release-',
-    'softprops/action-gh-release'
+$cubismSdkMarkers = @(
+    'restore-cubism-sdk',
+    '-DBONGO_CAT_REQUIRE_CUBISM=ON',
+    '-RequireCubism',
+    'CUBISM_SDK_ARCHIVE_URL',
+    'vendor/CubismSdkForNative'
 )
+$sdkAllowedWorkflow = 'mac-app-store.yml'
 
 function Get-PublishingGuardFailures {
     param(
         [Parameter(Mandatory = $true)][string]$Text,
-        [Parameter(Mandatory = $true)][string]$Label
+        [Parameter(Mandatory = $true)][string]$Label,
+        [bool]$AllowCubismSdk = $false
     )
 
+    $failures = @()
+    if (-not $AllowCubismSdk) {
+        $sdkMatches = @($cubismSdkMarkers | Where-Object {
+            $Text.Contains($_)
+        })
+        if ($sdkMatches.Count -gt 0) {
+            $failures += "$Label`: restores or builds the proprietary " +
+                "Cubism SDK; matched $($sdkMatches -join ', ')"
+        }
+    }
+
     $jobsStart = $Text.IndexOf("jobs:", [StringComparison]::Ordinal)
-    if ($jobsStart -lt 0) { return @() }
+    if ($jobsStart -lt 0) { return $failures }
     $jobsText = $Text.Substring($jobsStart)
     $jobPattern = '(?ms)^  ([A-Za-z0-9_-]+):\s*\r?\n' +
         '(.*?)(?=^  [A-Za-z0-9_-]+:\s*\r?\n|\z)'
-    $failures = @()
     $jobMatches = [regex]::Matches($jobsText, $jobPattern)
-    $buildJob = @($jobMatches | Where-Object {
-        $_.Groups[1].Value -eq 'build'
-    } | Select-Object -First 1)
-    $cubismRequirementMarkers = @(
-        '-DBONGO_CAT_REQUIRE_CUBISM=ON',
-        '-RequireCubism'
-    )
-    $protectedBuild = $buildJob.Count -eq 1 -and @(
-        $cubismRequirementMarkers | Where-Object {
-            $buildJob[0].Value.Contains($_)
-        }
-    ).Count -gt 0
 
     foreach ($job in $jobMatches) {
         $jobName = $job.Groups[1].Value
@@ -63,22 +68,6 @@ function Get-PublishingGuardFailures {
         if (-not $guarded) {
             $failures += "$Label`: job '$jobName' lacks upstream guard; " +
                 "matched $($matched -join ', ')"
-        }
-        $publishesRuntimeArtifacts = @($runtimeArtifactMarkers | Where-Object {
-            $jobText.Contains($_)
-        }).Count -gt 0
-        $usesProtectedBuild = $protectedBuild -and $jobText -match
-            '(?m)^\s+needs:\s*(?:build|\[[^\]]*\bbuild\b[^\]]*\])\s*$'
-        $hasCubismRequirement = @(
-            $cubismRequirementMarkers | Where-Object {
-                $jobText.Contains($_)
-            }
-        ).Count -gt 0
-        if ($publishesRuntimeArtifacts -and
-            -not $hasCubismRequirement -and
-            -not $usesProtectedBuild) {
-            $failures += "$Label`: job '$jobName' publishes artifacts without " +
-                'requiring a Cubism SDK build'
         }
     }
     return $failures
@@ -95,7 +84,8 @@ $selfTestText = $null
 
 foreach ($path in $workflowPaths) {
     $text = Get-Content -LiteralPath $path.FullName -Raw
-    $pathFailures = @(Get-PublishingGuardFailures -Text $text -Label $path.Name)
+    $pathFailures = @(Get-PublishingGuardFailures -Text $text `
+        -Label $path.Name -AllowCubismSdk:($path.Name -eq $sdkAllowedWorkflow))
     $failures += $pathFailures
     $jobsStart = $text.IndexOf("jobs:", [StringComparison]::Ordinal)
     if ($jobsStart -ge 0) {
@@ -128,14 +118,11 @@ if ($SelfTest) {
         if ($caught.Count -eq 0) {
             $failures += 'Self-test did not reject a removed upstream guard.'
         }
-        $withoutCubism = $selfTestText.Replace(
-            '-DBONGO_CAT_REQUIRE_CUBISM=ON',
-            '-DBONGO_CAT_REQUIRE_CUBISM=OFF').Replace(
-            '-RequireCubism', '')
-        $cubismFailures = @(Get-PublishingGuardFailures `
-            -Text $withoutCubism -Label 'self-test')
-        if (-not ($cubismFailures -match 'requiring a Cubism SDK build')) {
-            $failures += 'Self-test did not reject an SDK-free artifact job.'
+        $withSdk = $selfTestText +
+            "`n  - run: ./.github/scripts/restore-cubism-sdk.ps1`n"
+        $sdkCaught = @(Get-PublishingGuardFailures -Text $withSdk -Label 'self-test')
+        if (-not ($sdkCaught -match 'Cubism SDK')) {
+            $failures += 'Self-test did not reject a Cubism SDK restore step.'
         }
     }
 }

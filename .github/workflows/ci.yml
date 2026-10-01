@@ -210,6 +210,13 @@ jobs:
 
   build:
     name: build / ${{ matrix.platform }}
+    # Heavy multi-platform compilation and artifact uploads only run when the
+    # main branch is merged into the test branch (a push that advances test),
+    # or on a manual dispatch from test. Ordinary pushes run checks only.
+    if: >-
+      github.repository == 'TianMengLucky/BongoCat-X' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/test'
     strategy:
       fail-fast: false
       matrix:
@@ -274,292 +281,22 @@ jobs:
         if: runner.os != 'Windows'
         run: bash .github/scripts/build-unix.sh cmake --build build --parallel 2
 
-  desktop-package:
-    name: package / ${{ matrix.platform }}
-    if: >-
-      github.repository == 'vladelaina/BongoCat' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            platform: linux-x64
-            cmake_arch: ''
-          - os: macos-15-intel
-            platform: macos-x64
-            cmake_arch: x86_64
-          - os: macos-15
-            platform: macos-arm64
-            cmake_arch: arm64
-    runs-on: ${{ matrix.os }}
-    env:
-      CUBISM_SDK_ARCHIVE_URL: ${{ secrets.CUBISM_SDK_ARCHIVE_URL }}
-      CUBISM_SDK_ARCHIVE_SHA256: ${{ secrets.CUBISM_SDK_ARCHIVE_SHA256 }}
-      CUBISM_GLEW_ARCHIVE_URL: ${{ secrets.CUBISM_GLEW_ARCHIVE_URL }}
-      CUBISM_GLEW_ARCHIVE_SHA256: ${{ secrets.CUBISM_GLEW_ARCHIVE_SHA256 }}
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Restore licensed Cubism SDK
-        shell: pwsh
-        run: ./.github/scripts/restore-cubism-sdk.ps1
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev libx11-dev libxi-dev \
-            libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev
-
-      - name: Configure release
-        run: |
-          cmake -S . -B build-package -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTING=OFF \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DBONGO_CAT_REQUIRE_CUBISM=ON \
-            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
-
-      - name: Build release
-        run: bash .github/scripts/build-unix.sh cmake --build build-package --parallel 2
-
-      - name: Package desktop release
-        id: package
-        timeout-minutes: 5
-        shell: pwsh
-        run: |
-          $projectVersion = & ./packaging/get-project-version.ps1
-          $version = $projectVersion.AppVersion
-          $name = (Get-Content build-package/bongocat-package-name.txt -Raw).Trim()
-          $platform = "${{ matrix.platform }}"
-          if ($name -notmatch "^BongoCat-$([regex]::Escape($version))-$platform$") {
-            throw "Cubism desktop package is not production-ready: $name"
-          }
-
-          cmake --build build-package --target package
-          if ($LASTEXITCODE -ne 0) { throw 'Unix archive packaging failed' }
-          $archives = @(Get-ChildItem build-package/dist -File | Where-Object {
-            $_.Name -match '\.(zip|tar\.gz)$'
-          })
-          if ($archives.Count -ne 1) {
-            throw "Expected one desktop archive, found $($archives.Count)"
-          }
-          $packageCheckArgs = @{
-            Archive = $archives[0].FullName
-            Platform = $platform
-            SkipSmoke = $platform.StartsWith('macos-')
-          }
-          & ./.github/scripts/check-unix-package.ps1 @packageCheckArgs
-          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "file=$($archives[0].FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Upload desktop release
+      # Diagnostic-backend binaries only: the Cubism SDK is proprietary and is
+      # never built or distributed from CI (see README for local SDK builds).
+      - name: Upload Windows build artifact
+        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: bongocat-vt-${{ matrix.platform }}-archive-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.package.outputs.file }}
+          name: bongocat-test-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/Release/BongoCat.exe
           if-no-files-found: error
-          retention-days: 30
-          compression-level: 0
-          # Preserve package ZIPs inside the artifact transport archive.
-          archive: true
+          retention-days: 14
 
-  store-package:
-    name: package / ${{ matrix.platform }}
-    if: >-
-      github.repository == 'vladelaina/BongoCat' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-x64
-            cmake_arch: x64
-            store_arch: x64
-          - platform: windows-x86
-            cmake_arch: Win32
-            store_arch: ''
-    runs-on: windows-2022
-    env:
-      CUBISM_SDK_ARCHIVE_URL: ${{ secrets.CUBISM_SDK_ARCHIVE_URL }}
-      CUBISM_SDK_ARCHIVE_SHA256: ${{ secrets.CUBISM_SDK_ARCHIVE_SHA256 }}
-      CUBISM_GLEW_ARCHIVE_URL: ${{ secrets.CUBISM_GLEW_ARCHIVE_URL }}
-      CUBISM_GLEW_ARCHIVE_SHA256: ${{ secrets.CUBISM_GLEW_ARCHIVE_SHA256 }}
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Restore licensed Cubism SDK
-        shell: pwsh
-        run: ./.github/scripts/restore-cubism-sdk.ps1
-
-      - name: Build Store release
-        shell: pwsh
-        run: |
-          & ./scripts/build-windows.ps1 `
-            -SkipTests `
-            -BuildDir build-store `
-            -Configuration Release `
-            -Architecture '${{ matrix.cmake_arch }}' `
-            -Jobs 2 `
-            -RequireCubism `
-            -Target ALL_BUILD
-
-      - name: Read app version
-        id: version
-        shell: pwsh
-        run: |
-          $projectVersion = & ./packaging/get-project-version.ps1
-          "version=$($projectVersion.AppVersion)" |
-            Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Install Inno Setup
-        shell: pwsh
-        run: >-
-          & ./.github/scripts/install-inno.ps1
-
-      - name: Package Windows desktop release
-        id: desktop-package
-        shell: pwsh
-        run: |
-          $name = (Get-Content build-store/bongocat-package-name.txt -Raw).Trim()
-          $expected = "BongoCat-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
-          if ($name -ne $expected) {
-            throw "Cubism desktop package is not production-ready: $name"
-          }
-
-          cmake --build build-store --config Release --target package-portable
-          if ($LASTEXITCODE -ne 0) {
-            throw 'Windows portable packaging failed'
-          }
-          cmake --build build-store --config Release --target package-installer
-          if ($LASTEXITCODE -ne 0) {
-            throw 'Windows installer packaging failed'
-          }
-          $portable = "build-store/dist/$name-portable.exe"
-          $setup = "build-store/dist/$name-setup.exe"
-          if (-not (Test-Path -LiteralPath $portable)) {
-            throw "Production portable package is missing: $portable"
-          }
-          if (-not (Test-Path -LiteralPath $setup)) {
-            throw "Production desktop installer is missing: $setup"
-          }
-          "portable=$portable" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "file=$setup" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Upload Windows installer failure log
-        if: failure() && runner.os == 'Windows'
+      - name: Upload Unix build artifact
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: installer-log-${{ matrix.platform }}-${{ github.run_attempt }}
-          path: build-store/installer.log
-          if-no-files-found: ignore
-
-      - name: Build Microsoft Store MSIX
-        if: matrix.store_arch == 'x64'
-        shell: pwsh
-        run: |
-          ./packaging/microsoft-store/build-store-package.ps1 `
-            -ExecutablePath "./build-store/Release/BongoCat.exe" `
-            -Architecture "${{ matrix.store_arch }}" `
-            -OutputDirectory "./store-output"
-          $msix = Get-Item "store-output/bongocat_${{ steps.version.outputs.version }}_${{ matrix.store_arch }}.msix"
-          Write-Host ("Microsoft Store MSIX size: {0} KB" -f [math]::Round($msix.Length / 1KB, 2))
-
-      - name: Validate Microsoft Store MSIX
-        if: matrix.store_arch == 'x64'
-        shell: pwsh
-        run: |
-          ./packaging/microsoft-store/validate-store-package.ps1 `
-            -PackagePath "./store-output/bongocat_${{ steps.version.outputs.version }}_${{ matrix.store_arch }}.msix" `
-            -ExpectedArchitecture "${{ matrix.store_arch }}"
-
-      - name: Upload Microsoft Store MSIX
-        if: matrix.store_arch == 'x64'
-        uses: actions/upload-artifact@v7
-        with:
-          name: bongocat-vt-windows-x64-msix-${{ github.run_id }}-${{ github.run_attempt }}
-          path: store-output/bongocat_${{ steps.version.outputs.version }}_${{ matrix.store_arch }}.msix
+          name: bongocat-test-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/BongoCat
           if-no-files-found: error
-          retention-days: 90
-          compression-level: 0
-          # Preserve package ZIPs inside the artifact transport archive.
-          archive: true
-
-      - name: Upload Windows desktop release
-        uses: actions/upload-artifact@v7
-        with:
-          name: bongocat-vt-${{ matrix.platform }}-setup-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.desktop-package.outputs.file }}
-          if-no-files-found: error
-          retention-days: 30
-          compression-level: 0
-          # Preserve package ZIPs inside the artifact transport archive.
-          archive: true
-
-      - name: Upload Windows portable release
-        uses: actions/upload-artifact@v7
-        with:
-          name: bongocat-vt-${{ matrix.platform }}-portable-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.desktop-package.outputs.portable }}
-          if-no-files-found: error
-          retention-days: 30
-          compression-level: 0
-          # Preserve package ZIPs inside the artifact transport archive.
-          archive: true
-
-  virus-total:
-    name: security / virustotal
-    if: >-
-      github.repository == 'vladelaina/BongoCat' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 310
-    # CI and releases share the same VirusTotal API quota.
-    concurrency:
-      group: bongocat-virustotal
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      actions: read
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      # Discover artifacts while matrix jobs are still building. A single
-      # worker owns the rolling request window for every platform.
-      - name: Scan artifacts as they become available
-        env:
-          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          python3 -u .github/scripts/watch-virustotal.py
-          --artifact-prefix 'bongocat-vt-'
-          --producer-prefix 'package / '
-
-      - name: Add VirusTotal note when scanning is skipped
-        if: always() && hashFiles('virustotal-report-*.json') == ''
-        run: |
-          {
-            echo "## VirusTotal scans"
-            echo
-            echo "No report was produced. Check the scan logs and VIRUSTOTAL_API_KEY configuration."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload VirusTotal reports
-        if: always() && hashFiles('virustotal-report-*.json') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: virustotal-ci-reports-${{ github.run_id }}-${{ github.run_attempt }}
-          path: virustotal-report-*.json
-          if-no-files-found: error
-          retention-days: 30
+          retention-days: 14

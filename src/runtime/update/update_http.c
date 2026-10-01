@@ -106,7 +106,7 @@ BongoCatUpdateFetchResult bongo_cat_update_http_fetch(
     bool connected = connection && track_handle(service,
         &service->http_connection, connection);
     HINTERNET request = connected ? WinHttpOpenRequest(connection, L"GET",
-        L"/repos/vladelaina/BongoCat/releases/latest", NULL,
+        L"/repos/TianMengLucky/BongoCat-X/releases/latest", NULL,
         WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
         WINHTTP_FLAG_SECURE) : NULL;
     bool requested = request && track_handle(service,

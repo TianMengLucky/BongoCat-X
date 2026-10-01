@@ -17,9 +17,6 @@ void bongo_cat_about_text(BongoCatPreferences *value, struct nk_context *context
 void bongo_cat_preferences_about_hero(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_about_projects(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_about_contributors(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_about_wechat(BongoCatPreferences *value, struct nk_rect anchor);
-void bongo_cat_about_wechat_icon(BongoCatPreferences *value, struct nk_context *context,
-    struct nk_rect bounds);
 void bongo_cat_about_ensure_event(BongoCatPreferences *value);
 
 #endif

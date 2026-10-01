@@ -5,9 +5,9 @@
 #include <yyjson.h>
 
 #define RELEASE_PREFIX \
-    "https://github.com/vladelaina/BongoCat/releases/tag/"
+    "https://github.com/TianMengLucky/BongoCat-X/releases/tag/"
 #define DOWNLOAD_PREFIX \
-    "https://github.com/vladelaina/BongoCat/releases/download/"
+    "https://github.com/TianMengLucky/BongoCat-X/releases/download/"
 
 static bool copy_text(char *target, size_t capacity, yyjson_val *value,
     bool required, bool truncate) {

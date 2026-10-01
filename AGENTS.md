@@ -102,9 +102,10 @@ Notes:
 
 ## Agent Workflow Preferences (repository owner)
 
-- **Do not launch the built application** after completing a task. Build,
-  test, and verify; start the app only when explicitly asked.
+- **Do not launch the built application** after completing a task, and **do
+  not run builds on your own initiative** — build only when the user
+  explicitly asks for it. Verify C/C++ changes by review unless asked to
+  build, and say plainly what was and was not verified.
 - **Push only when explicitly asked** — commits stay local otherwise.
-- Verify C/C++ changes by compiling the affected configuration before
-  reporting completion (e.g. configure a scratch build directory and build
-  the affected target); say plainly what was and was not verified.
+- Do not leave scratch files in the repo root; use a gitignored `build*/`
+  directory and delete them when done.

@@ -237,6 +237,6 @@ void bongo_cat_about_contributors(BongoCatPreferences *value, struct nk_context 
     if (hover) {
         bongo_cat_ui_cursor_hover_rect(context, button, BONGO_CAT_UI_CURSOR_POINTER);
         if (nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, button))
-            SDL_OpenURL("https://github.com/vladelaina/BongoCat");
+            SDL_OpenURL("https://github.com/TianMengLucky/BongoCat-X");
     }
 }

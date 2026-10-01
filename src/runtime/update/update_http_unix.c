@@ -115,7 +115,7 @@ BongoCatUpdateFetchResult bongo_cat_update_http_fetch(
     headers = curl_slist_append(headers, "Accept: application/vnd.github+json");
     headers = curl_slist_append(headers, "X-GitHub-Api-Version: 2022-11-28");
     curl_easy_setopt(curl, CURLOPT_URL,
-        "https://api.github.com/repos/vladelaina/BongoCat/releases/latest");
+        "https://api.github.com/repos/TianMengLucky/BongoCat-X/releases/latest");
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "BongoCat Update Checker/1.0");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);

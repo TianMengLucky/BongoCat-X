@@ -98,7 +98,7 @@ static void support_logo(BongoCatPreferences *value,
     image_contain(canvas, value->logo_texture, value->logo_width,
         value->logo_height, raised);
     link_cursor(context, bounds);
-    if (hit(context, bounds)) open_url("https://bongocat.pet");
+    if (hit(context, bounds)) open_url("https://github.com/TianMengLucky/BongoCat-X");
 }
 static void star_button(BongoCatPreferences *value,
     struct nk_context *context, struct nk_command_buffer *canvas,
@@ -123,7 +123,7 @@ static void star_button(BongoCatPreferences *value,
         value->ui.label_font, nk_rgb(255, 255, 255));
     link_cursor(context, bounds);
     if (hit(context, bounds))
-        open_url("https://github.com/vladelaina/BongoCat");
+        open_url("https://github.com/TianMengLucky/BongoCat-X");
 }
 static void hero_title(BongoCatPreferences *value, struct nk_context *context,
     struct nk_command_buffer *canvas, struct nk_rect bounds,
@@ -173,11 +173,7 @@ void bongo_cat_preferences_about_hero(BongoCatPreferences *value,
         bounds.y + 10, 168, 168), p);
     hero_title(value, context, canvas, nk_rect(bounds.x + 3, bounds.y + 190,
         bounds.w, 36), p);
-    bongo_cat_preferences_about_localized_link(value, context, canvas,
-        nk_rect(bounds.x, bounds.y + 226, bounds.w, 24),
-        "native.support.website", "Website: bongocat.pet",
-        "https://bongocat.pet", "support-website-hover", p);
-    centered_wrapped(canvas, nk_rect(bounds.x + 36, bounds.y + 254,
+    centered_wrapped(canvas, nk_rect(bounds.x + 36, bounds.y + 234,
         bounds.w - 72, 40),
         tr(value, "native.support.heroText",
         "Thank you for your support. Every use and share helps BongoCat grow."),

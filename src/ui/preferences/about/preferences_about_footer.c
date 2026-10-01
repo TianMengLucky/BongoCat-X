@@ -162,7 +162,7 @@ static void draw_links(BongoCatPreferences *value,
     centered(canvas, feedback, feedback_label, value->ui.caption_font,
         feedback_color);
     link_cursor(context, feedback);
-    if (hit(context, feedback) && !SDL_OpenURL("https://bongocat.pet/?feedback=1"))
+    if (hit(context, feedback) && !SDL_OpenURL("https://github.com/TianMengLucky/BongoCat-X/issues"))
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot open feedback page: %s", SDL_GetError());
 
     struct nk_color logs_color = link_color(context, logs,

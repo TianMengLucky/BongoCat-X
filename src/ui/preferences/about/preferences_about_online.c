@@ -30,8 +30,7 @@ static bool reserve_response(BongoCatAboutRequest *job, size_t capacity) {
 
 static bool cache_path(BongoCatAboutRequest *job, char *path, size_t capacity) {
     return job->cache_directory[0] && bongo_cat_path_join(path, capacity,
-        job->cache_directory, job->kind == BONGO_ABOUT_CONTRIBUTORS
-            ? "contributors-v1.svg" : "wechat-v1.svg");
+        job->cache_directory, "contributors-v1.svg");
 }
 
 /* SVG parsers modify their input. Only network results need a preserved copy
@@ -44,17 +43,12 @@ static bool decode_response(BongoCatAboutRequest *job, bool preserve_response) {
     char *copy = preserve_response ? malloc(job->length + 1) : job->response;
     if (!copy) return false;
     if (preserve_response) memcpy(copy, job->response, job->length + 1);
-    bool valid;
-    if (job->kind == BONGO_ABOUT_CONTRIBUTORS) {
-        job->feed = bongo_cat_about_feed_parse(copy, &job->cancel);
-        valid = job->feed && job->feed->count;
-        if (!valid) {
-            bongo_cat_about_feed_free(job->feed);
-            job->feed = NULL;
-        }
-    } else {
-        job->qr_pixels = bongo_cat_about_qr_pixels(copy);
-        valid = job->qr_pixels != NULL;
+    bool valid = false;
+    job->feed = bongo_cat_about_feed_parse(copy, &job->cancel);
+    valid = job->feed && job->feed->count;
+    if (!valid) {
+        bongo_cat_about_feed_free(job->feed);
+        job->feed = NULL;
     }
     if (preserve_response) free(copy);
     return valid;
@@ -176,7 +170,7 @@ static int SDLCALL request_worker(void *user) {
     if (connection)
         request = WinHttpOpenRequest(
             connection, L"GET",
-            job->kind == BONGO_ABOUT_CONTRIBUTORS ? L"/co" : L"/wechat",
+            L"/co",
             NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
     if (request) {
         DWORD redirect = WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
@@ -213,9 +207,7 @@ static int SDLCALL request_worker(void *user) {
     bool initialized = curl_global_init(CURL_GLOBAL_DEFAULT) == CURLE_OK;
     CURL *curl = initialized ? curl_easy_init() : NULL;
     if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL,
-                         job->kind == BONGO_ABOUT_CONTRIBUTORS ? "https://bongocat.pet/co"
-                                       : "https://bongocat.pet/wechat");
+        curl_easy_setopt(curl, CURLOPT_URL, "https://bongocat.pet/co");
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "BongoCat About/1.0");
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 3000L);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 15000L);
@@ -243,13 +235,12 @@ static int SDLCALL request_worker(void *user) {
     return complete(job);
 }
 
-BongoCatAboutRequest *bongo_cat_about_request(int kind, Uint32 event_type,
+BongoCatAboutRequest *bongo_cat_about_request(Uint32 event_type,
     Uint32 window_id, const char *cache_root, bool network_only) {
     BongoCatAboutRequest *job = calloc(1, sizeof(*job));
     if (!job)
         return NULL;
-    job->limit = kind == BONGO_ABOUT_CONTRIBUTORS ? RESPONSE_LIMIT : 64u * 1024u;
-    job->kind = kind;
+    job->limit = RESPONSE_LIMIT;
     job->event_type = event_type;
     job->window_id = window_id;
     job->network_only = network_only;
@@ -271,7 +262,6 @@ void bongo_cat_about_request_free(BongoCatAboutRequest *job) {
     SDL_SetAtomicInt(&job->cancel, 1);
     if (job->thread) SDL_WaitThread(job->thread, NULL);
     bongo_cat_about_feed_free(job->feed);
-    free(job->qr_pixels);
     free(job->response);
     free(job);
 }

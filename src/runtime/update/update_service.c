@@ -9,7 +9,7 @@
 #include <string.h>
 
 #define RELEASES_URL \
-    "https://github.com/vladelaina/BongoCat/releases/latest"
+    "https://github.com/TianMengLucky/BongoCat-X/releases/latest"
 #define STORE_URI "ms-windows-store://pdp/?ProductId=9P41MLSX72XW"
 #define STORE_WEB_URL "https://apps.microsoft.com/detail/9P41MLSX72XW"
 

@@ -9,17 +9,28 @@ cd "$work"
 chmod +x "$appimage"
 "$appimage" --appimage-extract > /dev/null
 root="$work/squashfs-root"
-for file in AppRun bongocat.desktop bongocat.png usr/bin/BongoCat \
-  usr/bin/assets/bongocat.png usr/bin/assets/locales/en-US.json \
-  usr/bin/assets/models/standard/cat.model3.json \
-  usr/bin/assets/models/standard/demomodel.moc3 \
-  usr/bin/assets/models/standard/demomodel.1024/texture_00.png \
-  usr/bin/assets/FrameworkShaders/VertShaderSrc.vert \
-  usr/bin/assets/FrameworkShaders/FragShaderSrc.frag \
-  usr/bin/assets/FrameworkShaders/VertShaderSrcBlend.vert \
-  usr/bin/assets/FrameworkShaders/FragShaderSrcBlend.frag; do
+required=(AppRun bongocat.desktop bongocat.png usr/bin/BongoCat
+  usr/bin/assets/bongocat.png usr/bin/assets/locales/en-US.json
+  usr/bin/assets/models/standard/cat.model3.json
+  usr/bin/assets/models/standard/demomodel.moc3
+  usr/bin/assets/models/standard/demomodel.1024/texture_00.png)
+diagnostic=0
+[[ $appimage =~ -Diagnostic- ]] && diagnostic=1
+if [[ $diagnostic == 0 ]]; then
+  required+=(usr/bin/assets/FrameworkShaders/VertShaderSrc.vert
+    usr/bin/assets/FrameworkShaders/FragShaderSrc.frag
+    usr/bin/assets/FrameworkShaders/VertShaderSrcBlend.vert
+    usr/bin/assets/FrameworkShaders/FragShaderSrcBlend.frag)
+fi
+for file in "${required[@]}"; do
   test -s "$root/$file" || { echo "Missing AppImage resource: $file" >&2; exit 1; }
 done
+# Diagnostic packages render without the Cubism SDK, so the native
+# Live2D audit cannot pass; skip the smoke test for them.
+if [[ $diagnostic == 1 ]]; then
+  echo 'AppImage layout verified (diagnostic package, smoke test skipped).'
+  exit 0
+fi
 # Exercise the actual AppImage entry point without requiring a FUSE mount.
 bash "$test_runner" env APPIMAGE_EXTRACT_AND_RUN=1 \
   BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 "$appimage" \

@@ -3,9 +3,12 @@ name: BongoCat CI
 on:
   push:
     branches: ["**"]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+# Tag pushes do not trigger this workflow: a tag points at a commit whose
+# checks already ran when the branch was pushed, and the release workflow
+# owns tagged builds. This keeps a single commit from being checked twice.
 
 permissions:
   contents: read

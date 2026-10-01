@@ -39,8 +39,8 @@ def check_icon(data):
                 struct.unpack_from(">IIBBBBB", frame, 16))
             require((width, height) == (w, h),
                     f"ICO declares {w}x{h}, but PNG contains {width}x{height}")
-            require(w == 256 and (depth, color, compression, filtering, interlace)
-                    == (8, 6, 0, 0, 0), "Expected a 256px RGBA PNG")
+            require((depth, color, compression, filtering, interlace)
+                    == (8, 6, 0, 0, 0), "Expected an RGBA PNG frame")
             position, compressed, ended = 8, bytearray(), False
             while position < len(frame):
                 require(position + 12 <= len(frame), "Truncated PNG chunk")

@@ -98,14 +98,22 @@ jobs:
           CC: gcc
           CXX: g++
         run: |
-          cmake -S . -B build-quality -G Ninja \
+          attempt=1
+          until cmake -S . -B build-quality -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_STATIC_ANALYZER=ON \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
-            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
+            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "Configure failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "Configure attempt $attempt failed (likely a transient dependency download error); retrying"
+            attempt=$((attempt + 1))
+          done
 
       - name: Register GCC diagnostics
         run: echo "::add-matcher::$GITHUB_WORKSPACE/.github/gcc-problem-matcher.json"
@@ -137,13 +145,21 @@ jobs:
           CC: clang-18
           CXX: clang++-18
         run: |
-          cmake -S . -B build-clang-tidy -G Ninja \
+          attempt=1
+          until cmake -S . -B build-clang-tidy -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=OFF \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF
+            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "Configure failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "Configure attempt $attempt failed (likely a transient dependency download error); retrying"
+            attempt=$((attempt + 1))
+          done
 
       - name: Analyze project memory safety and common coding errors
         run: |
@@ -173,7 +189,8 @@ jobs:
           CC: clang-18
           CXX: clang++-18
         run: |
-          cmake -S . -B build-sanitizers -G Ninja \
+          attempt=1
+          until cmake -S . -B build-sanitizers -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
@@ -181,7 +198,14 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
             -DCMAKE_C_FLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" \
             -DCMAKE_CXX_FLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "Configure failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "Configure attempt $attempt failed (likely a transient dependency download error); retrying"
+            attempt=$((attempt + 1))
+          done
 
       - name: Build instrumented application
         run: bash .github/scripts/build-unix.sh cmake --build build-sanitizers --target bongo_cat --parallel 2

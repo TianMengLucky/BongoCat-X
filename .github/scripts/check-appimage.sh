@@ -15,7 +15,7 @@ required=(AppRun bongocat.desktop bongocat.png usr/bin/BongoCat
   usr/bin/assets/models/standard/demomodel.moc3
   usr/bin/assets/models/standard/demomodel.1024/texture_00.png)
 diagnostic=0
-[[ $appimage =~ -Diagnostic- ]] && diagnostic=1
+[[ $(basename "$appimage") =~ ^BongoCat-X- ]] && diagnostic=1
 if [[ $diagnostic == 0 ]]; then
   required+=(usr/bin/assets/FrameworkShaders/VertShaderSrc.vert
     usr/bin/assets/FrameworkShaders/FragShaderSrc.frag

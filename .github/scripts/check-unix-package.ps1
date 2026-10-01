@@ -18,11 +18,11 @@ try {
         cmake -E tar xf $archivePath
         if ($LASTEXITCODE -ne 0) { throw 'Package extraction failed' }
         $roots = @(Get-ChildItem -LiteralPath $temporaryRoot -Directory)
-        if ($roots.Count -ne 1 -or $roots[0].Name -notmatch "^BongoCat(-Diagnostic)?-[0-9].*-$Platform$") {
+        if ($roots.Count -ne 1 -or $roots[0].Name -notmatch "^BongoCat(-X)?-[0-9].*-$Platform$") {
             throw 'Expected one production BongoCat package directory'
         }
         $root = $roots[0].FullName
-        $isDiagnostic = $root -match '-Diagnostic'
+        $isDiagnostic = $roots[0].Name -match '^BongoCat-X-'
         if ($Platform.StartsWith('macos-')) {
             $executable = Join-Path $root 'BongoCat.app/Contents/MacOS/BongoCat'
             $assets = Join-Path $root 'BongoCat.app/Contents/Resources/assets'

@@ -7,7 +7,7 @@ if(WIN32)
 endif()
 set(BONGO_CAT_PACKAGE_PRODUCT "BongoCat")
 if(NOT BONGO_CAT_CUBISM_ENABLED)
-  set(BONGO_CAT_PACKAGE_PRODUCT "BongoCat-Diagnostic")
+  set(BONGO_CAT_PACKAGE_PRODUCT "BongoCat-X")
   install(FILES cmake/DiagnosticBuildNotice.txt DESTINATION .
     COMPONENT Runtime)
 endif()

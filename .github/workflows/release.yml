@@ -120,7 +120,7 @@ jobs:
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()
-          $expected = "BongoCat-Diagnostic-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          $expected = "BongoCat-X-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
           if ($name -ne $expected) {
             throw "Unexpected release package name: $name"
           }
@@ -165,7 +165,7 @@ jobs:
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()
-          $expected = "BongoCat-Diagnostic-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          $expected = "BongoCat-X-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
           if ($name -ne $expected) {
             throw "Unexpected release package name: $name"
           }
@@ -242,13 +242,6 @@ jobs:
             --tag "$GITHUB_REF_NAME" \
             --repository "$GITHUB_REPOSITORY" \
             --output release-notes.md
-          cat >> release-notes.md <<'EOF'
-
-          ---
-
-          > 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，
-          > 如需启用 Live2D 模型，请按 README 的说明在本地自行构建。
-          EOF
 
       - name: Publish release assets
         if: github.repository == 'TianMengLucky/BongoCat-X'

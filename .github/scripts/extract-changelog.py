@@ -55,15 +55,15 @@ def main() -> None:
 
     links = "\n".join(
         f"- [{label}](https://github.com/{args.repository}/releases/download/"
-        f"{args.tag}/BongoCat-{version}-{name})" for name, label in PLATFORMS)
+        f"{args.tag}/BongoCat-X-{version}-{name})" for name, label in PLATFORMS)
 
     body = (
         f"{notes}\n\n"
         f"## 📦 下载 / Download ({heading})\n\n"
         f"{links}\n\n"
         "每个产物都附带 `.sha256` 校验文件。\n\n"
-        "> 本仓库与 Live2D 公司无关联，不附带 Live2D Cubism SDK；"
-        "产物由各开发者按 README 说明自行导入的 SDK 构建。\n")
+        "> 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，"
+        "如需启用 Live2D 模型，请按 README 的说明在本地自行构建。\n")
 
     pathlib.Path(args.output).write_text(body, encoding="utf-8")
     print(f"release notes written from section [{heading}] -> {args.output}")

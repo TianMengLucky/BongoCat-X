@@ -8,7 +8,7 @@ fi
 build_dir=$(cd "${1:?Usage: build-appimage.sh BUILD_DIRECTORY}" && pwd)
 source_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 name=$(tr -d '\r\n' < "$build_dir/bongocat-package-name.txt")
-[[ $name =~ ^BongoCat(-Diagnostic)?-[0-9][A-Za-z0-9.+-]*-linux-x64$ ]] || {
+[[ $name =~ ^BongoCat(-X)?-[0-9][A-Za-z0-9.+-]*-linux-x64$ ]] || {
   echo "Unexpected package name: $name" >&2
   exit 1
 }
@@ -26,7 +26,7 @@ curl --fail --location --retry 3 --output "$tool" \
   https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20250213-2/linuxdeploy-x86_64.AppImage
 chmod +x "$tool"
 export ARCH=x86_64
-export VERSION="${name#BongoCat-}"
+export VERSION="${name#BongoCat-*-}"
 export OUTPUT="$build_dir/dist/$name.AppImage"
 # Build runners do not need FUSE, including subprocess AppImage tools.
 export APPIMAGE_EXTRACT_AND_RUN=1

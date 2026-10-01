@@ -56,7 +56,7 @@ Desktop.ini
 
 /docs/*
 !/docs/
-!/docs/README.zh-CN.md
+!/docs/README.en-US.md
 !/docs/README.zh-Hant.md
 !/docs/README.fr-FR.md
 !/docs/README.de-DE.md

@@ -1,94 +1,66 @@
-
-
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
-    <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
+    <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
-  
-  <h1>
-    <a href="https://bongocat.pet" target="_blank" style="text-decoration: none; color: inherit;">BongoCat</a>
-  </h1>
+  <h1><a href="https://bongocat.pet" target="_blank">BongoCat</a></h1>
 </div>
 
-
-<!-- Project Description + Rocket Icon -->
-<p align="center"> 
- 💘C × SDL3 × OpenGL — Three Mysterious Forces, United as One! Bong~ Bongocat!!!
-</p>
+<p align="center">💘 C/C++ × SDL3 × OpenGL，搅拌在一起，尽情敲击！Bong~ Bongo Cat!!!</p>
 <p align="center">
-<a href="https://github.com/vladelaina/BongoCat/blob/main/README.md"><strong>English</strong></a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-CN.md">简体中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-Hant.md">繁體中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.fr-FR.md">Français</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.de-DE.md">Deutsch</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ja-JP.md">日本語</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ko-KR.md">한국어</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.pt-BR.md">Português</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ru-RU.md">Русский</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.es-ES.md">Español</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.id-ID.md">Bahasa Indonesia</a>
+  选择语言 ❯ <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ja-JP.md">日本語</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
 </p>
 <p align="center">
   <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-54AEFF?style=flat&logo=c&logoColor=white"></a>
-<a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/Discord-F77DAA?logo=discord&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.md"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
-  <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/422616922-12B7F5?logo=qq&logoColor=12B7F5&labelColor=FFFFFF"></a>
+  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
+  <a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2Fvf8jqnattk%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&suffix=%20members&logo=discord&logoColor=white&label=%20&color=7389D8&labelColor=6A7EC2"></a>
+  <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.png"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
+  <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/QQ-%2312B7F5?logo=qq&labelColor=FFFFFF"></a>
 </p>
 
-
-<!-- Demo Video -->
-<div align="center" style="margin-bottom: 30px;">
-  <video src="https://github.com/user-attachments/assets/75719230-9e49-4124-ae5a-8e35592c5d49
-" autoplay loop style="border-radius: 8px; max-width: 800px;"></video>
-</div>
-
-
-<img width="1149" height="904" alt="image" src="https://github.com/user-attachments/assets/aa376965-539e-4bbd-827d-bb9a29006069" />
-
+<div align="center"><video src="https://github.com/user-attachments/assets/75719230-9e49-4124-ae5a-8e35592c5d49" autoplay loop style="border-radius: 8px; max-width: 800px;"></video></div>
 
 > [!TIP]
-> The model featured in this demonstration is from [宇痕冫](https://space.bilibili.com/348616056).
+> 演示中使用的模型来自 [宇痕冫](https://space.bilibili.com/348616056)。
 >
-> 🎁 Looking for **free** models? We work with talented model creators to bring you a wide variety of free models, while continuously exploring more fun desktop experiences! Visit our official website: [bongocat.pet](https://bongocat.pet/models)
+> 🎁 想找**免费**模型？我们与才华横溢的模型创作者合作，为您带来丰富多样的免费模型，同时持续探索更多有趣的桌面体验！欢迎访问我们的官方网站：[bongocat.pet](https://bongocat.pet/models)
+
 <p align="center">
   <a href="https://bongocat.pet/models">
     <img height="1080" src="https://github.com/user-attachments/assets/dedd83ca-742a-4f8c-a64a-69e659fca564" />
   </a>
 </p>
 
-<p align="center">
-    <img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400">
-  </p>
+<p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
 
-## 📥 Download
+## 📥 下载
 
-<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self" >
-	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
-</a>
+<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
 - GitHub Releases
 
-  Download the latest release from [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  从 [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest) 下载最新版本。
 
-## 🛠️ Build From Source
+## 🛠️ 从源码构建
 
-BongoCat uses CMake and requires a C11 compiler, a C++17 compiler, CMake 3.24
-or newer, and desktop OpenGL development files. SDL3, yyjson, stb, miniaudio,
-and Nuklear are downloaded at configure time by default, so the first
-configuration needs network access.
+BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本，以及桌面 OpenGL 开发文件。默认情况下，SDL3、yyjson、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
 
-Run the commands below from the project root (the directory containing
-`CMakeLists.txt`).
+请在项目根目录（包含 `CMakeLists.txt` 的目录）运行以下命令。
 
-### 📋 Platform Prerequisites
+### 📋 平台前置条件
 
-- **Windows:** Visual Studio 2022 with the Desktop C++ workload and CMake.
-  Use the MSVC generator; MinGW can build the diagnostic backend but is not
-  supported for the Cubism SDK.
-- **macOS:** Xcode Command Line Tools, CMake, and Ninja. Select an architecture
-  with `CMAKE_OSX_ARCHITECTURES` when it differs from the host default.
-- **Linux (Debian/Ubuntu):** GCC or Clang, Ninja, and the OpenGL/X11 headers:
+- **Windows：** Visual Studio 2022（安装“使用 C++ 的桌面开发”工作负载）和 CMake。请使用 MSVC 生成器；MinGW 可构建诊断后端，但不支持 Cubism SDK。
+- **macOS：** Xcode Command Line Tools、CMake 和 Ninja。如果目标架构与主机默认架构不同，请通过 `CMAKE_OSX_ARCHITECTURES` 指定。
+- **Linux（Debian/Ubuntu）：** GCC 或 Clang、Ninja，以及 OpenGL/X11 头文件：
 
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk libcurl4-openssl-dev
   ```
 
-### 🔧 Configure and Build
+### 🔧 配置与构建
 
-On Linux and macOS, use a single-configuration generator such as Ninja:
+在 Linux 和 macOS 上，请使用 Ninja 这样的单配置生成器：
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -97,8 +69,7 @@ cmake -S . -B build -G Ninja \
 cmake --build build --parallel
 ```
 
-On Windows, run from a Visual Studio 2022 developer shell (or another shell
-where MSVC is available):
+在 Windows 上，请从 Visual Studio 2022 开发者命令行（或 MSVC 可用的其他命令行）运行：
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
@@ -106,43 +77,31 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
 cmake --build build --config Release --parallel
 ```
 
-The executable is written to `build/BongoCat` on Linux, to
-`build/BongoCat.app/Contents/MacOS/BongoCat` on macOS, and to
-`build/Release/BongoCat.exe` for Visual Studio builds.
+可执行文件位于：Linux 的 `build/BongoCat`，macOS 的 `build/BongoCat.app/Contents/MacOS/BongoCat`，Visual Studio 构建的 Windows 版本为 `build/Release/BongoCat.exe`。
 
-### 🧪 Tests
+### 🧪 测试
 
-CTest targets are enabled by default. Run them after building:
+CTest 目标默认启用。构建后运行：
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-For a multi-configuration generator such as Visual Studio, select the build
-configuration explicitly:
+对于 Visual Studio 这类多配置生成器，请明确指定构建配置：
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (Required — manual download)
+### 🎭 Live2D / Cubism SDK（必需，需手动下载）
 
-The Live2D Cubism SDK is proprietary software and is **not** distributed with
-this repository. Each user must download it manually from the official Live2D
-website before building; CMake configuration fails when it is absent.
+Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。构建前，每位用户都必须从 Live2D 官方网站手动下载 SDK；缺少 SDK 时 CMake 配置会直接失败。
 
-1. Open the [Cubism SDK download page](https://www.live2d.com/en/sdk/download/native/),
-   accept the Live2D Proprietary Software License Agreement, and download
-   **Cubism SDK for Native** (releases are built against the `5-r.5` SDK).
-2. Extract the archive. If the extracted folder is named
-   `CubismSdkForNative-5-r.5`, rename it to `CubismSdkForNative` and place it
-   under `vendor/` so that the tree contains `Core/` and `Framework/`.
-3. Newer SDK archives no longer bundle GLEW. Download
-   [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip)
-   and extract it to `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`
-   (the directory that directly contains `include/GL/glew.h` and `src/glew.c`).
+1. 打开 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 专有软件许可协议，下载 **Cubism SDK for Native**（项目按 `5-r.5` 版本构建和测试）。
+2. 解压压缩包。若解压出的文件夹名为 `CubismSdkForNative-5-r.5`，请将其重命名为 `CubismSdkForNative` 并放到 `vendor/` 目录下，使目录树包含 `Core/` 和 `Framework/`。
+3. 较新的 SDK 压缩包不再自带 GLEW。请下载 [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) 并解压到 `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`（该目录下应直接包含 `include/GL/glew.h` 和 `src/glew.c`）。
 
-Alternatively, keep the SDK anywhere and pass its location explicitly:
+也可以将 SDK 保存在任意位置，并通过参数显式指定路径：
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -150,25 +109,18 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-The SDK must contain its Core library, Framework sources, and the OpenGL GLEW
-third-party tree in the layout expected by `cmake/Cubism.cmake`. Windows
-Cubism builds require Visual Studio 2022. Set
-`BONGO_CAT_REQUIRE_CUBISM=OFF` only to build the diagnostic backend for
-startup and platform diagnostics; that backend does not provide Live2D model
-rendering.
+SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。仅当需要构建用于启动与平台诊断的诊断后端时，才设置 `BONGO_CAT_REQUIRE_CUBISM=OFF`；该后端不提供 Live2D 模型渲染。
 
-### ⚙️ CMake Options
+### ⚙️ CMake 选项
 
-| Option | Default | Description |
+| 选项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent`. Set `OFF` only when SDL3, yyjson, stb, miniaudio, and Nuklear are already available to CMake. |
-| `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path to the Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Fail configuration when the manually downloaded Cubism SDK is unavailable. Set `OFF` to build the diagnostic backend without Live2D rendering. |
-| `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Treat native compiler warnings as errors. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖。仅当 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可供 CMake 使用时才设为 `OFF`。 |
+| `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路径。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 手动下载的 Cubism SDK 不可用时使配置失败；设置为 `OFF` 可构建不带 Live2D 渲染的诊断后端。 |
+| `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 将本地编译器警告视为错误。 |
 
-For an offline build with `BONGO_CAT_FETCH_DEPS=OFF`, provide CMake package
-configurations for SDL3 (including `SDL3-static`) and yyjson, plus the include
-directories for stb, Nuklear, and miniaudio when they are not discoverable:
+离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`）和 yyjson 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -179,131 +131,74 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_MINIAUDIO_INCLUDE_DIR=/path/to/miniaudio
 ```
 
-## 📌 Project Status
+## 📌 项目状态
 
+![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
 
-## 📜 License
+## 📜 许可证
 
-The BongoCat source code and native runtime are licensed under
-[AGPL-3.0-only](LICENSE).
+BongoCat 源代码和本地运行时采用 [AGPL-3.0-only](../LICENSE) 许可证。
 
-The default built-in model mode (`standard`) remains MIT-licensed. The
-bundled model assets in `resources/assets/models/standard`, `keyboard`, and
-`gamepad` are covered by the separate [MIT license notice](LICENSE-MIT).
-That MIT license applies to the model assets and their accompanying artwork
-only; it does not relicense the BongoCat source code or native runtime.
+默认内置模型模式（`standard`）仍采用 MIT 许可证。`resources/assets/models/standard`、`keyboard` 和 `gamepad` 中捆绑的模型资源受单独的 [MIT 许可证声明](../LICENSE-MIT) 覆盖。该 MIT 许可证仅适用于模型资源及其配套美术作品，不会改变 BongoCat 源代码或本地运行时的许可证。
 
+## 🧭 技术架构
 
-## 🧭 Technical Architecture
+当前原生版本基于 C/C++、SDL3 和 OpenGL 构建。下图重点展示运行时数据流；构建与打包细节请参阅 CMake 文件。
 
-> The current native version is built on C/C++, SDL3, and OpenGL. The diagram below focuses on the runtime data flow; build and packaging details live in CMake.
+### 🔄 运行时所有权与帧调度
 
-### 🔄 Runtime Ownership and Frame Scheduling
-
-Each process owns one `BongoCatApp` and one main-thread event and render loop.
-Platform listeners stop at the input boundary:
+每个进程拥有一个 `BongoCatApp` 和一个主线程事件/渲染循环。平台监听器在输入边界处停止：
 
 ```text
-Platform listeners
-(keyboard / pointer)
+平台监听器（键盘/指针）
             |
             v
-  C11 input state
-  (atomic edge queue + coalesced pointer position)
+  C11 输入状态（原子边沿队列 + 合并后的指针位置）
             |
             v
-  main-thread application <----- SDL3 events
+  主线程应用 <----- SDL3 事件
             |
             v
-  model parameters, overlay, and UI state
+  模型参数、覆盖层和 UI 状态
             |
             v
-  model update -> OpenGL composition -> platform presentation
+  模型更新 -> OpenGL 合成 -> 平台呈现
 ```
 
-The Windows Raw Input receiver, macOS Quartz event tap, and Linux XInput2 listener
-run outside the main loop. They publish timestamped key and mouse-button edges
-to the bounded atomic queue and coalesce pointer motion separately, so frequent
-motion cannot displace ordered key and button edges. Native SDL wake events
-notify the main thread. Windows registers a message-only receiver for background
-keyboard and mouse input with `RIDEV_INPUTSINK | RIDEV_DEVNOTIFY`, preserving legacy
-window messages. Device motion drives the model when another application hides
-or locks the cursor; SDL supplies the desktop cursor position. The receiver
-tracks held inputs per device and clears them on device removal or desktop
-switches. It does not install input hooks, use DirectInput, or send input to games.
-SDL3 window, preferences, and gamepad events
-are handled on the main thread, where gamepad events are normalized before they
-reach model parameters or shortcuts. No platform listener calls Live2D,
-overlay, or UI code directly.
+Windows Raw Input 接收器、macOS Quartz 事件 tap 和 Linux XInput2 监听器运行在主循环之外。按键和鼠标按钮边沿进入有界原子队列，移动量单独合并，并通过 SDL 事件唤醒主线程，避免高频移动挤出按键事件。Windows 使用独立消息窗口，以 `RIDEV_INPUTSINK | RIDEV_DEVNOTIFY` 订阅后台键鼠输入并保留普通窗口消息；其他程序隐藏或锁定光标时，模型使用设备上报的移动量，桌面跟随则读取 SDL 提供的系统光标位置。接收器分别管理各设备的按下状态，在设备拔出或输入桌面切换时清理。Windows 不再安装输入钩子或使用 DirectInput，也不向游戏发送输入。SDL3 窗口、偏好设置和手柄事件仍在主线程处理，平台监听器不会直接调用 Live2D、覆盖层或 UI 代码。
 
-`bongo_cat_app_run` handles update-shutdown and secondary-process arguments,
-enforces single-instance ownership for the primary process, allocates the
-application state, runs initialization, enters `bongo_cat_app_loop`, and then
-flushes state and destroys resources in a defined order. Initialization loads
-configuration and storage paths, locates assets, creates the SDL/OpenGL pet
-window, initializes the platform backend, creates the Live2D, overlay, and
-audio services, scans the built-in/installed/nearby model sources, and loads a
-usable model. `BongoCatApp` owns settings, session state, model and behavior
-catalogs, platform handles, and runtime service handles.
+`bongo_cat_app_run` 负责更新、关闭和次级进程参数，确保主进程的单实例所有权，分配应用状态，执行初始化，进入 `bongo_cat_app_loop`，随后按定义顺序刷新状态并销毁资源。初始化会加载配置和存储路径、定位资源、创建 SDL/OpenGL 宠物窗口、初始化平台后端、创建 Live2D/覆盖层/音频服务、扫描内置/已安装/附近的模型来源，并加载可用模型。`BongoCatApp` 持有设置、会话状态、模型和行为目录、平台句柄及运行时服务句柄。
 
-Installed model packages use Mver as the canonical format. The import workflow
-resolves a selected file or directory, discovers and validates candidates,
-fingerprints package identity, converts Tauri sources to Mver, applies image
-patches, and commits the normalized package under `models_root`. It then
-generates the runtime adapter and refreshes the catalogs. Nearby sources are
-discovered without installing their source tree; their adapters and inspection
-results are cached outside `models_root` under `cache_root`.
+已安装的模型包使用 Mver 作为规范格式。导入流程会解析选中的文件或目录，发现并验证候选项，生成包身份指纹，将 Tauri 来源转换为 Mver，应用图像补丁，并将规范化包提交到 `models_root`。随后生成运行时适配器并刷新目录。附近来源只在不安装源目录的情况下被发现；其适配器和检查结果缓存在 `models_root` 之外的 `cache_root` 下。
 
-Each main-loop iteration waits for SDL/native wakeups or the earliest pending
-frame, UI, animation, or pointer-hit deadline (with a maximum wait of 250 ms).
-It dispatches queued SDL events, drains the atomic input queue and release
-recovery, updates window and model-refresh state, and applies input-derived
-parameters. With Cubism enabled, the model deadline follows
-`settings.model.max_fps` (60 FPS by default); diagnostic builds use a 100 ms
-fallback interval. The elapsed model time is capped at 250 ms and split into up
-to eight substeps, targeting no more than 1/30 s per substep.
+每次主循环迭代都会等待 SDL/原生唤醒，或等待最早的帧、UI、动画和指针命中截止时间（最长 250 毫秒）。循环分发排队的 SDL 事件，清空原子输入队列并执行释放恢复，更新窗口和模型刷新状态，然后应用输入参数。启用 Cubism 时，模型截止时间遵循 `settings.model.max_fps`（默认为 60 FPS）；诊断构建使用 100 毫秒的后备间隔。模型经过的时间最多计为 250 毫秒，并拆分为最多八个子步，每个子步目标不超过 1/30 秒。
 
-The normal pet path renders only when the window is visible, not minimized, and
-marked dirty. A frame clears the background, draws the model, and composites
-pointer, key, and effect overlays before calling the platform presenter.
-Preview operations can request immediate renders, while capture renders may
-skip presentation. macOS and Linux swap the SDL OpenGL window directly.
-Windows swaps directly when layered presentation is inactive and otherwise
-reads back the frame for `UpdateLayeredWindow`. The preferences UI owns a
-separate SDL/OpenGL window and is rendered and presented independently from
-the pet window.
+常规宠物路径仅在窗口可见、未最小化且标记为脏时渲染。每帧先清空背景，绘制模型，再合成指针、按键和效果覆盖层，最后调用平台呈现器。预览操作可以请求立即渲染，截图渲染可以跳过呈现。macOS 和 Linux 直接交换 SDL OpenGL 窗口；Windows 在未启用分层呈现时直接交换，否则读取帧缓冲并调用 `UpdateLayeredWindow`。偏好设置 UI 拥有独立的 SDL/OpenGL 窗口，并单独渲染和呈现。
 
-The C runtime calls the ABI declared in `include/bongo_cat/model.h`. The Live2D
-bridge and Cubism implementation live in `src/live2d` and use C++17 only when
-the Cubism SDK is enabled; the rest of the native runtime uses C11. Cubism
-types remain behind opaque C handles, while `src/live2d/live2d_stub.c` provides
-the diagnostic backend when the SDK is unavailable.
-
+C 运行时调用 `include/bongo_cat/model.h` 中声明的 ABI。Live2D 桥接和 Cubism 实现在 `src/live2d` 中，仅在启用 Cubism SDK 时使用 C++17；其余本地运行时使用 C11。Cubism 类型保持在不透明 C 句柄之后；当 SDK 不可用时，`src/live2d/live2d_stub.c` 提供诊断后端。
 
 ```mermaid
 flowchart TB
-  Input(["Keyboard / mouse / gamepad"])
-  BuiltIn(["Built-in model assets"])
-  Sources(["External model sources<br/>Mver, Tauri, .model3.json, image patches"])
-  Desktop(["Pet window and preferences window"])
-
-  subgraph Runtime["BongoCat native runtime"]
+  Input(["键盘 / 鼠标 / 手柄"])
+  BuiltIn(["内置模型资源"])
+  Sources(["外部模型来源<br/>Mver、Tauri、.model3.json、图像补丁"])
+  Desktop(["宠物窗口和偏好设置窗口"])
+  subgraph Runtime["BongoCat 原生运行时"]
     direction TB
     Entry["src/main.c<br/>bongo_cat_app_run"]
-    Startup["Startup and initialization<br/>configuration, storage, window, platform"]
-    Loop["SDL3 main loop<br/>wait, dispatch, update, render"]
-    Shutdown["Shutdown<br/>flush state, stop services, release resources"]
-    InputQueue[("Atomic input state<br/>edge queue and coalesced pointer position")]
-    InputDispatch["Input dispatch<br/>shortcuts, pointer mapping, model parameters"]
-    State[("BongoCatApp state<br/>settings, session, catalogs, runtime handles")]
-    Import["Model discovery and import<br/>validate, normalize to Mver, install/cache"]
-    Catalog[("Model and behavior catalogs")]
-    Live2D["Live2D C ABI<br/>Cubism SDK or diagnostic stub"]
-    Overlay["Overlay and audio"]
-    Preferences["Preferences and desktop shell<br/>Nuklear UI, tray, window actions"]
-    Compose["OpenGL frame composition"]
-    Present["Platform presentation"]
-
+    Startup["启动和初始化<br/>配置、存储、窗口、平台"]
+    Loop["SDL3 主循环<br/>等待、分发、更新、渲染"]
+    Shutdown["关闭<br/>刷新状态、停止服务、释放资源"]
+    InputQueue[("原子输入状态<br/>边沿队列和合并指针位置")]
+    InputDispatch["输入分发<br/>快捷键、指针映射、模型参数"]
+    State[("BongoCatApp 状态<br/>设置、会话、目录、运行时句柄")]
+    Import["模型发现和导入<br/>验证、规范化为 Mver、安装/缓存"]
+    Catalog[("模型和行为目录")]
+    Live2D["Live2D C ABI<br/>Cubism SDK 或诊断存根"]
+    Overlay["覆盖层和音频"]
+    Preferences["偏好设置和桌面外壳<br/>Nuklear UI、托盘、窗口操作"]
+    Compose["OpenGL 帧合成"]
+    Present["平台呈现"]
     Entry --> Startup --> Loop
     Loop --> Shutdown
     Loop --> InputDispatch --> State
@@ -319,13 +214,11 @@ flowchart TB
     Compose --> Present
     Loop --> Compose
   end
-
-  subgraph Platform["Platform backends"]
+  subgraph Platform["平台后端"]
     direction LR
-    Global["Global keyboard / pointer capture<br/>Windows, macOS, Linux"]
-    SDL["SDL3 events<br/>window and gamepad events"]
+    Global["全局键盘/指针捕获<br/>Windows、macOS、Linux"]
+    SDL["SDL3 事件<br/>窗口和手柄事件"]
   end
-
   Input --> Global --> InputQueue --> InputDispatch
   Input --> SDL --> Loop
   BuiltIn --> Catalog
@@ -334,53 +227,35 @@ flowchart TB
   Preferences --> Desktop
 ```
 
-## ❓ FAQ
+## ❓ 常见问题
 
-### 🔒 Does BongoCat record my keyboard or mouse input?
+### 🔒 BongoCat 会记录我的键盘或鼠标输入吗？
 
-No. BongoCat processes keyboard and mouse input locally to drive animations
-and shortcuts. It does not record or upload your keystrokes, mouse actions, or
-other interaction data. Configuration is stored locally as well, and the app
-contains no ads, analytics tools, or user-tracking code. When an update check
-is performed, it only requests public release metadata; it does not send input,
-configuration, or usage data.
+不会。BongoCat 在本地处理键盘和鼠标输入，用于驱动动画和快捷键。它不会记录或上传按键、鼠标操作或其他交互数据。配置也只保存在本地，应用不包含广告、分析工具或用户跟踪代码。执行更新检查时只会请求公开的版本元数据，不会发送输入、配置或使用数据。
 
-### Linux Wayland Input
+### Linux Wayland 输入
 
-X11 uses XInput2 by default. Experimental evdev input for Wayland is off by
-default. After reviewing [the input permission risks](SECURITY.md#linux-input),
-it can be explicitly selected for one launch:
+X11 默认使用 XInput2。Wayland 的实验性 evdev 输入默认关闭；阅读
+[输入权限风险](../SECURITY.md#linux-input) 后，可以为单次启动显式启用：
 
 ```sh
 BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 ```
 
-This does not grant device permissions. Do not run the app as root or add
-your account to the `input` group to make it work. Raw input can include
-password keystrokes and is not paused on screen lock or session switching.
-Close the app to stop monitoring; hiding it does not stop input. Launch
-without the variable to return to the default backend. Evdev mouse following
-uses unaccelerated device motion; Wayland placement, click-through, and
-always-on-top support still depend on the compositor.
+这个开关不会授予设备权限。不要为此以 root 身份运行程序，或把账户加入
+`input` 组。原始输入可能包含密码框里的按键，监听不会在锁屏或切换会话时自动暂停。
+退出程序才会停止监听，隐藏宠物不会停止；不带该变量重新启动即可恢复默认后端。
+鼠标跟随使用未经加速的设备位移，窗口定位、点击穿透和置顶仍取决于 Wayland 合成器。
 
-### 🖼️ Why OpenGL instead of Vulkan?
+### 🖼️ 为什么使用 OpenGL 而不是 Vulkan？
 
-We chose OpenGL not because Vulkan is bad, but because BongoCat does not need
-that level of complexity. The app mainly renders one Live2D model, a few UI
-layers, and a transparent desktop window. OpenGL already handles that
-comfortably, and it works naturally with SDL3 and Cubism's OpenGL renderer.
-Moving to Vulkan would mean maintaining much more rendering and synchronization
-code across three desktop platforms, without a noticeable improvement for
-users. For BongoCat's current workload, OpenGL keeps the renderer smaller,
-easier to debug, and easier to maintain while still delivering the performance
-we need.
+这不是因为 Vulkan 不好，而是 BongoCat 不需要那种程度的复杂性。应用主要渲染一个 Live2D 模型、少量 UI 图层和透明桌面窗口，OpenGL 已能轻松满足需求，并且能自然地与 SDL3 及 Cubism 的 OpenGL 渲染器配合。迁移到 Vulkan 将需要在三个桌面平台维护更多渲染和同步代码，却不会为用户带来明显提升。对于 BongoCat 当前的工作负载，OpenGL 让渲染器更精简、更易调试和维护，同时仍能提供所需性能。
 
 
+## 项目状态
+![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats 统计图像")
 
-## Project Status
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
-
-## Sponsors
+## 赞助商
 
 <div align="center">
   <table align="center">
@@ -389,19 +264,17 @@ we need.
         <img alt="SignPath" src="https://signpath.org/assets/favicon-50x50.png" />
       </td>
       <td style="vertical-align: middle;">
-        Free code signing on Windows provided by
-        <a href="https://signpath.io">SignPath.io</a>, certificate by
-        <a href="https://signpath.org/">SignPath Foundation</a>
+        Windows 免费代码签名由
+        <a href="https://signpath.io">SignPath.io</a> 提供，证书由
+        <a href="https://signpath.org/">SignPath Foundation</a> 颁发
       </td>
     </tr>
   </table>
 </div>
 
-
-
-## 🙏 Special Thanks
+## 🙏 特别感谢
 > [!TIP]
-> Every step BongoCat takes is powered by the spirit of open source. We sincerely thank all our community contributors for their selfless contributions It is your support that makes desktop companionship more free and genuine.❤️‍🔥
+> BongoCat 的每一步都得益于开源精神。我们衷心感谢所有社区贡献者的无私奉献（按贡献日期先后排序列于下方）。正是你们的支持，让桌面陪伴更加自由与真诚。❤️‍🔥
 
 
 <a href="https://bongocat.pet">
@@ -413,9 +286,7 @@ we need.
 ---
 
 <div align="center">
-
-Copyright © 2026 - **BongoCat**\
-By vladelaina\
+版权所有 © 2026 - **BongoCat**<br>
+By vladelaina<br>
 Made with ❤️ & ⌨️
-
 </div>

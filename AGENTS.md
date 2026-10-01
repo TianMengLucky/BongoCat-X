@@ -84,9 +84,11 @@ Notes:
   `resources/assets/locales/*.json`. There are ten locales (en-US, zh-CN,
   zh-Hant, ja-JP, ko-KR, de-DE, es-ES, fr-FR, pt-BR, ru-RU) — when adding or
   changing a key, update **all** of them in the same commit.
-- **Docs:** `README.md` and the translations in `docs/README.<lang>.md`
-  describe the same content; keep build/feature instructions consistent
-  across languages when they change.
+- **Docs:** the root `README.md` is Simplified Chinese; `docs/README.en-US.md`
+  mirrors it in English alongside the other translations
+  (`docs/README.<lang>.md`). `CHANGELOG.md` records the fork's changes vs
+  upstream. Keep build/feature instructions consistent across languages when
+  they change.
 - **UI toasts** in the settings window go through
   `bongo_cat_preferences_notice_show[_anchored]` in
   `src/ui/preferences/preferences_notice.c` — do not invent ad-hoc popups.

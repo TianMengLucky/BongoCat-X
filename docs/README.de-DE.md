@@ -7,7 +7,7 @@
 
 <p align="center">💘 C/C++ × SDL3 × OpenGL, zusammenrühren, drauflos trommeln! Bong~ Bongo Cat!!!</p>
 <p align="center">
-  Sprache wählen ❯ <a href="https://github.com/vladelaina/BongoCat/blob/main/README.md">English</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-CN.md">简体中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-Hant.md">繁體中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.fr-FR.md">Français</a> • <strong>Deutsch</strong> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ja-JP.md">日本語</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ko-KR.md">한국어</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.pt-BR.md">Português</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ru-RU.md">Русский</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.es-ES.md">Español</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.id-ID.md">Bahasa Indonesia</a>
+  Sprache wählen ❯ <a href="https://github.com/vladelaina/BongoCat/blob/main/README.md">English</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-CN.md">简体中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-Hant.md">繁體中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.fr-FR.md">Français</a> • <strong>Deutsch</strong> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ko-KR.md">한국어</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.pt-BR.md">Português</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ru-RU.md">Русский</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.es-ES.md">Español</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.id-ID.md">Bahasa Indonesia</a>
 </p>
 <p align="center">
   <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
@@ -110,6 +110,12 @@ cmake -S . -B build -G Ninja \
 ```
 
 Das SDK muss seine Core-Bibliothek, die Framework-Quellen und den OpenGL-GLEW-Drittanbieterbaum in der von `cmake/Cubism.cmake` erwarteten Struktur enthalten. Cubism-Builds unter Windows erfordern Visual Studio 2022. Setzen Sie `BONGO_CAT_REQUIRE_CUBISM=OFF` nur, um das Diagnose-Backend für Start- und Plattformdiagnostik zu bauen; dieses bietet kein Live2D-Modell-Rendering.
+
+> [!TIP]
+> Unter Windows lässt sich das Live2D-Rendering ohne Neubau aktivieren: öffnen
+> Sie in der App „Einstellungen → Modell“, klicken Sie auf „Live2D Core
+> importieren“ und wählen Sie eine `Live2DCubismCore.dll` oder das offizielle
+> Cubism-SDK-Zip. Die Änderung wirkt sofort, ein Neustart ist nicht nötig.
 
 ### ⚙️ CMake-Optionen
 

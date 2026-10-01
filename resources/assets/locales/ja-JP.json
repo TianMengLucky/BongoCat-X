@@ -14,6 +14,7 @@
           "modelSettings": "モデル",
           "gamepadFourHands": "ゲームパッド4本の手モード",
           "dynamicTextureResolution": "動的テクスチャ解像度を無効にする",
+          "renderQuality": "モデル品質 (%)",
           "mirrorMode": "ミラーモード",
           "verticalFlip": "逆さ吊りモード",
           "mouseVerticalFlip": "マウス上下反転",
@@ -39,6 +40,7 @@
         },
         "hints": {
           "dynamicTextureResolution": "実際の表示サイズに合わせてテクスチャ解像度を自動調整し、画面の細部を維持しながらビデオメモリの使用量を最適化します。通常、このオプションをオンにすることは推奨しません。",
+          "renderQuality": "さまざまなレベルを試して、見た目とメモリ使用量の最適なバランスを見つけてください。",
           "hoverRequires": "上にある[クリック透過]と[最前面表示]を両方有効にしてください。",
           "hoverUnavailable": "現在のデスクトップ環境では、マウスを重ねて非表示にする機能は利用できません。",
           "gamepadFourHands": "ゲームパッドモードで追加の2本の手を常に表示します。見た目はモデルによって異なります",
@@ -217,6 +219,12 @@
   },
   "native": {
     "live2dSdkMissing": "Live2D Cubism SDK が見つからないため、Live2D レンダリングは無効です。Live2D の公式サイトから Cubism SDK for Native をダウンロードし、vendor/CubismSdkForNative に展開してから再ビルドしてください。",
+    "live2dCoreMissing": "Live2D Cubism Core が見つからないため、Live2D レンダリングは無効です。公式の「Cubism SDK for Native」の zip を展開せずに、アプリケーションまたはデータディレクトリ内の live2d フォルダに入れて再起動すれば、再ビルドは不要です。レジストリ HKCU\\Software\\BongoCat\\Live2D の CoreDll 値で Live2DCubismCore.dll のパスを指定することもできます。",
+    "live2dCoreImport": "Live2D Core をインポート",
+    "live2dCoreImportHint": "Live2DCubismCore.dll または公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
+    "live2dCoreImportButton": "ファイルを選択",
+    "live2dCoreImportSuccess": "Live2D Cubism Core をインポートしました。Live2D レンダリングが有効になりました",
+    "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",
@@ -264,8 +272,6 @@
       "openStore": "Microsoft Store を開く",
       "viewReleases": "リリースを表示",
       "openUpdateFailed": "更新ページを開けませんでした",
-      "works": "その他のアプリ",
-      "worksText": "vladelainaのほかの作品も、ぜひお試しください",
       "refactorDeveloper": "BongoCatをC言語で書き直した開発者であり、現在のメンテナーでもある",
       "community": "コミュニティ",
       "qqGroup": "QQグループ",

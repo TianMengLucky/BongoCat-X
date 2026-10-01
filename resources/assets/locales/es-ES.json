@@ -14,6 +14,7 @@
           "modelSettings": "Modelo",
           "gamepadFourHands": "Modo de cuatro manos con mando",
           "dynamicTextureResolution": "Desactivar la resolución dinámica de texturas",
+          "renderQuality": "Calidad del modelo (%)",
           "mirrorMode": "Modo espejo",
           "verticalFlip": "Colgar boca abajo",
           "mouseVerticalFlip": "Invertir ratón verticalmente",
@@ -39,6 +40,7 @@
         },
         "hints": {
           "dynamicTextureResolution": "Ajusta automáticamente la resolución de las texturas al tamaño real de visualización, conservando los detalles de la imagen y optimizando el uso de la memoria de vídeo. Por lo general, no se recomienda activar esta opción.",
+          "renderQuality": "Prueba distintos niveles para encontrar el mejor equilibrio visual y ahorrar memoria.",
           "hoverRequires": "Requiere activar las opciones [Paso de clics] y [Siempre visible] de arriba.",
           "hoverUnavailable": "Ocultar al pasar el cursor no está disponible en el entorno de escritorio actual.",
           "gamepadFourHands": "Muestra siempre dos manos adicionales en el modo mando. El aspecto depende del modelo",
@@ -217,6 +219,12 @@
   },
   "native": {
     "live2dSdkMissing": "No se ha encontrado el SDK de Cubism de Live2D: el renderizado de Live2D está desactivado. Descargue Cubism SDK for Native desde el sitio web de Live2D, extráigalo en vendor/CubismSdkForNative y vuelva a compilar.",
+    "live2dCoreMissing": "No se ha encontrado Live2D Cubism Core: el renderizado de Live2D está desactivado. Coloque el zip oficial de 'Cubism SDK for Native', sin modificar, en la carpeta live2d junto a la aplicación o en la del directorio de datos y reinicie; no hace falta volver a compilar. También puede hacer que el valor CoreDll de HKCU\\Software\\BongoCat\\Live2D apunte a Live2DCubismCore.dll.",
+    "live2dCoreImport": "Importar Live2D Core",
+    "live2dCoreImportHint": "Seleccione Live2DCubismCore.dll o el zip oficial de Cubism SDK para activar el renderizado de Live2D sin reiniciar",
+    "live2dCoreImportButton": "Elegir archivo",
+    "live2dCoreImportSuccess": "Live2D Cubism Core importado: el renderizado de Live2D ya está activado",
+    "live2dCoreImportFailed": "Error al importar Live2D Cubism Core",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",
@@ -264,8 +272,6 @@
       "openStore": "Abrir Microsoft Store",
       "viewReleases": "Ver versiones",
       "openUpdateFailed": "No se pudo abrir la página de actualización",
-      "works": "Más aplicaciones",
-      "worksText": "Más creaciones de vladelaina que vale la pena probar",
       "refactorDeveloper": "Desarrollador que reescribió BongoCat en C y que también es su mantenedor actual",
       "community": "Comunidad",
       "qqGroup": "Grupo de QQ",

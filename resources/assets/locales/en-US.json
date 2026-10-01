@@ -219,6 +219,12 @@
   },
   "native": {
     "live2dSdkMissing": "Live2D Cubism SDK not found: Live2D rendering is disabled. Download Cubism SDK for Native from the Live2D website, extract it to vendor/CubismSdkForNative, then rebuild.",
+    "live2dCoreMissing": "Live2D Cubism Core not found, so Live2D rendering is unavailable. Drop the official \"Cubism SDK for Native\" zip, unmodified, into the live2d folder next to the application or inside the data directory, then restart - no rebuild needed. You can also point the CoreDll value of HKCU\\Software\\BongoCat\\Live2D at Live2DCubismCore.dll.",
+    "live2dCoreImport": "Import Live2D Core",
+    "live2dCoreImportHint": "Select Live2DCubismCore.dll or the official Cubism SDK zip to enable Live2D rendering without a restart",
+    "live2dCoreImportButton": "Choose file",
+    "live2dCoreImportSuccess": "Live2D Cubism Core imported: Live2D rendering is now enabled",
+    "live2dCoreImportFailed": "Live2D Cubism Core import failed",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",
@@ -266,8 +272,6 @@
       "openStore": "Open Microsoft Store",
       "viewReleases": "View releases",
       "openUpdateFailed": "Unable to open the update page",
-      "works": "More apps",
-      "worksText": "More from vladelaina, well worth a try",
       "refactorDeveloper": "Developer who rewrote BongoCat in C and is also its current maintainer",
       "community": "Community",
       "qqGroup": "QQ Group",

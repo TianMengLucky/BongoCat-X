@@ -14,6 +14,7 @@
           "modelSettings": "模型",
           "gamepadFourHands": "手把四手模式",
           "dynamicTextureResolution": "關閉動態紋理解析度",
+          "renderQuality": "模型品質 (%)",
           "mirrorMode": "鏡像模式",
           "verticalFlip": "倒掛模式",
           "mouseMirror": "滑鼠左右反轉",
@@ -39,6 +40,7 @@
         },
         "hints": {
           "dynamicTextureResolution": "根據實際顯示尺寸自適應調整紋理精度，在維持畫面細節的同時，最佳化顯示記憶體使用量。一般情況下不建議開啟",
+          "renderQuality": "嘗試不同等級以找到視覺平衡點，從而節約記憶體",
           "hoverRequires": "需要同時開啟上面的[滑鼠穿透]和[置頂]選項",
           "hoverUnavailable": "目前桌面環境暫不支援滑鼠移入隱藏。",
           "gamepadFourHands": "在手把模式下常駐顯示額外兩隻手，四手一起玩！實際效果依模型而定",
@@ -217,6 +219,12 @@
   },
   "native": {
     "live2dSdkMissing": "未偵測到 Live2D Cubism SDK，Live2D 渲染不可用。請從 Live2D 官網下載 Cubism SDK for Native 並解壓到 vendor/CubismSdkForNative，然後重新建置。",
+    "live2dCoreMissing": "未偵測到 Live2D Cubism Core，Live2D 渲染不可用。將官方「Cubism SDK for Native」的 zip 原封放入應用程式目錄或資料目錄下的 live2d 資料夾後重新啟動應用程式即可，無需重新建置；也可在登錄檔 HKCU\\Software\\BongoCat\\Live2D 的 CoreDll 值中指定 Live2DCubismCore.dll 的完整路徑。",
+    "live2dCoreImport": "匯入 Live2D Core",
+    "live2dCoreImportHint": "選擇 Live2DCubismCore.dll 或官方 Cubism SDK 的 zip 壓縮檔，無需重新啟動即可啟用 Live2D 渲染",
+    "live2dCoreImportButton": "選擇檔案",
+    "live2dCoreImportSuccess": "Live2D Cubism Core 匯入成功，Live2D 渲染已啟用",
+    "live2dCoreImportFailed": "Live2D Cubism Core 匯入失敗",
     "about": {
       "wechat": "微信群組",
       "wechatHint": "懸停掃碼，一起交流",
@@ -264,8 +272,6 @@
       "openStore": "開啟 Microsoft Store",
       "viewReleases": "查看發佈版本",
       "openUpdateFailed": "無法開啟更新頁面",
-      "works": "更多作品",
-      "worksText": "來自 vladelaina 的其他作品，同樣值得一試",
       "refactorDeveloper": "將BongoCat用C語言重構的開發者，同時也是現任維護者",
       "community": "社群",
       "qqGroup": "QQ 群",

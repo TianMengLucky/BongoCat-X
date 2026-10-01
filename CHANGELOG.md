@@ -7,7 +7,7 @@
 Release 工作流构建并发布 GitHub Release；发布说明取自本文件，优先匹配 `## [<版本号>]`
 小节，若无匹配则使用最上方小节。发版前请把「未发布」小节标题改为对应版本号。
 
-## [未发布] · 2026-10-01
+## [2.0.0] · 2026-10-01
 
 ### 新增
 
@@ -21,6 +21,7 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 - **「以管理员身份运行」开关（Windows，通用设置页）**：原「游戏兼容模式」的提权能力独立为明确选项并移至通用页——开启后应用请求管理员权限并自动重启，此后每次启动（包括开机自启动后的自动提权）都以管理员运行，关闭则从下次启动恢复普通权限；该选项与开机自启动完全解耦（注册表自启动条目不受其影响，始终以普通权限开机拉起，若开启本选项则启动后自行请求提权）。
 - **i18n 容错**：语言包文件缺失或损坏时应用回退英文运行，不再导致启动失败；界面文案在当前语言缺键时按键回退英文（原有行为保持）。
 - **自动发布流水线**：推送 `v*` 标签时自动构建全平台产物（Windows x64/x86 安装与便携版、macOS、Linux、AppImage）并创建 GitHub Release；发布说明自动取自 `CHANGELOG.md` 对应版本小节（无匹配时回退到最上方小节），附全平台下载链接与 SHA-256 校验提示。VirusTotal 扫描仍仅在上游仓库启用。
+- **运行时导入 Live2D Cubism Core（Windows）**：启动时自动发现用户提供的 Core（注册表缓存路径 → exe 目录裸 DLL → `live2d/` 目录下的官方 SDK zip）；设置 → 模型页新增「导入 Live2D Core」入口，可直接选择裸 `Live2DCubismCore.dll` 或官方「Cubism SDK for Native」zip 压缩包，导入后**无需重启**即热切换到 Live2D 渲染并重载当前模型；导入位置持久化（HKCU 注册表缓存），重启后仍生效。
 
 ### 变更
 
@@ -28,6 +29,9 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 - **Live2D Cubism SDK 改为必须手动下载**：SDK 为专有软件不再随构建静默降级——缺失时 CMake 配置直接失败并给出分步导入指引（官网下载、解压布局、GLEW 补充、VS2022 要求）；`BONGO_CAT_REQUIRE_CUBISM` 默认 `ON`，`build.bat` 默认要求 SDK（设 `BONGOCAT_REQUIRE_CUBISM=0` 可退回诊断后端）。
 - 默认 `README.md` 改为简体中文；英文版移至 `docs/README.en-US.md`。README 顶部添加 fork 声明与 Live2D 免责说明（本仓库为上游 fork，与 Live2D 公司无关联，不附带 SDK，需用户自行下载导入）；项目状态与贡献者图指向本仓库；移除赞助商与 linux.do 板块及上游 Microsoft Store 徽章。移除 Discord/QQ/微信社区徽章；Live2D 免责说明独立为「⚠️ Live2D 声明」章节；README 头部图标更换为新的 X 猫头图标（`resources/assets/bongocat.png`）。
 - **应用内关于页面指向本仓库**：检查更新（Releases API、发布页、产物下载地址）导向本仓库；关于页 Logo、GitHub、贡献者与反馈点击均指向本仓库；移除 Discord/QQ/微信群社区板块、官网链接行及微信二维码相关代码。
+- **CI 构建与发布策略调整**：普通推送仅触发检查，仅当主分支合并进 `test` 分支（或手动触发）时构建并上传各平台构件；CI 与 GitHub Release 均改为构建**不含 Cubism SDK** 的诊断渲染版本（自带 SDK 的版本须用户按 README 在本地构建），发布说明注明诊断后端；发布守卫脚本重写为「禁止除 `mac-app-store.yml` 外的任何工作流恢复或构建 Cubism SDK」，并保留发布类 job 的上游仓库门禁检查。
+- **关于页「更多作品」区块移除**：删除区块代码与 `catime.png`、`vlaina.jpg` 资源及其校验逻辑；设置窗口左上角标题图标点击改为指向本仓库。
+- **文档**：全部语言 README 的 Live2D / Cubism SDK 章节补充「运行时导入 Live2D Core」提示；移除空置的日文版（`docs/README.ja-JP.md`）及其语言选择器链接。
 
 ### 修复
 
@@ -39,3 +43,4 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 - `windows_resources.rc` 缺少对 `resources/icons/icon.ico` 的依赖声明，导致增量构建不会重新嵌入更新后的图标。
 - 上游 PR #71 使用了未声明的 `BONGO_CAT_PREF_ICON_KEEP_IN_SCREEN` 枚举值（原样合入无法编译）；合并时补全该枚举值并新增对应的"屏幕内窗口"行图标绘制。
+- **拖动卡死（Windows）**：拖动桌宠时若鼠标捕获失败（如输入法抢焦点），指针甩出窗口后松手会导致拖动无法结束、姿势冻结；主循环为左键拖动补上与右键缩放相同的释放恢复兜底（全局左键已释放且无待处理事件时强制结束拖动）。

@@ -7,7 +7,7 @@
 
 <p align="center">💘 C/C++ × SDL3 × OpenGL，搅拌在一起，尽情敲击！Bong~ Bongo Cat!!!</p>
 <p align="center">
-  选择语言 ❯ <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ja-JP.md">日本語</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
+  选择语言 ❯ <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
 </p>
 > [!NOTE]
 > 本仓库（**BongoCat-X**）是 [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat) 的 fork 分支。本仓库与 Live2D 公司无关联、不附带 Live2D Cubism SDK，详见下方「Live2D 声明」章节。
@@ -113,6 +113,9 @@ cmake -S . -B build -G Ninja \
 ```
 
 SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。仅当需要构建用于启动与平台诊断的诊断后端时，才设置 `BONGO_CAT_REQUIRE_CUBISM=OFF`；该后端不提供 Live2D 模型渲染。
+
+> [!TIP]
+> Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
 
 ### ⚙️ CMake 选项
 

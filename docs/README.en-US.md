@@ -15,7 +15,7 @@
  💘C × SDL3 × OpenGL — Three Mysterious Forces, United as One! Bong~ Bongocat!!!
 </p>
 <p align="center">
-<strong>English</strong> • <a href="../README.md">简体中文</a> • <a href="README.zh-Hant.md">繁體中文</a> • <a href="README.fr-FR.md">Français</a> • <a href="README.de-DE.md">Deutsch</a> • <a href="README.ja-JP.md">日本語</a> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
+<strong>English</strong> • <a href="../README.md">简体中文</a> • <a href="README.zh-Hant.md">繁體中文</a> • <a href="README.fr-FR.md">Français</a> • <a href="README.de-DE.md">Deutsch</a> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
 </p>
 > [!NOTE]
 > This repository (**BongoCat-X**) is a fork of [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat). It is not affiliated with Live2D Inc. and does not bundle the Cubism SDK - see the Live2D Disclaimer section below.
@@ -153,6 +153,12 @@ Cubism builds require Visual Studio 2022. Set
 `BONGO_CAT_REQUIRE_CUBISM=OFF` only to build the diagnostic backend for
 startup and platform diagnostics; that backend does not provide Live2D model
 rendering.
+
+> [!TIP]
+> On Windows you can enable Live2D rendering without rebuilding: open
+> Settings → Model in the app, click "Import Live2D Core" and select a
+> `Live2DCubismCore.dll` or the official Cubism SDK zip. The change takes
+> effect immediately, no restart needed.
 
 ### ⚙️ CMake Options
 

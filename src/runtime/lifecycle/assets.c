@@ -8,7 +8,7 @@ static bool required_assets(const char *root) {
     if (!root || !root[0]) return false;
     const char *files[] = {
         "bongocat.png", "ui-symbols.png", "ui-symbols@4x.png",
-        "catime.png", "vlaina.jpg", "locales/en-US.json",
+        "locales/en-US.json",
         "models/standard/cat.model3.json",
         "models/standard/demomodel.moc3",
         "models/standard/demomodel.1024/texture_00.png"};

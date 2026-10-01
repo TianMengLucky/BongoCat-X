@@ -56,8 +56,6 @@ static bool verify_contents(const char *name) {
         strcmp(name, "assets/bongocat.png") == 0 ||
         strcmp(name, "assets/ui-symbols.png") == 0 ||
         strcmp(name, "assets/ui-symbols@4x.png") == 0 ||
-        strcmp(name, "assets/catime.png") == 0 ||
-        strcmp(name, "assets/vlaina.jpg") == 0 ||
         (strncmp(name, model, strlen(model)) == 0 && !strstr(name, "/resources/"));
 }
 

@@ -45,11 +45,6 @@ struct BongoCatPreferences {
     bool icon_hidpi_attempted;
     int logo_width;
     int logo_height;
-    unsigned int catime_texture;
-    unsigned int vlaina_texture;
-    int catime_width, catime_height;
-    int vlaina_width, vlaina_height;
-    bool support_assets_loaded;
     BongoCatAboutState about;
     struct nk_user_font support_logs_font;
     int page;
@@ -178,8 +173,6 @@ void bongo_cat_preferences_live_resize_install(BongoCatPreferences *value);
 void bongo_cat_preferences_live_resize_uninstall(BongoCatPreferences *value);
 void bongo_cat_preferences_record_frame(BongoCatPreferences *value);
 void bongo_cat_preferences_assets_load(BongoCatPreferences *value);
-void bongo_cat_preferences_support_assets_load(BongoCatPreferences *value);
-void bongo_cat_preferences_support_assets_clear(BongoCatPreferences *value);
 void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
 void bongo_cat_preferences_model_visual_begin(BongoCatPreferences *value,
     const char *model_id);
@@ -191,8 +184,6 @@ float bongo_cat_preferences_model_visual_progress(BongoCatPreferences *value,
 void bongo_cat_preferences_assets_clear(BongoCatPreferences *value);
 void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value);
 void bongo_cat_preferences_model_cover_cache_clear(BongoCatApp *app);
-void bongo_cat_preferences_page_cache_clear(BongoCatPreferences *value,
-    int previous_page, int next_page);
 void bongo_cat_preferences_smoke_frame(BongoCatPreferences *value);
 void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     struct nk_command_buffer *canvas, int icon, struct nk_rect bounds,

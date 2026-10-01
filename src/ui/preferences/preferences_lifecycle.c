@@ -101,7 +101,6 @@ static void release_window(BongoCatPreferences *value) {
 void bongo_cat_preferences_show(BongoCatPreferences *value) {
     if (!value) return;
     if (!value->app->models.count) {
-        bongo_cat_preferences_page_cache_clear(value, value->page, 1);
         value->page = 1;
         value->scroll_current[1] = 0.0f;
         value->scroll_target[1] = 0.0f;

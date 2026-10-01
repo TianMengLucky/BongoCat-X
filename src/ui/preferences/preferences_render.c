@@ -82,7 +82,8 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     if (nk_group_begin(context, "preferences-sidebar", NK_WINDOW_NO_SCROLLBAR)) {
     bongo_cat_ui_header(context, "BongoCat",
         value->ui.heading_font, value->logo_texture, &title_clicked, !modal, dark, native_chrome);
-    if (title_clicked && !SDL_OpenURL("https://bongocat.pet"))
+    if (title_clicked &&
+        !SDL_OpenURL("https://github.com/TianMengLucky/BongoCat-X"))
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot open website: %s", SDL_GetError());
     bongo_cat_ui_set_icons(draw_icon, value);
     BongoCatUpdateSnapshot update_snapshot;
@@ -96,8 +97,6 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     if (!value->page_seen) {
         value->page_seen = true; value->last_page = value->page;
     } else if (value->last_page != value->page) {
-        bongo_cat_preferences_page_cache_clear(value,
-            value->last_page, value->page);
         value->last_page = value->page;
         value->page_transition_ns = SDL_GetTicksNS();
         value->render_dirty = true;

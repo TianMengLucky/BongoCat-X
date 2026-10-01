@@ -67,34 +67,9 @@ void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     nk_draw_image(canvas, bounds, &image, color);
 }
 
-void bongo_cat_preferences_support_assets_load(BongoCatPreferences *value) {
-    if (value->support_assets_loaded) return;
-    value->support_assets_loaded = true;
-    int image_size = raster_size(value, 192);
-    value->catime_texture = load(value, "catime.png", image_size,
-        &value->catime_width, &value->catime_height);
-    char path[BONGO_CAT_PATH_CAP];
-    if (bongo_cat_path_join(path, sizeof(path), value->app->asset_root,
-        "vlaina.jpg")) {
-        BongoCatError error = {0};
-        value->vlaina_texture = bongo_cat_image_texture_resampled(path,
-            image_size, image_size, (float)raster_size(value, 48),
-            &value->vlaina_width, &value->vlaina_height, &error);
-        if (!value->vlaina_texture && error.message[0])
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", error.message);
-    }
-}
-
 static void clear(unsigned int *texture) {
     if (*texture) glDeleteTextures(1, texture);
     *texture = 0;
-}
-
-void bongo_cat_preferences_support_assets_clear(BongoCatPreferences *value) {
-    if (!value) return;
-    clear(&value->catime_texture);
-    clear(&value->vlaina_texture);
-    value->support_assets_loaded = false;
 }
 
 void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
@@ -106,7 +81,6 @@ void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
     clear(&value->icon_texture);
     clear(&value->icon_texture_hidpi);
     value->icon_hidpi_attempted = false;
-    bongo_cat_preferences_support_assets_clear(value);
 }
 
 void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value) {
@@ -117,8 +91,5 @@ void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value) {
     value->logo_texture = 0;
     value->icon_texture = 0;
     value->icon_texture_hidpi = 0;
-    value->catime_texture = 0;
-    value->vlaina_texture = 0;
     value->icon_hidpi_attempted = false;
-    value->support_assets_loaded = false;
 }

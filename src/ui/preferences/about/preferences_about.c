@@ -1,6 +1,5 @@
 #include "preferences_about_internal.h"
 #include "preferences_state.h"
-#include "preferences_about_community.h"
 #include "preferences_about_footer.h"
 #include "ui_backend.h"
 #include "ui_catime.h"
@@ -30,10 +29,6 @@ static void centered_span(struct nk_command_buffer *canvas,
     nk_draw_text(canvas, nk_rect(bounds.x + (bounds.w - target_width) * .5f,
         bounds.y + (bounds.h - font->height) * .5f, target_width,
         font->height), value, length, font, nk_rgba(0, 0, 0, 0), color);
-}
-static void centered(struct nk_command_buffer *canvas, struct nk_rect bounds,
-    const char *value, const struct nk_user_font *font, struct nk_color color) {
-    centered_span(canvas, bounds, value, nk_strlen(value), font, color);
 }
 static void centered_wrapped(struct nk_command_buffer *canvas,
     struct nk_rect bounds, const char *value,
@@ -181,51 +176,4 @@ void bongo_cat_preferences_about_hero(BongoCatPreferences *value,
     bongo_cat_preferences_about_footer(value, context, canvas,
         nk_rect(bounds.x, bounds.y + 300, bounds.w, 34), p);
 }
-static void project(BongoCatPreferences *value, struct nk_context *context,
-    struct nk_command_buffer *canvas, struct nk_rect bounds, unsigned int texture,
-    int image_width, int image_height, const char *name, const char *url,
-    bool pink, BongoCatUIPalette p) {
-    bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
-    char animation_id[48];
-    snprintf(animation_id, sizeof(animation_id), "project-hover-%s", name);
-    float lift = bongo_cat_ui_animate_eased(context, animation_id,
-        hover ? 1.0f : 0.0f, 280.0f, BONGO_CAT_UI_EASE_SWIFT);
-    struct nk_rect icon = nk_rect(bounds.x + (bounds.w - 148) * .5f,
-        bounds.y - 7.0f * lift, 148, 148);
-    if (p.effects) {
-        bongo_cat_ui_paint_radial(context,
-            nk_rect(icon.x - 16, icon.y - 16, icon.w + 32, icon.h + 32),
-            nk_rgba(pink ? p.pink.r : p.accent.r,
-                pink ? p.pink.g : p.accent.g, pink ? p.pink.b : p.accent.b, 43),
-            nk_rgba(0, 0, 0, 0), .05f, 1.0f);
-        bongo_cat_ui_paint_shadow(context, icon, 37, 0, 18, 34, 0,
-            nk_rgba(p.text.r, p.text.g, p.text.b, 38));
-    }
-    if (!pink && p.effects) bongo_cat_ui_paint_gradient(context, icon, 37,
-        nk_rgb(245, 241, 255), nk_rgb(234, 247, 255));
-    else nk_fill_rect(canvas, icon, 37, pink ? p.surface : p.selection);
-    image_contain(canvas, texture, image_width, image_height, pink ? icon :
-        nk_rect(icon.x + 5, icon.y + 8, icon.w - 10, icon.h - 16));
-    centered(canvas, nk_rect(bounds.x, bounds.y + 166, bounds.w, 30), name,
-        value->ui.heading_font, hover ? (pink ? p.pink : p.accent) : p.text);
-    link_cursor(context, bounds);
-    if (hit(context, bounds)) open_url(url);
-}
 
-void bongo_cat_preferences_about_projects(BongoCatPreferences *value,
-    struct nk_context *context) {
-    struct nk_rect bounds;
-    nk_layout_row_dynamic(context, 330, 1);
-    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
-    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
-    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
-    bongo_cat_preferences_about_projects_heading(value, context, bounds);
-    float card_width = 220, center = bounds.x + bounds.w * .5f + 3;
-    project(value, context, canvas, nk_rect(center - 262, bounds.y + 112,
-        card_width, 200), value->catime_texture, value->catime_width,
-        value->catime_height, "Catime", "https://cati.me/", false, p);
-    project(value, context, canvas, nk_rect(center + 42, bounds.y + 112,
-        card_width, 200), value->vlaina_texture, value->vlaina_width,
-        value->vlaina_height, "vlaina", "https://vlaina.com/r/bongocat",
-        true, p);
-}

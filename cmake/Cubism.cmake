@@ -18,8 +18,15 @@ if(WIN32)
   else()
     set(CUBISM_WINDOWS_ARCH "x86")
   endif()
-  set(CUBISM_CORE_LIBRARY
-    "${CUBISM_CORE_PATH}/lib/windows/${CUBISM_WINDOWS_ARCH}/143/Live2DCubismCore_MT.lib")
+  if(BONGO_CAT_RUNTIME_CORE)
+    # The Core ships separately in this configuration: link the DLL import
+    # library and delay-load the user-supplied binary at runtime.
+    set(CUBISM_CORE_LIBRARY
+      "${CUBISM_CORE_PATH}/dll/windows/${CUBISM_WINDOWS_ARCH}/Live2DCubismCore.lib")
+  else()
+    set(CUBISM_CORE_LIBRARY
+      "${CUBISM_CORE_PATH}/lib/windows/${CUBISM_WINDOWS_ARCH}/143/Live2DCubismCore_MT.lib")
+  endif()
 elseif(APPLE)
   if(CMAKE_OSX_ARCHITECTURES)
     list(GET CMAKE_OSX_ARCHITECTURES 0 CUBISM_ARCH)

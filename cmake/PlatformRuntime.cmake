@@ -7,6 +7,7 @@ if(WIN32)
     src/platform/windows/windows_package_shortcut.c
     src/platform/windows/windows_startup.c
     src/platform/windows/windows_autostart.cpp
+    src/platform/windows/windows_live2d_sdk.c
     src/platform/windows/windows_game_compatibility.cpp
     src/platform/windows/windows_game_compatibility_app.c
     src/platform/windows/windows_update_handoff.c

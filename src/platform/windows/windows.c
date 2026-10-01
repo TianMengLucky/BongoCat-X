@@ -6,6 +6,7 @@
 #include "windows_hdr.h"
 #include "windows_startup.h"
 #include "windows_package.h"
+#include "windows_live2d_sdk.h"
 #ifdef _WIN32
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_properties.h>
@@ -14,6 +15,21 @@
 #include <windows.h>
 #include <ole2.h>
 #include <shellapi.h>
+
+bool bongo_cat_platform_live2d_core_available(void) {
+    return bongo_cat_windows_live2d_sdk_ready();
+}
+bool bongo_cat_platform_live2d_core_import_supported(void) {
+#ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
+    return true;
+#else
+    return false;
+#endif
+}
+bool bongo_cat_platform_live2d_core_import(const char *path,
+    const char *data_dir, BongoCatError *error) {
+    return bongo_cat_windows_live2d_sdk_import(path, data_dir, error);
+}
 static HWND native_window(BongoCatPlatform *platform) {
     return (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(platform->window),
         SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);

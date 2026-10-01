@@ -6,6 +6,7 @@
 #include "bongo_cat/platform.h"
 #include "preferences_controls.h"
 #include "preferences_model_cover.h"
+#include "preferences_notice.h"
 #include "preferences_state.h"
 #include "ui_animation.h"
 #include "ui_catime.h"
@@ -43,7 +44,10 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
     BongoCatPreferences *value = calloc(1, sizeof(*value));
     if (value) { value->app = app;
         value->import_dialog = bongo_cat_preferences_import_create();
-        if (!value->import_dialog) { free(value); return NULL; } }
+        if (!value->import_dialog) { free(value); return NULL; }
+        value->sdk_import_event_type = SDL_RegisterEvents(1);
+        if (value->sdk_import_event_type == (Uint32)-1)
+            value->sdk_import_event_type = 0; }
     if (value && app->smoke_preference_page >= 0)
         value->page = app->smoke_preference_page;
     return value;
@@ -56,6 +60,52 @@ bool bongo_cat_preferences_open_model_import(BongoCatPreferences *value,
     SDL_Window *parent) {
     return value && parent && bongo_cat_preferences_import_open(
         value->import_dialog, parent);
+}
+
+/* Runs on the main thread after the Core file dialog closes; performs the
+   import, the Live2D backend hot swap, and the model reload. */
+static void sdk_import_result(BongoCatPreferences *value, const char *path) {
+    BongoCatApp *app = value->app;
+    BongoCatError error = {0};
+    bool ok = path && bongo_cat_app_import_live2d_core(app, path, &error);
+    if (path && !ok && error.message[0])
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+            "Live2D Core import failed: %s", error.message);
+    if (path) {
+        char message[1024];
+        snprintf(message, sizeof(message), ok
+            ? "%s" : "%s\n%s",
+            bongo_cat_i18n_get(app->i18n, "native.live2dCoreImportSuccess",
+                "Live2D Cubism Core imported: Live2D rendering is now enabled"),
+            error.message[0] ? error.message :
+            bongo_cat_i18n_get(app->i18n, "native.live2dCoreImportFailed",
+                "Live2D Cubism Core import failed"));
+        bongo_cat_preferences_notice_show(app, message, !ok);
+    }
+    value->render_dirty = true;
+}
+
+static void SDLCALL sdk_import_callback(void *userdata,
+    const char *const *files, int filter) {
+    (void)filter;
+    BongoCatPreferences *value = userdata;
+    if (!value || !value->sdk_import_event_type) return;
+    SDL_Event event = {0};
+    event.type = (Uint32)value->sdk_import_event_type;
+    event.user.windowID = value->window ? SDL_GetWindowID(value->window) : 0;
+    event.user.data1 = files && files[0] ? SDL_strdup(files[0]) : NULL;
+    if (!SDL_PushEvent(&event)) SDL_free(event.user.data1);
+}
+
+static void open_sdk_import_dialog(BongoCatPreferences *value) {
+    if (!value || !value->sdk_import_event_type || !value->window) return;
+    const SDL_DialogFileFilter filters[] = {
+        {"Live2DCubismCore.dll / SDK zip", "dll;zip"}, {NULL, NULL}};
+    SDL_ShowOpenFileDialog(sdk_import_callback, value, value->window,
+        filters, NULL, false);
+}
+void bongo_cat_preferences_request_sdk_import(BongoCatPreferences *value) {
+    open_sdk_import_dialog(value);
 }
 bool bongo_cat_preferences_visible(const BongoCatPreferences *value) {
     return value && value->window && value->visible;
@@ -216,6 +266,13 @@ static bool chrome_event(BongoCatPreferences *value, const SDL_Event *event) {
 
 bool bongo_cat_preferences_event(BongoCatPreferences *value, const SDL_Event *event) {
     if (!value || !event) return false;
+    if (value->sdk_import_event_type &&
+        event->type == (Uint32)value->sdk_import_event_type) {
+        char *path = (char *)event->user.data1;
+        sdk_import_result(value, path);
+        SDL_free(path);
+        return true;
+    }
     if (bongo_cat_about_event(value, event)) return true;
     if (bongo_cat_preferences_import_event(value->import_dialog, value->app,
         event)) { value->render_dirty = value->visible;

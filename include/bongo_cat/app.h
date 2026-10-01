@@ -263,6 +263,10 @@ void bongo_cat_app_restore_behavior_state(BongoCatApp *app,
     const char *model_id);
 BongoCatResult bongo_cat_app_import_model(BongoCatApp *app, const char *source, BongoCatError *error);
 BongoCatResult bongo_cat_app_remove_model(BongoCatApp *app, const char *id, BongoCatError *error);
+/* Import a user-supplied Cubism Core (Windows runtime-Core builds) and hot
+   swap the diagnostic stub for the Live2D bridge without a restart. */
+bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
+    BongoCatError *error);
 void bongo_cat_app_rescan_models(BongoCatApp *app);
 void bongo_cat_app_refresh_installed_models(BongoCatApp *app);
 void bongo_cat_app_refresh_nearby_models(BongoCatApp *app);

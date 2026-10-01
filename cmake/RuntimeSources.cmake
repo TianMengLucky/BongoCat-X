@@ -50,6 +50,7 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/lifecycle/assets.c
   src/runtime/lifecycle/config_store.c
   src/runtime/lifecycle/frame_clock.c
+  src/runtime/lifecycle/live2d_backend.c
   src/runtime/lifecycle/memory_policy.c
   src/runtime/lifecycle/runtime_flow.c
   src/runtime/lifecycle/runtime_state.c
@@ -240,7 +241,6 @@ set(BONGO_CAT_UI_THEME_SOURCES
 
 set(BONGO_CAT_UI_PREFERENCES_ABOUT_SOURCES
   src/ui/preferences/about/preferences_about.c
-  src/ui/preferences/about/preferences_about_community.c
   src/ui/preferences/about/preferences_about_contributors.c
   src/ui/preferences/about/preferences_about_feed.c
   src/ui/preferences/about/preferences_about_footer.c

@@ -142,4 +142,9 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
                 value->window))
             value->render_dirty = true;
     }
+    /* The Core picker opens after the frame, like the model import dialog. */
+    if (value->sdk_import_requested) {
+        value->sdk_import_requested = false;
+        bongo_cat_preferences_request_sdk_import(value);
+    }
 }

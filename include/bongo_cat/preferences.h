@@ -31,5 +31,7 @@ void bongo_cat_preferences_models_changed(BongoCatPreferences *preferences);
 void bongo_cat_preferences_request_model_import(BongoCatPreferences *preferences);
 bool bongo_cat_preferences_open_model_import(BongoCatPreferences *preferences,
     SDL_Window *parent);
+/* Opens the file picker for the runtime Live2D Core import. */
+void bongo_cat_preferences_request_sdk_import(BongoCatPreferences *preferences);
 
 #endif

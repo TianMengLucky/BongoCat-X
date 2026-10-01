@@ -62,6 +62,9 @@ struct BongoCatPreferences {
     bool import_drop_active;
     bool import_render_active;
     BongoCatImportDialog *import_dialog;
+    /* Runtime Live2D Core import: file picker plus its completion event. */
+    bool sdk_import_requested;
+    int sdk_import_event_type;
     bool frame_checked;
     bool render_dirty;
     bool font_reload_pending;

@@ -4,6 +4,7 @@
 #ifdef _WIN32
 #include "windows_game_compatibility.h"
 #include "windows_autostart.h"
+#include "windows_live2d_sdk.h"
 #include "storage_paths.h"
 #endif
 
@@ -46,6 +47,11 @@ int bongo_cat_app_run(int argc, char **argv) {
         }
     }
     error = (BongoCatError){0};
+#endif
+#ifdef _WIN32
+    /* Locate the user-supplied Cubism Core before the Live2D backend starts;
+       empty data roots simply skip the data-directory scan. */
+    bongo_cat_windows_live2d_sdk_prepare(app->data_root);
 #endif
     if (!bongo_cat_app_initialize(app, argc, argv, &error)) {
         bongo_cat_startup_failure(app, &error);

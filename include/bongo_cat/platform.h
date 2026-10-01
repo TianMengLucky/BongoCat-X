@@ -152,6 +152,18 @@ BongoCatResult bongo_cat_platform_set_autostart(bool enabled, bool administrator
 BongoCatMenuAction bongo_cat_platform_context_menu(BongoCatPlatform *platform,
     const BongoCatMenuLabels *labels);
 BongoCatResult bongo_cat_platform_embedded_assets(const char *target, BongoCatError *error);
+/* True when the Cubism Core is usable in this process: statically linked
+   builds always report it; runtime-Core builds once the user-supplied DLL
+   has been located and loaded. */
+bool bongo_cat_platform_live2d_core_available(void);
+/* True when this build can import the Cubism Core while running (Windows
+   runtime-Core builds); false everywhere else. */
+bool bongo_cat_platform_live2d_core_import_supported(void);
+/* Import a user-selected Core DLL or official SDK zip into the data
+   directory and load it into this process. Only available when
+   bongo_cat_platform_live2d_core_import_supported reports true. */
+bool bongo_cat_platform_live2d_core_import(const char *path,
+    const char *data_dir, BongoCatError *error);
 
 #ifdef __APPLE__
 /* Read the permission macOS grants the app right now, without prompting.

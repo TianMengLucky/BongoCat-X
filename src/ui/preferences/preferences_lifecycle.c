@@ -147,6 +147,22 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
                 "extract it to vendor/CubismSdkForNative, then rebuild."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
+#elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
+    /* Runtime-Core build: rendering activates once the user supplies the
+       Core DLL; the notice explains where it is looked for. */
+    if (!value->sdk_notice_shown &&
+        !bongo_cat_platform_live2d_core_available()) {
+        value->sdk_notice_shown = true;
+        bongo_cat_preferences_notice_show_anchored(value->app,
+            bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
+                "Live2D Cubism Core not found, so Live2D rendering is "
+                "unavailable. Drop the official \"Cubism SDK for Native\" "
+                "zip, unmodified, into the live2d folder next to the "
+                "application or inside the data directory, then restart - no "
+                "rebuild needed. You can also point the CoreDll value of "
+                "HKCU\\Software\\BongoCat\\Live2D at Live2DCubismCore.dll."),
+            true, SDK_NOTICE_DURATION_MS, true);
+    }
 #endif
     if (!opening) {
         SDL_StartTextInput(value->window);
@@ -182,6 +198,7 @@ void bongo_cat_preferences_close(BongoCatPreferences *value) {
     value->behavior_dialog_closing_ns = 0;
     value->import_requested = false;
     value->import_drop_active = false;
+    value->sdk_import_requested = false;
     if (value->input_active) bongo_cat_preferences_input_end(value);
     if (value->ui_initialized) bongo_cat_ui_input_reset(&value->ui);
     SDL_StopTextInput(value->window);

@@ -7,6 +7,10 @@ include(CTest)
 option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
 option(BONGO_CAT_REQUIRE_CUBISM
   "Require the Cubism SDK; set OFF to build the diagnostic backend instead" ON)
+option(BONGO_CAT_RUNTIME_CORE
+  "Windows: keep the Cubism Core out of the executable and load it at runtime \
+(from the registry or an SDK zip dropped by the user); OFF links Core \
+statically into a self-contained full build" ON)
 option(BONGO_CAT_WARNINGS_AS_ERRORS "Treat native source warnings as errors" OFF)
 option(BONGO_CAT_STATIC_ANALYZER "Run GCC's static analyzer on project C sources" OFF)
 set(BONGO_CAT_CUBISM_SDK "${CMAKE_CURRENT_SOURCE_DIR}/vendor/CubismSdkForNative"
@@ -79,6 +83,36 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       src/live2d/cubism_model_validate.cpp)
     set(BONGO_CAT_CUBISM_ENABLED ON)
   endif()
+  if(BONGO_CAT_CUBISM_ENABLED AND WIN32 AND BONGO_CAT_RUNTIME_CORE)
+    # The executable ships without the Core; the dispatch layer routes the
+    # Live2D ABI to the bridge once the runtime loader finds the user's DLL,
+    # and to the stub until then.
+    set(BONGO_CAT_LIVE2D_ABI
+      create destroy load load_ex ready canvas_size frame measure_frame
+      set_frame viewport resize reshape try_reuse_texture_quality
+      texture_refresh_pending texture_refresh_due texture_refresh_busy
+      cancel_texture_refresh refresh_textures update draw set_mirror
+      set_vertical_flip set_render_options set_dragging
+      set_centered_dragging prepare_viewer_audit prepare_cover_capture
+      set_parameter parameter start_motion restore_motion_state
+      preview_motion restore_motion_preview commit_motion_preview
+      motion_selected motion_persistent motion_visible motion_same_toggle
+      set_expression expression visual_state)
+    set(BONGO_CAT_BRIDGE_DEFS "")
+    set(BONGO_CAT_STUB_DEFS "")
+    foreach(NAME IN LISTS BONGO_CAT_LIVE2D_ABI)
+      list(APPEND BONGO_CAT_BRIDGE_DEFS
+        "bongo_cat_live2d_${NAME}=bridge_live2d_${NAME}")
+      list(APPEND BONGO_CAT_STUB_DEFS
+        "bongo_cat_live2d_${NAME}=stub_live2d_${NAME}")
+    endforeach()
+    set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
+      COMPILE_DEFINITIONS "${BONGO_CAT_BRIDGE_DEFS}")
+    set_source_files_properties(src/live2d/live2d_stub.c PROPERTIES
+      COMPILE_DEFINITIONS "${BONGO_CAT_STUB_DEFS}")
+    list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_dispatch.c)
+    set(BONGO_CAT_RUNTIME_CORE_MODE ON)
+  endif()
 elseif(BONGO_CAT_REQUIRE_CUBISM)
   message(FATAL_ERROR
     "Cubism SDK for Native not found at ${BONGO_CAT_CUBISM_SDK}.\n"
@@ -144,6 +178,10 @@ if(BONGO_CAT_CUBISM_ENABLED)
   target_link_libraries(bongo_cat_runtime PUBLIC Framework)
   target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_CUBISM=1)
 endif()
+if(BONGO_CAT_RUNTIME_CORE_MODE)
+  target_compile_definitions(bongo_cat_runtime PUBLIC
+    BONGO_CAT_LIVE2D_CORE_RUNTIME=1)
+endif()
 target_compile_definitions(bongo_cat_runtime PRIVATE
   BONGO_CAT_DEV_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
   BONGO_CAT_DEV_LOCALE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets/locales")
@@ -154,6 +192,12 @@ include(cmake/AboutWebP.cmake)
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
+if(BONGO_CAT_RUNTIME_CORE_MODE)
+  # The Core is a user-supplied DLL; route its imports through delay-load so
+  # the executable itself never embeds (or requires) the binary.
+  target_link_options(bongo_cat PRIVATE "/DELAYLOAD:Live2DCubismCore.dll")
+  target_link_libraries(bongo_cat PRIVATE delayimp)
+endif()
 bongo_cat_enable_release_ipo(Framework bongo_cat_core bongo_cat_runtime bongo_cat)
 
 include(cmake/ValidationTools.cmake)

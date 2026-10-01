@@ -5,6 +5,7 @@
 #include "preferences_widgets.h"
 #include "model_import.h"
 #include "bongo_cat/i18n.h"
+#include "bongo_cat/platform.h"
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/log.h"
 
@@ -239,6 +240,19 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
             "native.multiplePets",
             "Display multiple"), "", &multiple))
         bongo_cat_app_set_multiple_pets(app, multiple);
+    /* Runtime-Core builds: offer the Live2D Core import while rendering is
+       still disabled; the row disappears as soon as the Core is loaded. */
+    if (bongo_cat_platform_live2d_core_import_supported() &&
+        !bongo_cat_platform_live2d_core_available()) {
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_LIVE2D_CORE);
+        if (bongo_cat_pref_button(context, "live2d-core-import", tr(app,
+                "native.live2dCoreImport", "Import Live2D Core"),
+                tr(app, "native.live2dCoreImportHint",
+                "Select Live2DCubismCore.dll or the official Cubism SDK zip "
+                "to enable Live2D rendering without a restart"),
+                tr(app, "native.live2dCoreImportButton", "Choose file")))
+            value->sdk_import_requested = true;
+    }
     if (bongo_cat_preferences_model_section(value, context) &&
         !SDL_OpenURL("https://bongocat.pet/models"))
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,

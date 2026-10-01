@@ -1,0 +1,108 @@
+# AGENTS.md
+
+Guidance for AI coding agents (and new contributors) working in this
+repository. Follow these rules; when a task conflicts with them, surface
+the conflict instead of silently working around it.
+
+## Project Overview
+
+BongoCat is a cross-platform (Windows / macOS / Linux) Live2D desktop pet
+written in C11 with a C++17 Live2D bridge. It uses SDL3, OpenGL, Nuklear,
+yyjson, and the Live2D Cubism SDK for Native. Build system is CMake (>= 3.24).
+
+Key directories:
+
+- `src/core/` — C11 core: config I/O, model catalog, i18n, paths, input state.
+- `src/live2d/` — Live2D bridge. C++17 (`cubism_*.cpp`) when built with the
+  Cubism SDK; `live2d_stub.c` is the diagnostic fallback used without it.
+  Both implement the same C ABI declared in `include/bongo_cat/model.h`.
+- `src/runtime/` — app lifecycle, shell (tray, menus), model import, updates.
+- `src/ui/` — Nuklear-based preferences window (`preferences_*`), overlays.
+- `src/platform/` — per-platform backends (windows, macos, linux).
+- `include/bongo_cat/` — public C headers; keep the ABI stable.
+- `resources/` — app assets. `resources/icons/` (ico/icns), `resources/assets/`
+  (embedded via the asset packer), `resources/assets/locales/` (i18n JSON).
+- `cmake/`, `packaging/`, `tests/`, `docs/`, `.github/`.
+
+## Live2D Cubism SDK Constraint (important)
+
+The Cubism SDK is proprietary and is **not** committed here — it is
+gitignored. Builds require each developer to download "Cubism SDK for
+Native" manually from the official Live2D website and place it at
+`vendor/CubismSdkForNative` (see README for the exact steps, including the
+separate GLEW import). `BONGO_CAT_REQUIRE_CUBISM` defaults to `ON`; with it
+`OFF` CMake builds the diagnostic backend instead (no Live2D rendering).
+Never add SDK sources/binaries to the repository or to release artifacts of
+jobs that are not guarded for it (`.github/scripts/check-publish-guards.ps1`
+enforces this in CI).
+
+## Build & Test
+
+Windows (MSVC, Visual Studio 2022 or newer):
+
+```bat
+build.bat                 :: Release, requires the Cubism SDK by default
+set BONGOCAT_REQUIRE_CUBISM=0 && build.bat   :: diagnostic backend only
+ctest --test-dir build-cubism -C Release --output-on-failure
+```
+
+Unix (Ninja):
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+Notes:
+
+- Plain CMake configures fine without the wrapper; the SDK is required by
+  default, so absent SDKs fail configuration with import instructions.
+- The local Windows test build directory convention is `build-tests/`
+  (`build*/` is gitignored).
+- Dependencies (SDL3, yyjson, stb, miniaudio, Nuklear, about_webp) are
+  fetched by CMake `FetchContent`; do not vendor them.
+
+## CI Gates — run these before finishing any change
+
+- **File size policy:** no source file over 500 lines
+  (`cmake -DROOT=. -P cmake/CheckLines.cmake`).
+- **cppcheck** must stay clean for `src/` (see the `quality` job in
+  `.github/workflows/ci.yml` for the exact invocation).
+- **Legacy product name:** the string `l2dcat` (case-insensitive) must not
+  appear anywhere in the repo.
+- **Publishing guards:** if you touch workflows, run
+  `pwsh .github/scripts/check-publish-guards.ps1 -SelfTest`.
+- Build with `-DBONGO_CAT_WARNINGS_AS_ERRORS=ON` before pushing risky
+  changes; `/W4` (MSVC) and `-Wall -Wextra` (GCC/Clang) are the baseline.
+
+## Conventions
+
+- **C11, no extensions** for C sources; C++17 only under `src/live2d/`.
+  Cubism types stay behind opaque C handles.
+- **i18n:** user-facing strings go through `bongo_cat_i18n_get` with keys in
+  `resources/assets/locales/*.json`. There are ten locales (en-US, zh-CN,
+  zh-Hant, ja-JP, ko-KR, de-DE, es-ES, fr-FR, pt-BR, ru-RU) — when adding or
+  changing a key, update **all** of them in the same commit.
+- **Docs:** `README.md` and the translations in `docs/README.<lang>.md`
+  describe the same content; keep build/feature instructions consistent
+  across languages when they change.
+- **UI toasts** in the settings window go through
+  `bongo_cat_preferences_notice_show[_anchored]` in
+  `src/ui/preferences/preferences_notice.c` — do not invent ad-hoc popups.
+- **Line endings:** sources use CRLF in the working tree; keep conversions
+  byte-stable when scripting edits (prefer reading/writing bytes).
+- **Temp scripts:** do not leave scratch files in the repo root; use a
+  gitignored `build*/` directory and delete them when done.
+- **Commits:** short imperative subjects with conventional prefixes
+  (`feat:`, `fix:`, `chore:`, `docs:`), body only when the why is not
+  obvious from the diff.
+
+## Agent Workflow Preferences (repository owner)
+
+- **Do not launch the built application** after completing a task. Build,
+  test, and verify; start the app only when explicitly asked.
+- **Push only when explicitly asked** — commits stay local otherwise.
+- Verify C/C++ changes by compiling the affected configuration before
+  reporting completion (e.g. configure a scratch build directory and build
+  the affected target); say plainly what was and was not verified.

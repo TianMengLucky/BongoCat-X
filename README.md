@@ -9,9 +9,14 @@
 <p align="center">
   选择语言 ❯ <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ja-JP.md">日本語</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
 </p>
+> [!NOTE]
+> 本仓库（**BongoCat-X**）是 [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat) 的 fork 分支，与上游项目及 Live2D 公司（Live2D Inc.）**无关联**。
+>
+> 本仓库不附带、不内置、也不分发 Live2D Cubism SDK（专有软件）。构建前请按下方「Live2D / Cubism SDK」章节的说明，从 Live2D 官网自行下载并导入。
+
 <p align="center">
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
+  <a href="https://github.com/TianMengLucky/BongoCat-X"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
   <a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2Fvf8jqnattk%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&suffix=%20members&logo=discord&logoColor=white&label=%20&color=7389D8&labelColor=6A7EC2"></a>
   <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.png"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
   <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/QQ-%2312B7F5?logo=qq&labelColor=FFFFFF"></a>
@@ -34,11 +39,9 @@
 
 ## 📥 下载
 
-<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
-
 - GitHub Releases
 
-  从 [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest) 下载最新版本。
+  从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
 ## 🛠️ 从源码构建
 
@@ -133,7 +136,12 @@ cmake -S . -B build -G Ninja \
 
 ## 📌 项目状态
 
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
+![Commit activity](https://img.shields.io/github/commit-activity/m/TianMengLucky/BongoCat-X?style=flat)
+![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
+![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
+![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
+
+See [Insights / Pulse](https://github.com/TianMengLucky/BongoCat-X/pulse) for live charts.
 
 ## 📜 许可证
 
@@ -252,41 +260,20 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 这不是因为 Vulkan 不好，而是 BongoCat 不需要那种程度的复杂性。应用主要渲染一个 Live2D 模型、少量 UI 图层和透明桌面窗口，OpenGL 已能轻松满足需求，并且能自然地与 SDL3 及 Cubism 的 OpenGL 渲染器配合。迁移到 Vulkan 将需要在三个桌面平台维护更多渲染和同步代码，却不会为用户带来明显提升。对于 BongoCat 当前的工作负载，OpenGL 让渲染器更精简、更易调试和维护，同时仍能提供所需性能。
 
 
-## 项目状态
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats 统计图像")
-
-## 赞助商
-
-<div align="center">
-  <table align="center">
-    <tr>
-      <td style="vertical-align: middle; padding-right: 10px;">
-        <img alt="SignPath" src="https://signpath.org/assets/favicon-50x50.png" />
-      </td>
-      <td style="vertical-align: middle;">
-        Windows 免费代码签名由
-        <a href="https://signpath.io">SignPath.io</a> 提供，证书由
-        <a href="https://signpath.org/">SignPath Foundation</a> 颁发
-      </td>
-    </tr>
-  </table>
-</div>
-
 ## 🙏 特别感谢
 > [!TIP]
 > BongoCat 的每一步都得益于开源精神。我们衷心感谢所有社区贡献者的无私奉献（按贡献日期先后排序列于下方）。正是你们的支持，让桌面陪伴更加自由与真诚。❤️‍🔥
 
 
-<a href="https://bongocat.pet">
-    <img src="https://bongocat.pet/co" />
+<a href="https://github.com/TianMengLucky/BongoCat-X/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=TianMengLucky/BongoCat-X" />
 </a>
 
-
-[linux.do](https://linux.do/t/topic/2845597)
 ---
 
 <div align="center">
 版权所有 © 2026 - **BongoCat**<br>
 By vladelaina<br>
+Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
 Made with ❤️ & ⌨️
 </div>

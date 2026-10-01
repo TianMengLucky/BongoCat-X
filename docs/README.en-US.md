@@ -18,9 +18,14 @@
 <p align="center">
 <strong>English</strong> • <a href="../README.md">简体中文</a> • <a href="README.zh-Hant.md">繁體中文</a> • <a href="README.fr-FR.md">Français</a> • <a href="README.de-DE.md">Deutsch</a> • <a href="README.ja-JP.md">日本語</a> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
 </p>
+> [!NOTE]
+> This repository (**BongoCat-X**) is a fork of [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat) and is not affiliated with the upstream project or Live2D Inc.
+>
+> The Live2D Cubism SDK (proprietary software) is not bundled, embedded, or distributed with this repository. Before building, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below.
+
 <p align="center">
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-54AEFF?style=flat&logo=c&logoColor=white"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
+  <a href="https://github.com/TianMengLucky/BongoCat-X"><img src="https://img.shields.io/badge/C-54AEFF?style=flat&logo=c&logoColor=white"></a>
 <a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/Discord-F77DAA?logo=discord&logoColor=white"></a>
   <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.md"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
   <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/422616922-12B7F5?logo=qq&logoColor=12B7F5&labelColor=FFFFFF"></a>
@@ -53,13 +58,9 @@
 
 ## 📥 Download
 
-<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self" >
-	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
-</a>
-
 - GitHub Releases
 
-  Download the latest release from [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
 ## 🛠️ Build From Source
 
@@ -377,45 +378,22 @@ we need.
 
 
 
-## Project Status
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
-
-## Sponsors
-
-<div align="center">
-  <table align="center">
-    <tr>
-      <td style="vertical-align: middle; padding-right: 10px;">
-        <img alt="SignPath" src="https://signpath.org/assets/favicon-50x50.png" />
-      </td>
-      <td style="vertical-align: middle;">
-        Free code signing on Windows provided by
-        <a href="https://signpath.io">SignPath.io</a>, certificate by
-        <a href="https://signpath.org/">SignPath Foundation</a>
-      </td>
-    </tr>
-  </table>
-</div>
-
-
-
 ## 🙏 Special Thanks
 > [!TIP]
 > Every step BongoCat takes is powered by the spirit of open source. We sincerely thank all our community contributors for their selfless contributions It is your support that makes desktop companionship more free and genuine.❤️‍🔥
 
 
-<a href="https://bongocat.pet">
-    <img src="https://bongocat.pet/co" />
+<a href="https://github.com/TianMengLucky/BongoCat-X/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=TianMengLucky/BongoCat-X" />
 </a>
 
-
-[linux.do](https://linux.do/t/topic/2845597)
 ---
 
 <div align="center">
 
 Copyright © 2026 - **BongoCat**\
 By vladelaina\
+Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)\
 Made with ❤️ & ⌨️
 
 </div>

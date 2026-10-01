@@ -159,6 +159,13 @@ ne fournit pas le rendu des modèles Live2D.
 > et sélectionnez un fichier `Live2DCubismCore.dll` ou l’archive zip officielle
 > du SDK Cubism. Le changement est immédiat, sans redémarrage.
 
+> [!NOTE]
+> Les versions officielles de ce dépôt sont des builds runtime-Core prenant
+> en charge le rendu Live2D, mais elles n'incluent **pas** la bibliothèque
+> d'exécution Core : au premier usage, importez la bibliothèque Core ou le
+> zip officiel du SDK dans l'application, ou déposez le fichier dans le
+> dossier live2d à côté de l'application ou dans le répertoire de données.
+
 ### ⚙️ Options CMake
 
 | Option | Valeur par défaut | Description |

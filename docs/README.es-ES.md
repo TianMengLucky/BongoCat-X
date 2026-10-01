@@ -117,6 +117,14 @@ El SDK debe incluir la biblioteca Core, el código fuente de Framework y el dire
 > un archivo `Live2DCubismCore.dll` o el zip oficial del SDK de Cubism. El
 > cambio surte efecto de inmediato, sin reiniciar.
 
+> [!NOTE]
+> Los paquetes oficiales de Release de este repositorio son compilaciones
+> runtime-Core con compatibilidad de renderizado de Live2D, pero **no**
+> incluyen la librería de ejecución Core: en el primer uso, importe la
+> librería Core o el zip oficial del SDK en la aplicación, o coloque el
+> archivo en la carpeta live2d junto a la aplicación o en el directorio de
+> datos.
+
 ### ⚙️ Opciones de CMake
 
 | Opción | Valor por defecto | Descripción |

@@ -1,14 +1,20 @@
 name: Release BongoCat
 
-# Releases are built WITHOUT the Live2D Cubism SDK (diagnostic rendering
-# backend). The SDK is proprietary and is never restored, built, or
-# distributed from CI - SDK-enabled binaries must be built locally by users
-# who accept the Live2D license (see README for the exact steps).
+# Runtime-Core release build: CI downloads the Cubism SDK straight from the
+# official site to compile the Cubism Framework and bridge, but the Core
+# binary itself is never shipped - release packages render Live2D only after
+# the end user imports the Core (in-app import or the live2d drop-in folder).
+# The workflow is guarded to the fork and maintained by a user who accepted
+# the Live2D Proprietary Software License Agreement (see README).
 
 on:
   push:
     tags:
       - "v*"
+
+env:
+  CUBISM_SDK_VERSION: "5-r.5"
+  GLEW_VERSION: "2.2.0"
 
 permissions:
   contents: read
@@ -81,6 +87,48 @@ jobs:
             libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev \
             curl file desktop-file-utils
 
+      # Compiles the Cubism Framework + bridge into the runtime-Core binary.
+      # The Core binary extracted here is build-time only: the package steps
+      # assert that no Live2DCubismCore.* ever reaches the release output.
+      - name: Restore Cubism SDK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tmp = $env:RUNNER_TEMP
+          $sdkZip = Join-Path $tmp 'cubism-sdk.zip'
+          $glewZip = Join-Path $tmp 'glew.zip'
+          Invoke-WebRequest -Uri `
+            "https://cubism.live2d.com/sdk-native/bin/CubismSdkForNative-$env:CUBISM_SDK_VERSION.zip" `
+            -OutFile $sdkZip
+          Invoke-WebRequest -Uri `
+            "https://github.com/nigels-com/glew/releases/download/glew-$env:GLEW_VERSION/glew-$env:GLEW_VERSION.zip" `
+            -OutFile $glewZip
+          $sdkOut = Join-Path $tmp 'cubism-sdk'
+          $glewOut = Join-Path $tmp 'glew'
+          Expand-Archive -LiteralPath $sdkZip -DestinationPath $sdkOut -Force
+          Expand-Archive -LiteralPath $glewZip -DestinationPath $glewOut -Force
+          if (Test-Path vendor/CubismSdkForNative) {
+            Remove-Item -LiteralPath vendor/CubismSdkForNative -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path vendor -Force | Out-Null
+          $sdkDir = @(Get-ChildItem -LiteralPath $sdkOut -Directory)[0].FullName
+          Move-Item -LiteralPath $sdkDir -Destination vendor/CubismSdkForNative
+          $glewDir = @(Get-ChildItem -LiteralPath $glewOut -Directory)[0].FullName
+          $glewTarget =
+            'vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew'
+          New-Item -ItemType Directory -Path $glewTarget -Force | Out-Null
+          Copy-Item -Path (Join-Path $glewDir '*') -Destination $glewTarget `
+            -Recurse -Force
+          foreach ($required in @(
+              'vendor/CubismSdkForNative/Core/include/Live2DCubismCore.h',
+              "$glewTarget/include/GL/glew.h",
+              "$glewTarget/src/glew.c")) {
+            if (-not (Test-Path $required -PathType Leaf)) {
+              throw "Unexpected archive layout, missing: $required"
+            }
+          }
+          Write-Host "Restored Cubism SDK $env:CUBISM_SDK_VERSION and GLEW $env:GLEW_VERSION"
+
       - name: Configure Unix release
         if: runner.os != 'Windows'
         run: |
@@ -91,7 +139,6 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
             if [ "$attempt" -ge 3 ]; then
               echo "Configure failed after $attempt attempts" >&2
@@ -109,6 +156,7 @@ jobs:
             try {
               & ./scripts/build-windows.ps1 `
                 -SkipTests `
+                -RequireCubism `
                 -BuildDir build-release `
                 -Configuration Release `
                 -Architecture '${{ matrix.cmake_arch }}' `
@@ -168,6 +216,15 @@ jobs:
           Copy-Item -LiteralPath $portable, $portableChecksum, $setup, `
             $setupChecksum -Destination release-output
 
+          # Build-time-only Core: no Live2DCubismCore.* may leave vendor/.
+          $leaked = @(Get-ChildItem build-release -Recurse -File `
+            -Filter 'Live2DCubismCore.*' |
+            Where-Object { $_.FullName -notmatch '\\vendor\\' })
+          if ($leaked.Count) {
+            throw ("Core binary outside vendor/: " +
+                  ($leaked.FullName -join ', '))
+          }
+
       - name: Upload Windows installer failure log
         if: failure() && runner.os == 'Windows'
         uses: actions/upload-artifact@v7
@@ -202,6 +259,7 @@ jobs:
             Archive = $archive.FullName
             Platform = '${{ matrix.platform }}'
             SkipSmoke = '${{ matrix.platform }}'.StartsWith('macos-')
+            ExpectLive2D = $true
           }
           & ./.github/scripts/check-unix-package.ps1 @packageCheckArgs
           $checksum = "$($archive.FullName).sha256"

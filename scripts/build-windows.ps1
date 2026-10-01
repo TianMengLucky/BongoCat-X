@@ -157,8 +157,9 @@ if ($SkipConfigure) {
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"
     )
-    # Always pass the value explicitly: CI builds the diagnostic backend on
-    # agents without the licensed SDK, local wrapper scripts opt in by default.
+    # Always pass the value explicitly: release CI restores the licensed SDK
+    # and opts in with -RequireCubism, while local diagnostic builds set it
+    # off when the SDK is absent.
     if ($RequireCubism) {
         $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=ON'
     } else {

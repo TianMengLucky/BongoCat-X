@@ -160,6 +160,13 @@ rendering.
 > `Live2DCubismCore.dll` or the official Cubism SDK zip. The change takes
 > effect immediately, no restart needed.
 
+> [!NOTE]
+> The official Release assets of this repository are runtime-Core builds with
+> Live2D rendering support, but they do **not** ship the Core runtime: on
+> first use, import the Core library or the official SDK zip in-app, or drop
+> the file into the `live2d` folder next to the application or inside the
+> data directory.
+
 ### ⚙️ CMake Options
 
 | Option | Default | Description |

@@ -117,6 +117,14 @@ Das SDK muss seine Core-Bibliothek, die Framework-Quellen und den OpenGL-GLEW-Dr
 > importieren“ und wählen Sie eine `Live2DCubismCore.dll` oder das offizielle
 > Cubism-SDK-Zip. Die Änderung wirkt sofort, ein Neustart ist nicht nötig.
 
+> [!NOTE]
+> Die offiziellen Release-Archive dieses Repositorys sind Runtime-Core-Builds
+> mit Live2D-Rendering-Unterstützung, liefern die Core-Laufzeitbibliothek
+> jedoch **nicht** mit: Importieren Sie bei der ersten Nutzung die
+> Core-Bibliothek oder das offizielle SDK-ZIP in der Anwendung, oder legen
+> Sie die Datei in den live2d-Ordner neben der Anwendung bzw. im
+> Datenverzeichnis.
+
 ### ⚙️ CMake-Optionen
 
 | Option | Standard | Beschreibung |

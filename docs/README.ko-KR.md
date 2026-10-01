@@ -117,6 +117,12 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 > `Live2DCubismCore.dll` 파일 또는 공식 Cubism SDK zip을 선택하세요.
 > 즉시 적용되며 재시작이 필요하지 않습니다.
 
+> [!NOTE]
+> 이 저장소의 공식 Release 패키지는 Live2D 렌더링을 지원하는 runtime-Core 빌드이지만,
+> Core 런타임 라이브러리는 **포함되지 않습니다**: 처음 사용할 때 앱 내에서 Core 라이브러리나
+> 공식 SDK zip을 가져오거나, 파일을 응용 프로그램 디렉터리 또는 데이터 디렉터리의
+> `live2d` 폴더에 넣으세요.
+
 ### ⚙️ CMake 옵션
 
 | 옵션 | 기본값 | 설명 |

@@ -2,9 +2,11 @@
 #
 # 1. Any job that publishes artifacts, scans them, or touches store
 #    packaging must be gated to a known upstream repository.
-# 2. The Live2D Cubism SDK is proprietary and must never be restored or
-#    built from CI. Only mac-app-store.yml is allowed to reference it;
-#    SDK-enabled binaries are built locally by users (see README).
+# 2. The Live2D Cubism SDK is proprietary. Restoring it in CI is allowed
+#    only in release.yml (runtime-Core release builds: the maintainer has
+#    accepted the Live2D Proprietary Software License Agreement) and in
+#    mac-app-store.yml. SDK-restoring jobs must additionally be guarded to
+#    the fork, and the Core binary must never be shipped in packages.
 [CmdletBinding()]
 param([switch]$SelfTest)
 
@@ -28,9 +30,11 @@ $cubismSdkMarkers = @(
     '-DBONGO_CAT_REQUIRE_CUBISM=ON',
     '-RequireCubism',
     'CUBISM_SDK_ARCHIVE_URL',
-    'vendor/CubismSdkForNative'
+    'vendor/CubismSdkForNative',
+    'cubism.live2d.com',
+    'CubismSdkForNative-'
 )
-$sdkAllowedWorkflow = 'mac-app-store.yml'
+$sdkAllowedWorkflows = @('mac-app-store.yml', 'release.yml')
 
 function Get-PublishingGuardFailures {
     param(
@@ -69,6 +73,20 @@ function Get-PublishingGuardFailures {
             $failures += "$Label`: job '$jobName' lacks upstream guard; " +
                 "matched $($matched -join ', ')"
         }
+        if ($AllowCubismSdk) {
+            $restores = @($cubismSdkMarkers | Where-Object {
+                $jobText.Contains($_)
+            })
+            if ($restores.Count -gt 0) {
+                $sdkGuarded = @($upstreamGuards | Where-Object {
+                    $jobText.Contains($_)
+                }).Count -gt 0
+                if (-not $sdkGuarded) {
+                    $failures += "$Label`: job '$jobName' restores the " +
+                        "Cubism SDK without a repository guard"
+                }
+            }
+        }
     }
     return $failures
 }
@@ -85,7 +103,8 @@ $selfTestText = $null
 foreach ($path in $workflowPaths) {
     $text = Get-Content -LiteralPath $path.FullName -Raw
     $pathFailures = @(Get-PublishingGuardFailures -Text $text `
-        -Label $path.Name -AllowCubismSdk:($path.Name -eq $sdkAllowedWorkflow))
+        -Label $path.Name `
+        -AllowCubismSdk:($sdkAllowedWorkflows.Contains($path.Name)))
     $failures += $pathFailures
     $jobsStart = $text.IndexOf("jobs:", [StringComparison]::Ordinal)
     if ($jobsStart -ge 0) {

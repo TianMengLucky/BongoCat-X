@@ -118,6 +118,9 @@ SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所�
 > [!TIP]
 > Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
 
+> [!NOTE]
+> 本仓库官方 Release 提供的安装包为 runtime-Core 构建内置 Live2D 渲染支持，但**不附带 Core 运行库**：首次使用时在应用内导入 Core 库或官方 SDK zip，或将文件放入应用目录/数据目录下的 `live2d` 文件夹即可启用。
+
 ### ⚙️ CMake 选项
 
 | 选项 | 默认值 | 说明 |

@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-appimage=$(realpath "${1:?Usage: check-appimage.sh APPIMAGE}")
+# Usage: check-appimage.sh APPIMAGE [--diagnostic]
+# The build that produced the AppImage knows its shape: runtime-Core/full
+# builds must embed the Framework shaders, diagnostic builds must not.
+appimage=$(realpath "${1:?Usage: check-appimage.sh APPIMAGE [--diagnostic]}")
+shift || true
+expect_live2d=1
+[[ ${1:-} == '--diagnostic' ]] && expect_live2d=0
 test_runner=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-unix.sh
+# The restored Cubism SDK lives in the build workspace next to .github/.
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+core_lib="$script_dir/../../vendor/CubismSdkForNative/Core/dll/linux/x86_64/libLive2DCubismCore.so"
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 cd "$work"
@@ -14,9 +23,7 @@ required=(AppRun bongocat.desktop bongocat.png usr/bin/BongoCat
   usr/bin/assets/models/standard/cat.model3.json
   usr/bin/assets/models/standard/demomodel.moc3
   usr/bin/assets/models/standard/demomodel.1024/texture_00.png)
-diagnostic=0
-[[ $(basename "$appimage") =~ ^BongoCat-X- ]] && diagnostic=1
-if [[ $diagnostic == 0 ]]; then
+if [[ $expect_live2d == 1 ]]; then
   required+=(usr/bin/assets/FrameworkShaders/VertShaderSrc.vert
     usr/bin/assets/FrameworkShaders/FragShaderSrc.frag
     usr/bin/assets/FrameworkShaders/VertShaderSrcBlend.vert
@@ -25,12 +32,24 @@ fi
 for file in "${required[@]}"; do
   test -s "$root/$file" || { echo "Missing AppImage resource: $file" >&2; exit 1; }
 done
-# Diagnostic packages render without the Cubism SDK, so the native
-# Live2D audit cannot pass; skip the smoke test for them.
-if [[ $diagnostic == 1 ]]; then
+# No build ships the Core binary - users supply it at runtime.
+if find "$root" -name 'Live2DCubismCore.*' | grep -q .; then
+  echo 'Core binary leaked into the AppImage' >&2
+  exit 1
+fi
+if [[ $expect_live2d == 0 ]]; then
   echo 'AppImage layout verified (diagnostic package, smoke test skipped).'
   exit 0
 fi
+# Runtime-Core packages render only once the Core is supplied; drop it in
+# the same way an end user would (data-dir live2d folder) so the smoke
+# test exercises the real runtime import path.
+if [[ ! -s "$core_lib" ]]; then
+  echo "Cubism Core library not found in the restored SDK: $core_lib" >&2
+  exit 1
+fi
+mkdir -p "$work/smoke-data/data/live2d"
+cp "$core_lib" "$work/smoke-data/data/live2d/"
 # Exercise the actual AppImage entry point without requiring a FUSE mount.
 bash "$test_runner" env APPIMAGE_EXTRACT_AND_RUN=1 \
   BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 "$appimage" \

@@ -160,6 +160,13 @@ backend tersebut tidak menyediakan rendering model Live2D.
 > `Live2DCubismCore.dll` atau zip SDK Cubism resmi. Perubahan langsung berlaku
 > tanpa perlu memulai ulang.
 
+> [!NOTE]
+> Paket Release resmi dari repositori ini adalah build runtime-Core dengan
+> dukungan rendering Live2D, tetapi **tidak** menyertakan pustaka runtime
+> Core: pada penggunaan pertama, impor pustaka Core atau zip SDK resmi di
+> dalam aplikasi, atau letakkan berkas di folder live2d di samping aplikasi
+> atau di direktori data.
+
 ### ⚙️ Opsi CMake
 
 | Opsi | Default | Deskripsi |

@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Archive,
     [Parameter(Mandatory = $true)]
     [ValidateSet('linux-x64', 'macos-x64', 'macos-arm64')][string]$Platform,
-    [switch]$SkipSmoke
+    [switch]$SkipSmoke,
+    [switch]$ExpectLive2D
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,7 +23,12 @@ try {
             throw 'Expected one production BongoCat package directory'
         }
         $root = $roots[0].FullName
-        $isDiagnostic = $roots[0].Name -match '^BongoCat-X-'
+        # No build ships the Core binary - users supply it at runtime.
+        $leaked = @(Get-ChildItem -LiteralPath $root -Recurse -File |
+            Where-Object { $_.Name -match '^Live2DCubismCore\.(dll|so|dylib)$' })
+        if ($leaked.Count) {
+            throw "Core binary leaked into package: $($leaked.FullName -join ', ')"
+        }
         if ($Platform.StartsWith('macos-')) {
             $executable = Join-Path $root 'BongoCat.app/Contents/MacOS/BongoCat'
             $assets = Join-Path $root 'BongoCat.app/Contents/Resources/assets'
@@ -30,13 +36,16 @@ try {
             $executable = Join-Path $root 'BongoCat'
             $assets = Join-Path $root 'assets'
         }
+        # Build shape is passed in explicitly: builds with Live2D support
+        # must embed the Framework shaders, diagnostic builds must not.
+        $hasLive2D = $ExpectLive2D.IsPresent
         $required = @($executable) + @(
             'bongocat.png', 'locales/en-US.json',
             'models/standard/cat.model3.json',
             'models/standard/demomodel.moc3',
             'models/standard/demomodel.1024/texture_00.png'
         )
-        if (-not $isDiagnostic) {
+        if ($hasLive2D) {
             $required += 'FrameworkShaders/VertShaderSrc.vert',
                 'FrameworkShaders/FragShaderSrc.frag',
                 'FrameworkShaders/VertShaderSrcBlend.vert',
@@ -54,11 +63,26 @@ try {
         $licenses = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter LICENSE)
         if ($licenses.Count) { throw "Unexpected loose LICENSE files: $($licenses.FullName -join ', ')" }
         Write-Host "Package layout verified: $Platform"
-        if ($isDiagnostic) {
+        if (-not $hasLive2D) {
             Write-Host "Diagnostic package: skipping the Cubism smoke test"
         }
-        if (-not $SkipSmoke -and -not $isDiagnostic) {
+        if (-not $SkipSmoke -and $hasLive2D) {
             $storage = Join-Path $temporaryRoot 'smoke-data'
+            if ($Platform -eq 'linux-x64') {
+                # Runtime-Core packages ship without the Core binary; drop
+                # it in the same way an end user would (data-dir live2d
+                # folder) so the smoke test exercises the real runtime
+                # import path.
+                $coreLib = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot `
+                    '../../vendor/CubismSdkForNative/Core/dll/linux/x86_64/libLive2DCubismCore.so'))
+                if (-not (Test-Path -LiteralPath $coreLib -PathType Leaf)) {
+                    throw 'Cubism Core library not found in the restored SDK'
+                }
+                $live2dDir = Join-Path $storage 'data/live2d'
+                New-Item -ItemType Directory -Path $live2dDir -Force |
+                    Out-Null
+                Copy-Item -LiteralPath $coreLib -Destination $live2dDir
+            }
             & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
                 $executable --ci-smoke --ci-ignore-global-input `
                 --ci-live2d-scenario=visual-consistency "--storage-root=$storage"

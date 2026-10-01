@@ -25,7 +25,6 @@ typedef struct BongoCatAboutState {
 /* Preferences lifecycle and render-loop integration. */
 /* Starts each request once; retries explicitly reset the corresponding flag. */
 void bongo_cat_about_refresh(BongoCatPreferences *value);
-void bongo_cat_about_overlays(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_about_clear(BongoCatPreferences *value, bool gl_ready);
 void bongo_cat_about_assets_clear(BongoCatPreferences *value, bool gl_ready);
 void bongo_cat_about_shutdown(BongoCatPreferences *value);

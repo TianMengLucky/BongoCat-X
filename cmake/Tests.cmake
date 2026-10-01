@@ -208,6 +208,7 @@ if(BUILD_TESTING)
 
   add_executable(bongo_cat_app_state_tests
     tests/core/test_app_state.c src/core/app_state.c
+    src/core/sound_shortcut.c
     src/runtime/model/model_behavior_state.c)
   target_link_libraries(bongo_cat_app_state_tests PRIVATE bongo_cat_warnings)
   target_include_directories(bongo_cat_app_state_tests PRIVATE

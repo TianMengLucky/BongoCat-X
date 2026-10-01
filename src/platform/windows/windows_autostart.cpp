@@ -8,6 +8,7 @@ extern "C" {
 #include "bongo_cat/platform.h"
 }
 #include <windows.h>
+#include <sddl.h>
 #include <shlobj.h>
 #include <taskschd.h>
 #include <string>
@@ -21,6 +22,7 @@ template<class T> struct Com {
     Com(const Com &) = delete;
     Com &operator=(const Com &) = delete;
     ~Com() { if (p) p->Release(); }
+    T *operator->() const { return p; }
 };
 struct Bstr {
     BSTR p = nullptr;

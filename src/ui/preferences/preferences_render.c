@@ -209,7 +209,6 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bongo_cat_preferences_remove_dialog_draw(value->app, context);
     bongo_cat_preferences_behavior_dialog_draw(value, context);
     bongo_cat_preferences_random_dialog_draw(value, context);
-    bongo_cat_about_overlays(value, context);
     return close_requested;
 }
 bool bongo_cat_preferences_draw_frame(BongoCatPreferences *value,

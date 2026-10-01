@@ -11,6 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 
+static bool hit(struct nk_context *context, struct nk_rect bounds) {
+    return nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+        nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, bounds);
+}
+
 static const char *tr(BongoCatPreferences *value, const char *key,
     const char *fallback) {
     return bongo_cat_i18n_get(value->app->i18n, key, fallback);
@@ -86,5 +91,5 @@ void bongo_cat_preferences_about_projects_heading(
     if (hover) bongo_cat_ui_cursor_hover_rect(context, link,
         BONGO_CAT_UI_CURSOR_POINTER);
     if (developer && hit(context, link))
-        open_url("https://vladelaina.com");
+        SDL_OpenURL("https://vladelaina.com");
 }

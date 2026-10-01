@@ -5,7 +5,8 @@ include(cmake/Version.cmake)
 include(FetchContent)
 include(CTest)
 option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
-option(BONGO_CAT_REQUIRE_CUBISM "Fail configuration when Cubism SDK is absent" OFF)
+option(BONGO_CAT_REQUIRE_CUBISM
+  "Require the Cubism SDK; set OFF to build the diagnostic backend instead" ON)
 option(BONGO_CAT_WARNINGS_AS_ERRORS "Treat native source warnings as errors" OFF)
 option(BONGO_CAT_STATIC_ANALYZER "Run GCC's static analyzer on project C sources" OFF)
 set(BONGO_CAT_CUBISM_SDK "${CMAKE_CURRENT_SOURCE_DIR}/vendor/CubismSdkForNative"
@@ -78,9 +79,26 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     set(BONGO_CAT_CUBISM_ENABLED ON)
   endif()
 elseif(BONGO_CAT_REQUIRE_CUBISM)
-  message(FATAL_ERROR "Cubism SDK missing at ${BONGO_CAT_CUBISM_SDK}")
+  message(FATAL_ERROR
+    "Cubism SDK for Native not found at ${BONGO_CAT_CUBISM_SDK}.\n"
+    "The Live2D Cubism SDK is proprietary and is not distributed with this repository;\n"
+    "each user must download it manually from the official Live2D website:\n"
+    "  https://www.live2d.com/en/sdk/download/native/\n"
+    "Accept the Live2D Proprietary Software License Agreement, download \"Cubism SDK for Native\",\n"
+    "and extract the archive to ${BONGO_CAT_CUBISM_SDK} (rename the versioned folder,\n"
+    "e.g. CubismSdkForNative-5-r.5, to CubismSdkForNative) so that <sdk>/Core and <sdk>/Framework\n"
+    "exist, or pass its location explicitly via -DBONGO_CAT_CUBISM_SDK=<path>.\n"
+    "Newer SDK archives do not bundle GLEW: also download GLEW 2.2.0 from\n"
+    "  https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip\n"
+    "and extract it to <sdk>/Samples/OpenGL/thirdParty/glew (the directory containing\n"
+    "include/GL/glew.h and src/glew.c).\n"
+    "Windows Cubism builds additionally require Visual Studio 2022 (MSVC).\n"
+    "To build the diagnostic backend without Live2D rendering instead, reconfigure with\n"
+    "-DBONGO_CAT_REQUIRE_CUBISM=OFF.")
 else()
-  message(WARNING "Cubism SDK missing; building the diagnostic backend")
+  message(WARNING
+    "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend\n"
+    "without Live2D model rendering")
 endif()
 add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_fields.c src/core/config_io.c src/core/config_settings_save.c

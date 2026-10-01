@@ -93,18 +93,23 @@ ctest --test-dir build --output-on-failure
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK（可选）
+### 🎭 Live2D / Cubism SDK（必需，需手动下载）
 
-如果未找到 Cubism SDK，CMake 会发出警告并构建诊断后端。该后端用于启动和平台诊断，不提供 Live2D 模型渲染。要构建完整运行时，请安装兼容的 Cubism SDK for Native，将其放置在 `vendor/CubismSdkForNative`，或显式传入路径：
+Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。构建前，每位用户都必须从 Live2D 官方网站手动下载 SDK；缺少 SDK 时 CMake 配置会直接失败。
+
+1. 打开 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 专有软件许可协议，下载 **Cubism SDK for Native**（项目按 `5-r.5` 版本构建和测试）。
+2. 解压压缩包。若解压出的文件夹名为 `CubismSdkForNative-5-r.5`，请将其重命名为 `CubismSdkForNative` 并放到 `vendor/` 目录下，使目录树包含 `Core/` 和 `Framework/`。
+3. 较新的 SDK 压缩包不再自带 GLEW。请下载 [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) 并解压到 `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`（该目录下应直接包含 `include/GL/glew.h` 和 `src/glew.c`）。
+
+也可以将 SDK 保存在任意位置，并通过参数显式指定路径：
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。`BONGO_CAT_REQUIRE_CUBISM=ON` 会在 SDK 不可用时使配置失败，而不是静默选择诊断后端。
+SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。仅当需要构建用于启动与平台诊断的诊断后端时，才设置 `BONGO_CAT_REQUIRE_CUBISM=OFF`；该后端不提供 Live2D 模型渲染。
 
 ### ⚙️ CMake 选项
 
@@ -112,7 +117,7 @@ SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所�
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖。仅当 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可供 CMake 使用时才设为 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路径。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK 不可用时使配置失败。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 手动下载的 Cubism SDK 不可用时使配置失败；设置为 `OFF` 可构建不带 Live2D 渲染的诊断后端。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 将本地编译器警告视为错误。 |
 
 离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`）和 yyjson 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：

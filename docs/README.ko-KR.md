@@ -93,18 +93,23 @@ Visual Studio와 같은 다중 구성 생성기의 경우 빌드 구성을 명�
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (선택 사항)
+### 🎭 Live2D / Cubism SDK (필수 — 수동 다운로드)
 
-Cubism SDK를 찾을 수 없으면 CMake는 경고를 표시하고 진단 백엔드를 빌드합니다. 이 백엔드는 시작 및 플랫폼 진단에 사용되며 Live2D 모델 렌더링을 제공하지 않습니다. 전체 런타임을 빌드하려면 호환되는 Cubism SDK for Native를 설치하고 `vendor/CubismSdkForNative`에 배치하거나 경로를 명시적으로 전달하세요:
+Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 빌드하기 전에 각 사용자는 Live2D 공식 웹사이트에서 직접 다운로드해야 합니다. SDK가 없으면 CMake 구성이 실패합니다.
+
+1. [Cubism SDK 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에 접속하여 Live2D 전용 소프트웨어 라이선스 계약에 동의한 뒤 **Cubism SDK for Native**를 다운로드합니다(릴리스는 `5-r.5` SDK 기준으로 빌드 및 테스트됩니다).
+2. 압축을 풉니다. 풀린 폴더 이름이 `CubismSdkForNative-5-r.5`라면 `CubismSdkForNative`로 이름을 바꾸고 `vendor/` 아래에 두어 `Core/`와 `Framework/`가 포함되도록 합니다.
+3. 최신 SDK 아카이브에는 GLEW가 포함되어 있지 않습니다. [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip)을 다운로드하여 `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`(`include/GL/glew.h`와 `src/glew.c`가 바로 들어 있는 디렉터리)에 풀어 주세요.
+
+SDK를 임의의 위치에 두고 그 경로를 명시적으로 지정할 수도 있습니다:
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`에서 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉토리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. `BONGO_CAT_REQUIRE_CUBISM=ON`은 SDK를 사용할 수 없을 때 진단 백엔드를 자동으로 선택하는 대신 구성을 실패하게 합니다.
+SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`가 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉터리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. 시작 및 플랫폼 진단용 진단 백엔드를 빌드할 때만 `BONGO_CAT_REQUIRE_CUBISM=OFF`를 설정하세요. 이 백엔드는 Live2D 모델 렌더링을 제공하지 않습니다.
 
 ### ⚙️ CMake 옵션
 
@@ -112,7 +117,7 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다. SDL3, yyjson, stb, miniaudio 및 Nuklear를 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native의 경로입니다. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK를 사용할 수 없을 때 구성을 실패하게 합니다. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 수동으로 다운로드한 Cubism SDK를 사용할 수 없을 때 구성을 실패하게 합니다. `OFF`로 설정하면 Live2D 렌더링 없이 진단 백엔드를 빌드합니다. |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 로컬 컴파일러 경고를 오류로 처리합니다. |
 
 오프라인 빌드 시 `BONGO_CAT_FETCH_DEPS=OFF`로 설정하고, SDL3(`SDL3-static` 포함) 및 yyjson의 CMake 패키지 구성을 제공하세요. stb, Nuklear 및 miniaudio를 자동으로 찾을 수 없는 경우 해당 include 디렉토리도 제공해야 합니다:

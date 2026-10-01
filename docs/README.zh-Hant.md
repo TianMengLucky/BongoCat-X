@@ -114,18 +114,23 @@ ctest --test-dir build --output-on-failure
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK（選用）
+### 🎭 Live2D / Cubism SDK（必要，須手動下載）
 
-若未提供 Cubism SDK，CMake 會發出警告並建置診斷後端。此後端僅供啟動和平台診斷之用，不提供 Live2D 模型渲染。若要建置完整執行時期，請安裝相容的 Cubism SDK for Native，並將其放置在 `vendor/CubismSdkForNative`，或明確傳遞路徑：
+Live2D Cubism SDK 為專有軟體，**不會**隨本儲存庫散布。建置前，每位使用者都必須從 Live2D 官方網站手動下載 SDK；缺少 SDK 時 CMake 配置會直接失敗。
+
+1. 開啟 [Cubism SDK 下載頁面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 專有軟體授權協議，下載 **Cubism SDK for Native**（專案以 `5-r.5` 版本建置與測試）。
+2. 解壓縮封存檔。若解壓出的資料夾名為 `CubismSdkForNative-5-r.5`，請將其重新命名為 `CubismSdkForNative` 並放到 `vendor/` 目錄下，使目錄樹包含 `Core/` 與 `Framework/`。
+3. 較新的 SDK 封存檔不再內建 GLEW。請下載 [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) 並解壓到 `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`（該目錄下應直接包含 `include/GL/glew.h` 與 `src/glew.c`）。
+
+也可以將 SDK 保存在任意位置，並透過參數明確指定路徑：
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cmake` 所預期的 OpenGL GLEW 第三方目錄結構。Windows 上的 Cubism 建置需要 Visual Studio 2022。設定 `BONGO_CAT_REQUIRE_CUBISM=ON` 會在無法使用 Cubism SDK 時使配置失敗，而非靜默改用診斷後端。
+SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cmake` 所預期的 OpenGL GLEW 第三方目錄結構。Windows 上的 Cubism 建置需要 Visual Studio 2022。僅在需要建置用於啟動與平台診斷的診斷後端時，才設定 `BONGO_CAT_REQUIRE_CUBISM=OFF`；該後端不提供 Live2D 模型渲染。
 
 ### ⚙️ CMake 選項
 
@@ -133,7 +138,7 @@ SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cma
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下載固定的第三方依賴項。僅在 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可被 CMake 找到時設為 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路徑。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | 當無法使用 Cubism SDK 時使配置失敗。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 手動下載的 Cubism SDK 無法使用時使配置失敗；設為 `OFF` 可建置不含 Live2D 渲染的診斷後端。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 將原生編譯器警告視為錯誤。 |
 
 若要進行離線建置，設定 `BONGO_CAT_FETCH_DEPS=OFF`，並提供 SDL3（含 `SDL3-static`）和 yyjson 的 CMake 套件配置，以及 stb、Nuklear、miniaudio 的包含路徑（若無法自動找到）：

@@ -123,25 +123,36 @@ build secara eksplisit:
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (Opsional)
+### 🎭 Live2D / Cubism SDK (wajib — unduh manual)
 
-Jika Cubism SDK tidak tersedia, CMake akan menampilkan peringatan dan membangun
-backend diagnostik. Backend ini ditujukan untuk diagnostik startup dan platform;
-backend ini tidak menyediakan rendering model Live2D. Untuk membangun runtime
-lengkap, pasang Cubism SDK for Native yang kompatibel lalu tempatkan di
-`vendor/CubismSdkForNative` atau berikan lokasinya secara eksplisit:
+Cubism SDK dari Live2D adalah perangkat lunak berpemilik dan **tidak** disertakan dalam
+repositori ini. Sebelum membangun, setiap pengguna harus mengunduhnya secara manual dari
+situs resmi Live2D; tanpa SDK, konfigurasi CMake akan gagal.
+
+1. Buka [halaman unduhan Cubism SDK](https://www.live2d.com/en/sdk/download/native/), setujui Live2D Proprietary Software
+   License Agreement, lalu unduh **Cubism SDK for Native** (rilis dibangun dan diuji dengan
+   SDK `5-r.5`).
+2. Ekstrak arsipnya. Jika folder hasil ekstraksi bernama `CubismSdkForNative-5-r.5`, ubah
+   namanya menjadi `CubismSdkForNative` dan letakkan di bawah `vendor/` sehingga pohon
+   direktori memuat `Core/` dan `Framework/`.
+3. Arsip SDK yang lebih baru tidak lagi menyertakan GLEW. Unduh
+   [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) dan ekstrak ke
+   `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew` (direktori yang langsung
+   berisi `include/GL/glew.h` dan `src/glew.c`).
+
+Anda juga dapat menyimpan SDK di lokasi mana pun dan meneruskan jalurnya secara eksplisit:
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
 SDK harus berisi Core library, source Framework, dan tree third-party OpenGL GLEW
 dengan tata letak yang diharapkan oleh `cmake/Cubism.cmake`. Build Cubism di
-Windows memerlukan Visual Studio 2022. `BONGO_CAT_REQUIRE_CUBISM=ON` membuat
-konfigurasi gagal alih-alih diam-diam memilih backend diagnostik.
+Windows memerlukan Visual Studio 2022. Atur `BONGO_CAT_REQUIRE_CUBISM=OFF` hanya untuk
+membangun backend diagnostik yang ditujukan untuk startup dan diagnostik platform;
+backend tersebut tidak menyediakan rendering model Live2D.
 
 ### ⚙️ Opsi CMake
 
@@ -149,7 +160,7 @@ konfigurasi gagal alih-alih diam-diam memilih backend diagnostik.
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent`. Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, dan Nuklear sudah tersedia untuk CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path ke Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Gagalkan konfigurasi jika Cubism SDK yang dapat digunakan tidak tersedia. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Menggagalkan konfigurasi jika Cubism SDK yang diunduh manual tidak tersedia. Atur `OFF` untuk membangun backend diagnostik tanpa rendering Live2D. |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Perlakukan warning compiler native sebagai error. |
 
 Untuk build offline dengan `BONGO_CAT_FETCH_DEPS=OFF`, sediakan konfigurasi

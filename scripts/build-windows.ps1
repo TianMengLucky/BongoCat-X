@@ -157,7 +157,13 @@ if ($SkipConfigure) {
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"
     )
-    if ($RequireCubism) { $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=ON' }
+    # Always pass the value explicitly: CI builds the diagnostic backend on
+    # agents without the licensed SDK, local wrapper scripts opt in by default.
+    if ($RequireCubism) {
+        $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=ON'
+    } else {
+        $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=OFF'
+    }
     if ($SkipTests) { $configureArgs += '-DBUILD_TESTING=OFF' }
     $configureWriter = New-Object IO.StreamWriter(
         $configureLog, $false, (New-Object Text.UTF8Encoding($false)))

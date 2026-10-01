@@ -10,8 +10,10 @@ set "CLEAN_ARG="
 if /I "%BONGOCAT_CLEAN_BUILD%"=="1" set "CLEAN_ARG=-Clean"
 if /I "%~2"=="-Clean" set "CLEAN_ARG=-Clean"
 if /I "%~3"=="-Clean" set "CLEAN_ARG=-Clean"
-set "CUBISM_ARG="
-if /I "%BONGOCAT_REQUIRE_CUBISM%"=="1" set "CUBISM_ARG=-RequireCubism"
+rem The Cubism SDK must be installed manually (see README); set BONGOCAT_REQUIRE_CUBISM=0
+rem to build the diagnostic backend without it.
+set "CUBISM_ARG=-RequireCubism"
+if /I "%BONGOCAT_REQUIRE_CUBISM%"=="0" set "CUBISM_ARG="
 set "PACKAGE_ARG="
 if /I "%~2"=="-Package" set "PACKAGE_ARG=-Package"
 if /I "%~3"=="-Package" set "PACKAGE_ARG=-Package"

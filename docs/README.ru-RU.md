@@ -93,18 +93,23 @@ ctest --test-dir build --output-on-failure
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (необязательно)
+### 🎭 Live2D / Cubism SDK (обязателен — ручная загрузка)
 
-Если Cubism SDK не найден, CMake выдаст предупреждение и соберёт диагностический бэкенд. Этот бэкенд предназначен для запуска и диагностики платформы; он не обеспечивает рендеринг моделей Live2D. Чтобы собрать полный рантайм, установите совместимую версию Cubism SDK for Native, поместите её в `vendor/CubismSdkForNative` или явно укажите путь:
+Cubism SDK от Live2D — проприетарное программное обеспечение и **не** распространяется с этим репозиторием. Перед сборкой каждый пользователь должен самостоятельно скачать его с официального сайта Live2D; при отсутствии SDK конфигурация CMake завершится ошибкой.
+
+1. Откройте [страницу загрузки Cubism SDK](https://www.live2d.com/en/sdk/download/native/), примите условия Live2D Proprietary Software License Agreement и скачайте **Cubism SDK for Native** (релизы собираются и тестируются с SDK `5-r.5`).
+2. Распакуйте архив. Если распакованная папка называется `CubismSdkForNative-5-r.5`, переименуйте её в `CubismSdkForNative` и поместите в `vendor/` так, чтобы дерево содержало `Core/` и `Framework/`.
+3. В новых архивах SDK больше нет GLEW. Скачайте [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) и распакуйте в `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew` (каталог, напрямую содержащий `include/GL/glew.h` и `src/glew.c`).
+
+Также можно хранить SDK в любом месте и явно передать его путь:
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK должен включать библиотеку Core, исходный код Framework и каталог сторонних библиотек OpenGL GLEW в структуре, ожидаемой `cmake/Cubism.cmake`. Сборки Cubism в Windows требуют Visual Studio 2022. При `BONGO_CAT_REQUIRE_CUBISM=ON` конфигурация завершится ошибкой, если SDK недоступен, а не будет молча использовать диагностический бэкенд.
+SDK должен включать библиотеку Core, исходный код Framework и каталог сторонних библиотек OpenGL GLEW в структуре, ожидаемой `cmake/Cubism.cmake`. Сборки Cubism в Windows требуют Visual Studio 2022. Устанавливайте `BONGO_CAT_REQUIRE_CUBISM=OFF` только для сборки диагностического бэкенда, предназначенного для запуска и диагностики платформы; он не обеспечивает рендеринг моделей Live2D.
 
 ### ⚙️ Параметры CMake
 
@@ -112,7 +117,7 @@ SDK должен включать библиотеку Core, исходный к
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Загружает сторонние зависимости фиксированных версий через `FetchContent` CMake. Установите `OFF`, только если SDL3, yyjson, stb, miniaudio и Nuklear уже доступны для CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Путь к Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Завершает конфигурацию ошибкой, если SDK недоступен. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Завершает конфигурацию ошибкой, если вручную загруженный Cubism SDK недоступен. Установите `OFF`, чтобы собрать диагностический бэкенд без рендеринга Live2D. |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Обрабатывает предупреждения нативного компилятора как ошибки. |
 
 Для автономной сборки установите `BONGO_CAT_FETCH_DEPS=OFF` и предоставьте конфигурации пакетов CMake для SDL3 (включая `SDL3-static`) и yyjson; если stb, Nuklear и miniaudio не могут быть найдены автоматически, укажите также их каталоги включения:

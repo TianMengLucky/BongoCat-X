@@ -125,25 +125,37 @@ configuration explicitly:
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (Optional)
+### 🎭 Live2D / Cubism SDK (Required — manual download)
 
-If the Cubism SDK is not present, CMake emits a warning and builds the
-diagnostic backend. This backend is intended for startup and platform
-diagnostics; it does not provide Live2D model rendering. To build the full
-runtime, install a compatible Cubism SDK for Native and either place it at
-`vendor/CubismSdkForNative` or pass its location explicitly:
+The Live2D Cubism SDK is proprietary software and is **not** distributed with
+this repository. Each user must download it manually from the official Live2D
+website before building; CMake configuration fails when it is absent.
+
+1. Open the [Cubism SDK download page](https://www.live2d.com/en/sdk/download/native/),
+   accept the Live2D Proprietary Software License Agreement, and download
+   **Cubism SDK for Native** (releases are built against the `5-r.5` SDK).
+2. Extract the archive. If the extracted folder is named
+   `CubismSdkForNative-5-r.5`, rename it to `CubismSdkForNative` and place it
+   under `vendor/` so that the tree contains `Core/` and `Framework/`.
+3. Newer SDK archives no longer bundle GLEW. Download
+   [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip)
+   and extract it to `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`
+   (the directory that directly contains `include/GL/glew.h` and `src/glew.c`).
+
+Alternatively, keep the SDK anywhere and pass its location explicitly:
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative \
-  -DBONGO_CAT_REQUIRE_CUBISM=ON
+  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
 The SDK must contain its Core library, Framework sources, and the OpenGL GLEW
 third-party tree in the layout expected by `cmake/Cubism.cmake`. Windows
-Cubism builds require Visual Studio 2022. `BONGO_CAT_REQUIRE_CUBISM=ON` makes
-configuration fail instead of silently selecting the diagnostic backend.
+Cubism builds require Visual Studio 2022. Set
+`BONGO_CAT_REQUIRE_CUBISM=OFF` only to build the diagnostic backend for
+startup and platform diagnostics; that backend does not provide Live2D model
+rendering.
 
 ### ⚙️ CMake Options
 
@@ -151,7 +163,7 @@ configuration fail instead of silently selecting the diagnostic backend.
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent`. Set `OFF` only when SDL3, yyjson, stb, miniaudio, and Nuklear are already available to CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path to the Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Fail configuration when a usable Cubism SDK is unavailable. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Fail configuration when the manually downloaded Cubism SDK is unavailable. Set `OFF` to build the diagnostic backend without Live2D rendering. |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Treat native compiler warnings as errors. |
 
 For an offline build with `BONGO_CAT_FETCH_DEPS=OFF`, provide CMake package

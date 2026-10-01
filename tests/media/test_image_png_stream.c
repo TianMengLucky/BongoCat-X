@@ -3,6 +3,7 @@
 #include "test.h"
 #include <SDL3/SDL.h>
 #include <miniz.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -165,13 +166,66 @@ static void run_case(const char *path, int width, int height, int channels,
         CHECK(state.calls == 0);
 }
 
+typedef struct ScaledConsumer {
+    int source_width, source_height, width, height, row;
+    bool wrong_pixel;
+} ScaledConsumer;
+
+static bool consume_scaled(void *userdata, BongoCatImage *rows, int height, int y) {
+    ScaledConsumer *state = userdata;
+    CHECK(rows->width == state->width && height == state->height && y == state->row);
+    CHECK(rows->height > 0 && rows->height <= 64);
+    // Independent 2D overlap integration checks both filter axes together,
+    // including fractional coverage and invisible RGB at translucent edges.
+    for (int row = 0; row < rows->height; ++row) {
+        double top = (double)(y + row) * state->source_height / height;
+        double bottom = (double)(y + row + 1) * state->source_height / height;
+        for (int x = 0; x < rows->width; ++x) {
+            double left = (double)x * state->source_width / rows->width;
+            double right = (double)(x + 1) * state->source_width / rows->width;
+            double sum[4] = {0};
+            for (int sy = (int)top; sy < (int)ceil(bottom); ++sy) {
+                double vertical = SDL_min(bottom, sy + 1.0) - SDL_max(top, (double)sy);
+                for (int sx = (int)left; sx < (int)ceil(right); ++sx) {
+                    double horizontal = SDL_min(right, sx + 1.0) - SDL_max(left, (double)sx);
+                    double alpha = pixel(sx, sy, 3) * vertical * horizontal;
+                    for (int c = 0; c < 3; ++c) sum[c] += pixel(sx, sy, c) * alpha;
+                    sum[3] += alpha;
+                }
+            }
+            int expected[4];
+            expected[3] = (int)(sum[3] / ((right - left) * (bottom - top)) + .5);
+            for (int c = 0; c < 3; ++c)
+                expected[c] = expected[3] ? (int)(sum[c] / sum[3] + .5) : 0;
+            const unsigned char *actual = rows->pixels + ((size_t)row * rows->width + x) * 4;
+            for (int c = 0; c < 4; ++c)
+                if (abs(actual[c] - expected[c]) > 1) state->wrong_pixel = true;
+        }
+    }
+    state->row += rows->height;
+    // The downstream upload owns the emitted strip and may mutate it.
+    memset(rows->pixels, 0, (size_t)rows->width * rows->height * 4);
+    return true;
+}
+
+static void scaled_case(const char *path, int source_width, int source_height,
+    int max_width, int max_height, int width, int height) {
+    fixture(path, source_width, source_height, 4, -1, VALID);
+    ScaledConsumer state = {.source_width = source_width, .source_height = source_height,
+        .width = width, .height = height};
+    BongoCatError error = {0};
+    CHECK(bongo_cat_image_decode_png_scaled_rows(path, max_width, max_height,
+        consume_scaled, &state, NULL, NULL, NULL, NULL, &error) == BONGO_CAT_OK);
+    CHECK(state.row == height && !state.wrong_pixel);
+}
+
 int main(void) {
     char *path = NULL;
     SDL_asprintf(&path, "%sbongocat-png-stream-%llu.png", SDL_GetBasePath(),
         (unsigned long long)SDL_GetTicksNS());
     CHECK(path != NULL);
     if (!path) return 1;
-    const int sizes[][2] = {{1, 1}, {1, 129}, {193, 131}, {8192, 65}};
+    const int sizes[][2] = {{1, 1}, {1, 129}, {193, 131}, {8192, 1}, {8192, 7}, {8192, 65}};
     for (size_t i = 0; i < SDL_arraysize(sizes); ++i)
         for (int channels = 3; channels <= 4; ++channels)
             for (int filter = -1; filter < 5; ++filter)
@@ -180,6 +234,12 @@ int main(void) {
         run_case(path, 193, 131, 4, -1, (FixtureFault)fault, 0);
     run_case(path, 193, 257, 4, -1, VALID, 1);
     run_case(path, 193, 257, 3, -1, VALID, 2);
+    scaled_case(path, 193, 131, 64, 64, 64, 43);
+    scaled_case(path, 131, 193, 64, 64, 43, 64);
+    scaled_case(path, 193, 131, 1, 1, 1, 1);
+    scaled_case(path, 1, 257, 1, 65, 1, 65);
+    scaled_case(path, 257, 1, 65, 1, 65, 1);
+    scaled_case(path, 193, 257, 97, 129, 96, 129);
     CHECK(SDL_RemovePath(path));
     SDL_free(path);
     return bongo_cat_test_failures ? 1 : 0;

@@ -31,7 +31,8 @@ static bool stopped(BongoCatImageCancelled cancel, void *data) {
 
 /* Validate the entire cached atlas before exposing any rows to GL.
    A corrupt cache can then fall back without leaking a partially uploaded
-   texture or mixing rows from two sources. Both passes use a bounded strip. */
+   texture or mixing rows from two sources. Large atlases use two bounded
+   passes; small atlases reuse the bytes already retained for validation. */
 static BongoCatResult read_cache(FILE *file, const char *digest, int max_width,
     int max_height, BongoCatImageRows consume, void *consumer,
     BongoCatImageProgress progress, void *userdata,
@@ -53,22 +54,36 @@ static BongoCatResult read_cache(FILE *file, const char *digest, int max_width,
         bytes > BONGO_CAT_TEXTURE_CACHE_ENTRY_LIMIT - HEADER_SIZE)
         return BONGO_CAT_ERROR_FORMAT;
     size_t stride = (size_t)width * 4;
-    int batch = (int)SDL_max((size_t)1, (size_t)IO_BYTES / stride);
-    unsigned char *buffer = malloc(SDL_max((size_t)IO_BYTES, stride));
+    int batch = (int)SDL_min((size_t)height,
+        SDL_max((size_t)1, (size_t)IO_BYTES / stride));
+    size_t capacity = stride * (size_t)batch;
+    unsigned char *buffer = malloc(capacity);
     if (!buffer) return BONGO_CAT_ERROR_FORMAT; /* Source decode can still work. */
     uint64_t remaining = bytes;
     mz_ulong crc = 0;
     BongoCatResult result = BONGO_CAT_ERROR_FORMAT;
     while (remaining) {
         if (stopped(cancel, cancel_data)) { result = BONGO_CAT_ERROR_PLATFORM; goto done; }
-        size_t count = (size_t)SDL_min(remaining, (uint64_t)IO_BYTES);
+        size_t count = (size_t)SDL_min(remaining, (uint64_t)capacity);
         if (fread(buffer, 1, count, file) != count) goto done;
         crc = mz_crc32(crc, buffer, count);
         remaining -= count;
         if (progress) progress(userdata, .1f * (float)(bytes - remaining) / (float)bytes);
     }
     if ((uint32_t)crc != get32(header + 24) || fgetc(file) != EOF ||
-        ferror(file) || fseek(file, HEADER_SIZE, SEEK_SET) != 0) goto done;
+        ferror(file)) goto done;
+    if (bytes == (uint64_t)capacity) {
+        /* The complete small atlas already fits in the validation strip.
+           Expose it only after checking CRC and EOF, without rereading or
+           reserving a full 1 MiB for a tiny quality setting. */
+        if (stopped(cancel, cancel_data)) { result = BONGO_CAT_ERROR_PLATFORM; goto done; }
+        BongoCatImage rows = {.pixels = buffer, .width = (int)width, .height = (int)height};
+        result = consume(consumer, &rows, (int)height, 0) ?
+            BONGO_CAT_OK : BONGO_CAT_ERROR_PLATFORM;
+        if (result == BONGO_CAT_OK && progress) progress(userdata, 1.0f);
+        goto done;
+    }
+    if (fseek(file, HEADER_SIZE, SEEK_SET) != 0) goto done;
     result = BONGO_CAT_ERROR_IO;
     for (int y = 0; y < (int)height;) {
         if (stopped(cancel, cancel_data)) { result = BONGO_CAT_ERROR_PLATFORM; goto done; }
@@ -180,6 +195,8 @@ BongoCatResult bongo_cat_image_decode_cached_scaled_rows(const char *source,
     BongoCatImageRows consume, void *consumer, BongoCatImageProgress progress,
     void *userdata, BongoCatImageCancelled cancelled, void *cancel_data,
     BongoCatError *error) {
+    if (!source || !consume || max_width < 1 || max_height < 1)
+        return BONGO_CAT_ERROR_ARGUMENT;
     CacheWriter writer = {.digest = digest, .max_width = max_width,
         .max_height = max_height, .consume = consume, .consumer = consumer,
         .cancel = cancelled, .cancel_data = cancel_data,

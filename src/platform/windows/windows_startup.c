@@ -10,6 +10,7 @@
 
 static HANDLE instance_mutex;
 static HANDLE instance_wake_event;
+static HANDLE instance_settings_event;
 static HANDLE instance_update_shutdown_event;
 static HANDLE instance_stopped_event;
 static HANDLE instance_info_mapping;
@@ -17,6 +18,7 @@ static BongoCatWindowsInstanceInfo *instance_info;
 static wchar_t instance_title[96] = BONGO_CAT_PET_WINDOW_TITLE_W;
 static wchar_t instance_mutex_name[128] = L"Local\\BongoCat.SingleInstance";
 static wchar_t instance_wake_name[128] = L"Local\\BongoCat.WakeInstance";
+static wchar_t instance_settings_name[128] = L"Local\\BongoCat.SettingsInstance";
 static wchar_t instance_update_shutdown_name[128] =
     L"Local\\BongoCat.UpdateShutdown";
 static wchar_t instance_stopped_name[128] = L"Local\\BongoCat.InstanceStopped";
@@ -43,6 +45,9 @@ static void initialize_identity(void) {
     swprintf(instance_wake_name,
         sizeof(instance_wake_name) / sizeof(instance_wake_name[0]),
         L"Local\\BongoCat.WakeInstance.%hs", value);
+    swprintf(instance_settings_name,
+        sizeof(instance_settings_name) / sizeof(instance_settings_name[0]),
+        L"Local\\BongoCat.SettingsInstance.%hs", value);
     swprintf(instance_update_shutdown_name,
         sizeof(instance_update_shutdown_name) /
             sizeof(instance_update_shutdown_name[0]),
@@ -74,6 +79,9 @@ const wchar_t *bongo_cat_windows_instance_info_name(void) {
 static void create_instance_events(void) {
     if (!instance_wake_event)
         instance_wake_event = CreateEventW(NULL, FALSE, FALSE, instance_wake_name);
+    if (!instance_settings_event)
+        instance_settings_event = CreateEventW(NULL, FALSE, FALSE,
+            instance_settings_name);
     if (!instance_update_shutdown_event)
         instance_update_shutdown_event = CreateEventW(NULL, FALSE, FALSE,
             instance_update_shutdown_name);
@@ -116,6 +124,14 @@ static void wake_existing_instance(void) {
     }
 }
 
+static void request_settings_existing_instance(void) {
+    HANDLE settings = OpenEventW(EVENT_MODIFY_STATE, FALSE, instance_settings_name);
+    if (settings) {
+        SetEvent(settings);
+        CloseHandle(settings);
+    }
+}
+
 bool bongo_cat_platform_single_instance_begin(void) {
     initialize_identity();
     if (SDL_getenv_unsafe("BONGO_CAT_ALLOW_TEST_INSTANCES")) return true;
@@ -136,7 +152,10 @@ bool bongo_cat_platform_single_instance_begin(void) {
             Sleep(100);
         }
     }
+    request_settings_existing_instance();
     wake_existing_instance();
+    /* The first request can race the primary instance creating its event. */
+    request_settings_existing_instance();
     instance_mutex = CreateMutexW(NULL, FALSE, instance_mutex_name);
     if (instance_mutex && GetLastError() != ERROR_ALREADY_EXISTS) {
         create_instance_events(); return true;
@@ -149,6 +168,11 @@ bool bongo_cat_platform_single_instance_begin(void) {
 bool bongo_cat_platform_single_instance_take_wake(void) {
     return instance_wake_event &&
         WaitForSingleObject(instance_wake_event, 0) == WAIT_OBJECT_0;
+}
+
+bool bongo_cat_platform_single_instance_take_settings(void) {
+    return instance_settings_event &&
+        WaitForSingleObject(instance_settings_event, 0) == WAIT_OBJECT_0;
 }
 
 bool bongo_cat_platform_update_shutdown_argument(int argc, char **argv) {
@@ -192,6 +216,8 @@ void bongo_cat_platform_single_instance_end(void) {
     instance_info_mapping = NULL;
     if (instance_wake_event) CloseHandle(instance_wake_event);
     instance_wake_event = NULL;
+    if (instance_settings_event) CloseHandle(instance_settings_event);
+    instance_settings_event = NULL;
     if (instance_mutex) CloseHandle(instance_mutex);
     instance_mutex = NULL;
 }

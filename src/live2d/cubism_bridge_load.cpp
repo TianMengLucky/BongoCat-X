@@ -6,6 +6,7 @@
 #endif
 #include "cubism_runtime.hpp"
 #include "cubism_render_resources.hpp"
+#include "cubism_texture_resolution.hpp"
 
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_video.h>
@@ -29,7 +30,8 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
         BongoCatError restore_error = {};
         bool restored = false;
         try {
-            restored = previous->load_textures(&restore_error, nullptr, nullptr);
+            restored = previous->load_textures(&restore_error, nullptr, nullptr,
+                0, 0, previous->render_quality_percent());
         } catch (...) {
             restored = false;
         }
@@ -62,6 +64,10 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
         if (render_options) model->set_render_options(*render_options);
         bool dynamic_texture_resolution = texture_options &&
             texture_options->dynamic_resolution;
+        float render_quality_percent = texture_options ?
+            texture_options->render_quality_percent : 100.0f;
+        if (!bongo_cat::texture_quality_valid(render_quality_percent))
+            render_quality_percent = 100.0f;
         if (previous) {
             /* Finish the last old frame and release every render resource
                before decoding the replacement. Keeping the old atlas alive
@@ -113,7 +119,7 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
                 canvas_width, canvas_height);
         }
         if (!model->load_textures(error, progress, userdata,
-                display_width, display_height)) {
+                display_width, display_height, render_quality_percent)) {
             BongoCatResult result = error ? error->code : BONGO_CAT_ERROR_CUBISM;
             delete model;
             restore_previous();

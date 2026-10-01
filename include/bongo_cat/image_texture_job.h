@@ -16,6 +16,9 @@ typedef struct BongoCatImageTextureJob BongoCatImageTextureJob;
    texture owned by the caller. Cancellation does not wait for the worker. */
 BongoCatImageTextureJob *bongo_cat_image_texture_job_start(const char *path,
     int max_width, int max_height, BongoCatError *error);
+/* Owning thread, no GL calls or mutex wait. During source preparation there
+   is no need to switch GL contexts just to discover that no batch is ready. */
+bool bongo_cat_image_texture_job_needs_poll(BongoCatImageTextureJob *job);
 int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
     unsigned int *texture, int *width, int *height,
     BongoCatImageAlphaMask *alpha, BongoCatError *error);

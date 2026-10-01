@@ -4,6 +4,7 @@
 #include "bongo_cat/common.h"
 
 #define BONGO_CAT_DEFAULT_MAX_FPS 60
+#define BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT 100
 /* Resolve this saved choice using the display refresh rate cached at startup. */
 #define BONGO_CAT_DISPLAY_MAX_FPS (-1)
 #define BONGO_CAT_DEFAULT_WINDOW_SCALE_PERCENT 100.0f
@@ -44,11 +45,15 @@ typedef enum BongoCatObsBackgroundColor {
 typedef struct BongoCatModelPreferences {
     bool multiple_pets;
     bool mirror;
+    bool vertical_flip;
     bool mouse_mirror;
+    bool mouse_vertical_flip;
     bool mouse_centered;
     bool ignore_mouse;
     bool gamepad_four_hands;
     bool dynamic_texture_resolution;
+    /* Approximate texture-memory budget: 0.1, 1, then 10 to 100 percent. */
+    float render_quality_percent;
     int max_fps;
 } BongoCatModelPreferences;
 
@@ -57,6 +62,12 @@ typedef struct BongoCatWindowPreferences {
     bool always_on_top;
     bool hide_on_hover;
     bool keep_in_screen;
+    /*
+     * 只在录屏/直播软件里可见: 桌面上看不见这个窗口, 但 OBS 之类的采集
+     * (窗口采集 WGC / 游戏采集) 仍然拿得到画面。Windows 上通过 DWM 隐藏
+     * (DWMWA_CLOAK) 实现, 其它平台暂不支持。
+     */
+    bool capture_only;
     bool obs_background;
     bool random_expression;
     bool random_motion;
@@ -79,9 +90,13 @@ typedef struct BongoCatWindowState {
     int width;
     int height;
     /* The authored composition size inside width/height.  The outer window
-       may be larger to hold expression geometry outside the base canvas. */
+       may be larger to hold animated geometry outside the base canvas. */
     int content_width;
     int content_height;
+    /* Physical top-left inset, retained so resetting the learned motion frame
+       at startup does not move the content origin on the desktop. */
+    int content_left;
+    int content_top;
 } BongoCatWindowState;
 
 typedef struct BongoCatApplicationPreferences {

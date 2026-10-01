@@ -53,7 +53,7 @@ bool bongo_cat_windows_hdr_present(SDL_Window *window, int width, int height) {
         if (!platform) return SDL_GL_SwapWindow(window);
         platform->window = window;
         platform->window_opacity = 1.0f;
-        platform->presenter = bongo_cat_windows_layered_create();
+        platform->presenter = bongo_cat_windows_layered_create(false);
         if (!platform->presenter) {
             SDL_free(platform);
             return SDL_GL_SwapWindow(window);

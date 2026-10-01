@@ -12,7 +12,9 @@
 
 int bongo_cat_test_failures;
 static LPARAM forwarded_mouse, forwarded_wheel;
+static UINT forwarded_button;
 static HWND native_window(SDL_Window *window);
+void bongo_cat_test_windows_click_through(BongoCatPlatform *platform);
 
 static LRESULT CALLBACK input_probe(HWND window, UINT message, WPARAM wparam,
     LPARAM lparam, UINT_PTR id, DWORD_PTR reference) {
@@ -20,18 +22,27 @@ static LRESULT CALLBACK input_probe(HWND window, UINT message, WPARAM wparam,
     if (message == WM_NCHITTEST) return HTBOTTOMRIGHT;
     if (message == WM_MOUSEMOVE) { forwarded_mouse = lparam; return 0; }
     if (message == WM_MOUSEWHEEL) { forwarded_wheel = lparam; return 0; }
+    if (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN) {
+        forwarded_button = message; return 0;
+    }
     return DefSubclassProc(window, message, wparam, lparam);
 }
 
-static void check_proxy_input(SDL_Window *window, HWND proxy) {
+static void check_proxy_input(SDL_Window *window, HWND proxy, bool pet) {
     HWND source = native_window(window);
     CHECK(SetWindowSubclass(source, input_probe, 123, 0));
-    CHECK(SendMessageW(proxy, WM_NCHITTEST, 0, 0) == HTBOTTOMRIGHT);
+    CHECK(SendMessageW(proxy, WM_NCHITTEST, 0, 0) ==
+        (pet ? HTCLIENT : HTBOTTOMRIGHT));
     forwarded_mouse = forwarded_wheel = 0;
     SendMessageW(proxy, WM_MOUSEMOVE, 0, MAKELPARAM(20, 30));
     CHECK(forwarded_mouse == MAKELPARAM(20, 30));
     SendMessageW(proxy, WM_MOUSEWHEEL, MAKEWPARAM(0, WHEEL_DELTA), MAKELPARAM(200, 300));
     CHECK(forwarded_wheel == MAKELPARAM(200, 300));
+    forwarded_button = 0;
+    SendMessageW(proxy, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(20, 30));
+    CHECK(forwarded_button == WM_LBUTTONDOWN);
+    SendMessageW(proxy, WM_RBUTTONDOWN, MK_RBUTTON, MAKELPARAM(20, 30));
+    CHECK(forwarded_button == WM_RBUTTONDOWN);
     CHECK(RemoveWindowSubclass(source, input_probe, 123));
 }
 
@@ -170,14 +181,15 @@ static void test_window(bool pet, bool transparent, bool menu) {
     }
     BongoCatPlatform platform = {.window = window, .window_opacity = 1.0f};
     if (pet) {
-        platform.presenter = bongo_cat_windows_layered_create();
+        platform.presenter = bongo_cat_windows_layered_create(transparent);
         CHECK(platform.presenter != NULL);
         bongo_cat_windows_borderless_install(native_window(window));
+        bongo_cat_platform_set_click_through(&platform, false, false);
     }
     /* The first successful frame must survive the hidden-to-shown transition. */
     draw_marker(window, false);
     bool first = pet ? present_pet(&platform) : bongo_cat_ui_present(window);
-    CHECK(first || (pet && bongo_cat_windows_hdr_enabled(window)));
+    CHECK(first || (pet && transparent));
     if (pet) bongo_cat_platform_set_visible(&platform, true);
     else CHECK(SDL_ShowWindow(window));
     if (!first) CHECK(present_pet(&platform));
@@ -222,20 +234,28 @@ static void test_window(bool pet, bool transparent, bool menu) {
         CHECK(pet ? present_pet(&platform) : bongo_cat_ui_present(window));
         check_desktop_marker(window, hdr != 0);
         HWND proxy = bongo_cat_windows_layered_proxy(native_window(window));
-        CHECK((proxy && IsWindowVisible(proxy)) == (hdr && transparent));
-        if (hdr && transparent) {
+        CHECK((proxy && IsWindowVisible(proxy)) == ((pet || hdr) && transparent));
+        if ((pet || hdr) && transparent) {
             CHECK(!(GetWindowLongPtrW(proxy, GWL_EXSTYLE) & WS_EX_TRANSPARENT));
             CHECK(bongo_cat_windows_layered_suppressed(native_window(window)));
             check_transparent_corner(window);
-            check_proxy_input(window, proxy);
+            check_proxy_input(window, proxy, pet);
         }
     }
+    if (pet && transparent) bongo_cat_test_windows_click_through(&platform);
     /* A failed layered upload must unsuppress the source immediately. */
     CHECK(SDL_SetHint("BONGO_CAT_TEST_LAYERED_FAILURE", "1"));
     draw_marker(window, false);
     CHECK(pet ? present_pet(&platform) : bongo_cat_ui_present(window));
     check_desktop_marker(window, false);
     CHECK(!bongo_cat_windows_layered_suppressed(native_window(window)));
+    if (pet) {
+        CHECK(!bongo_cat_windows_layered_native_hit_test(&platform));
+        int width, height;
+        uint8_t alpha = 0;
+        CHECK(SDL_GetWindowSizeInPixels(window, &width, &height));
+        CHECK(!bongo_cat_platform_frame_alpha(&platform, width, height, 0, 0, &alpha));
+    }
     SDL_ResetHint("BONGO_CAT_TEST_LAYERED_FAILURE");
     draw_marker(window, true);
     CHECK(pet ? present_pet(&platform) : bongo_cat_ui_present(window));

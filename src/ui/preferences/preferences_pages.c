@@ -101,6 +101,18 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.keepInScreen", "Keep on Screen"), "",
         &window->keep_in_screen) && window->keep_in_screen)
         bongo_cat_window_clamp_to_display(app);
+    /* 只在录屏/直播软件里显示: 仅 Windows 有等价机制 (DWM 隐藏), 其它平台不显示
+       这一项, 免得给用户一个点了没反应的开关。 */
+    if (bongo_cat_platform_capture_only_supported()) {
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SOLID_BACKGROUND);
+        if (bongo_cat_pref_toggle(context, "capture-only", tr(app,
+            "pages.preference.cat.labels.captureOnly", "Capture Only"), tr(app,
+            "pages.preference.cat.hints.captureOnly", "Hidden on the desktop, "
+            "still visible in OBS"), &window->capture_only)) {
+            bongo_cat_window_apply_capture_only(app);
+            app->dirty = true;
+        }
+    }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SOLID_BACKGROUND);
     if (bongo_cat_pref_obs_background(context, "obs-background", tr(app,
         "pages.preference.cat.labels.obsBackground", "Solid Background"), tr(app,
@@ -174,15 +186,93 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.cat.labels.modelSettings", "Model"),
         BONGO_CAT_PREF_ICON_SECTION_MODEL);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
+    if (bongo_cat_pref_toggle(context, "gamepad-four-hands", tr(app,
+        "pages.preference.cat.labels.gamepadFourHands", "Gamepad Four-Hand Mode"), tr(app,
+        "pages.preference.cat.hints.gamepadFourHands",
+        "Keep two extra hands visible in gamepad mode. Appearance depends on the model"),
+        &model->gamepad_four_hands))
+        bongo_cat_app_refresh_hands(app);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MIRROR);
+    if (bongo_cat_pref_toggle(context, "mirror", tr(app,
+        "pages.preference.cat.labels.mirrorMode", "Mirror Mode"), "",
+        &model->mirror)) {
+        app->model_pointer_anchor_ready = false;
+        app->pointer_known = false;
+        app->dirty = true;
+    }
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_VERTICAL_FLIP);
+    if (bongo_cat_pref_toggle(context, "vertical-flip", tr(app,
+        "pages.preference.cat.labels.verticalFlip", "Hang Upside Down"), "",
+        &model->vertical_flip))
+        bongo_cat_app_reset_pointer_tracking(app);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_MIRROR);
+    if (bongo_cat_pref_toggle(context, "mouse-mirror", tr(app,
+        "pages.preference.cat.labels.mouseMirror", "Mouse Horizontal Flip"), "",
+        &model->mouse_mirror)) {
+        app->pointer_known = false;
+        app->dirty = true;
+    }
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_VERTICAL_FLIP);
+    if (bongo_cat_pref_toggle(context, "mouse-vertical-flip", tr(app,
+        "pages.preference.cat.labels.mouseVerticalFlip", "Mouse Vertical Flip"), "",
+        &model->mouse_vertical_flip))
+        bongo_cat_app_reset_pointer_tracking(app);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_CENTERED);
+    bool disable_mouse_centered = !model->mouse_centered;
+    if (bongo_cat_pref_toggle(context, "mouse-centered", tr(app,
+        "pages.preference.cat.labels.mouseCentered",
+        "Disable Mouse Centering on Desktop Pet"), "", &disable_mouse_centered)) {
+        model->mouse_centered = !disable_mouse_centered;
+        bongo_cat_app_reset_pointer_tracking(app);
+    }
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
+    if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
+        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), "",
+        &model->ignore_mouse)) {
+        app->pointer_known = false;
+        app->dirty = true;
+    }
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MAX_FPS);
+    model->max_fps = bongo_cat_pref_fps(context, "max-fps", tr(app,
+        "pages.preference.cat.labels.maxFPS", "Max Frame Rate"), model->max_fps,
+        app->startup_display_fps);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
+    float next_quality = bongo_cat_pref_render_quality(context, "render-quality",
+        tr(app, "pages.preference.cat.labels.renderQuality",
+            "Model Quality (%)"),
+        tr(app, "pages.preference.cat.hints.renderQuality",
+            "Try to find a visual balance and save memory."),
+        model->render_quality_percent);
+    if (next_quality != model->render_quality_percent) {
+        float old_quality = model->render_quality_percent;
+        model->render_quality_percent = next_quality;
+        BongoCatError reload_error = {0};
+        bool reloaded = !app->loaded_model[0] ||
+            bongo_cat_live2d_try_reuse_texture_quality(app->live2d, next_quality) ||
+            bongo_cat_app_reload_model_with_error(app, &reload_error);
+        if (!reloaded) {
+            model->render_quality_percent = old_quality;
+            char message[1024];
+            snprintf(message, sizeof(message), "%s\n%s", tr(app,
+                "pages.preference.cat.hints.dynamicTextureResolutionFailed",
+                "Unable to reload the model with the selected texture mode."),
+                reload_error.message);
+            bongo_cat_preferences_notice_show(app, message, true);
+        } else app->dirty = true;
+    }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_TEXTURE_RESOLUTION);
     bool old_dynamic_texture_resolution = model->dynamic_texture_resolution;
+    bool disable_dynamic_texture_resolution = !model->dynamic_texture_resolution;
     if (bongo_cat_pref_toggle(context, "dynamic-texture-resolution", tr(app,
         "pages.preference.cat.labels.dynamicTextureResolution",
-        "Dynamic Texture Resolution"), tr(app,
+        "Disable Dynamic Texture Resolution"), tr(app,
         "pages.preference.cat.hints.dynamicTextureResolution",
-        "Downsample large model textures to match the current display size. "
-        "The model reloads after changing this option."),
-        &model->dynamic_texture_resolution)) {
+        "Dynamically adjusts texture resolution to the actual display size, "
+        "preserving visual detail while optimizing video memory usage. "
+        "Enabling this option is generally not recommended."),
+        &disable_dynamic_texture_resolution)) {
+        model->dynamic_texture_resolution = !disable_dynamic_texture_resolution;
         SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
             "[memory] texture-mode-change previous=%d requested=%d",
             old_dynamic_texture_resolution, model->dynamic_texture_resolution);
@@ -202,45 +292,6 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
             "[memory] texture-mode-result reloaded=%d active=%d",
             reloaded, model->dynamic_texture_resolution);
     }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
-    if (bongo_cat_pref_toggle(context, "gamepad-four-hands", tr(app,
-        "pages.preference.cat.labels.gamepadFourHands", "Gamepad Four-Hand Mode"), tr(app,
-        "pages.preference.cat.hints.gamepadFourHands",
-        "Keep two extra hands visible in gamepad mode. Appearance depends on the model"),
-        &model->gamepad_four_hands))
-        bongo_cat_app_refresh_hands(app);
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MIRROR);
-    if (bongo_cat_pref_toggle(context, "mirror", tr(app,
-        "pages.preference.cat.labels.mirrorMode", "Mirror Mode"), "",
-        &model->mirror)) {
-        app->model_pointer_anchor_ready = false;
-        app->pointer_known = false;
-        app->dirty = true;
-    }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_MIRROR);
-    if (bongo_cat_pref_toggle(context, "mouse-mirror", tr(app,
-        "pages.preference.cat.labels.mouseMirror", "Mouse Mirror"), "",
-        &model->mouse_mirror)) {
-        app->pointer_known = false;
-        app->dirty = true;
-    }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_CENTERED);
-    if (bongo_cat_pref_toggle(context, "mouse-centered", tr(app,
-        "pages.preference.cat.labels.mouseCentered", "Mouse Centered on Desktop Pet"),
-        "", &model->mouse_centered)) {
-        bongo_cat_app_reset_pointer_tracking(app);
-    }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
-    if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
-        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), "",
-        &model->ignore_mouse)) {
-        app->pointer_known = false;
-        app->dirty = true;
-    }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MAX_FPS);
-    model->max_fps = bongo_cat_pref_fps(context, "max-fps", tr(app,
-        "pages.preference.cat.labels.maxFPS", "Max Frame Rate"), model->max_fps,
-        app->startup_display_fps);
 }
 
 static void update_autostart(BongoCatApp *app, bool old_value, bool old_admin) {

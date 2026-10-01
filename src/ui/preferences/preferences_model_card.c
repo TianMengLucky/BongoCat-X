@@ -71,14 +71,6 @@ bool bongo_cat_preferences_model_import_card(BongoCatPreferences *value,
     text(context, canvas, nk_rect(cx - width * .5f, cy + 25,
         NK_MIN(width + 1, bounds.w - 20), 24), label, p.accent,
         value->ui.caption_font);
-    const char *support = tr(value->app,
-        "pages.preference.model.hints.supportedImportFormats",
-        "Supports Mver and Tauri formats");
-    width = value->ui.caption_font->width(value->ui.caption_font->userdata,
-        value->ui.caption_font->height, support, nk_strlen(support));
-    text(context, canvas, nk_rect(cx - width * .5f, cy + 47,
-        NK_MIN(width + 1, bounds.w - 20), 24), support, p.pink,
-        value->ui.caption_font);
     if (pointer_hover) bongo_cat_ui_cursor_hover_rect(context, bounds,
         BONGO_CAT_UI_CURSOR_POINTER);
     return pointer_hover && nk_input_is_mouse_click_in_rect(&context->input,
@@ -131,18 +123,13 @@ static void open_model_directory(BongoCatPreferences *value,
 
 static void draw_cover(BongoCatPreferences *value,
     struct nk_command_buffer *canvas, struct nk_rect preview,
-    const BongoCatModelEntry *entry, BongoCatUIPalette p) {
+    const BongoCatModelEntry *entry) {
     float raster_scale = value->ui.raster_scale > 0.0f ?
         value->ui.raster_scale : 1.0f;
     const BongoCatModelCover *cover = bongo_cat_preferences_model_cover(
         value->app, entry, NK_MAX(1, (int)lroundf(preview.w * raster_scale)),
         NK_MAX(1, (int)lroundf(preview.h * raster_scale)));
-    if (!cover) {
-        bongo_cat_preferences_icon_draw(value, canvas, BONGO_CAT_UI_ICON_CAT,
-            nk_rect(preview.x + (preview.w - 34) * .5f,
-                preview.y + (preview.h - 34) * .5f, 34, 34), p.muted);
-        return;
-    }
+    if (!cover) return;
     float scale = NK_MIN(preview.w / cover->width, preview.h / cover->height);
     struct nk_rect image = nk_rect(
         preview.x + (preview.w - cover->width * scale) * .5f,
@@ -305,7 +292,7 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
     struct nk_rect preview = nk_rect(bounds.x + 1, bounds.y + 1,
         bounds.w - 2, preview_height);
     nk_fill_rect(canvas, preview, 12, p.surface);
-    draw_cover(value, canvas, preview, entry, p);
+    draw_cover(value, canvas, preview, entry);
     if (app->settings.model.multiple_pets)
         bongo_cat_preferences_model_card_draw_selection_badge(
             value, canvas, preview, p, selection_amount);

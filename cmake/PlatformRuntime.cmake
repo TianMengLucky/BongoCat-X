@@ -71,8 +71,31 @@ else()
     src/platform/linux/linux_evdev_devices.c
     src/platform/linux/linux_evdev_events.c
     src/platform/linux/linux_evdev_keys.c
+    src/platform/linux/linux_shape.c
+    src/platform/linux/linux_wayland_shape.c
     src/platform/linux/linux_x11.c)
   target_link_libraries(bongo_cat_runtime PRIVATE
     X11::X11 X11::Xi X11::Xfixes m CURL::libcurl)
   target_link_libraries(bongo_cat_core PRIVATE m)
+  # Discover fonts outside the known distro paths, including user fonts.
+  find_package(Fontconfig QUIET)
+  if(Fontconfig_FOUND)
+    target_sources(bongo_cat_runtime PRIVATE src/ui/rendering/ui_font_fontconfig.c)
+    target_compile_definitions(bongo_cat_runtime PRIVATE BONGO_CAT_HAS_FONTCONFIG=1)
+    target_link_libraries(bongo_cat_runtime PRIVATE Fontconfig::Fontconfig)
+  else()
+    message(WARNING "Fontconfig unavailable: font discovery uses fixed system paths only")
+  endif()
+  # X11/XWayland always use XFixes. Native Wayland needs the core input-region
+  # protocol, which the pinned SDL does not implement for SetWindowShape.
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(BONGO_CAT_WAYLAND QUIET IMPORTED_TARGET wayland-client>=1.11)
+  endif()
+  if(TARGET PkgConfig::BONGO_CAT_WAYLAND)
+    target_compile_definitions(bongo_cat_runtime PRIVATE BONGO_CAT_HAS_WAYLAND_SHAPE=1)
+    target_link_libraries(bongo_cat_runtime PRIVATE PkgConfig::BONGO_CAT_WAYLAND)
+  else()
+    message(STATUS "wayland-client unavailable: pet input shapes support X11/XWayland only")
+  endif()
 endif()

@@ -189,8 +189,9 @@ static void start_pending_jobs(BongoCatImportDialog *dialog, BongoCatApp *app) {
             "Cannot start model import thread: %s", SDL_GetError());
         for (size_t i = 0; i < job->count; ++i)
             bongo_cat_preferences_import_record_failure(job, job->paths[i]);
-        bongo_cat_preferences_import_complete(app, error.code, &error,
-            0, 0, 0, job->count, job->failed_names, job->failed_name_count);
+        job->failed_count = job->count;
+        job->error = error;
+        bongo_cat_preferences_import_merge(&dialog->summary, job);
         bongo_cat_preferences_import_job_free(job);
     }
 }
@@ -213,18 +214,22 @@ static void complete_job(BongoCatImportDialog *dialog, BongoCatApp *app,
     if (job->result == BONGO_CAT_OK)
         for (size_t i = 0; i < job->package_id_count; ++i)
             if (bongo_cat_settings_restore_model_package(&app->settings,
-                    job->package_ids[i])) restored_count++;
+                    job->package_ids[i])) {
+                restored_count++;
+                job->package_imported[i] = true;
+            }
     bool catalog_changed = job->installed_count > 0 || restored_count > 0;
     if (job->result == BONGO_CAT_OK && catalog_changed)
         for (size_t i = 0; i < job->package_id_count; ++i)
             if (!job->package_refresh_requested[i])
                 bongo_cat_app_request_model_package_refresh(app,
                     job->package_ids[i]);
+    bongo_cat_preferences_import_merge(&dialog->summary, job);
     start_pending_jobs(dialog, app);
-    bongo_cat_preferences_import_complete(app, job->result, &job->error,
-        job->resolved_count, job->installed_count + restored_count,
-        job->succeeded_count, job->failed_count, job->failed_names,
-        job->failed_name_count);
+    if (!bongo_cat_preferences_import_status(dialog, NULL, NULL, NULL)) {
+        bongo_cat_preferences_import_complete(app, &dialog->summary);
+        memset(&dialog->summary, 0, sizeof(dialog->summary));
+    }
     bongo_cat_preferences_import_job_free(job);
     bongo_cat_preferences_import_dialog_release(dialog);
 }

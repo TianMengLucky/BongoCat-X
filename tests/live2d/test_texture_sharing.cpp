@@ -118,6 +118,7 @@ public:
         require(glGetError() == GL_NO_ERROR, "Model upload GL error");
     }
     ~Model() { reset(); }
+    bongo_cat::NativeModel &native() { return *model_; }
     void reset() {
         if (model_) {
             session_.use();
@@ -167,6 +168,30 @@ void sharing_lifetime(Session &session, const Fixtures &fixtures) {
     pixels(texture, original);
     second.reset();
     require(!glIsTexture(texture), "Weak cache retained texture after its final owner");
+}
+
+void quality_reuse(Session &session, const Fixtures &fixtures) {
+    Model model(session, fixtures.directory("first"));
+    GLuint texture = model.texture();
+    auto *renderer = model.native().GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>();
+    // A 4x4 atlas stays 4x4 at 90 after rounding. Reuse must preserve its
+    // renderer, pixel contents and ownership rather than rebuilding them.
+    require(model.native().try_reuse_texture_quality(90), "Equivalent quality did not reuse textures");
+    require(model.native().render_quality_percent() == 90, "Reused quality was not committed");
+    require(model.texture() == texture && renderer ==
+        model.native().GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>(),
+        "Equivalent quality rebuilt rendering resources");
+    pixels(texture, original);
+    // A real size change or invalid choice must leave the old state intact
+    // so the caller can perform its normal reload/rollback transaction.
+    for (float quality : {0.1f, 1.0f, 10.0f, 0.0f, 11.0f}) {
+        require(!model.native().try_reuse_texture_quality(quality),
+            "Incompatible quality incorrectly reused textures");
+        require(model.native().render_quality_percent() == 90 && model.texture() == texture,
+            "Failed reuse modified the current model");
+    }
+    model.native().release_render_resources();
+    require(!model.native().try_reuse_texture_quality(100), "Missing resources were reused");
 }
 
 void changed_source(Session &session, const Fixtures &fixtures) {
@@ -257,6 +282,7 @@ int main() {
         Fixtures fixtures;
         Session session;
         sharing_lifetime(session, fixtures);
+        quality_reuse(session, fixtures);
         changed_source(session, fixtures);
         separate_contexts(session, fixtures);
         std::puts("Texture sharing: exact texels/mips, content identity, final-owner cleanup and context isolation passed");

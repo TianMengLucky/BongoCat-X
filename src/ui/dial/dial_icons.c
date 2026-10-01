@@ -1,4 +1,4 @@
-/* Static vector contours based on index.html; motion uses the settings running pose. */
+/* Static vector contours; flip icons match the axes shown in preferences. */
 #include "dial_internal.h"
 typedef struct IconContour { unsigned short offset, count; } IconContour;
 static const DialPoint points[] = {
@@ -186,6 +186,14 @@ static const DialPoint points[] = {
     {9.0761f, 3.6173f}, {9.2929f, 3.2929f}, {9.6173f, 3.0761f}, {10.0000f, 3.0000f},
     {14.0000f, 3.0000f}, {14.3827f, 3.0761f}, {14.7071f, 3.2929f}, {14.9239f, 3.6173f},
     {15.0000f, 4.0000f}, {15.0000f, 8.0000f},
+    /* Horizontal reflection: matching triangles across a vertical axis. */
+    {12, 2}, {12, 22},
+    {3, 12}, {9, 6}, {9, 18}, {3, 12},
+    {21, 12}, {15, 6}, {15, 18}, {21, 12},
+    /* Vertical reflection: matching triangles above and below an axis. */
+    {2, 12}, {22, 12},
+    {12, 3}, {6, 9}, {18, 9}, {12, 3},
+    {12, 21}, {6, 15}, {18, 15}, {12, 21},
 };
 static const IconContour contours[] = {
     {0, 170}, {170, 49}, {219, 21}, {240, 23}, {263, 40}, {303, 2},
@@ -195,9 +203,11 @@ static const IconContour contours[] = {
     {547, 4}, {551, 49}, {600, 49}, {649, 38}, {687, 18}, {705, 3},
     {708, 2}, {710, 2}, {712, 2}, {714, 5}, {719, 2}, {721, 2},
     {723, 2}, {725, 12},
+    {737, 2}, {739, 4}, {743, 4},
+    {747, 2}, {749, 4}, {753, 4},
 };
 static const IconContour icons[] = {
-    {0, 2}, {2, 4}, {6, 4}, {10, 3}, {13, 4}, {17, 2}, {19, 6}, {25, 4}, {29, 3}, {32, 1}, {33, 3}, {36, 2}, {38, 2}, {40, 3}
+    {0, 2}, {43, 3}, {46, 3}, {10, 3}, {13, 4}, {17, 2}, {19, 6}, {25, 4}, {29, 3}, {32, 1}, {33, 3}, {36, 2}, {38, 2}, {40, 3}
 };
 
 void dial_icon(Dial *d, int icon, float x, float y, float size, uint32_t color) {

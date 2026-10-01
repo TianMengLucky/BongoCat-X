@@ -67,7 +67,8 @@ static bool full_sampling(GLuint texture) {
 }
 
 static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
-    bool direct, bool dynamic_resolution, int display_width, int display_height,
+    bool direct, bool dynamic_resolution, float render_quality_percent,
+    int display_width, int display_height,
     int reference_width, int reference_height, int texture_limit,
     BongoCatImageProgress progress, void *userdata, BongoCatError *error) {
     live_textures.erase(std::remove_if(live_textures.begin(), live_textures.end(),
@@ -79,18 +80,21 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
     bongo_cat_image_info(path.c_str(), &source_width, &source_height);
     TextureResolution resolution = texture_resolution_for(dynamic_resolution,
         display_width, display_height, reference_width, reference_height,
-        source_width, source_height, texture_limit);
-    const char *resolution_reason = !dynamic_resolution ? "disabled" :
+        source_width, source_height, texture_limit, render_quality_percent);
+    const char *resolution_reason = render_quality_percent < 100 ?
+        (dynamic_resolution ? "display-and-quality-bound" : "quality-bound") :
+        !dynamic_resolution ? "disabled" :
         source_width <= 0 || source_height <= 0 ? "source-size-unknown" :
         resolution.resized ? "display-bound" : "original-size-needed";
     bongo_cat_model_memory_log("texture-plan",
         "dynamic=%d direct=%d display=%dx%d reference=%dx%d source=%dx%d "
-        "bound=%dx%d gpu_limit=%d reason=%s original_rgba8_mips_est_mib=%.1f "
+        "bound=%dx%d gpu_limit=%d quality=%.1f reason=%s original_rgba8_mips_est_mib=%.1f "
         "bound_rgba8_mips_est_mib=%.1f file=%s",
         dynamic_resolution ? 1 : 0, direct ? 1 : 0,
         display_width, display_height, reference_width, reference_height,
         source_width, source_height, resolution.max_width,
-        resolution.max_height, texture_limit, resolution_reason,
+        resolution.max_height, texture_limit, render_quality_percent,
+        resolution_reason,
         bongo_cat_model_texture_mib(source_width, source_height, true),
         bongo_cat_model_texture_mib(resolution.max_width, resolution.max_height, true),
         path.c_str());
@@ -126,7 +130,8 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
     texture->max_width = resolution.max_width;
     texture->max_height = resolution.max_height;
     int loaded_width = 0, loaded_height = 0;
-    texture->id = dynamic_resolution && resolution.max_width > 0 &&
+    texture->id = (dynamic_resolution || render_quality_percent < 100) &&
+        resolution.max_width > 0 &&
         resolution.max_height > 0 ?
         bongo_cat_image_texture_model_scaled_cached(path.c_str(), reusable ? digest : nullptr, direct,
             resolution.max_width, resolution.max_height, &loaded_width,
@@ -185,6 +190,7 @@ void NativeModel::release_textures() {
     cancel_texture_refresh();
     textures_.clear();
     triangle_alpha_.clear();
+    frame_drawables_.clear();
 }
 
 const BongoCatImageAlphaMask *NativeModel::texture_alpha(int index) const {
@@ -194,7 +200,9 @@ const BongoCatImageAlphaMask *NativeModel::texture_alpha(int index) const {
 
 bool NativeModel::load_textures(BongoCatError *error,
     BongoCatLive2DLoadProgress progress, void *userdata,
-    int display_width, int display_height) {
+    int display_width, int display_height, float render_quality_percent) {
+    if (!texture_quality_valid(render_quality_percent)) render_quality_percent = 100.0f;
+    render_quality_percent_ = render_quality_percent;
     release_textures();
     int count = setting_->GetTextureCount();
     textures_.assign((size_t)count, nullptr);
@@ -214,6 +222,7 @@ bool NativeModel::load_textures(BongoCatError *error,
     }
     GLint texture_limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_limit);
+    texture_limit_ = texture_limit;
     TextureProgressContext texture_context = {progress, userdata, .50f,
         .45f / (float)(count > 0 ? count : 1)};
     for (int i = 0; i < count; ++i) {
@@ -221,7 +230,8 @@ bool NativeModel::load_textures(BongoCatError *error,
             (float)(count > 0 ? count : 1);
         textures_[(size_t)i] = acquire_texture(
             path(setting_->GetTextureFileName(i)), direct_textures_,
-            dynamic_texture_resolution_, display_width, display_height, reference_width,
+            dynamic_texture_resolution_, render_quality_percent_, display_width,
+            display_height, reference_width,
             reference_height, (int)texture_limit,
             progress ? texture_progress : nullptr, &texture_context, error);
         if (!textures_[(size_t)i]) {
@@ -231,7 +241,11 @@ bool NativeModel::load_textures(BongoCatError *error,
         if (progress) progress(userdata, .50f + .45f * (float)(i + 1) /
             (float)(count > 0 ? count : 1));
     }
-    prepare_expression_frame();
+    if (!frame_prepared_) {
+        prepare_expression_frame();
+        frame_prepared_ = true;
+    }
+    prepare_frame_bounds();
     release_renderer();
     if (!create_renderer(error)) {
         release_textures();

@@ -21,6 +21,7 @@ int test_mver_missing_motion_groups(void);
 int test_mver_policy(void);
 int test_model_import_identity(void);
 int test_slim_package(void);
+int test_preferences_import(void);
 static bool chord(const char *json, bool gamepad, const char *expected) {
     yyjson_doc *document = yyjson_read(json, strlen(json), 0);
     BongoCatImportCandidate candidate = {0};
@@ -239,11 +240,14 @@ static void model_visual_curve(void) {
     CHECK(complete == 1.0f && !value.model_load_visual_active);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "--import-notice"))
+        return test_preferences_import() ? 1 : 0;
     test_mver_config();
     test_mver_pointer_modes();
     test_mver_audio();
     failures += test_preferences_text();
+    failures += test_preferences_import();
     CHECK(chord("[17,65]", true, "Control+A"));
     CHECK(chord("[0]", true, "Gamepad:South"));
     CHECK(chord("[15]", true, "Gamepad:Select"));

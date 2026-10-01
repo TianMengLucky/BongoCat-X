@@ -88,7 +88,7 @@ static bool expression_matrix(FILE *file, BongoCatApp *app, int expression,
        clipped by the fixed composition canvas rather than moving the model. */
     passed = record(file, app, label, false, &stable) && passed;
     passed = close_scale(enter.fit_scale, stable.fit_scale) &&
-        !stable.fitted && close_scale(stable.fit_scale, 1.0f) &&
+        enter.fitted == stable.fitted &&
         close_scale(stable.fit_translate_x, 0.0f) &&
         close_scale(stable.fit_translate_y, 0.0f) && passed;
 
@@ -152,10 +152,10 @@ static bool motion_replay_matrix(FILE *file, BongoCatApp *app,
     advance(app, 1);
     snprintf(label, sizeof(label), "motion-%d-replayed", entry->index);
     passed = record(file, app, label, !mver, &replayed) && passed;
-    if (mver) passed = !active.fitted && !stable.fitted && !replayed.fitted &&
-        close_scale(active.fit_scale, 1.0f) &&
-        close_scale(stable.fit_scale, 1.0f) &&
-        close_scale(replayed.fit_scale, 1.0f) && passed;
+    if (mver) passed = active.fitted == stable.fitted &&
+        stable.fitted == replayed.fitted &&
+        close_scale(active.fit_scale, stable.fit_scale) &&
+        close_scale(stable.fit_scale, replayed.fit_scale) && passed;
     return passed;
 }
 
@@ -177,7 +177,6 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
     advance(app, 90);
     passed = record(file, app, "idle", false, &baseline) && passed;
     if (!baseline.mver_projection) passed = inside(&baseline) && passed;
-    passed = !baseline.fitted && close_scale(baseline.fit_scale, 1.0f) && passed;
     const float pointers[][2] = {{-1.0f, -1.0f}, {1.0f, 1.0f}};
     for (int i = 0; i < 2; ++i) {
         bongo_cat_live2d_set_dragging(app->live2d, pointers[i][0], pointers[i][1]);
@@ -185,7 +184,7 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
         char label[32]; snprintf(label, sizeof(label), "pointer-%d", i);
         passed = record(file, app, label, !baseline.mver_projection, &current) &&
             close_scale(baseline.fit_scale, current.fit_scale) &&
-            !current.fitted && passed;
+            baseline.fitted == current.fitted && passed;
     }
     size_t index_capacity = app->behaviors.count > 3 ? app->behaviors.count : 3;
     int *expression_indexes = calloc(index_capacity, sizeof(*expression_indexes));
@@ -205,7 +204,8 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
         advance(app, 90);
         char label[32]; snprintf(label, sizeof(label), "expression-%d-reset", expression);
         passed = record(file, app, label, !baseline.mver_projection, &current) &&
-            close_scale(current.fit_scale, 1.0f) && !current.fitted && passed;
+            close_scale(current.fit_scale, baseline.fit_scale) &&
+            current.fitted == baseline.fitted && passed;
     }
     if (baseline.mver_projection) {
         for (size_t i = 0; i < app->behaviors.count; ++i) {

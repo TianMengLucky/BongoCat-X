@@ -59,9 +59,12 @@ void bongo_cat_window_show_context_menu(BongoCatApp *app) {
         &current_expression);
     BongoCatMenuLabels labels = {
         tr(app, "composables.useAppMenu.labels.preference", "Preferences"),
-        tr(app, "composables.useAppMenu.labels.hideCat", "Hide Cat"),
-        tr(app, "composables.useAppMenu.labels.passThrough", "Pass Through"),
-        tr(app, "composables.useAppMenu.labels.alwaysOnTop", "Always on top"),
+        tr(app, "pages.preference.cat.labels.mirrorMode", "Mirror Mode"),
+        tr(app, "pages.preference.cat.labels.verticalFlip", "Hang Upside Down"),
+        app->settings.window.always_on_top
+            ? tr(app, "composables.useAppMenu.labels.cancelAlwaysOnTop",
+                "Turn off always on top")
+            : tr(app, "composables.useAppMenu.labels.alwaysOnTop", "Always on top"),
         tr(app, "composables.useAppMenu.labels.windowSize", "Window Size"),
         tr(app, "composables.useAppMenu.labels.opacity", "Opacity"),
         tr(app, "composables.useAppMenu.labels.model", "Model"),
@@ -75,14 +78,15 @@ void bongo_cat_window_show_context_menu(BongoCatApp *app) {
         model_names, motion_names, expression_names, motion_checked,
         app->models.count, current_model, motion_count, expression_count,
         current_expression, app->session.window.scale_percent,
-        app->session.window.opacity_percent, app->settings.window.pass_through,
+        app->session.window.opacity_percent, app->settings.model.mirror,
         app->settings.window.always_on_top, dark_theme,
         bongo_cat_window_menu_preview, bongo_cat_window_menu_preview_tick,
         bongo_cat_window_menu_restore, &preview,
         tr(app, "native.removeDesktopPet", "Close this desktop pet"),
         app->secondary_pet || (app->settings.model.multiple_pets &&
             app->session.additional_model_count > 0), NULL, NULL, NULL, 0,
-        model_cover_directories, &app->context_menu_close_requested};
+        model_cover_directories, &app->context_menu_close_requested,
+        app->settings.model.vertical_flip};
     char (*audio_names)[BONGO_CAT_MENU_LABEL_CAP] = names + capacity * 2;
     bool *audio_checked = checked + capacity;
     labels.audio = tr(app, "pages.preference.model.behaviorModal.labels.audio", "Audio");
@@ -114,6 +118,14 @@ void bongo_cat_window_menu_action(BongoCatApp *app,
         if (app->preferences)
             bongo_cat_preferences_open_model_import(app->preferences,
                 app->window);
+    } else if (action == BONGO_CAT_MENU_MIRROR) {
+        app->settings.model.mirror = !app->settings.model.mirror;
+        app->model_pointer_anchor_ready = false;
+        app->pointer_known = false;
+        app->dirty = true;
+    } else if (action == BONGO_CAT_MENU_VERTICAL_FLIP) {
+        app->settings.model.vertical_flip = !app->settings.model.vertical_flip;
+        bongo_cat_app_reset_pointer_tracking(app);
     } else if (action == BONGO_CAT_MENU_HIDE)
         bongo_cat_window_set_visible(app, false);
     else if (action == BONGO_CAT_MENU_PASS_THROUGH) {
@@ -186,6 +198,20 @@ void bongo_cat_window_menu_action(BongoCatApp *app,
 
 bool bongo_cat_window_menu_self_test(BongoCatApp *app) {
     if (!app || !app->preferences) return false;
+    bool mirror = app->settings.model.mirror;
+    bool vertical_flip = app->settings.model.vertical_flip;
+    bool visible = app->session.window.visible;
+    bool pass_through = app->settings.window.pass_through;
+    bongo_cat_window_menu_action(app, BONGO_CAT_MENU_MIRROR);
+    bongo_cat_window_menu_action(app, BONGO_CAT_MENU_VERTICAL_FLIP);
+    bool orientation = app->settings.model.mirror == !mirror &&
+        app->settings.model.vertical_flip == !vertical_flip &&
+        app->session.window.visible == visible &&
+        app->settings.window.pass_through == pass_through;
+    bongo_cat_window_menu_action(app, BONGO_CAT_MENU_MIRROR);
+    bongo_cat_window_menu_action(app, BONGO_CAT_MENU_VERTICAL_FLIP);
+    orientation = orientation && app->settings.model.mirror == mirror &&
+        app->settings.model.vertical_flip == vertical_flip;
     app->settings.window.pass_through = false;
     app->settings.window.always_on_top = false;
     app->session.window.scale_percent = 100.0f;
@@ -200,7 +226,7 @@ bool bongo_cat_window_menu_self_test(BongoCatApp *app) {
         app->settings.window.always_on_top &&
         app->session.window.scale_percent == 120.0f &&
         app->session.window.opacity_percent == 50.0f &&
-        bongo_cat_preferences_visible(app->preferences) && behavior;
+        bongo_cat_preferences_visible(app->preferences) && behavior && orientation;
     bongo_cat_preferences_close(app->preferences);
     return result;
 }

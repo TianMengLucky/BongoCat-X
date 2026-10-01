@@ -18,6 +18,8 @@ struct BongoCatOverlay {
     BongoCatMverPointerOverlay *mver_pointer;
     GLuint program;
     GLint mirror_location;
+    GLint vertical_flip_location;
+    bool vertical_flip;
     GLint image_location;
     GLint reference_width_location;
     GLint reference_height_location;

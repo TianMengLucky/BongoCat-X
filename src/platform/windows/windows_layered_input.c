@@ -14,6 +14,12 @@ bool bongo_cat_windows_layered_suppressed(HWND source) {
     return value && value->source_transparent;
 }
 
+bool bongo_cat_windows_layered_native_hit_test(const BongoCatPlatform *platform) {
+    const BongoCatWindowsLayered *value = platform ? platform->presenter : NULL;
+    return value && value->pixel_hit_test && value->active &&
+        value->has_frame && value->source_transparent;
+}
+
 void bongo_cat_windows_layered_sync_input(BongoCatPlatform *platform) {
     BongoCatWindowsLayered *value = platform ? platform->presenter : NULL;
     if (!value || !value->proxy) return;
@@ -112,6 +118,11 @@ LRESULT CALLBACK bongo_cat_windows_layered_window_proc(HWND window,
     if (!source || !IsWindow(source)) return DefWindowProcW(window, message, wparam, lparam);
     if (message == WM_NCHITTEST) {
         if (value->forced) return HTTRANSPARENT;
+        /* The layered bitmap already excludes blank pixels, for every button
+           and across processes. A cached pointer sample from the SDL source
+           may belong to an earlier cursor position/frame and must not override
+           this native decision or make the model impossible to grab. */
+        if (value->pixel_hit_test) return HTCLIENT;
         return SendMessageW(source, message, wparam, lparam);
     }
     if (message == WM_MOUSEACTIVATE) {

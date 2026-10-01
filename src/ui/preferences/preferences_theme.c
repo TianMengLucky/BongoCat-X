@@ -18,7 +18,7 @@ typedef struct ThemeFormStyle {
     float border;
 } ThemeFormStyle;
 
-static bool form_begin(struct nk_context *context, const char *id,
+static bool form_begin(struct nk_context *context, const char *id, int lines,
     ThemeFormStyle *saved) {
     saved->background = context->style.window.fixed_background;
     saved->window_color = context->style.window.background;
@@ -33,7 +33,8 @@ static bool form_begin(struct nk_context *context, const char *id,
     context->style.window.group_padding = nk_vec2(13, 11);
     context->style.window.spacing = nk_vec2(8, 3);
     context->style.window.group_border = 0;
-    nk_layout_row_dynamic(context, 76, 1);
+    float height = lines ? 70.0f + 19.0f * lines : 76.0f;
+    nk_layout_row_dynamic(context, height, 1);
     if (nk_group_begin(context, id, NK_WINDOW_NO_SCROLLBAR)) return true;
     context->style.window.fixed_background = saved->background;
     context->style.window.background = saved->window_color;
@@ -185,31 +186,40 @@ static int capsule(struct nk_context *context, const char *id,
 
 static int choice_row(struct nk_context *context, const char *id,
     const char *title, const char *const *labels, int count, bool icons,
-    int selected, bool *clicked) {
+    int selected, bool *clicked, const char *detail) {
     ThemeFormStyle saved;
-    if (!form_begin(context, id, &saved)) return selected;
+    int lines = bongo_cat_pref_detail_lines(context, detail);
+    if (!form_begin(context, id, lines, &saved)) return selected;
     float available = nk_window_get_content_region(context).w;
     float choice_width = 176.0f;
-    if (!icons && count > 1) {
-        const struct nk_user_font *font = context->style.font;
-        for (int i = 0; i < count; ++i)
-            choice_width = NK_MAX(choice_width, 12.0f + count * (24.0f +
-                font->width(font->userdata, font->height, labels[i], nk_strlen(labels[i]))));
+    float left;
+    if (count >= 10) {
+        left = NK_MIN(220.0f, NK_MAX(0.0f, available - 200.0f));
+        choice_width = NK_MAX(1.0f, available - left - 8.0f);
+    } else {
+        if (!icons && count > 1) {
+            const struct nk_user_font *font = context->style.font;
+            for (int i = 0; i < count; ++i)
+                choice_width = NK_MAX(choice_width, 12.0f + count * (24.0f +
+                    font->width(font->userdata, font->height, labels[i], nk_strlen(labels[i]))));
+        }
+        left = NK_MAX(0.0f, available - choice_width - 8.0f);
     }
-    float left = NK_MAX(0.0f, available - choice_width - 8.0f);
     nk_layout_row_begin(context, NK_STATIC, 36, 2);
     nk_layout_row_push(context, left);
     bongo_cat_pref_form_label(context, title);
-    nk_layout_row_push(context, NK_MAX(choice_width, available - left - 8.0f));
+    nk_layout_row_push(context, count >= 10 ? choice_width : NK_MAX(choice_width,
+        available - left - 8.0f));
     selected = capsule(context, id, labels, count, icons, selected, clicked);
     nk_layout_row_end(context);
+    bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved);
     return selected;
 }
 
 int bongo_cat_pref_theme(struct nk_context *context, const char *id,
     const char *title, const char *const *labels, int selected) {
-    return choice_row(context, id, title, labels, 3, true, selected, NULL);
+    return choice_row(context, id, title, labels, 3, true, selected, NULL, NULL);
 }
 
 int bongo_cat_pref_fps(struct nk_context *context, const char *id,
@@ -222,10 +232,32 @@ int bongo_cat_pref_fps(struct nk_context *context, const char *id,
         (fps == BONGO_CAT_DISPLAY_MAX_FPS && high_refresh ? 2 : 1);
     bool clicked = false;
     int next = choice_row(context, id, title, labels, high_refresh ? 3 : 2,
-        false, selected, &clicked);
+        false, selected, &clicked, NULL);
     /* Keep the saved display choice when temporarily falling back to 60 FPS. */
     if (!clicked) return fps;
     return next == 0 ? 30 : next == 1 ? 60 : BONGO_CAT_DISPLAY_MAX_FPS;
+}
+
+float bongo_cat_pref_render_quality(struct nk_context *context, const char *id,
+    const char *title, const char *detail, float quality_percent) {
+    char labels[12][4];
+    const char *items[12];
+    snprintf(labels[0], sizeof(labels[0]), "0.1");
+    items[0] = labels[0];
+    snprintf(labels[1], sizeof(labels[1]), "1");
+    items[1] = labels[1];
+    for (int i = 2; i < 12; ++i) {
+        snprintf(labels[i], sizeof(labels[i]), "%d", (i - 1) * 10);
+        items[i] = labels[i];
+    }
+    int selected = quality_percent == 0.1f ? 0 : quality_percent == 1.0f ? 1 :
+        quality_percent >= 10.0f && quality_percent <= 100.0f &&
+        fmodf(quality_percent, 10.0f) == 0.0f ? (int)(quality_percent / 10.0f) + 1 : 11;
+    bool clicked = false;
+    int next = choice_row(context, id, title, items, 12, false, selected,
+        &clicked, detail);
+    return clicked ? (next == 0 ? 0.1f : next == 1 ? 1.0f :
+        (float)(next - 1) * 10.0f) : quality_percent;
 }
 
 bool bongo_cat_pref_capsule_button(struct nk_context *context,

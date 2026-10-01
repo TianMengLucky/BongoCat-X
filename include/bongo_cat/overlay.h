@@ -30,6 +30,7 @@ bool bongo_cat_overlay_mver_pointer_enabled(const BongoCatOverlay *overlay);
 bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *overlay);
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *overlay,
     float x_ratio, float y_ratio, bool left, bool right, bool side);
+void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *overlay, bool flipped);
 void bongo_cat_overlay_draw_background(BongoCatOverlay *overlay, bool mirror);
 void bongo_cat_overlay_draw_pointer_before_keys(BongoCatOverlay *overlay);
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *overlay, bool mirror);

@@ -3,6 +3,9 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/image.h"
 #include "bongo_cat/json.h"
+extern "C" {
+#include "bongo_cat/sha256.h"
+}
 
 #include <Effect/CubismBreath.hpp>
 #include <Effect/CubismEyeBlink.hpp>
@@ -133,7 +136,27 @@ bool NativeModel::load_model(BongoCatError *error) {
     for (size_t i = 0; i < parameter_count; ++i)
         parameter_baseline_values_[i] = _model->GetParameterValue((int)i);
     parameter_overrides_applied_ = false;
+    configure_builtin_accessories(bytes);
     return true;
+}
+
+void NativeModel::configure_builtin_accessories(const std::vector<unsigned char> &moc) {
+    builtin_accessory_parameter_ = builtin_accessory_part_ = -1;
+    /* Only these shipped moc3 files park the thug-life accessories outside the
+       canvas instead of hiding them. Names/parameter IDs alone are not enough
+       to identify them: imported models may reuse both. */
+    char digest[65];
+    bongo_cat_sha256_bytes(moc.data(), moc.size(), digest);
+    if (std::strcmp(digest, "7bbcdb3df4fe085b0cbd9dc3a1cf32d351bd56787d0ddd1c238e50a5dcb6729a") &&
+        std::strcmp(digest, "03ed67f3ee2ea612aba4da0d42874f8879853d69043c9aae98af440d1f66965e") &&
+        std::strcmp(digest, "e7f11d627011bb2c65d8b0882ce4545115d2256672dca256b674a713e3e5f3d6")) return;
+    auto *ids = Csm::CubismFramework::GetIdManager();
+    int parameter = _model->GetParameterIndex(ids->GetId("Param4"));
+    int part = _model->GetPartIndex(ids->GetId("Part8"));
+    if (parameter < 0 || parameter >= _model->GetParameterCount() ||
+        part < 0 || part >= _model->GetPartCount()) return;
+    builtin_accessory_parameter_ = parameter;
+    builtin_accessory_part_ = part;
 }
 void NativeModel::load_expressions() {
     expression_names_.resize((size_t)setting_->GetExpressionCount());

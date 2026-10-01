@@ -146,6 +146,10 @@ static bool consume_rows(void *userdata, BongoCatImage *rows, int height, int y)
         return true;
     }
     for (int row = 0; row < rows->height; ++row) {
+        if (scale->cancelled && scale->cancelled(scale->cancel_data)) {
+            scale->failure = BONGO_CAT_ERROR_PLATFORM;
+            return false;
+        }
         filter_row(scale, rows->pixels + (size_t)row * rows->width * 4);
         int64_t begin = (int64_t)(y + row) * scale->image.height;
         int64_t end = (int64_t)(y + row + 1) * scale->image.height;
@@ -176,8 +180,8 @@ BongoCatResult bongo_cat_image_decode_png_scaled_rows(const char *path,
     /* Area filtering uses premultiplied colors, so invisible RGB cannot bleed
        into edges. Emit reduced rows as they complete, retaining only a small
        output strip, two filter rows and the decoder's bounded input strip. */
-    bool decoded = bongo_cat_image_decode_png_rows(path, consume_rows, &scale,
-        progress, userdata);
+    bool decoded = bongo_cat_image_decode_png_rows_cancellable(path, consume_rows, &scale,
+        progress, userdata, cancelled, cancel_data);
     bool complete = decoded && (scale.image.pixels || scale.passthrough) &&
         scale.next_row == scale.source_height &&
         scale.output_row == scale.image.height && !scale.buffered;
@@ -185,6 +189,7 @@ BongoCatResult bongo_cat_image_decode_png_scaled_rows(const char *path,
     free(scale.horizontal);
     free(scale.accumulated);
     bongo_cat_image_free(&scale.image);
+    if (cancelled && cancelled(cancel_data)) return BONGO_CAT_ERROR_PLATFORM;
     if (complete) return BONGO_CAT_OK;
     if (scale.failure == BONGO_CAT_ERROR_MEMORY) {
         bongo_cat_error_set(error, scale.failure,

@@ -267,7 +267,7 @@ if ($Package) {
     $packageStatus = $LASTEXITCODE
     if ($packageStatus -ne 0) {
         Write-Host 'Package generation failed.'
-        Write-Host 'Ensure Inno Setup 6.3 or newer is installed (ISCC.exe).'
+        Write-Host "Installer failure details: $(Join-Path $BuildDir 'installer.log')"
         Write-Host "Packaging build directory: $BuildDir"
         exit $packageStatus
     }

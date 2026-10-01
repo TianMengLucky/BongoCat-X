@@ -25,12 +25,10 @@ void bongo_cat_modal_frame_tick(void *userdata) {
        The outgoing model no longer owns render resources until completion. */
     if (app->loading_model[0]) return;
     bongo_cat_resource_trace_poll();
-    /* Modal windows own the event loop for a while. Continue an already
-       active texture upload/cleanup here so opening a menu or settings does
-       not postpone GPU retirement until the modal closes. Do not start a new
-       resize job from the modal loop; that remains the main-loop decision. */
-    if (app->live2d && bongo_cat_live2d_texture_refresh_busy(app->live2d))
-        bongo_cat_app_refresh_texture_resolution(app);
+    /* Include pause expiry and settled reclamation, not just busy uploads.
+       The service queries its deadline before switching GL contexts and
+       explicitly forbids starting a new job from this native modal loop. */
+    bongo_cat_app_refresh_texture_resolution(app, false);
     uint64_t now = SDL_GetTicksNS();
     float elapsed = modal_elapsed(state, app->last_frame_ns, now);
     app->last_frame_ns = now;

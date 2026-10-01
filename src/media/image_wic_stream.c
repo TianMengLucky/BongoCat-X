@@ -56,7 +56,8 @@ static int SDLCALL decode_rows(void *userdata) {
        it until the GL upload has consumed it. At 8192 pixels this is 2 MiB,
        instead of another complete 256 MiB atlas. */
     UINT stride = width * 4;
-    UINT batch = stride ? SDL_max(1u, SDL_min(64u, 4u * 1024u * 1024u / stride)) : 0;
+    UINT batch = stride ? SDL_min(height,
+        SDL_max(1u, SDL_min(64u, 4u * 1024u * 1024u / stride))) : 0;
     unsigned char *pixels = SUCCEEDED(status) ? malloc((size_t)stride * batch) : NULL;
     if (!pixels) status = E_OUTOFMEMORY;
     for (UINT y = 0; SUCCEEDED(status) && y < height; y += batch) {

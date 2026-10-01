@@ -36,7 +36,7 @@ static void request_model_frame(BongoCatApp *app, bool reveal) {
             app->hover_hidden))
             bongo_cat_window_set_visible(app, true);
         else if (app->session.window.visible)
-            bongo_cat_window_clamp_to_display(app);
+            bongo_cat_window_mark_hit_dirty(app);
     }
     bongo_cat_window_mark_hit_dirty(app);
     app->dirty = true;
@@ -185,6 +185,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         render_options.pointer_left_handed, render_options.custom_pointer_bounds);
     BongoCatLive2DTextureOptions texture_options = {
         .dynamic_resolution = app->settings.model.dynamic_texture_resolution,
+        .render_quality_percent = app->settings.model.render_quality_percent,
         .display_size = bongo_cat_model_texture_display_size,
         .display_size_userdata = app};
     BongoCatModelContentAnchor content_anchor =
@@ -258,6 +259,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         pointer_x.maximum > pointer_x.minimum &&
         pointer_y.maximum > pointer_y.minimum;
     app->model_render_options = render_options;
+    app->frame_geometry_retry_ns = 0;
     bongo_cat_app_reset_pointer_tracking(app);
     bongo_cat_live2d_set_render_options(app->live2d, &render_options);
     if (app->loaded_model[0] && app->behavior_catalog_valid) {

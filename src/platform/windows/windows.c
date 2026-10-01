@@ -94,7 +94,9 @@ BongoCatResult bongo_cat_platform_init(BongoCatPlatform *platform, SDL_Window *w
     bongo_cat_windows_package_repair_shortcut();
     memset(platform, 0, sizeof(*platform));
     platform->window = window; platform->input = input;
-    platform->window_opacity = 1.0f; platform->presenter = bongo_cat_windows_layered_create();
+    platform->window_opacity = 1.0f;
+    platform->presenter = bongo_cat_windows_layered_create(
+        (SDL_GetWindowFlags(window) & SDL_WINDOW_TRANSPARENT) != 0);
     if (!platform->presenter) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
             "Cannot allocate the Windows layered presenter");

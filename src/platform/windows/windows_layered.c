@@ -11,6 +11,7 @@
 #include <SDL3/SDL_properties.h>
 #include <stb_image_resize2.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <windows.h>
 #include <shellapi.h>
@@ -25,9 +26,10 @@ static HWND native_window(BongoCatPlatform *platform) {
         SDL_GetWindowProperties(platform->window),
         SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL) : NULL;
 }
-void *bongo_cat_windows_layered_create(void) {
+void *bongo_cat_windows_layered_create(bool pixel_hit_test) {
     BongoCatWindowsLayered *value = calloc(1, sizeof(*value));
     if (!value) return NULL;
+    value->pixel_hit_test = pixel_hit_test;
     value->memory_dc = CreateCompatibleDC(NULL);
     if (value->memory_dc) return value;
     free(value);
@@ -42,6 +44,14 @@ static void release_bitmap(BongoCatWindowsLayered *value) {
     value->original_bitmap = NULL;
     value->pixels = NULL;
     value->width = value->height = 0;
+}
+
+static void release_readback(BongoCatWindowsLayered *value) {
+    free(value->readback);
+    value->readback = NULL;
+    value->readback_capacity = 0;
+    value->readback_used_ms = 0;
+    value->readback_valid = false;
 }
 static bool restore_source(BongoCatPlatform *platform) {
     BongoCatWindowsLayered *value = platform ? platform->presenter : NULL;
@@ -75,7 +85,7 @@ void bongo_cat_windows_layered_destroy(BongoCatPlatform *platform) {
     if (source) RemovePropW(source, proxy_property);
     if (value->proxy) DestroyWindow(value->proxy);
     release_bitmap(value);
-    free(value->readback);
+    release_readback(value);
     if (value->memory_dc) DeleteDC(value->memory_dc);
     free(value);
     platform->presenter = NULL;
@@ -183,7 +193,8 @@ void bongo_cat_windows_layered_set_click_through(
     value->forced = enabled;
     value->source_style = enabled ? value->source_style | WS_EX_TRANSPARENT :
         value->source_style & ~WS_EX_TRANSPARENT;
-    bool active = !value->hdr_failed && (enabled || bongo_cat_windows_hdr_enabled(platform->window));
+    bool active = !value->hdr_failed && (value->pixel_hit_test || enabled ||
+        bongo_cat_windows_hdr_enabled(platform->window));
     bongo_cat_windows_layered_sync_input(platform);
     if (value->active == active) return;
     value->active = active;
@@ -250,18 +261,28 @@ static bool read_frame(BongoCatWindowsLayered *value, int width, int height,
     int display_width, int display_height) {
     value->source_width = width; value->source_height = height;
     value->readback_valid = width != display_width || height != display_height;
-    if (!value->readback_valid)
+    if (!value->readback_valid) {
+        /* Normal presentation reads directly into the reusable DIB. Keep the
+           resize scratch briefly to avoid reallocating during a gesture, then
+           release the duplicate full frame once native/render sizes agree. */
+        if (value->readback && SDL_GetTicks() - value->readback_used_ms >= 1000)
+            release_readback(value);
         return bongo_cat_windows_gl_readback(width, height, value->pixels);
+    }
     if (width <= 0 || height <= 0 || width > INT_MAX / 4 ||
         (size_t)height > SIZE_MAX / ((size_t)width * 4))
         return SDL_SetError("Windows layered frame is too large");
     size_t bytes = (size_t)width * (size_t)height * 4;
-    if (value->readback_capacity < bytes) {
+    bool growing = value->readback_capacity < bytes;
+    if (growing || value->readback_capacity / 2 > bytes) {
         unsigned char *next = realloc(value->readback, bytes);
-        if (!next) return false;
-        value->readback = next;
-        value->readback_capacity = bytes;
+        if (!next && growing) return false;
+        if (next) {
+            value->readback = next;
+            value->readback_capacity = bytes;
+        }
     }
+    value->readback_used_ms = SDL_GetTicks();
     if (!bongo_cat_windows_gl_readback(width, height, value->readback)) return false;
     bool resized = stbir_resize_uint8_linear(value->readback, width, height, width * 4,
         value->pixels, display_width, display_height, display_width * 4,
@@ -298,6 +319,16 @@ static bool present_layered(BongoCatPlatform *platform, int width, int height,
         value->has_frame = false;
         return false;
     }
+    /* Windows routes zero-alpha pixels to windows in other processes before
+       dispatching mouse messages. Match the runtime's >8 visibility threshold,
+       including pixels introduced by resizing, without another GPU readback. */
+    if (value->pixel_hit_test) {
+        size_t count = (size_t)value->width * (size_t)value->height;
+        for (size_t i = 0; i < count; ++i) {
+            unsigned char *pixel = value->pixels + i * 4;
+            if (pixel[3] <= 8) memset(pixel, 0, 4);
+        }
+    }
     /* Keep WGL presentation alive, including GL_FRONT consumers. Never
        change the original window to WS_EX_NOREDIRECTIONBITMAP. */
     previous = bongo_cat_diagnostics_phase("layered-gl-swap");
@@ -325,7 +356,8 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     if (!platform || !platform->window) return false;
     BongoCatWindowsLayered *value = platform->presenter;
     bool hdr = bongo_cat_windows_hdr_enabled(platform->window);
-    bool active = value && !value->hdr_failed && (value->forced || hdr);
+    bool active = value && !value->hdr_failed &&
+        (value->pixel_hit_test || value->forced || hdr);
     SDL_PropertiesID properties = SDL_GetWindowProperties(platform->window);
     Sint64 state = (hdr ? 1 : 0) | (active ? 2 : 0) |
         (value && value->forced ? 4 : 0) | (value && value->hdr_failed ? 8 : 0);
@@ -347,14 +379,18 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
             if (!restore_source(platform))
                 return SDL_SetError("Cannot restore WGL window opacity");
             if (value->proxy) ShowWindow(value->proxy, SW_HIDE);
+            value->has_frame = false;
+            release_bitmap(value);
+            release_readback(value);
         }
         const char *previous = bongo_cat_diagnostics_phase("direct-gl-swap");
         bool swapped = SDL_GL_SwapWindow(platform->window);
         bongo_cat_diagnostics_phase(previous);
         return swapped;
     }
-    if (!value->active) SDL_Log("Windows HDR/transparent presenter: layered alpha, forced=%d hdr=%d",
-        value->forced, hdr);
+    if (!value->active) SDL_Log(
+        "Windows layered presenter: pixel_hit_test=%d forced=%d hdr=%d",
+        value->pixel_hit_test, value->forced, hdr);
     value->active = true;
     HWND source = native_window(platform);
     if (!source || !IsWindowVisible(source) || IsIconic(source)) {
@@ -372,6 +408,8 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     if (!restore_source(platform))
         return SDL_SetError("Cannot restore WGL window opacity after layered failure");
     if (value->proxy) ShowWindow(value->proxy, SW_HIDE);
+    release_bitmap(value);
+    release_readback(value);
     /* The old source is restored even if allocation/upload/input setup fails. */
     return swapped || SDL_GL_SwapWindow(platform->window);
 }

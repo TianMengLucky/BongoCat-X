@@ -106,8 +106,6 @@ void bongo_cat_window_apply(BongoCatApp *app) {
     if (state->position_known)
         SDL_SetWindowPosition(app->window, state->x, state->y);
     SDL_SyncWindow(app->window);
-    if (preferences->keep_in_screen) bongo_cat_window_clamp_to_display(app);
-    else bongo_cat_window_recover_to_display(app);
     SDL_SyncWindow(app->window);
     /* A visible session is revealed by the first successful frame. Keeping
        the native window hidden while loading avoids exposing an uninitialised
@@ -117,6 +115,26 @@ void bongo_cat_window_apply(BongoCatApp *app) {
     bongo_cat_window_sync_click_through(app);
     bongo_cat_platform_set_always_on_top(&app->platform,
         preferences->always_on_top);
+    /* 只在录屏软件里显示 (Windows: DWM 隐藏)。放在最后: 上面几个调用都会动窗口
+       样式/位置, 重新应用一次能保证隐藏状态不会在它们之后丢失。 */
+    bongo_cat_platform_set_capture_only(&app->platform,
+        app->settings.window.capture_only);
+}
+
+void bongo_cat_window_apply_capture_only(BongoCatApp *app) {
+    if (!app || !app->window) return;
+    if (!bongo_cat_platform_capture_only_supported()) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
+            "仅在录屏软件中显示在当前平台不可用, 该设置已忽略");
+        return;
+    }
+    if (!bongo_cat_platform_set_capture_only(&app->platform,
+            app->settings.window.capture_only)) return;
+    /* 桌面不可见时点击穿透必须整体生效: 让下一帧重新下发一次点击穿透状态
+       (平台侧在 capture_only 打开时会强制整体穿透, 不再做逐像素命中测试)。 */
+    app->click_through_valid = false;
+    bongo_cat_window_sync_click_through(app);
+    app->dirty = true;
 }
 
 static bool event_targets_main_window(BongoCatApp *app,
@@ -170,7 +188,6 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
             bongo_cat_window_content_size(app, width,
                 height, &app->session.window.content_width,
                 &app->session.window.content_height);
-            bongo_cat_window_clamp_to_display(app);
             app->dirty = true;
         }
     }
@@ -188,6 +205,15 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
            Explorer/display refresh. Repaint even when the model is idle so
            the restored alpha surface is submitted immediately. */
         app->dirty = true;
+        /* XWayland may drop _NET_WM_STATE_ABOVE while the surface is hidden
+           and does not restore it when the window is shown again. Reapply the
+           persisted preference after the surface has been exposed so startup
+           and hide/show cycles retain the user's always-on-top choice. */
+        if (event->type == SDL_EVENT_WINDOW_EXPOSED ||
+            event->type == SDL_EVENT_WINDOW_SHOWN ||
+            event->type == SDL_EVENT_WINDOW_RESTORED)
+            bongo_cat_platform_set_always_on_top(&app->platform,
+                app->settings.window.always_on_top);
     }
     if (event->type == SDL_EVENT_WINDOW_FOCUS_GAINED ||
         event->type == SDL_EVENT_WINDOW_FOCUS_LOST) {
@@ -213,7 +239,6 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
             app->session.window.y = y;
             app->session.window.position_known = true;
             app->pointer_known = false;
-            if (!app->window_drag_active) bongo_cat_window_clamp_to_display(app);
             bongo_cat_window_mark_hit_dirty(app);
         }
     } else if (event->type == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||

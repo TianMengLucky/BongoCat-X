@@ -45,6 +45,15 @@ static bool render(BongoCatApp *app, bool present) {
     }
     app->render_retry_ns = 0;
     bongo_cat_window_apply_pending_resize(app);
+    bongo_cat_live2d_set_vertical_flip(app->live2d, app->settings.model.vertical_flip);
+    bongo_cat_live2d_set_mirror(app->live2d, app->settings.model.mirror);
+    bool cover_requested = !present && bongo_cat_model_cover_pending(app);
+    bool cover_ready = !cover_requested ||
+        bongo_cat_live2d_prepare_cover_capture(app->live2d);
+    /* Measure the final pose and allocate its frame before clearing/drawing,
+       so newly revealed motion geometry is protected on its first frame. */
+    bongo_cat_window_update_model_frame(app);
+    bongo_cat_window_apply_pending_resize(app);
     int width, height;
     SDL_GetWindowSizeInPixels(app->window, &width, &height);
     glViewport(0, 0, width, height);
@@ -59,13 +68,10 @@ static bool render(BongoCatApp *app, bool present) {
         content_width > 0 && content_height > 0;
     if (content_viewport)
         glViewport(content_x, content_y, content_width, content_height);
+    bongo_cat_overlay_set_vertical_flip(app->overlay, app->settings.model.vertical_flip);
     bongo_cat_overlay_draw_background(app->overlay,
         app->settings.model.mirror);
-    bool cover_requested = !present && bongo_cat_model_cover_pending(app);
-    bool cover_ready = !cover_requested ||
-        bongo_cat_live2d_prepare_cover_capture(app->live2d);
     glViewport(0, 0, width, height);
-    bongo_cat_live2d_set_mirror(app->live2d, app->settings.model.mirror);
     bongo_cat_diagnostics_phase("model-draw");
     if (app->loaded_model[0]) bongo_cat_live2d_draw(app->live2d);
     bongo_cat_diagnostics_phase("overlay-draw");
@@ -100,7 +106,7 @@ static bool render(BongoCatApp *app, bool present) {
     bongo_cat_window_mask_corners(app, width, height);
     bongo_cat_diagnostics_phase("frame-readback-and-hit-test");
     bongo_cat_frame_audit(app, width, height);
-    bongo_cat_window_capture_pointer_hit(app);
+    bongo_cat_window_capture_pointer_hit(app, true);
     /* Keep the native window hidden while diagnostics/readback finish. The
        reveal is intentionally adjacent to the swap so an uninitialised front
        buffer cannot be displayed as a black startup frame. */
@@ -212,6 +218,10 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_preferences_model_watch(app->preferences, now);
         bongo_cat_model_refresh_update(app);
         take_instance_wake(app);
+        if (bongo_cat_platform_single_instance_take_settings()) {
+            bongo_cat_preferences_show(app->preferences);
+            SDL_Log("Existing instance requested settings window");
+        }
         if (take_update_shutdown(app)) continue;
         now = SDL_GetTicksNS();
         bongo_cat_window_update_wheel_animation(app, now);
@@ -227,7 +237,7 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_window_update_display_recovery(app, now);
         bongo_cat_runtime_flow_update(app, now);
         bongo_cat_window_apply_pending_resize(app);
-        bongo_cat_app_refresh_texture_resolution(app);
+        bongo_cat_app_refresh_texture_resolution(app, true);
         bongo_cat_resource_trace_poll();
         bongo_cat_app_drain_input(app, true);
         if (app->context_menu_requested) {

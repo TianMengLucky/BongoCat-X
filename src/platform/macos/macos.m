@@ -144,6 +144,14 @@ void bongo_cat_platform_set_visible(BongoCatPlatform *platform, bool visible) {
     if (!platform || !platform->window) return;
     visible ? SDL_ShowWindow(platform->window) : SDL_HideWindow(platform->window); if (visible) configure_capture_window(native_window(platform));
 }
+/* 只在采集软件里显示: macOS 需要虚拟显示器之类的额外机制, 暂不支持 ——
+   设置界面会隐藏这一项。 */
+bool bongo_cat_platform_capture_only_supported(void) { return false; }
+bool bongo_cat_platform_set_capture_only(BongoCatPlatform *platform,
+    bool enabled) {
+    (void)platform; (void)enabled;
+    return false;
+}
 bool bongo_cat_platform_pointer_local(BongoCatPlatform *platform, double screen_x,
     double screen_y, float *local_x, float *local_y) {
     int x, y, width, height;
@@ -211,7 +219,14 @@ void bongo_cat_platform_begin_drag(BongoCatPlatform *platform,
     [target release];
 }
 bool bongo_cat_platform_dynamic_hit_supported(void) {
-    return bongo_cat_macos_input_supported();
+    /* SDL's Cocoa backend polls NSEvent.mouseLocation without an event tap.
+       Input Monitoring is needed for key animation, not window hit testing. */
+    const char *driver = SDL_GetCurrentVideoDriver();
+    return driver && strcmp(driver, "cocoa") == 0;
+}
+bool bongo_cat_platform_native_hit_test(const BongoCatPlatform *platform) {
+    (void)platform;
+    return false;
 }
 
 bool bongo_cat_platform_input_monitoring_authorized(void) {
@@ -245,6 +260,7 @@ bool bongo_cat_platform_single_instance_begin(void) {
     close(instance_lock); instance_lock = -1; return false;
 }
 bool bongo_cat_platform_single_instance_take_wake(void) { return false; }
+bool bongo_cat_platform_single_instance_take_settings(void) { return false; }
 void bongo_cat_platform_single_instance_end(void) {
     if (instance_lock >= 0) close(instance_lock);
     instance_lock = -1;

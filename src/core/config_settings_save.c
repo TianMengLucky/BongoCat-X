@@ -10,8 +10,12 @@ static bool write_model(yyjson_mut_doc *doc, yyjson_mut_val *object,
         yyjson_mut_obj_add_bool(doc, object, "multiplePets",
             value->multiple_pets) &&
         yyjson_mut_obj_add_bool(doc, object, "modelMirrored", value->mirror) &&
+        yyjson_mut_obj_add_bool(doc, object, "modelFlippedVertically",
+            value->vertical_flip) &&
         yyjson_mut_obj_add_bool(doc, object, "pointerMirrored",
             value->mouse_mirror) &&
+        yyjson_mut_obj_add_bool(doc, object, "pointerFlippedVertically",
+            value->mouse_vertical_flip) &&
         yyjson_mut_obj_add_bool(doc, object, "centerPointerTracking",
             value->mouse_centered) &&
         yyjson_mut_obj_add_bool(doc, object, "ignorePointerInput",
@@ -20,6 +24,8 @@ static bool write_model(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->gamepad_four_hands) &&
         yyjson_mut_obj_add_bool(doc, object, "dynamicTextureResolution",
             value->dynamic_texture_resolution) &&
+        yyjson_mut_obj_add_real(doc, object, "renderQualityPercent",
+            value->render_quality_percent) &&
         yyjson_mut_obj_add_int(doc, object, "maximumFps", value->max_fps);
 }
 
@@ -34,6 +40,8 @@ static bool write_window(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->hide_on_hover) &&
         yyjson_mut_obj_add_bool(doc, object, "keepOnScreen",
             value->keep_in_screen) &&
+        yyjson_mut_obj_add_bool(doc, object, "captureOnly",
+            value->capture_only) &&
         yyjson_mut_obj_add_bool(doc, object, "captureBackground",
             value->obs_background) &&
         yyjson_mut_obj_add_bool(doc, object, "randomExpression",

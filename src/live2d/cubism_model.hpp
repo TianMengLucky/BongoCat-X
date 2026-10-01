@@ -49,22 +49,29 @@ public:
     }
     bool load_textures(BongoCatError *error,
         BongoCatLive2DLoadProgress progress, void *userdata,
-        int display_width = 0, int display_height = 0);
+        int display_width = 0, int display_height = 0,
+        float render_quality_percent = 100.0f);
     size_t texture_count() const { return textures_.size(); }
     double texture_storage_mib() const;
+    float render_quality_percent() const { return render_quality_percent_; }
+    bool try_reuse_texture_quality(float quality_percent);
     void release_render_resources();
     bool canvas_size(int *width, int *height) const;
     bool frame(BongoCatLive2DFrame *frame) const;
+    bool measure_frame(BongoCatLive2DFrame *required);
+    void set_frame(const BongoCatLive2DFrame &frame);
     bool viewport(int *x, int *y, int *width, int *height) const;
     void resize(int width, int height);
     void reshape(int width, int height);
     bool texture_refresh_pending(bool active) const;
+    bool texture_refresh_due(bool active, bool allow_start) const;
     bool texture_refresh_busy() const;
     void cancel_texture_refresh_async();
-    bool refresh_texture_resolution(bool active);
+    bool refresh_texture_resolution(bool active, bool allow_start);
     bool update(float delta_seconds);
     void draw();
     void set_mirror(bool mirror);
+    void set_vertical_flip(bool flipped);
     void set_render_options(const BongoCatLive2DRenderOptions &options);
     void set_dragging(float x, float y, bool angle_z = false);
     void prepare_viewer_audit();
@@ -120,7 +127,13 @@ private:
         bool valid = false;
     };
     struct DrawableBounds { ModelBounds bounds; float area; };
+    struct FrameDrawable {
+        std::vector<unsigned short> vertices;
+        ModelBounds bounds;
+        bool dirty = true;
+    };
     bool load_model(BongoCatError *error);
+    void configure_builtin_accessories(const std::vector<unsigned char> &moc);
     void load_expressions();
     void load_effects();
     void load_motions(BongoCatLive2DLoadProgress progress, void *userdata);
@@ -128,6 +141,7 @@ private:
     void update_geometry();
     ModelBounds capture_visible_bounds() const;
     void prepare_expression_frame();
+    void prepare_frame_bounds();
     void build_projection(Csm::CubismMatrix44 &projection,
         int width, int height);
     void apply_viewport_projection(Csm::CubismMatrix44 &projection) const;
@@ -157,7 +171,8 @@ private:
     void release_textures();
     void schedule_texture_refresh();
     void cancel_texture_refresh();
-    TextureResolution texture_refresh_bound(const ModelTexture &texture, int limit) const;
+    TextureResolution texture_refresh_bound(const ModelTexture &texture,
+        int limit, float quality_percent) const;
     const BongoCatImageAlphaMask *texture_alpha(int index) const;
     void release_renderer();
     bool create_renderer(BongoCatError *error);
@@ -180,6 +195,7 @@ private:
     std::vector<std::shared_ptr<ModelTexture>> textures_;
     mutable std::vector<std::vector<unsigned char>> triangle_alpha_;
     mutable std::vector<DrawableBounds> bounds_scratch_;
+    std::vector<FrameDrawable> frame_drawables_;
     std::vector<float> parameter_snapshot_;
     std::vector<float> part_snapshot_;
     std::vector<float> parameter_override_values_;
@@ -212,6 +228,9 @@ private:
     bool expression_clearing_ = false;
     bool expression_frame_pending_ = false;
     BongoCatLive2DFrame frame_{};
+    BongoCatLive2DFrame required_frame_{};
+    float frame_fit_scale_ = 1.0f;
+    bool frame_prepared_ = false;
     mutable BongoCatLive2DVisualState visual_state_{};
     mutable Csm::CubismMatrix44 visual_projection_;
     mutable bool visual_state_cached_ = false;
@@ -220,9 +239,12 @@ private:
     bool suppress_eye_blink_ = false;
     bool automatic_idle_ = true;
     bool mirror_ = false;
+    bool vertical_flip_ = false;
     BongoCatLive2DRenderOptions render_options_{};
     bool direct_textures_ = false;
     bool dynamic_texture_resolution_ = false;
+    float render_quality_percent_ = 100.0f;
+    int texture_limit_ = 0;
     TextureRefresh *texture_refresh_ = nullptr;
     TextureRefreshMemory texture_refresh_memory_;
     bool texture_refresh_pending_ = false;
@@ -230,6 +252,8 @@ private:
     size_t texture_refresh_index_ = 0;
     bool trim_offscreen_pool_ = true;
     bool parameter_overrides_applied_ = false;
+    int builtin_accessory_parameter_ = -1;
+    int builtin_accessory_part_ = -1;
     std::vector<std::string> idle_motion_keys_;
     std::vector<MotionRun> motion_runs_;
     std::vector<unsigned char> motion_finished_scratch_;

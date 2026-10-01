@@ -68,6 +68,11 @@ void NativeModel::build_projection(Csm::CubismMatrix44 &projection,
 }
 
 void NativeModel::set_mirror(bool mirror) { mirror_ = mirror; }
+void NativeModel::set_vertical_flip(bool flipped) {
+    if (vertical_flip_ == flipped) return;
+    vertical_flip_ = flipped;
+    update_viewport();
+}
 
 void NativeModel::set_render_options(const BongoCatLive2DRenderOptions &options) {
     render_options_ = options;

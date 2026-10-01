@@ -58,7 +58,10 @@ BongoCatModelContentAnchor bongo_cat_model_content_anchor(BongoCatApp *app) {
         ? app->session.window.content_width : app->session.window.width;
     int content_height = app->session.window.content_height > 0
         ? app->session.window.content_height : app->session.window.height;
-    if (!bongo_cat_window_frame_size(app, content_width, content_height,
+    if (!app->loaded_model[0]) {
+        left = app->session.window.content_left;
+        top = app->session.window.content_top;
+    } else if (!bongo_cat_window_frame_size(app, content_width, content_height,
             &ignored_width, &ignored_height, &left, &top)) return anchor;
     anchor.x = window_x + left + content_width / 2;
     anchor.y = window_y + top + content_height / 2;
@@ -80,11 +83,13 @@ bool bongo_cat_model_apply_aspect(BongoCatApp *app,
     int content_width = 0, content_height = 0;
     if (!content_size(options, canvas_width, canvas_height, requested_height,
         &content_width, &content_height)) return false;
+    bongo_cat_window_limit_initial_frame(app, content_width, content_height);
     int next_width = 0, next_height = 0, left = 0, top = 0;
     if (!bongo_cat_window_frame_size(app, content_width, content_height,
             &next_width, &next_height, &left, &top)) return false;
     bool restored_frame = !replacing_model &&
-        SDL_abs(width - next_width) <= 1 && SDL_abs(height - next_height) <= 1;
+        SDL_abs(width - next_width) <= 1 && SDL_abs(height - next_height) <= 1 &&
+        app->session.window.content_left == left && app->session.window.content_top == top;
     int next_x = x, next_y = y;
     if (anchor && anchor->valid && !restored_frame) {
         next_x = anchor->x - left - content_width / 2;

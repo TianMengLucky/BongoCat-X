@@ -17,7 +17,9 @@ struct BongoCatImageTextureJob {
     SDL_Mutex *mutex;
     SDL_Condition *condition;
     SDL_AtomicInt cancelled;
-    /* Protected by mutex. Worker never holds it during I/O or decoding. */
+    SDL_AtomicInt poll_ready;
+    /* Worker owns the batch until ready is published under mutex; the GL
+       thread owns it until ready is cleared. No copying/filtering under lock. */
     BongoCatImage pending;
     int capacity, height, produced;
     bool ready, done;
@@ -26,7 +28,7 @@ struct BongoCatImageTextureJob {
     /* Worker-only until done is published under mutex. */
     int prepared;
     BongoCatImageAlphaMask alpha;
-    uint64_t prepare_ns;
+    uint64_t prepare_ns, hash_ns, decode_ns, consumer_wait_ns;
     /* GL-thread-only state. */
     unsigned int texture;
     int uploaded;
@@ -54,15 +56,24 @@ static bool publish_batch(BongoCatImageTextureJob *job) {
     job->prepare_ns += SDL_GetTicksNS() - started;
     /* Only the private transfer copy is premultiplied. Decoder/cache rows
        remain straight RGBA, so cached and uncached results stay identical. */
+    SDL_LockMutex(job->mutex);
+    if (cancelled(job)) {
+        SDL_UnlockMutex(job->mutex);
+        return false;
+    }
     job->ready = true;
+    SDL_SetAtomicInt(&job->poll_ready, 1);
+    started = SDL_GetTicksNS();
     while (job->ready && !cancelled(job))
         SDL_WaitCondition(job->condition, job->mutex);
-    return !cancelled(job);
+    job->consumer_wait_ns += SDL_GetTicksNS() - started;
+    bool ok = !cancelled(job);
+    SDL_UnlockMutex(job->mutex);
+    return ok;
 }
 
 static bool queue_rows(void *userdata, BongoCatImage *rows, int height, int y) {
     BongoCatImageTextureJob *job = userdata;
-    SDL_LockMutex(job->mutex);
     bool ok = false;
     if (cancelled(job)) goto done;
     if (!y) {
@@ -86,6 +97,7 @@ static bool queue_rows(void *userdata, BongoCatImage *rows, int height, int y) {
         rows->height > height - y) goto done;
     size_t stride = (size_t)rows->width * 4;
     for (int row = 0; row < rows->height;) {
+        if (cancelled(job)) goto done;
         int count = SDL_min(rows->height - row, job->capacity - job->pending.height);
         memcpy(job->pending.pixels + (size_t)job->pending.height * stride,
             rows->pixels + (size_t)row * stride, (size_t)count * stride);
@@ -97,7 +109,6 @@ static bool queue_rows(void *userdata, BongoCatImage *rows, int height, int y) {
     if (job->produced == height && job->pending.height && !publish_batch(job)) goto done;
     ok = true;
 done:
-    SDL_UnlockMutex(job->mutex);
     return ok;
 }
 
@@ -130,11 +141,14 @@ static int SDLCALL decode_worker(void *userdata) {
     uint64_t before_size = 0, before_time = 0, after_size = 0, after_time = 0;
     bool source_known = bongo_cat_path_file_info(job->path, &before_size, &before_time);
     char digest[65] = {0};
+    uint64_t started = SDL_GetTicksNS();
     bool hashed = !cancelled(job) &&
         bongo_cat_sha256_file_cancellable(job->path, digest, cancelled, job, NULL) == BONGO_CAT_OK;
+    job->hash_ns = SDL_GetTicksNS() - started;
     BongoCatResult result = BONGO_CAT_ERROR_IO;
     bool stable = source_known && bongo_cat_path_file_info(job->path,
         &after_size, &after_time) && before_size == after_size && before_time == after_time;
+    started = SDL_GetTicksNS();
     if (!cancelled(job) && (!source_known || stable))
         result = bongo_cat_image_decode_cached_scaled_rows(job->path,
             hashed && stable ? digest : NULL, job->max_width, job->max_height,
@@ -151,9 +165,11 @@ static int SDLCALL decode_worker(void *userdata) {
             job->max_width, job->max_height);
         bongo_cat_error_set(&job->failure, result, "Texture source changed during refresh");
     }
+    job->decode_ns = SDL_GetTicksNS() - started;
     SDL_LockMutex(job->mutex);
     job->result = result;
     job->done = true;
+    SDL_SetAtomicInt(&job->poll_ready, 1);
     SDL_UnlockMutex(job->mutex);
     return 0;
 }
@@ -206,6 +222,10 @@ static void release_job_gpu(BongoCatImageTextureJob *job) {
     bongo_cat_image_release_upload_buffer(&job->transfer);
 }
 
+bool bongo_cat_image_texture_job_needs_poll(BongoCatImageTextureJob *job) {
+    return job && (job->sync.fence || SDL_GetAtomicInt(&job->poll_ready));
+}
+
 int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
     unsigned int *texture, int *width, int *height,
     BongoCatImageAlphaMask *alpha, BongoCatError *error) {
@@ -249,6 +269,7 @@ int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
         ++job->uploads;
         job->pending.height = 0;
         job->ready = false;
+        SDL_SetAtomicInt(&job->poll_ready, 0);
         SDL_SignalCondition(job->condition);
     }
     bool done = job->done;
@@ -278,11 +299,15 @@ int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
         "[texture-refresh] result=uploaded batches=%u upload_ms=%.1f "
         "max_batch_ms=%.1f mip_submit_ms=%.1f prepare_worker_ms=%.1f "
+        "hash_ms=%.1f decode_active_ms=%.1f consumer_wait_ms=%.1f "
         "sync_deferred=%u sync_blocking=%u cpu_batch_mib=%.1f",
         job->uploads, (double)job->upload_ns / 1000000.0,
         (double)job->max_batch_ns / 1000000.0,
         (double)job->mip_ns / 1000000.0,
         (double)job->prepare_ns / 1000000.0,
+        (double)job->hash_ns / 1000000.0,
+        (double)(job->decode_ns - job->consumer_wait_ns) / 1000000.0,
+        (double)job->consumer_wait_ns / 1000000.0,
         job->sync.deferred, job->sync.blocking,
         (double)job->pending.width * job->capacity * 4 / (1024.0 * 1024.0));
     *texture = job->texture; job->texture = 0;
@@ -322,6 +347,10 @@ int bongo_cat_image_texture_job_cleanup_poll(BongoCatImageTextureJob *job,
     }
     release_job_storage(job);
     job->cleanup_started = true;
+    /* A job cancelled during hashing/decoding, before its first upload,
+       created no GL storage and cannot have replaced the caller's atlas.
+       Avoid a needless fence or compatibility glFinish for that case. */
+    if (!job->uploads) return 1;
     GLenum status = bongo_cat_image_upload_sync_submit(&job->sync);
     if (status != GL_NO_ERROR) {
         /* A failed fence must not let successive allocations outrun GPU work.

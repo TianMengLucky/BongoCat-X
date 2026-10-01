@@ -42,7 +42,13 @@ void TextureRefreshMemory::finish(bool committed, bool cancelled,
     last_cleanup_ms_ = cleanup_ms;
     last_cancel_ms_ = cancel_ms;
     log(cleanup_ok ? "cleanup" : "cleanup-failed", live_atlas_mib);
-    sample_ns_ = SDL_GetTicksNS() + 3000000000ull;
+    const uint64_t now = SDL_GetTicksNS();
+    /* Memory diagnostics keep the wider three-second settled sample, but a
+       cancelled resize only needs a short retirement window before the next
+       desired size can be prepared. Keeping these deadlines separate avoids
+       leaving the display on a stale low-resolution atlas for three seconds. */
+    sample_ns_ = now + 3000000000ull;
+    cooldown_ns_ = cancelled ? now + 700000000ull : 0;
 }
 
 void TextureRefreshMemory::poll(uint64_t now, double live_atlas_mib) {

@@ -246,8 +246,10 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     memset(config, 0, sizeof(*config));
     config->model.mouse_centered = true;
     config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
+    config->model.dynamic_texture_resolution = true;
+    config->model.render_quality_percent =
+        BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
-    config->window.keep_in_screen = false;
     config->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_GREEN;
     config->window.corner_radius_percent = BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT;
     config->window.hide_fade_seconds = BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS;
@@ -264,6 +266,13 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
 
 void bongo_cat_settings_validate(BongoCatSettings *config) {
     if (!config) return;
+    float quality = config->model.render_quality_percent;
+    bool quality_valid = quality == 0.1f || quality == 1.0f ||
+        (quality >= 10.0f && quality <= 100.0f &&
+        fmodf(quality, 10.0f) == 0.0f);
+    if (!quality_valid)
+        config->model.render_quality_percent =
+            BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     if (config->model.max_fps != BONGO_CAT_DISPLAY_MAX_FPS)
         config->model.max_fps = config->model.max_fps > 0 &&
             config->model.max_fps <= 30 ? 30 : BONGO_CAT_DEFAULT_MAX_FPS;

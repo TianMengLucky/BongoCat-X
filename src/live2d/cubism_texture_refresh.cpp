@@ -8,13 +8,15 @@
 #include <SDL3/SDL_timer.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <new>
 #include <utility>
 
 namespace bongo_cat {
 
 namespace {
-constexpr uint64_t kResizeSettleNs = 600000000ull;
+constexpr uint64_t kShrinkSettleNs = 300000000ull;
+constexpr uint64_t kEnlargeSettleNs = 200000000ull;
 constexpr uint64_t kPauseReleaseNs = 5000000000ull;
 }
 
@@ -48,23 +50,14 @@ void NativeModel::cancel_texture_refresh() {
    would otherwise schedule redundant refreshes indefinitely. */
 static std::pair<int, int> fitted_size(const ModelTexture &texture,
     const TextureResolution &bound) {
-    int width = texture.source_width, height = texture.source_height;
-    if (width < 1 || height < 1 || bound.max_width < 1 || bound.max_height < 1)
+    auto size = texture_fitted_size(texture.source_width, texture.source_height, bound);
+    if (size.first < 1 || size.second < 1)
         return {texture.width, texture.height};
-    if (width > bound.max_width || height > bound.max_height) {
-        if ((int64_t)bound.max_width * height <= (int64_t)bound.max_height * width) {
-            height = std::max(1, (int)((int64_t)height * bound.max_width / width));
-            width = bound.max_width;
-        } else {
-            width = std::max(1, (int)((int64_t)width * bound.max_height / height));
-            height = bound.max_height;
-        }
-    }
-    return {width, height};
+    return size;
 }
 
 TextureResolution NativeModel::texture_refresh_bound(const ModelTexture &texture,
-    int limit) const {
+    int limit, float quality_percent) const {
     int reference_width = 0, reference_height = 0;
     canvas_size(&reference_width, &reference_height);
     if (render_options_.mver_projection) {
@@ -73,8 +66,27 @@ TextureResolution NativeModel::texture_refresh_bound(const ModelTexture &texture
     }
     if (reference_width <= 0) reference_width = width_;
     if (reference_height <= 0) reference_height = height_;
-    return texture_resolution_for(true, viewport_width_, viewport_height_,
-        reference_width, reference_height, texture.source_width, texture.source_height, limit);
+    return texture_resolution_for(dynamic_texture_resolution_,
+        viewport_width_, viewport_height_, reference_width, reference_height,
+        texture.source_width, texture.source_height, limit, quality_percent);
+}
+
+bool NativeModel::try_reuse_texture_quality(float quality_percent) {
+    /* No GL calls: settings can be drawn with a different context current.
+       Commit only after every atlas fits. Active workers keep their original
+       budget; a real resize still uses the existing reload/rollback path. */
+    if (!texture_quality_valid(quality_percent) || !_model || textures_.empty() ||
+        texture_refresh_ || texture_limit_ < 1 ||
+        !GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()) return false;
+    for (const auto &texture : textures_) {
+        if (!texture || !texture->id || texture->source_width < 1 ||
+            texture->source_height < 1) return false;
+        const auto bound = texture_refresh_bound(*texture, texture_limit_, quality_percent);
+        if (fitted_size(*texture, bound) !=
+            std::make_pair(texture->width, texture->height)) return false;
+    }
+    render_quality_percent_ = quality_percent;
+    return true;
 }
 
 double NativeModel::texture_storage_mib() const {
@@ -104,7 +116,8 @@ void NativeModel::schedule_texture_refresh() {
     refresh.rescan = true;
     if (refresh.finishing || refresh.cancelled) return;
     const auto &next = *refresh.replacement;
-    const auto bound = texture_refresh_bound(next, refresh.texture_limit);
+    const auto bound = texture_refresh_bound(next, refresh.texture_limit,
+        render_quality_percent_);
     const TextureResolution previous_bound{next.max_width, next.max_height, true};
     /* Compare actual aspect-fitted pixels, not window pixels or rounded
        bounds. Different notifications can request exactly the same atlas. */
@@ -123,7 +136,7 @@ void NativeModel::cancel_texture_refresh_async() {
 bool NativeModel::texture_refresh_busy() const {
     return texture_refresh_ && (texture_refresh_->finishing || texture_refresh_->cancelled ||
         (!texture_refresh_->paused_ns &&
-            SDL_GetTicksNS() - texture_resize_ns_ >= kResizeSettleNs));
+            SDL_GetTicksNS() - texture_resize_ns_ >= kEnlargeSettleNs));
 }
 
 bool NativeModel::texture_refresh_pending(bool active) const {
@@ -131,14 +144,33 @@ bool NativeModel::texture_refresh_pending(bool active) const {
         texture_refresh_memory_.due(SDL_GetTicksNS());
 }
 
-bool NativeModel::refresh_texture_resolution(bool active) {
+bool NativeModel::texture_refresh_due(bool active, bool allow_start) const {
+    const uint64_t now = SDL_GetTicksNS();
+    if (texture_refresh_) {
+        const auto &refresh = *texture_refresh_;
+        if (refresh.finishing || refresh.cancelled) return true;
+        if (active)
+            return refresh.paused_ns || (now - texture_resize_ns_ >= kEnlargeSettleNs &&
+                bongo_cat_image_texture_job_needs_poll(refresh.job));
+        /* Observe the pause transition once, then service it again only when
+           its bounded retention period expires. Modal loops must also ask
+           this query: busy() intentionally excludes paused work. */
+        return !refresh.paused_ns || now - refresh.paused_ns >= kPauseReleaseNs;
+    }
+    return texture_refresh_memory_.due(now) ||
+        (allow_start && active && texture_refresh_pending_ &&
+            dynamic_texture_resolution_ &&
+            now - texture_resize_ns_ >= kEnlargeSettleNs &&
+            !texture_refresh_memory_.cancellation_cooldown(now));
+}
+
+bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
+    if (!texture_refresh_due(active, allow_start)) return false;
     const uint64_t now = SDL_GetTicksNS();
     if (!texture_refresh_ && texture_refresh_memory_.due(now))
         texture_refresh_memory_.poll(now, texture_storage_mib());
     if (!texture_refresh_ && texture_refresh_memory_.cancellation_cooldown(now))
         return false;
-    if (!texture_refresh_pending_ || !dynamic_texture_resolution_ ||
-        textures_.empty() || !setting_) return false;
     bool changed = false;
     if (texture_refresh_) {
         auto &refresh = *texture_refresh_;
@@ -146,17 +178,19 @@ bool NativeModel::refresh_texture_resolution(bool active) {
             /* Brief gestures/hides pause the same bounded job. A long pause
                releases its unfinished atlas; obsolete jobs drain immediately,
                even while hidden, without uploading another batch. */
-            texture_resize_ns_ = now;
             if (!refresh.paused_ns) refresh.paused_ns = now;
             if (!refresh.finishing && !refresh.cancelled &&
                 now - refresh.paused_ns >= kPauseReleaseNs) {
                 cancel_texture_refresh_async();
             }
-        } else refresh.paused_ns = 0;
+        } else if (refresh.paused_ns) {
+            refresh.paused_ns = 0;
+            texture_resize_ns_ = now;
+        }
         BongoCatError error{};
         if (!refresh.finishing) {
             if (!refresh.cancelled && (!active ||
-                now - texture_resize_ns_ < kResizeSettleNs)) return false;
+                now - texture_resize_ns_ < kEnlargeSettleNs)) return false;
             auto &next = *refresh.replacement;
             int result = bongo_cat_image_texture_job_poll(refresh.job,
                 &next.id, &next.width, &next.height, &next.alpha, &error);
@@ -169,8 +203,27 @@ bool NativeModel::refresh_texture_resolution(bool active) {
                     previous ? previous->height : 0, next.width, next.height,
                     (double)(now - refresh.started) / 1000000.0);
                 textures_[refresh.index] = std::move(refresh.replacement);
+                /* Repeated slots of the same file already share the old
+                   allocation. Keep them shared after resizing instead of
+                   decoding/uploading one identical replacement per slot.
+                   Different files may have diverged since the initial hash. */
+                const char *file = setting_->GetTextureFileName((int)refresh.index);
+                for (size_t i = 0; file && i < textures_.size(); ++i) {
+                    if (textures_[i] != previous) continue;
+                    const char *other = setting_->GetTextureFileName((int)i);
+                    if (other && std::strcmp(file, other) == 0)
+                        textures_[i] = textures_[refresh.index];
+                }
                 bind_textures();
                 triangle_alpha_.clear();
+                /* A higher-resolution atlas can reveal thin details that the
+                   previous alpha mask could not represent. */
+                try {
+                    prepare_frame_bounds();
+                } catch (const std::bad_alloc &) {
+                    /* Raw vertices remain a safe, allocation-free fallback. */
+                    frame_drawables_.clear();
+                }
                 visual_state_cached_ = false;
                 if (previous && previous.use_count() == 1)
                     refresh.delete_requested_mib = bongo_cat_model_texture_mib(
@@ -204,16 +257,27 @@ bool NativeModel::refresh_texture_resolution(bool active) {
         texture_refresh_ = nullptr;
         return changed;
     }
-    if (!active || now - texture_resize_ns_ < kResizeSettleNs) return false;
+    /* Always drain an existing job above, even if future work is disabled.
+       Native modal callbacks may service resources but never start a job. */
+    if (!allow_start || !active || !texture_refresh_pending_ ||
+        !dynamic_texture_resolution_ || textures_.empty() || !setting_ ||
+        now - texture_resize_ns_ < kEnlargeSettleNs) return false;
     GLint limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limit);
     if (limit < 1) { texture_refresh_pending_ = false; return false; }
     for (; texture_refresh_index_ < textures_.size(); ++texture_refresh_index_) {
         const auto &current = textures_[texture_refresh_index_];
         if (!current) continue;
-        auto bound = texture_refresh_bound(*current, limit);
-        if (fitted_size(*current, bound) == std::make_pair(current->width, current->height))
+        auto bound = texture_refresh_bound(*current, limit, render_quality_percent_);
+        const auto fitted = fitted_size(*current, bound);
+        if (fitted == std::make_pair(current->width, current->height))
             continue;
+        // Restore enlarged detail promptly; coalesce brief shrink bursts before
+        // preparing a smaller atlas so oversized storage can be released sooner.
+        const bool enlarging = fitted.first > current->width ||
+            fitted.second > current->height;
+        if (!enlarging && now - texture_resize_ns_ < kShrinkSettleNs)
+            return false;
         std::unique_ptr<TextureRefresh> refresh(new(std::nothrow) TextureRefresh);
         BongoCatError error{};
         std::string texture_path;
@@ -228,7 +292,7 @@ bool NativeModel::refresh_texture_resolution(bool active) {
         auto &next = *refresh->replacement;
         next.context = current->context;
         next.direct = current->direct;
-        next.dynamic_resolution = true;
+        next.dynamic_resolution = dynamic_texture_resolution_;
         next.max_width = bound.max_width; next.max_height = bound.max_height;
         next.source_width = current->source_width; next.source_height = current->source_height;
         refresh->index = texture_refresh_index_;

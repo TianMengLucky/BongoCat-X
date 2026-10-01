@@ -25,7 +25,7 @@ void bongo_cat_model_refresh_invalidate(BongoCatApp *app);
 bool bongo_cat_model_refresh_event(BongoCatApp *app,
     const SDL_Event *event);
 void bongo_cat_model_refresh_update(BongoCatApp *app);
-void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app);
+void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app, bool allow_start);
 void bongo_cat_model_refresh_shutdown(BongoCatApp *app);
 BongoCatResult bongo_cat_app_locate_assets(BongoCatApp *app, BongoCatError *error);
 bool bongo_cat_startup_prepare(BongoCatApp *app, int argc, char **argv,
@@ -43,9 +43,11 @@ void bongo_cat_startup_failure(BongoCatApp *app, const BongoCatError *error);
 void bongo_cat_startup_ci_failure(BongoCatApp *app, const BongoCatError *error);
 void bongo_cat_window_destroy(BongoCatApp *app);
 void bongo_cat_window_apply(BongoCatApp *app);
+/* 应用"只在录屏软件里显示"设置 (Windows: DWM 隐藏窗口, 桌面不显示但可采集) */
+void bongo_cat_window_apply_capture_only(BongoCatApp *app);
 bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event);
 bool bongo_cat_window_visible_at_pointer(BongoCatApp *app, float x, float y);
-void bongo_cat_window_capture_pointer_hit(BongoCatApp *app);
+void bongo_cat_window_capture_pointer_hit(BongoCatApp *app, bool pending_frame);
 void bongo_cat_window_mark_hit_dirty(BongoCatApp *app);
 void bongo_cat_window_set_visible(BongoCatApp *app, bool visible);
 void bongo_cat_window_raise_when_due(BongoCatApp *app, uint64_t now);
@@ -59,6 +61,10 @@ bool bongo_cat_wait_event(SDL_Event *event, int timeout_ms);
 bool bongo_cat_app_step_live2d(BongoCatApp *app, float elapsed_seconds);
 void bongo_cat_window_sync_click_through(BongoCatApp *app);
 void bongo_cat_window_apply_pending_resize(BongoCatApp *app);
+void bongo_cat_window_update_model_frame(BongoCatApp *app);
+void bongo_cat_window_store_content_origin(BongoCatApp *app);
+void bongo_cat_window_limit_initial_frame(BongoCatApp *app,
+    int content_width, int content_height);
 void bongo_cat_window_wheel(BongoCatApp *app, const SDL_MouseWheelEvent *event);
 void bongo_cat_window_update_wheel_animation(BongoCatApp *app, uint64_t now);
 void bongo_cat_window_cancel_wheel_animation(BongoCatApp *app);

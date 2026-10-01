@@ -51,6 +51,11 @@ typedef bool (*BongoCatImageCancelled)(void *userdata);
 bool bongo_cat_image_decode_png_rows(const char *path,
     BongoCatImageRows consume, void *consumer,
     BongoCatImageProgress progress, void *userdata);
+/* Checks cancellation between input chunks and individual decoded rows. */
+bool bongo_cat_image_decode_png_rows_cancellable(const char *path,
+    BongoCatImageRows consume, void *consumer,
+    BongoCatImageProgress progress, void *userdata,
+    BongoCatImageCancelled cancelled, void *cancel_data);
 /* Same input formats and callback lifetime as png_rows. Outputs straight RGBA
    in reduced strips; no complete source or reduced CPU image is retained. */
 BongoCatResult bongo_cat_image_decode_png_scaled_rows(const char *path,

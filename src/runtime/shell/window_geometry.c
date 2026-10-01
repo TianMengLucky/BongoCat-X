@@ -40,7 +40,8 @@ bool bongo_cat_window_frame_size(BongoCatApp *app,
     *width = round_dimension(frame_width);
     *height = round_dimension(frame_height);
     if (left) *left = round_dimension(content_width * frame.left);
-    if (top) *top = round_dimension(content_height * frame.top);
+    if (top) *top = round_dimension(content_height *
+        (app && app->settings.model.vertical_flip ? frame.bottom : frame.top));
     return true;
 }
 
@@ -124,7 +125,6 @@ void bongo_cat_window_resize_end(BongoCatApp *app) {
     app->resize_pointer_delta = 0.0f;
     if (active) {
         SDL_CaptureMouse(false);
-        bongo_cat_window_clamp_to_display(app);
         bongo_cat_window_mark_hit_dirty(app);
         if (app->resize_render_target_pending) app->dirty = true;
     }
@@ -196,17 +196,15 @@ bool bongo_cat_window_geometry_self_test(BongoCatApp *app) {
     SDL_DisplayID display = SDL_GetDisplayForWindow(app->window);
     SDL_Rect bounds;
     if (!display || !SDL_GetDisplayUsableBounds(display, &bounds)) return false;
-    app->settings.window.keep_in_screen = true;
     app->model_pointer_anchor_ready = true;
     bongo_cat_window_apply_geometry(app, bounds.x - 2000, bounds.y - 2000,
         100.0f, 320, 240);
     SDL_SyncWindow(app->window);
     bongo_cat_window_apply_pending_resize(app);
-    bongo_cat_window_clamp_to_display(app);
     SDL_SyncWindow(app->window);
     int x, y, width, height;
     SDL_GetWindowPosition(app->window, &x, &y);
-    bool clamped = x >= bounds.x && y >= bounds.y;
+    bool remained_offscreen = x < bounds.x && y < bounds.y;
     bool anchor_reset = !app->model_pointer_anchor_ready;
     bool scaled = bongo_cat_window_set_scale(app, 125.0f);
     SDL_SyncWindow(app->window);
@@ -360,11 +358,11 @@ bool bongo_cat_window_geometry_self_test(BongoCatApp *app) {
         state_backup.opacity_percent / 100.0f);
     bongo_cat_window_sync_click_through(app);
     SDL_SyncWindow(app->window);
-    bool passed = clamped && anchor_reset && scaled && opacity && hidden && restored &&
+    bool passed = remained_offscreen && anchor_reset && scaled && opacity && hidden && restored &&
         fade && bounded && gesture && display_reset;
-    if (!passed) fprintf(stderr, "geometry self-test: clamped=%d scaled=%d(%dx%d) "
+    if (!passed) fprintf(stderr, "geometry self-test: offscreen=%d scaled=%d(%dx%d) "
         "anchor=%d opacity=%d hidden=%d restored=%d fade=%d bounded=%d gesture=%d(%dx%d) display=%d\n",
-        clamped, scaled, scaled_width, scaled_height, anchor_reset, opacity, hidden, restored,
+        remained_offscreen, scaled, scaled_width, scaled_height, anchor_reset, opacity, hidden, restored,
         fade, bounded, gesture, gesture_width, gesture_height, display_reset);
     return passed;
 }

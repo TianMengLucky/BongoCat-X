@@ -25,27 +25,58 @@ int rounded_dimension(double value, int source, int limit) {
 }
 } // namespace
 
+bool texture_quality_valid(float quality_percent) {
+    return quality_percent == 0.1f || quality_percent == 1.0f ||
+        (quality_percent >= 10.0f && quality_percent <= 100.0f &&
+            std::fmod(quality_percent, 10.0f) == 0.0f);
+}
+
 TextureResolution texture_resolution_for(bool enabled,
     int display_width, int display_height, int reference_width,
     int reference_height, int source_width, int source_height,
-    int texture_limit) {
+    int texture_limit, float quality_percent) {
     TextureResolution result{source_width, source_height, false};
-    if (!enabled || source_width <= 0 || source_height <= 0) return result;
-    if (display_width <= 0 || display_height <= 0 || reference_width <= 0 ||
-        reference_height <= 0) return result;
-    double scale_x = (double)display_width / reference_width;
-    double scale_y = (double)display_height / reference_height;
-    double display_scale = std::max(scale_x, scale_y);
-    if (!std::isfinite(display_scale) || display_scale <= 0.0) return result;
-    double scale = std::min(1.0, display_scale * kDisplayScale);
-    int max_width = rounded_dimension(source_width * scale,
-        source_width, texture_limit);
-    int max_height = rounded_dimension(source_height * scale,
-        source_height, texture_limit);
-    result.max_width = max_width;
-    result.max_height = max_height;
-    result.resized = max_width < source_width || max_height < source_height;
+    if (source_width <= 0 || source_height <= 0) return result;
+    if (enabled && display_width > 0 && display_height > 0 &&
+        reference_width > 0 && reference_height > 0) {
+        double scale_x = (double)display_width / reference_width;
+        double scale_y = (double)display_height / reference_height;
+        double scale = std::min(1.0, std::max(scale_x, scale_y) * kDisplayScale);
+        result.max_width = rounded_dimension(source_width * scale,
+            source_width, texture_limit);
+        result.max_height = rounded_dimension(source_height * scale,
+            source_height, texture_limit);
+    }
+    if (texture_quality_valid(quality_percent) && quality_percent < 100.0f) {
+        const double scale = std::sqrt((double)quality_percent / 100.0);
+        result.max_width = std::min(result.max_width,
+            std::max(1, (int)std::ceil(source_width * scale)));
+        result.max_height = std::min(result.max_height,
+            std::max(1, (int)std::ceil(source_height * scale)));
+        if (texture_limit > 0) {
+            result.max_width = std::min(result.max_width, texture_limit);
+            result.max_height = std::min(result.max_height, texture_limit);
+        }
+    }
+    result.resized = result.max_width < source_width ||
+        result.max_height < source_height;
     return result;
+}
+
+std::pair<int, int> texture_fitted_size(int width, int height,
+    const TextureResolution &bound) {
+    if (width < 1 || height < 1 || bound.max_width < 1 || bound.max_height < 1)
+        return {0, 0};
+    if (width > bound.max_width || height > bound.max_height) {
+        if ((int64_t)bound.max_width * height <= (int64_t)bound.max_height * width) {
+            height = std::max(1, (int)((int64_t)height * bound.max_width / width));
+            width = bound.max_width;
+        } else {
+            width = std::max(1, (int)((int64_t)width * bound.max_height / height));
+            height = bound.max_height;
+        }
+    }
+    return {width, height};
 }
 
 } // namespace bongo_cat

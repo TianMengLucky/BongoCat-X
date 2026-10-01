@@ -2,16 +2,13 @@
 
 #include <stdlib.h>
 #ifdef _WIN32
-#include "windows_autostart.h"
 #include "windows_game_compatibility.h"
+#include "windows_autostart.h"
 #include "storage_paths.h"
 #endif
 
 int bongo_cat_app_run(int argc, char **argv) {
 #ifdef _WIN32
-    int autostart_exit = 0;
-    if (bongo_cat_windows_autostart_command(argc, argv, &autostart_exit))
-        return autostart_exit;
     if (!bongo_cat_windows_game_compatibility_command()) return 1;
 #endif
     if (bongo_cat_platform_update_shutdown_argument(argc, argv)) return 0;
@@ -33,6 +30,11 @@ int bongo_cat_app_run(int argc, char **argv) {
     if (bongo_cat_startup_arguments(app, argc, argv, &error) &&
         bongo_cat_storage_paths_prepare(app, &error) &&
         bongo_cat_settings_load(app->settings_path, &app->settings, &error) == BONGO_CAT_OK) {
+        /* Re-assert the registry autostart entry and clear leftovers of the
+           previous shortcut/task mechanisms once per launch; smoke and
+           secondary instances must not touch the user's registry. */
+        if (!app->smoke && !app->secondary_pet)
+            bongo_cat_windows_autostart_sync(app->settings.app.autostart);
         bool restarting = false;
         bool success = bongo_cat_windows_game_compatibility_startup(app, &restarting, &error);
         if (!success || restarting) {

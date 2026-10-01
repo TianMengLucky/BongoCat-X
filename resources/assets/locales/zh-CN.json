@@ -44,9 +44,6 @@
           "hoverRequires": "需要同时开启上面的[鼠标穿透]和[置顶]选项",
           "hoverUnavailable": "当前桌面环境暂不支持鼠标移入隐藏。",
           "gamepadFourHands": "在手柄模式下常驻显示额外两只手，四手一起玩！具体效果取决于模型",
-          "gameCompatibility": "游戏中桌宠无法响应时开启，并在游戏设置中切换为窗口化模式",
-          "gameCompatibilityHelp": "为什么桌宠需要管理员权限？\n部分游戏会以更高权限运行，普通权限下的 BongoCat 无法看到游戏中的键鼠操作。\n不玩这类游戏无需开启。我们只在必要时使用管理员权限。",
-          "gameCompatibilityFailed": "无法切换游戏兼容模式。",
           "passThrough": "右键托盘图标也可关闭此功能",
           "alwaysOnTop": "启用后，窗口始终显示在其他应用程序上方。",
           "keepInScreen": "启用后，窗口会自动调整位置，防止超出屏幕边界。",
@@ -63,7 +60,7 @@
         "labels": {
           "appSettings": "应用",
           "launchOnStartup": "开机自启动",
-          "gameCompatibility": "游戏兼容模式",
+          "runAsAdmin": "以管理员身份运行",
           "showTrayIcon": "显示托盘图标",
           "appearanceSettings": "外观",
           "themeMode": "主题",
@@ -80,6 +77,9 @@
         "hints": {
           "showTrayIcon": "启用后，在系统托盘中显示应用图标。",
           "autostartFailed": "无法更新开机启动设置",
+          "runAsAdmin": "以管理员身份运行应用，可以更稳定地捕获部分系统级按键与输入事件。",
+          "runAsAdminHelp": "以管理员身份运行后，应用可以更稳定地捕获部分系统级按键与输入事件，在以管理员权限运行的游戏中也能正常响应。\n\n开启后：应用会请求管理员权限并自动重启；之后的每次启动（包括开机自启动）都会以管理员权限运行。若同时开启了开机自启动，登录系统时会出现一次用户账户控制（UAC）确认。\n\n关闭后：从下一次启动起恢复普通权限，当前正在运行的应用不受影响。",
+          "runAsAdminFailed": "无法更改管理员运行设置",
           "inputMonitoringPermission": "授权后请重启",
           "inputMonitoringPermissionGuide": "输入监控权限让 BongoCat 能接收其他应用中的按键；鼠标移动和点击无需该权限。BongoCat 在启动时建立监听，因此权限变更后需要重启。\n\n操作方式：\n1. 打开「系统设置」→「隐私与安全性」→「输入监控」。\n2. 直接开启列表中已有的 BongoCat 条目，不要删除现有条目。\n3. 若列表中没有 BongoCat，点击「+」按钮，添加你当前运行的那份应用（注意确认应用位置）。\n4. 完全退出 BongoCat 后重新启动，让它重建监听。\n\n若键盘仍然无响应，可由你自行删除并重新添加 BongoCat 条目来排障。",
           "administratorPermission": "以管理员身份运行应用，可以更稳定地捕获部分系统级按键与输入事件。",

@@ -42,9 +42,6 @@
           "hoverRequires": "Activez les options [Passage des clics] et [Toujours au premier plan] ci-dessus.",
           "hoverUnavailable": "Le masquage au survol est indisponible dans cet environnement de bureau.",
           "gamepadFourHands": "Affiche en permanence deux mains supplémentaires en mode manette. Le rendu dépend du modèle",
-          "gameCompatibility": "Activez cette option si la mascotte ne réagit pas en jeu et passez en mode fenêtré dans les paramètres du jeu",
-          "gameCompatibilityHelp": "Une fois cette option activée, BongoCat redémarre avec les droits administrateur. Il conserve ces droits à chaque lancement suivant. Désactivez cette option pour revenir aux droits normaux.\n\nPourquoi une mascotte de bureau a-t-elle besoin des droits administrateur ?\n\nCertains jeux s'exécutent avec les droits administrateur. Windows isolant les processus selon leurs droits, BongoCat avec des droits normaux peut ne pas recevoir les entrées du clavier et de la souris dans ces jeux. La mascotte ne réagit alors plus.\n\nPour faire simple, c'est comme si le jeu et BongoCat se trouvaient à des étages différents. Certains jeux fonctionnent à un niveau de droits supérieur, auquel BongoCat ne peut pas accéder avec ses droits normaux. Vous jouez à l'étage et BongoCat est en bas : le son ne passe pas, et la mascotte ne peut pas suivre vos actions.\n\nSi vous ne jouez pas à ce type de jeux, vous pouvez laisser cette option désactivée. Nous ne demandons pas les droits administrateur sans nécessité.",
-          "gameCompatibilityFailed": "Impossible de modifier le mode de compatibilité des jeux.",
           "passThrough": "Désactivation possible aussi par clic droit sur l’icône de la zone de notification",
           "alwaysOnTop": "Lorsque cette option est activée, la fenêtre reste au-dessus des autres fenêtres.",
           "keepInScreen": "Lorsque cette option est activée, la fenêtre reste automatiquement dans les limites de l'écran.",
@@ -61,7 +58,7 @@
         "labels": {
           "appSettings": "Application",
           "launchOnStartup": "Lancer au démarrage",
-          "gameCompatibility": "Mode de compatibilité des jeux",
+          "runAsAdmin": "Exécuter en tant qu'administrateur",
           "showTrayIcon": "Afficher l'icône dans la zone de notification",
           "appearanceSettings": "Apparence",
           "themeMode": "Thème",
@@ -78,6 +75,9 @@
         "hints": {
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
           "autostartFailed": "Impossible de modifier le lancement au démarrage",
+          "runAsAdmin": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches et certains événements d'entrée système.",
+          "runAsAdminHelp": "En s'exécutant en tant qu'administrateur, l'application peut capturer plus fiablement certaines touches et certains événements d'entrée système, et rester réactive dans les jeux lancés avec des privilèges d'administrateur.\n\nÀ l'activation : l'application demande l'autorisation d'administrateur et redémarre ; chaque lancement suivant (y compris le démarrage automatique) s'exécutera également en tant qu'administrateur. Si le démarrage automatique est activé, Windows affiche une confirmation de contrôle de compte d'utilisateur (UAC) à chaque connexion.\n\nÀ la désactivation : les privilèges normaux sont rétablis à partir du lancement suivant ; l'application en cours d'exécution n'est pas affectée.",
+          "runAsAdminFailed": "Impossible de modifier l'option d'exécution en tant qu'administrateur",
           "inputMonitoringPermission": "Redémarrez après l'autorisation.",
           "inputMonitoringPermissionGuide": "La surveillance des entrées permet à BongoCat de voir les touches pressées dans d'autres applications ; la souris continue de fonctionner sans elle. BongoCat construit l'écoute à son démarrage, un changement d'autorisation demande donc un redémarrage.\n\nÉtapes :\n1. Ouvrez Réglages Système → Confidentialité et sécurité → Surveillance de l'entrée.\n2. Activez l'entrée BongoCat déjà présente dans la liste ; ne supprimez aucune entrée.\n3. Si BongoCat n'est pas listé, cliquez sur \"+\" et ajoutez la copie que vous exécutez (vérifiez son emplacement).\n4. Quittez complètement BongoCat puis relancez-le pour qu'il reconstruise l'écoute.\n\nSi le clavier reste sans réponse, vous pouvez supprimer puis rajouter vous-même l'entrée BongoCat.",
           "administratorPermission": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches système et certains événements d'entrée.",

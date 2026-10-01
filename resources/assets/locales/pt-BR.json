@@ -42,9 +42,6 @@
           "hoverRequires": "Ative as opções [Passagem de cliques] e [Sempre no Topo] acima.",
           "hoverUnavailable": "Ocultar ao passar o mouse não está disponível no ambiente de desktop atual.",
           "gamepadFourHands": "Mantém duas mãos extras visíveis no modo controle. A aparência depende do modelo",
-          "gameCompatibility": "Ative se o mascote não responder nos jogos e mude para o modo janela nas configurações do jogo",
-          "gameCompatibilityHelp": "Ao ativar, o BongoCat será reiniciado com permissões de administrador. Ele continuará usando essas permissões sempre que for iniciado. Ao desativar esta opção, voltará a usar permissões normais.\n\nPor que um mascote de desktop precisa de permissões de administrador?\n\nAlguns jogos são executados com permissões de administrador. Como o Windows isola processos com níveis de permissão diferentes, o BongoCat com permissões normais pode não receber os comandos do teclado e do mouse nesses jogos, fazendo com que o mascote não responda.\n\nÉ como se o jogo e o BongoCat estivessem em andares diferentes. Alguns jogos funcionam em um nível de permissão mais alto, e o BongoCat com permissões normais não consegue receber seus comandos. Você joga no andar de cima e o BongoCat está no de baixo: o som não chega, então o mascote não consegue acompanhar suas ações.\n\nSe você não costuma jogar esses jogos, pode manter esta opção desativada. Não solicitaremos permissões de administrador sem necessidade.",
-          "gameCompatibilityFailed": "Não foi possível alterar o modo de compatibilidade com jogos.",
           "passThrough": "Também é possível desativar pelo clique direito no ícone da bandeja",
           "alwaysOnTop": "Quando ativado, a janela sempre ficará acima de outros aplicativos.",
           "keepInScreen": "Quando ativado, a janela permanece automaticamente dentro dos limites da tela.",
@@ -61,7 +58,7 @@
         "labels": {
           "appSettings": "Aplicativo",
           "launchOnStartup": "Iniciar na inicialização",
-          "gameCompatibility": "Modo de compatibilidade com jogos",
+          "runAsAdmin": "Executar como administrador",
           "showTrayIcon": "Mostrar ícone na bandeja",
           "appearanceSettings": "Aparência",
           "themeMode": "Tema",
@@ -78,6 +75,9 @@
         "hints": {
           "showTrayIcon": "Quando ativado, o ícone do aplicativo é exibido na bandeja do sistema.",
           "autostartFailed": "Não foi possível atualizar a inicialização automática",
+          "runAsAdmin": "Executar o aplicativo como administrador ajuda a capturar com mais estabilidade algumas teclas e eventos de entrada do sistema.",
+          "runAsAdminHelp": "Ao executar como administrador, o aplicativo consegue capturar com mais estabilidade algumas teclas e eventos de entrada do sistema e responder normalmente em jogos executados com privilégios de administrador.\n\nAo ativar: o aplicativo solicita permissão de administrador e reinicia; cada inicialização seguinte (incluída a inicialização com o sistema) também será como administrador. Se a inicialização com o sistema estiver ativada, o Windows mostra uma confirmação do Controle de Conta de Usuário (UAC) uma vez a cada login.\n\nAo desativar: os privilégios normais voltam a partir da próxima inicialização; o aplicativo em execução não é afetado.",
+          "runAsAdminFailed": "Não foi possível alterar a opção de executar como administrador",
           "inputMonitoringPermission": "Reinicie após autorizar.",
           "inputMonitoringPermissionGuide": "O Monitoramento de Entrada permite que o BongoCat veja teclas pressionadas em outros aplicativos; o mouse continua funcionando sem ele. O BongoCat cria o monitoramento ao iniciar, então uma mudança de permissão exige reiniciar.\n\nPassos:\n1. Abra Ajustes do Sistema → Privacidade e Segurança → Monitoramento de Entrada.\n2. Ative a entrada do BongoCat que já está na lista; não remova entradas existentes.\n3. Se o BongoCat não estiver na lista, clique em \"+\" e adicione a cópia que você executa (confira o local do aplicativo).\n4. Encerre o BongoCat por completo e inicie de novo para recriar o monitoramento.\n\nSe o teclado continuar sem resposta, você pode remover e adicionar de novo a entrada do BongoCat.",
           "administratorPermission": "Executar o aplicativo como administrador ajuda a capturar algumas teclas e eventos de entrada em nível de sistema com mais confiabilidade.",

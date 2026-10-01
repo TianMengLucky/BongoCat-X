@@ -101,8 +101,8 @@ typedef struct BongoCatWindowState {
 
 typedef struct BongoCatApplicationPreferences {
     bool autostart;
-    bool autostart_admin;
-    bool game_compatibility;
+    /* Relaunch elevated; the registry autostart entry is independent of it. */
+    bool run_as_admin;
     bool tray_visible;
     BongoCatTheme theme;
     BongoCatLanguage language;

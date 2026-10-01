@@ -42,9 +42,6 @@
           "hoverRequires": "Die obigen Optionen [Klickdurchlässigkeit] und [Immer im Vordergrund] müssen aktiviert sein.",
           "hoverUnavailable": "Ausblenden bei Mausberührung ist in dieser Desktop-Umgebung nicht verfügbar.",
           "gamepadFourHands": "Im Gamepad-Modus bleiben zwei zusätzliche Hände sichtbar. Das Aussehen hängt vom Modell ab",
-          "gameCompatibility": "Aktivieren, wenn das Desktop-Tier im Spiel nicht reagiert, und in den Spieleinstellungen zum Fenstermodus wechseln",
-          "gameCompatibilityHelp": "Nach dem Aktivieren startet BongoCat mit Administratorrechten neu. Auch bei jedem weiteren Start wird BongoCat mit Administratorrechten ausgeführt. Wenn du diese Option ausschaltest, kehrt BongoCat zu normalen Rechten zurück.\n\nWarum benötigt ein Desktop-Tier Administratorrechte?\n\nEinige Spiele werden mit Administratorrechten ausgeführt. Windows trennt Prozesse mit unterschiedlichen Berechtigungen. Deshalb kann BongoCat mit normalen Rechten möglicherweise keine Tastatur- und Mauseingaben aus diesen Spielen empfangen, sodass das Desktop-Tier nicht reagiert.\n\nVereinfacht gesagt befinden sich das Spiel und BongoCat auf unterschiedlichen Stockwerken. Einige Spiele laufen auf einer höheren Berechtigungsstufe, deren Eingaben BongoCat mit normalen Rechten nicht empfangen kann. Du spielst oben, während BongoCat unten ist: Der Ton kommt nicht an und das Desktop-Tier kann deinen Aktionen nicht folgen.\n\nWenn du solche Spiele nicht spielst, kannst du diese Option ausgeschaltet lassen. Wir fordern Administratorrechte nur an, wenn sie benötigt werden.",
-          "gameCompatibilityFailed": "Der Spielkompatibilitätsmodus konnte nicht geändert werden.",
           "passThrough": "Auch per Rechtsklick auf das Symbol im Infobereich deaktivierbar",
           "alwaysOnTop": "Wenn aktiviert, bleibt das Fenster über allen anderen Fenstern.",
           "keepInScreen": "Wenn aktiviert, bleibt das Fenster automatisch innerhalb der Bildschirmgrenzen.",
@@ -61,7 +58,7 @@
         "labels": {
           "appSettings": "Anwendung",
           "launchOnStartup": "Beim Systemstart ausführen",
-          "gameCompatibility": "Spielkompatibilitätsmodus",
+          "runAsAdmin": "Als Administrator ausführen",
           "showTrayIcon": "Infobereichssymbol anzeigen",
           "appearanceSettings": "Erscheinungsbild",
           "themeMode": "Design",
@@ -78,6 +75,9 @@
         "hints": {
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",
           "autostartFailed": "Die Einstellung für den automatischen Start konnte nicht aktualisiert werden",
+          "runAsAdmin": "Wenn die App als Administrator ausgeführt wird, werden einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfasst.",
+          "runAsAdminHelp": "Als Administrator ausgeführt kann die App einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfassen und auch in Spielen reagieren, die mit Administratorrechten laufen.\n\nBeim Aktivieren: Die App fordert Administratorrechte an und startet sich neu; jeder spätere Start (auch der Autostart) läuft ebenfalls als Administrator. Ist der Autostart aktiviert, zeigt Windows bei jeder Anmeldung einmal eine Benutzerkontensteuerung (UAC) an.\n\nBeim Deaktivieren: Ab dem nächsten Start gelten wieder normale Rechte; die laufende App ist nicht betroffen.",
+          "runAsAdminFailed": "Die Einstellung 'Als Administrator ausführen' kann nicht geändert werden",
           "inputMonitoringPermission": "Nach dem Erlauben neu starten.",
           "inputMonitoringPermissionGuide": "Die Eingabeüberwachung erlaubt BongoCat, in anderen Apps gedrückte Tasten zu sehen; die Maus funktioniert auch ohne sie. BongoCat baut die Überwachung beim Start auf, eine Berechtigungsänderung erfordert daher einen Neustart.\n\nSchritte:\n1. Öffnen Sie Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung.\n2. Schalten Sie den bereits gelisteten BongoCat-Eintrag ein; entfernen Sie keine vorhandenen Einträge.\n3. Falls BongoCat fehlt, klicken Sie auf \"+\" und fügen Sie die laufende Kopie hinzu (prüfen Sie den Speicherort).\n4. Beenden Sie BongoCat vollständig und starten Sie es erneut, damit es die Überwachung neu aufbaut.\n\nWenn die Tastatur weiterhin nicht reagiert, können Sie den BongoCat-Eintrag selbst entfernen und neu hinzufügen.",
           "administratorPermission": "Als Administrator kann die Anwendung bestimmte Systemtasten und Eingabeereignisse zuverlässiger erfassen.",

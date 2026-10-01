@@ -104,11 +104,16 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
 
 static bool read_app(yyjson_val *object, BongoCatApplicationPreferences *value,
     BongoCatError *error) {
+    bool legacy_admin = false;
     if (!read_bool(object, "launchAtLogin", &value->autostart, error) ||
-        !read_bool(object, "launchAtLoginAsAdmin", &value->autostart_admin, error) ||
-        !read_bool(object, "gameCompatibility", &value->game_compatibility, error) ||
+        !read_bool(object, "runAsAdmin", &value->run_as_admin, error) ||
+        !read_bool(object, "gameCompatibility", &legacy_admin, error) ||
         !read_bool(object, "showTrayIcon", &value->tray_visible, error))
         return false;
+    /* Settings written before the option was renamed carried the same
+       meaning under the old key; the new key wins when both are present. */
+    if (!yyjson_obj_get(object, "runAsAdmin") && legacy_admin)
+        value->run_as_admin = true;
     const char *text;
     size_t length;
     if (!read_string(object, "theme", &text, &length, error)) return false;

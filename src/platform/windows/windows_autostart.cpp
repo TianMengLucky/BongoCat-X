@@ -1,22 +1,52 @@
-/* Task Scheduler has a C++ SDK interface; keep it behind the C platform API. */
+/* Launch-at-login lives in the registry Run key, the mechanism Task Manager
+   exposes as startup apps. Registry entries always launch with the user's own
+   rights, so configuring one never needs elevation. Leftovers of the earlier
+   Startup-folder shortcut and Task Scheduler mechanisms are removed on every
+   update so they cannot start a second or an elevated duplicate instance. */
 extern "C" {
+#include "bongo_cat/common.h"
 #include "bongo_cat/platform.h"
-#include "windows_autostart.h"
 }
 #include <windows.h>
-#include <shellapi.h>
-#include <sddl.h>
-#include "windows_autostart_internal.h"
-#include <cstring>
+#include <shlobj.h>
+#include <taskschd.h>
 #include <string>
 
-using namespace bongo_autostart;
-
 namespace {
-constexpr char configure_argument[] = "--configure-autostart=";
-constexpr size_t configure_argument_length = sizeof(configure_argument) - 1;
-/* A normal/early exit of the application is not an acknowledgement. */
-constexpr DWORD helper_success = 0xBCA00001u;
+
+/* Minimal RAII for the one Task Scheduler query the migration still needs. */
+template<class T> struct Com {
+    T *p = nullptr;
+    Com() = default;
+    Com(const Com &) = delete;
+    Com &operator=(const Com &) = delete;
+    ~Com() { if (p) p->Release(); }
+};
+struct Bstr {
+    BSTR p = nullptr;
+    Bstr() = default;
+    explicit Bstr(const wchar_t *s) : p(SysAllocString(s)) {}
+    Bstr(const Bstr &) = delete;
+    Bstr &operator=(const Bstr &) = delete;
+    ~Bstr() { SysFreeString(p); }
+    operator BSTR() const { return p; }
+};
+struct Apartment {
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    Apartment() = default;
+    Apartment(const Apartment &) = delete;
+    Apartment &operator=(const Apartment &) = delete;
+    ~Apartment() { if (SUCCEEDED(hr)) CoUninitialize(); }
+};
+
+constexpr wchar_t run_path[] =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr wchar_t run_approval_path[] =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer"
+    L"\\StartupApproved\\Run";
+constexpr wchar_t shortcut_approval_path[] =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer"
+    L"\\StartupApproved\\StartupFolder";
 
 std::wstring user_sid() {
     HANDLE token = nullptr;
@@ -34,91 +64,101 @@ std::wstring user_sid() {
     return result;
 }
 
-HRESULT elevate(Mode mode, const std::wstring &sid) {
-    wchar_t executable[BONGO_CAT_PATH_CAP];
-    DWORD length = GetModuleFileNameW(nullptr, executable, BONGO_CAT_PATH_CAP);
-    if (!length || length >= BONGO_CAT_PATH_CAP) return E_FAIL;
-    std::wstring args;
-    for (const char *p = configure_argument; *p; ++p)
-        args.push_back(static_cast<unsigned char>(*p));
-    args += std::to_wstring(static_cast<int>(mode)) + L" " + sid;
-    SHELLEXECUTEINFOW info = {};
-    info.cbSize = sizeof(info);
-    info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
-    info.lpVerb = L"runas";
-    info.lpFile = executable;
-    info.lpParameters = args.c_str();
-    std::wstring directory(executable);
-    auto separator = directory.find_last_of(L"\\/");
-    if (separator == std::wstring::npos) return E_INVALIDARG;
-    directory.resize(separator + 1);
-    info.lpDirectory = directory.c_str();
-    info.nShow = SW_HIDE;
-    if (!ShellExecuteExW(&info)) return HRESULT_FROM_WIN32(GetLastError());
-    if (!info.hProcess) return E_FAIL;
-    DWORD code = static_cast<DWORD>(E_FAIL);
-    HRESULT hr = S_OK;
-    /* The caller owns windows. Service synchronous window messages while
-       waiting, without dispatching posted input and re-entering settings. */
-    for (;;) {
-        DWORD wait = MsgWaitForMultipleObjectsEx(1, &info.hProcess, INFINITE,
-            QS_SENDMESSAGE, 0);
-        if (wait == WAIT_OBJECT_0) break;
-        if (wait == WAIT_OBJECT_0 + 1) {
-            MSG message;
-            PeekMessageW(&message, nullptr, 0, 0,
-                PM_NOREMOVE | PM_QS_SENDMESSAGE);
-            continue;
+HRESULT set_run_value(bool enabled) {
+    HKEY key = nullptr;
+    LONG code = RegOpenKeyExW(HKEY_CURRENT_USER, run_path, 0,
+        KEY_SET_VALUE, &key);
+    if (code != ERROR_SUCCESS) return HRESULT_FROM_WIN32(code);
+    HRESULT result = S_OK;
+    if (enabled) {
+        wchar_t executable[BONGO_CAT_PATH_CAP];
+        DWORD length = GetModuleFileNameW(nullptr, executable, BONGO_CAT_PATH_CAP);
+        if (!length || length >= BONGO_CAT_PATH_CAP)
+            result = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        else {
+            std::wstring command =
+                L"\"" + std::wstring(executable) + L"\" --autostart";
+            code = RegSetValueExW(key, BONGO_CAT_NAME_W, 0, REG_SZ,
+                reinterpret_cast<const BYTE *>(command.c_str()),
+                static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+            if (code != ERROR_SUCCESS) result = HRESULT_FROM_WIN32(code);
         }
-        hr = wait == WAIT_FAILED ? HRESULT_FROM_WIN32(GetLastError()) : E_FAIL;
-        break;
+    } else {
+        code = RegDeleteValueW(key, BONGO_CAT_NAME_W);
+        if (code != ERROR_SUCCESS && code != ERROR_FILE_NOT_FOUND)
+            result = HRESULT_FROM_WIN32(code);
     }
-    if (SUCCEEDED(hr) && !GetExitCodeProcess(info.hProcess, &code))
-        hr = HRESULT_FROM_WIN32(GetLastError());
-    CloseHandle(info.hProcess);
-    if (FAILED(hr)) return hr;
-    return code == helper_success ? S_OK : (FAILED(static_cast<HRESULT>(code))
-        ? static_cast<HRESULT>(code) : E_FAIL);
+    RegCloseKey(key);
+    return result;
+}
+
+/* Task Manager records a disabled Run entry in StartupApproved. Re-enabling
+   from settings must clear that record, or the entry stays off despite the
+   switch being on. */
+void clear_run_approval(void) {
+    HKEY key = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, run_approval_path, 0,
+            KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
+    RegDeleteValueW(key, BONGO_CAT_NAME_W);
+    RegCloseKey(key);
+}
+
+void delete_legacy_shortcut(void) {
+    PWSTR directory = nullptr;
+    if (FAILED(SHGetKnownFolderPath(FOLDERID_Startup, KF_FLAG_DONT_VERIFY,
+            nullptr, &directory))) return;
+    std::wstring path = std::wstring(directory) + L"\\" BONGO_CAT_NAME_W L".lnk";
+    CoTaskMemFree(directory);
+    DeleteFileW(path.c_str());
+    HKEY key = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, shortcut_approval_path, 0,
+            KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
+    RegDeleteValueW(key, BONGO_CAT_NAME_W L".lnk");
+    RegCloseKey(key);
+}
+
+void delete_legacy_task(void) {
+    std::wstring sid = user_sid();
+    if (sid.empty()) return;
+    Apartment apartment;
+    if (FAILED(apartment.hr) && apartment.hr != RPC_E_CHANGED_MODE) return;
+    Com<ITaskService> service;
+    if (FAILED(CoCreateInstance(CLSID_TaskScheduler, nullptr,
+            CLSCTX_INPROC_SERVER, IID_ITaskService,
+            reinterpret_cast<void **>(&service.p)))) return;
+    VARIANT empty;
+    VariantInit(&empty);
+    if (FAILED(service->Connect(empty, empty, empty, empty))) return;
+    Com<ITaskFolder> folder;
+    if (FAILED(service->GetFolder(Bstr(L"\\"), &folder.p))) return;
+    /* A leftover only risks a duplicate launch; its removal must never be
+       able to fail the update itself. */
+    (void)folder->DeleteTask(
+        Bstr((std::wstring(L"BongoCat.Autostart.") + sid).c_str()), 0);
+}
+
+void remove_legacy_autostart(void) {
+    delete_legacy_shortcut();
+    delete_legacy_task();
 }
 } // namespace
 
-extern "C" bool bongo_cat_windows_autostart_command(int argc, char **argv,
-    int *exit_code) {
-    if (!exit_code || argc < 2 || !argv || !argv[1] ||
-        strncmp(argv[1], configure_argument,
-        configure_argument_length) != 0)
-        return false;
-    *exit_code = static_cast<int>(E_INVALIDARG);
-    if (argc != 3 || !argv[2] ||
-        strlen(argv[1]) != configure_argument_length + 1)
-        return true;
-    const char mode = argv[1][configure_argument_length];
-    if (mode < '0' || mode > '2') return true;
-    std::wstring sid = user_sid();
-    /* SID strings are ASCII; widen argument bytes to avoid narrowing wchar_t. */
-    std::wstring supplied_sid;
-    for (const char *p = argv[2]; *p; ++p)
-        supplied_sid.push_back(static_cast<unsigned char>(*p));
-    /* Reject over-the-shoulder UAC credentials: never configure another user. */
-    if (sid.empty() || sid != supplied_sid) {
-        *exit_code = static_cast<int>(E_ACCESSDENIED);
-        return true;
-    }
-    HRESULT hr = configure(static_cast<Mode>(mode - '0'), sid);
-    *exit_code = hr == S_OK ? static_cast<int>(helper_success) : static_cast<int>(hr);
-    return true;
+extern "C" void bongo_cat_windows_autostart_sync(bool enabled) {
+    (void)set_run_value(enabled);
+    remove_legacy_autostart();
 }
 
 extern "C" BongoCatResult bongo_cat_platform_set_autostart(bool enabled,
     bool administrator, BongoCatError *error) {
-    std::wstring sid = user_sid();
-    Mode mode = !enabled ? Mode::Disabled : administrator
-        ? Mode::Administrator : Mode::Standard;
-    HRESULT hr = sid.empty() ? E_FAIL : configure(mode, sid);
-    if (hr == E_ACCESSDENIED || hr == HRESULT_FROM_WIN32(ERROR_PRIVILEGE_NOT_HELD))
-        hr = elevate(mode, sid);
-    if (hr == S_OK) return BONGO_CAT_OK;
+    /* The parameter selected the removed Task Scheduler variant; registry
+       entries ignore it and always launch with user rights. */
+    (void)administrator;
+    HRESULT hr = set_run_value(enabled);
+    if (enabled) clear_run_approval();
+    remove_legacy_autostart();
+    if (SUCCEEDED(hr)) return BONGO_CAT_OK;
     bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Cannot update Windows autostart (0x%08lx)", static_cast<unsigned long>(hr));
+        "Cannot update Windows autostart (0x%08lx)",
+        static_cast<unsigned long>(hr));
     return BONGO_CAT_ERROR_PLATFORM;
 }

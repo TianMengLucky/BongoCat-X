@@ -43,8 +43,8 @@ void test_config(void) {
     bongo_cat_settings_defaults(&settings);
     bongo_cat_session_defaults(&session);
     CHECK(!settings.window.pass_through);
-    CHECK(!settings.app.game_compatibility);
-    settings.app.game_compatibility = true;
+    CHECK(!settings.app.run_as_admin);
+    settings.app.run_as_admin = true;
     settings.model.max_fps = 30;
     settings.model.multiple_pets = true;
     CHECK(!settings.model.vertical_flip);
@@ -123,7 +123,7 @@ void test_config(void) {
         BONGO_CAT_OK);
     CHECK(contains_text(settings_path, "\"format\": \"bongocat/settings\""));
     CHECK(contains_text(settings_path, "\"captureBackground\": true"));
-    CHECK(contains_text(settings_path, "\"gameCompatibility\": true"));
+    CHECK(contains_text(settings_path, "\"runAsAdmin\": true"));
     CHECK(contains_text(settings_path, "\"randomExpression\": true"));
     CHECK(contains_text(settings_path,
         "\"randomExpressionIntervalSeconds\": 12.0"));
@@ -168,7 +168,7 @@ void test_config(void) {
     CHECK(loaded_settings.window.random_motion &&
         loaded_settings.window.random_motion_interval_seconds == 17.0f);
     CHECK(loaded_settings.app.language == BONGO_CAT_LANG_ZH_CN);
-    CHECK(loaded_settings.app.game_compatibility);
+    CHECK(loaded_settings.app.run_as_admin);
     CHECK(loaded_settings.model.gamepad_four_hands);
     CHECK(!loaded_settings.model.dynamic_texture_resolution);
     CHECK(strstr(loaded_settings.extensions_json,
@@ -230,14 +230,25 @@ void test_config(void) {
     const char *unsupported = "bongocat-unsupported.json";
     write_text(unsupported,
         "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"
-        "\"application\":{\"gameCompatibility\":false}}");
+        "\"application\":{\"runAsAdmin\":false}}");
     CHECK(bongo_cat_settings_load(unsupported, &loaded_settings, &error) == BONGO_CAT_OK);
-    CHECK(!loaded_settings.app.game_compatibility);
+    CHECK(!loaded_settings.app.run_as_admin);
     write_text(unsupported,
         "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"
-        "\"application\":{\"gameCompatibility\":\"true\"}}");
+        "\"application\":{\"runAsAdmin\":\"true\"}}");
     CHECK(bongo_cat_settings_load(unsupported, &loaded_settings, &error) == BONGO_CAT_ERROR_FORMAT);
-    CHECK(!loaded_settings.app.game_compatibility);
+    CHECK(!loaded_settings.app.run_as_admin);
+    /* Settings written before the option was renamed keep their value. */
+    write_text(unsupported,
+        "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"
+        "\"application\":{\"gameCompatibility\":true}}");
+    CHECK(bongo_cat_settings_load(unsupported, &loaded_settings, &error) == BONGO_CAT_OK);
+    CHECK(loaded_settings.app.run_as_admin);
+    write_text(unsupported,
+        "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"
+        "\"application\":{\"runAsAdmin\":false,\"gameCompatibility\":true}}");
+    CHECK(bongo_cat_settings_load(unsupported, &loaded_settings, &error) == BONGO_CAT_OK);
+    CHECK(!loaded_settings.app.run_as_admin);
     write_text(unsupported,
         "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"
         "\"rendering\":{\"gamepadFourHands\":false}}");
@@ -265,7 +276,7 @@ void test_config(void) {
     write_text(unsupported, "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,\"rendering\":{\"inputReleaseDelaySeconds\":3,\"maximumFps\":30}}");
     CHECK(bongo_cat_settings_load(unsupported, &loaded_settings, &error) == BONGO_CAT_OK && loaded_settings.model.max_fps == 30);
     CHECK(!loaded_settings.model.gamepad_four_hands); /* older files omit the option */
-    CHECK(!loaded_settings.app.game_compatibility);
+    CHECK(!loaded_settings.app.run_as_admin);
 
     write_text(unsupported,
         "{\"format\":\"bongocat/settings\",\"schemaVersion\":1,"

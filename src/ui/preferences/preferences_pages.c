@@ -35,27 +35,6 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.windowSettings",
         "Window"),
         BONGO_CAT_PREF_ICON_SECTION_WINDOW);
-#ifdef _WIN32
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ADMINISTRATOR);
-    bool game_compatibility = app->settings.app.game_compatibility;
-    if (bongo_cat_pref_toggle_help(context, "game-compatibility", tr(app,
-        "pages.preference.general.labels.gameCompatibility", "Game Compatibility Mode"),
-        tr(app, "pages.preference.cat.hints.gameCompatibility",
-            "Enable when the desktop pet cannot respond in games."),
-        tr(app, "pages.preference.cat.hints.gameCompatibilityHelp",
-            "Enable to restart BongoCat with administrator privileges. Disable to return to normal privileges."),
-        &game_compatibility)) {
-        BongoCatError compatibility_error = {0};
-        if (!bongo_cat_windows_game_compatibility_set(app,
-                game_compatibility, &compatibility_error)) {
-            char message[1024];
-            snprintf(message, sizeof(message), "%s\n%s", tr(app,
-                "pages.preference.cat.hints.gameCompatibilityFailed",
-                "Unable to change game compatibility mode."), compatibility_error.message);
-            bongo_cat_preferences_notice_show(app, message, true);
-        }
-    }
-#endif
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_PASS_THROUGH);
     if (bongo_cat_pref_toggle(context, "pass-through", tr(app,
         "composables.useAppMenu.labels.passThrough", "Pass Through"), tr(app,
@@ -294,15 +273,11 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     }
 }
 
-static void update_autostart(BongoCatApp *app, bool old_value, bool old_admin) {
+static void update_autostart(BongoCatApp *app, bool old_value) {
     BongoCatError error = {0};
     if (bongo_cat_platform_set_autostart(app->settings.app.autostart,
-        app->settings.app.game_compatibility, &error) == BONGO_CAT_OK) {
-        app->settings.app.autostart_admin = app->settings.app.game_compatibility;
-        return;
-    }
+        false, &error) == BONGO_CAT_OK) return;
     app->settings.app.autostart = old_value;
-    app->settings.app.autostart_admin = old_admin;
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", error.message);
     char message[1024];
     snprintf(message, sizeof(message), "%s\n%s", tr(app,
@@ -392,11 +367,36 @@ static void page_general(BongoCatApp *app, struct nk_context *context) {
         "pages.preference.general.labels.appSettings", "Application"),
         BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
     bool old_autostart = options->autostart;
-    bool old_admin = options->autostart_admin;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);
     if (bongo_cat_pref_toggle(context, "autostart", tr(app,
         "pages.preference.general.labels.launchOnStartup", "Launch on Startup"), "",
-        &options->autostart)) update_autostart(app, old_autostart, old_admin);
+        &options->autostart)) update_autostart(app, old_autostart);
+#ifdef _WIN32
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ADMINISTRATOR);
+    if (bongo_cat_pref_toggle_help(context, "run-as-admin",
+        tr(app, "pages.preference.general.labels.runAsAdmin",
+            "Run as Administrator"),
+        tr(app, "pages.preference.general.hints.runAsAdmin",
+            "Running as administrator helps capture some system-level keys "
+            "and input events more reliably."),
+        tr(app, "pages.preference.general.hints.runAsAdminHelp",
+            "When enabled, the app asks for administrator permission and "
+            "restarts itself; every later launch (including launch-on-startup) "
+            "also runs as administrator. Disabling restores normal privileges "
+            "from the next launch on."),
+        &options->run_as_admin)) {
+        BongoCatError admin_error = {0};
+        if (!bongo_cat_windows_game_compatibility_set(app,
+                options->run_as_admin, &admin_error)) {
+            char message[1024];
+            snprintf(message, sizeof(message), "%s\n%s", tr(app,
+                "pages.preference.general.hints.runAsAdminFailed",
+                "Unable to change the run-as-administrator setting."),
+                admin_error.message);
+            bongo_cat_preferences_notice_show(app, message, true);
+        }
+    }
+#endif
     section_gap(context, 7);
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.general.labels.appearanceSettings", "Appearance"),

@@ -71,10 +71,8 @@ static bool write_app(yyjson_mut_doc *doc, yyjson_mut_val *object,
     return object &&
         yyjson_mut_obj_add_bool(doc, object, "launchAtLogin",
             value->autostart) &&
-        yyjson_mut_obj_add_bool(doc, object, "launchAtLoginAsAdmin",
-            value->autostart_admin) &&
-        yyjson_mut_obj_add_bool(doc, object, "gameCompatibility",
-            value->game_compatibility) &&
+        yyjson_mut_obj_add_bool(doc, object, "runAsAdmin",
+            value->run_as_admin) &&
         yyjson_mut_obj_add_bool(doc, object, "showTrayIcon",
             value->tray_visible) &&
         yyjson_mut_obj_add_strcpy(doc, object, "theme",

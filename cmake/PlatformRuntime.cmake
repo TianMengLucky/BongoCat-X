@@ -9,9 +9,6 @@ if(WIN32)
     src/platform/windows/windows_autostart.cpp
     src/platform/windows/windows_game_compatibility.cpp
     src/platform/windows/windows_game_compatibility_app.c
-    src/platform/windows/windows_autostart_config.cpp
-    src/platform/windows/windows_autostart_task.cpp
-    src/platform/windows/windows_autostart_shortcut.cpp
     src/platform/windows/windows_update_handoff.c
     src/platform/windows/windows_borderless.c
     src/platform/windows/windows_capture.c

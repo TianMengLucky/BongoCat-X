@@ -258,7 +258,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->window.random_motion_interval_seconds =
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS;
     config->app.tray_visible = true;
-    config->app.game_compatibility = false;
+    config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
     config->app.language = BONGO_CAT_LANG_EN_US;
     memcpy(config->extensions_json, "{}", sizeof("{}"));

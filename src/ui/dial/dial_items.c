@@ -43,7 +43,7 @@ DialItem dial_child_item(const Dial *d, int child, char *text, size_t capacity) 
     DialItem item = {0};
     if (child < 0 || child >= dial_child_count(d)) return item;
     const BongoCatMenuLabels *l = d->labels;
-    size_t i = (size_t)(d->page * DIAL_PAGE + child);
+    size_t i = (size_t)d->page * DIAL_PAGE + (size_t)child;
     item = d->items[d->active];
     item.children = 0;
     switch (d->active) {

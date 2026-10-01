@@ -45,6 +45,8 @@ struct BongoCatOverlay {
     char effect_path[BONGO_CAT_PATH_CAP];
     char directory[BONGO_CAT_PATH_CAP];
     uint64_t clock;
+    char last_input_path[BONGO_CAT_PATH_CAP];
+    uint64_t input_texture_failures;
 };
 
 /* Shared texture ownership for model loading and input/effect activation. */

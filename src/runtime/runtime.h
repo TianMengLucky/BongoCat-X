@@ -2,6 +2,7 @@
 #define BONGO_CAT_RUNTIME_INTERNAL_H
 
 #include "bongo_cat/app.h"
+#include "bongo_cat/runtime_diagnostics.h"
 #include "bongo_cat/memory_policy.h"
 #include "update_service.h"
 #include "window_snapshot.h"
@@ -14,13 +15,17 @@ void bongo_cat_app_loop(BongoCatApp *app);
 BongoCatResult bongo_cat_model_catalog_scan(BongoCatApp *app, bool cleanup,
     const char *nearby_root);
 void bongo_cat_model_catalog_finish(BongoCatApp *app);
-bool bongo_cat_model_catalog_add_bundled(BongoCatApp *app, bool replace);
+bool bongo_cat_mver_shortcuts_load(BongoCatApp *app, const BongoCatModelEntry *model,
+    BongoCatError *error);
+bool bongo_cat_model_shortcut_save(BongoCatApp *app, const char *id,
+    const char *shortcut, BongoCatError *error);
 void bongo_cat_model_catalog_finish_package(BongoCatApp *app,
     const char *package_id);
 void bongo_cat_model_refresh_invalidate(BongoCatApp *app);
 bool bongo_cat_model_refresh_event(BongoCatApp *app,
     const SDL_Event *event);
 void bongo_cat_model_refresh_update(BongoCatApp *app);
+void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app);
 void bongo_cat_model_refresh_shutdown(BongoCatApp *app);
 BongoCatResult bongo_cat_app_locate_assets(BongoCatApp *app, BongoCatError *error);
 bool bongo_cat_startup_prepare(BongoCatApp *app, int argc, char **argv,
@@ -72,6 +77,7 @@ bool bongo_cat_window_apply_scale_centered(BongoCatApp *app, float scale,
     int base_width, int base_height, float base_scale,
     float center_x, float center_y);
 void bongo_cat_window_clamp_to_display(BongoCatApp *app);
+void bongo_cat_window_reset_position(BongoCatApp *app);
 void bongo_cat_window_drag_to(BongoCatApp *app, int x, int y);
 void bongo_cat_window_drag_bounds_refresh(BongoCatApp *app);
 void bongo_cat_window_drag_bounds_clear(BongoCatApp *app);
@@ -85,6 +91,9 @@ void bongo_cat_window_drag_motion(BongoCatApp *app,
     const SDL_MouseMotionEvent *event);
 void bongo_cat_window_drag_end(BongoCatApp *app);
 void bongo_cat_window_resize_by_pointer(BongoCatApp *app, const SDL_Event *event);
+void bongo_cat_window_resize_begin(BongoCatApp *app, const SDL_MouseButtonEvent *event);
+void bongo_cat_window_resize_end(BongoCatApp *app);
+void bongo_cat_window_resize_update(BongoCatApp *app, uint64_t now);
 const char *bongo_cat_gamepad_axis_name(Uint8 axis);
 const char *bongo_cat_gamepad_button_name(Uint8 button);
 void bongo_cat_gamepads_set_enabled(BongoCatApp *app, bool enabled);
@@ -92,6 +101,7 @@ void bongo_cat_app_reset_gamepad(BongoCatApp *app);
 void bongo_cat_app_apply_mouse(BongoCatApp *app);
 void bongo_cat_app_reset_pointer_tracking(BongoCatApp *app);
 void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts);
+void bongo_cat_app_log_input(BongoCatApp *app, bool flush);
 void bongo_cat_app_apply_mouse_position(BongoCatApp *app, double x, double y,
     float elapsed_seconds);
 bool bongo_cat_app_audit_screen_pointer(BongoCatApp *app);
@@ -120,8 +130,8 @@ void bongo_cat_window_destroy_corner_mask(void);
 void bongo_cat_app_render_now(BongoCatApp *app);
 bool bongo_cat_app_capture_pending_model_cover(BongoCatApp *app);
 void bongo_cat_runtime_flow_update(BongoCatApp *app, uint64_t now);
-void bongo_cat_random_expression_update(BongoCatApp *app, uint64_t now);
-void bongo_cat_random_expression_reset(BongoCatApp *app);
+void bongo_cat_random_behavior_update(BongoCatApp *app, uint64_t now);
+void bongo_cat_random_behavior_reset(BongoCatApp *app);
 bool bongo_cat_system_language(BongoCatLanguage *language);
 void bongo_cat_config_store_load(BongoCatApp *app);
 void bongo_cat_config_store_update(BongoCatApp *app, uint64_t now);

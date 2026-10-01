@@ -16,6 +16,10 @@ static void check_defaults_and_validation(void) {
         !settings.model.multiple_pets);
     CHECK(settings.window.always_on_top && !settings.window.keep_in_screen);
     CHECK(!settings.window.obs_background);
+    CHECK(!settings.model.gamepad_four_hands);
+    CHECK(!settings.window.random_motion &&
+        settings.window.random_motion_interval_seconds ==
+        BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS);
     CHECK(!settings.window.random_expression &&
         settings.window.random_expression_interval_seconds ==
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS);
@@ -40,6 +44,7 @@ static void check_defaults_and_validation(void) {
     settings.window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT;
     settings.window.hide_delay_seconds = NAN;
     settings.window.random_expression_interval_seconds = NAN;
+    settings.window.random_motion_interval_seconds = NAN;
     session.window.scale_percent = -2.0f;
     session.window.opacity_percent = NAN;
     session.active_behavior_count = 3;
@@ -51,14 +56,22 @@ static void check_defaults_and_validation(void) {
     bongo_cat_settings_validate(&settings);
     bongo_cat_session_validate(&session);
     CHECK(settings.model.max_fps == 60);
-    const int old_fps[] = {-1, 0, 1, 24, 30, 31, 60, 120, 240};
-    const int new_fps[] = {60, 60, 30, 30, 30, 60, 60, 60, 60};
+    const int old_fps[] = {-2, BONGO_CAT_DISPLAY_MAX_FPS, 0, 1, 24, 30, 31, 60, 120, 240};
+    const int new_fps[] = {60, BONGO_CAT_DISPLAY_MAX_FPS, 60, 30, 30, 30, 60, 60, 60, 60};
     for (size_t i = 0; i < sizeof(old_fps) / sizeof(old_fps[0]); ++i) {
         settings.model.max_fps = old_fps[i];
         bongo_cat_settings_validate(&settings);
         CHECK(settings.model.max_fps == new_fps[i]);
     }
     CHECK(settings.window.hide_delay_seconds == 0.0f);
+    CHECK(settings.window.random_motion_interval_seconds ==
+        BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS);
+    settings.window.random_motion_interval_seconds = 0.0f;
+    bongo_cat_settings_validate(&settings);
+    CHECK(settings.window.random_motion_interval_seconds == 1.0f);
+    settings.window.random_motion_interval_seconds = 3601.0f;
+    bongo_cat_settings_validate(&settings);
+    CHECK(settings.window.random_motion_interval_seconds == 3600.0f);
     CHECK(settings.window.random_expression_interval_seconds ==
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS);
     CHECK(settings.window.obs_background_color ==
@@ -119,6 +132,7 @@ static void check_shortcuts(void) {
     CHECK(strcmp(settings.behavior_shortcuts[0].id, "motion:1") == 0);
     CHECK(strcmp(settings.behavior_shortcuts[0].shortcut, "Control+M") == 0);
     CHECK(bongo_cat_settings_shortcut_conflicts(&settings, "control+b", NULL));
+    CHECK(bongo_cat_settings_shortcut_conflicts(&settings, "KeyB+Ctrl", NULL));
     CHECK(!bongo_cat_settings_shortcut_conflicts(&settings, "control+b",
         settings.shortcuts.toggle_pet_visibility));
 }
@@ -155,6 +169,10 @@ static void check_behavior_companions(void) {
         CHECK(!strcmp(loaded.behavior_shortcuts[i].shortcut, "Alt+O"));
     }
     CHECK(loaded.behavior_shortcuts[4].shortcut_disabled);
+    snprintf(loaded.behavior_shortcuts[4].shortcut, BONGO_CAT_SHORTCUT_CAP, "F24+F23");
+    bongo_cat_settings_validate(&loaded);
+    CHECK(loaded.behavior_shortcuts[4].shortcut_disabled);
+    CHECK(!bongo_cat_settings_shortcut_conflicts(&loaded, "F23+F24", NULL));
     CHECK(bongo_cat_file_remove("bongocat-audio-config-test.json"));
 }
 

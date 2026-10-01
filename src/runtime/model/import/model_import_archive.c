@@ -6,6 +6,9 @@
 #include <miniz.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef _WIN32
+#include <strings.h>
+#endif
 
 #define ARCHIVE_BYTES_LIMIT (UINT64_C(2) * 1024 * 1024 * 1024)
 #define ARCHIVE_ENTRY_LIMIT 20000

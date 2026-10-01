@@ -91,6 +91,7 @@ bool dial_fonts_init(Dial *d) {
         glTexImage2D(GL_TEXTURE_2D,0,GL_R8,width,rows,0,GL_RED,GL_UNSIGNED_BYTE,pixels);
         glPixelStorei(GL_UNPACK_ALIGNMENT,4);
         ok = p->font_texture && glGetError() == GL_NO_ERROR;
+        if (ok) { p->font_width = width; p->font_height = rows; }
         nk_font_atlas_end(&p->atlas,nk_handle_id((int)p->font_texture),NULL);
     }
     for (int i = 0; i < 3; ++i) {

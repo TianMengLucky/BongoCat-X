@@ -12,6 +12,8 @@
         "title": "Préférences",
         "labels": {
           "modelSettings": "Modèle",
+          "gamepadFourHands": "Mode quatre mains à la manette",
+          "dynamicTextureResolution": "Dynamic Texture Resolution",
           "mirrorMode": "Mode miroir",
           "mouseMirror": "Miroir de la souris",
           "mouseCentered": "Souris centrée sur le compagnon",
@@ -21,24 +23,32 @@
           "alwaysOnTop": "Toujours au premier plan",
           "keepInScreen": "Maintenir à l'écran",
           "windowSize": "Taille de la fenêtre",
-          "windowCorners": "Coins arrondis (%)",
+          "resetPosition": "Réinitialiser",
+          "windowCorners": "Coins arrondis",
           "opacity": "Opacité",
           "randomExpression": "Expressions aléatoires",
+          "randomMotion": "Mouvements aléatoires",
+          "secondsUnit": "s",
           "obsBackground": "Arrière-plan uni",
           "hideOnHover": "Masquer au survol",
           "hideFadeSeconds": "Durée du fondu (s)",
           "maxFPS": "Fréquence d'images maximale"
         },
         "hints": {
+          "hoverRequires": "Activez les options [Passage des clics] et [Toujours au premier plan] ci-dessus.",
           "hoverUnavailable": "Le masquage au survol est indisponible dans cet environnement de bureau.",
-          "gameInput": "La mascotte ne réagit pas en jeu ?",
-          "gameInputHelp": "Essayez de lancer BongoCat en tant qu’administrateur et de passer le jeu en mode fenêtré.",
+          "gamepadFourHands": "Affiche en permanence deux mains supplémentaires en mode manette. Le rendu dépend du modèle",
+          "gameCompatibility": "À activer si la mascotte ne réagit pas en jeu",
+          "gameCompatibilityHelp": "Une fois cette option activée, BongoCat redémarre avec les droits administrateur. Il conserve ces droits à chaque lancement suivant. Désactivez cette option pour revenir aux droits normaux.\n\nPourquoi une mascotte de bureau a-t-elle besoin des droits administrateur ?\n\nCertains jeux s'exécutent avec les droits administrateur. Windows isolant les processus selon leurs droits, BongoCat avec des droits normaux peut ne pas recevoir les entrées du clavier et de la souris dans ces jeux. La mascotte ne réagit alors plus.\n\nPour faire simple, c'est comme si le jeu et BongoCat se trouvaient à des étages différents. Certains jeux fonctionnent à un niveau de droits supérieur, auquel BongoCat ne peut pas accéder avec ses droits normaux. Vous jouez à l'étage et BongoCat est en bas : le son ne passe pas, et la mascotte ne peut pas suivre vos actions.\n\nSi vous ne jouez pas à ce type de jeux, vous pouvez laisser cette option désactivée. Nous ne demandons pas les droits administrateur sans nécessité.",
+          "gameCompatibilityFailed": "Impossible de modifier le mode de compatibilité des jeux.",
           "passThrough": "Désactivation possible aussi par clic droit sur l’icône de la zone de notification",
           "alwaysOnTop": "Lorsque cette option est activée, la fenêtre reste au-dessus des autres fenêtres.",
           "keepInScreen": "Lorsque cette option est activée, la fenêtre reste automatiquement dans les limites de l'écran.",
           "obsBackground": "La capture de fenêtre est noire ?",
           "obsBackgroundHelp": "OBS : activez cette option, utilisez la méthode compatible Windows 7 et supprimez le fond avec un filtre d'incrustation couleur.",
-          "windowSize": "Placez la souris sur le bord de la fenêtre, ou maintenez Maj et faites glisser avec le bouton droit pour redimensionner.",
+          "windowSize": "Utilisez la [molette] pour redimensionner ou [maintenez le bouton droit enfoncé] et glissez à droite pour agrandir, à gauche pour réduire",
+          "dynamicTextureResolution": "Downsample large model textures to match the current display size. The model reloads after changing this option.",
+          "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
           "hideOnHover": "Lorsque le passage des clics et Toujours au premier plan sont activés, le compagnon se masque immédiatement au survol et réapparaît lorsque le pointeur s’éloigne."
         }
       },
@@ -47,6 +57,7 @@
         "labels": {
           "appSettings": "Application",
           "launchOnStartup": "Lancer au démarrage",
+          "gameCompatibility": "Mode de compatibilité des jeux",
           "showTrayIcon": "Afficher l'icône dans la zone de notification",
           "appearanceSettings": "Apparence",
           "themeMode": "Thème",
@@ -86,7 +97,8 @@
         "title": "Modèle",
         "nearbyTitle": "Modèles à proximité",
         "labels": {
-          "deleteModel": "Supprimer le modèle"
+          "deleteModel": "Supprimer le modèle",
+          "hiddenModels": "Masqués"
         },
         "hints": {
           "deleteSuccess": "« %s » a été supprimé",
@@ -99,10 +111,15 @@
           "importUnknownSource": "source inconnue",
           "importInvalidSource": "La source sélectionnée n'existe plus ou ne peut pas être utilisée",
           "importInvalidFormat": "Aucun modèle pris en charge n'a été trouvé, ou le paquet du modèle est incomplet",
+          "importUnsupportedArchive": "Seules les archives ZIP sont prises en charge. Extrayez l’archive et importez le dossier du modèle, ou recompressez-le au format ZIP avant de l’importer",
           "importFileAccess": "Impossible de lire ou d'enregistrer les fichiers du modèle. Vérifiez les autorisations et l'espace disque disponible",
           "importOutOfMemory": "La mémoire disponible est insuffisante pour importer ce modèle",
           "importLoadFailed": "Le modèle a été importé, mais il n'a pas pu être affiché",
           "importFailed": "Échec de l'importation du modèle. Vérifiez les fichiers sélectionnés et réessayez",
+          "shortcutLoadFailed": "Impossible de charger les raccourcis du modèle. Vérifiez les fichiers de configuration du modèle",
+          "behaviorLoadFailed": "Impossible de charger les actions du modèle. Vérifiez que les fichiers du modèle sont complets et lisibles",
+          "shortcutSaveFailed": "Impossible d’enregistrer le raccourci du modèle. Vérifiez les autorisations des fichiers et l’espace disque disponible",
+          "behaviorRenameLimit": "Impossible d’enregistrer davantage de noms d’actions personnalisés. La limite de paramètres personnalisés est atteinte",
           "clickOrDragToImport": "Cliquez ou déposez un dossier",
           "supportedImportFormats": "Formats Mver et Tauri pris en charge",
           "openDirectoryFailed": "Impossible d'ouvrir le dossier du modèle"
@@ -254,6 +271,7 @@
     "shortcut": {
       "toggleCat": "Afficher/masquer",
       "preferences": "Préférences",
+      "openMenu": "Afficher/masquer le menu radial",
       "mirror": "Miroir",
       "passThrough": "Clics traversants",
       "alwaysOnTop": "Toujours au premier plan"

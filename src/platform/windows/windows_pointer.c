@@ -44,7 +44,9 @@ void bongo_cat_platform_raise_window(SDL_Window *window) {
     if (IsIconic(handle)) ShowWindow(handle, SW_RESTORE);
     BringWindowToTop(handle);
     SetForegroundWindow(handle);
-    if (proxy) BringWindowToTop(proxy);
+    if (proxy && IsWindowVisible(proxy))
+        SetWindowPos(proxy, HWND_TOP, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     /* Preferences windows are transparent too, but are not OBS capture
        sources. Running the capture style transaction on them can recreate the
        DWM surface and reintroduce an opaque edge. Only configure windows that

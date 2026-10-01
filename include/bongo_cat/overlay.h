@@ -5,6 +5,18 @@
 
 typedef struct BongoCatOverlay BongoCatOverlay;
 
+/* Borrowed strings remain valid until the overlay is changed or destroyed. */
+typedef struct BongoCatOverlayInputDiagnostics {
+    const char *directory;
+    const char *last_path;
+    const char *effect_path;
+    unsigned active_hands;
+    uint64_t texture_failures;
+} BongoCatOverlayInputDiagnostics;
+
+BongoCatOverlayInputDiagnostics bongo_cat_overlay_input_diagnostics(
+    const BongoCatOverlay *overlay);
+
 BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error);
 void bongo_cat_overlay_destroy(BongoCatOverlay *overlay);
 void bongo_cat_overlay_clear(BongoCatOverlay *overlay);

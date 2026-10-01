@@ -15,6 +15,10 @@ static const char *tr(BongoCatApp *app, const char *key,
 static const char *import_failure_message(BongoCatApp *app,
     BongoCatResult result) {
     switch (result) {
+    case BONGO_CAT_ERROR_UNSUPPORTED_ARCHIVE:
+        return tr(app, "pages.preference.model.hints.importUnsupportedArchive",
+            "Only ZIP archives are supported. Extract the archive and import "
+            "the model folder, or repack it as ZIP before importing");
     case BONGO_CAT_ERROR_ARGUMENT:
         return tr(app, "pages.preference.model.hints.importInvalidSource",
             "The selected source no longer exists or cannot be used");

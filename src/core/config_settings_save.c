@@ -16,6 +16,10 @@ static bool write_model(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->mouse_centered) &&
         yyjson_mut_obj_add_bool(doc, object, "ignorePointerInput",
             value->ignore_mouse) &&
+        yyjson_mut_obj_add_bool(doc, object, "gamepadFourHands",
+            value->gamepad_four_hands) &&
+        yyjson_mut_obj_add_bool(doc, object, "dynamicTextureResolution",
+            value->dynamic_texture_resolution) &&
         yyjson_mut_obj_add_int(doc, object, "maximumFps", value->max_fps);
 }
 
@@ -34,6 +38,8 @@ static bool write_window(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->obs_background) &&
         yyjson_mut_obj_add_bool(doc, object, "randomExpression",
             value->random_expression) &&
+        yyjson_mut_obj_add_bool(doc, object, "randomMotion",
+            value->random_motion) &&
         yyjson_mut_obj_add_bool(doc, object, "roundedCorners",
             value->rounded_corners) &&
         yyjson_mut_obj_add_real(doc, object, "cornerRadiusPercent",
@@ -47,7 +53,9 @@ static bool write_window(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->hide_fade_seconds) &&
         yyjson_mut_obj_add_real(doc, object,
             "randomExpressionIntervalSeconds",
-            value->random_expression_interval_seconds);
+            value->random_expression_interval_seconds) &&
+        yyjson_mut_obj_add_real(doc, object, "randomMotionIntervalSeconds",
+            value->random_motion_interval_seconds);
 }
 
 static bool write_app(yyjson_mut_doc *doc, yyjson_mut_val *object,
@@ -55,6 +63,10 @@ static bool write_app(yyjson_mut_doc *doc, yyjson_mut_val *object,
     return object &&
         yyjson_mut_obj_add_bool(doc, object, "launchAtLogin",
             value->autostart) &&
+        yyjson_mut_obj_add_bool(doc, object, "launchAtLoginAsAdmin",
+            value->autostart_admin) &&
+        yyjson_mut_obj_add_bool(doc, object, "gameCompatibility",
+            value->game_compatibility) &&
         yyjson_mut_obj_add_bool(doc, object, "showTrayIcon",
             value->tray_visible) &&
         yyjson_mut_obj_add_strcpy(doc, object, "theme",
@@ -70,6 +82,8 @@ static bool write_shortcuts(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->toggle_pet_visibility) &&
         yyjson_mut_obj_add_strcpy(doc, object, "openSettings",
             value->visible_preferences) &&
+        yyjson_mut_obj_add_strcpy(doc, object, "openMenu",
+            value->open_menu) &&
         yyjson_mut_obj_add_strcpy(doc, object, "toggleModelMirror",
             value->mirror) &&
         yyjson_mut_obj_add_strcpy(doc, object, "toggleClickThrough",
@@ -86,12 +100,13 @@ static bool write_behaviors(yyjson_mut_doc *doc, yyjson_mut_val *root,
     for (size_t i = 0; i < settings->behavior_shortcut_count; ++i) {
         const BongoCatBehaviorShortcut *value =
             &settings->behavior_shortcuts[i];
+        if (value->shortcut_external && !value->label[0]) continue;
         yyjson_mut_val *item = yyjson_mut_obj(doc);
         if (!item || !yyjson_mut_obj_add_strcpy(
                 doc, item, "behaviorId", value->id) ||
-            (value->shortcut_disabled && !yyjson_mut_obj_add_bool(
+            (!value->shortcut_external && value->shortcut_disabled && !yyjson_mut_obj_add_bool(
                 doc, item, "shortcutDisabled", true)) ||
-            (value->shortcut[0] && !yyjson_mut_obj_add_strcpy(
+            (!value->shortcut_external && value->shortcut[0] && !yyjson_mut_obj_add_strcpy(
                 doc, item, "shortcut", value->shortcut)) ||
             (value->label[0] && !yyjson_mut_obj_add_strcpy(
                 doc, item, "displayName", value->label)) ||
@@ -117,15 +132,26 @@ static bool write_model_labels(yyjson_mut_doc *doc, yyjson_mut_val *root,
     return true;
 }
 
+static bool write_model_id_array(yyjson_mut_doc *doc, yyjson_mut_val *root,
+    const char *key, const BongoCatRemovedModel *entries, size_t count) {
+    yyjson_mut_val *array = yyjson_mut_arr(doc);
+    if (!array || !yyjson_mut_obj_add_val(doc, root, key, array)) return false;
+    for (size_t i = 0; i < count; ++i)
+        if (!yyjson_mut_arr_add_strcpy(doc, array, entries[i].id))
+            return false;
+    return true;
+}
+
 static bool write_removed_models(yyjson_mut_doc *doc, yyjson_mut_val *root,
     const BongoCatSettings *settings) {
-    yyjson_mut_val *array = yyjson_mut_arr(doc);
-    if (!array || !yyjson_mut_obj_add_val(
-            doc, root, "removedModels", array)) return false;
-    for (size_t i = 0; i < settings->removed_model_count; ++i)
-        if (!yyjson_mut_arr_add_strcpy(doc, array,
-                settings->removed_models[i].id)) return false;
-    return true;
+    return write_model_id_array(doc, root, "removedModels",
+        settings->removed_models, settings->removed_model_count);
+}
+
+static bool write_hidden_models(yyjson_mut_doc *doc, yyjson_mut_val *root,
+    const BongoCatSettings *settings) {
+    return write_model_id_array(doc, root, "hiddenModels",
+        settings->hidden_models, settings->hidden_model_count);
 }
 
 static yyjson_mut_val *write_extensions(yyjson_mut_doc *target,
@@ -210,6 +236,7 @@ BongoCatResult bongo_cat_settings_save(const char *path,
         write_behaviors(doc, root, &canonical) &&
         write_model_labels(doc, root, &canonical) &&
         write_removed_models(doc, root, &canonical) &&
+        write_hidden_models(doc, root, &canonical) &&
         yyjson_mut_obj_add_val(doc, root, "extensions", extensions);
     if (!built) {
         yyjson_mut_doc_free(doc);

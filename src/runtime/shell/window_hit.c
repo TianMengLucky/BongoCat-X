@@ -28,7 +28,9 @@ bool bongo_cat_window_visible_at_pointer(BongoCatApp *app, float x, float y) {
         pixel_x, pixel_y, &presented_alpha)) return presented_alpha > 8;
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    if (!SDL_GL_MakeCurrent(app->window, app->gl_context)) return false;
+    bool switch_context = previous_window != app->window ||
+        previous_context != app->gl_context;
+    if (switch_context && !SDL_GL_MakeCurrent(app->window, app->gl_context)) return false;
     GLint previous_buffer;
     GLubyte pixel[4] = {0};
     glGetIntegerv(GL_READ_BUFFER, &previous_buffer);
@@ -39,7 +41,7 @@ bool bongo_cat_window_visible_at_pointer(BongoCatApp *app, float x, float y) {
         glReadPixels(pixel_x, pixel_y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
     }
     glReadBuffer((GLenum)previous_buffer);
-    if (previous_window && previous_context)
+    if (switch_context && previous_window && previous_context)
         SDL_GL_MakeCurrent(previous_window, previous_context);
     return pixel[3] > 8;
 }
@@ -68,6 +70,7 @@ void bongo_cat_window_mark_hit_dirty(BongoCatApp *app) {
 
 void bongo_cat_window_set_visible(BongoCatApp *app, bool visible) {
     if (!app || !app->window) return;
+    if (!visible) bongo_cat_window_resize_end(app);
     app->session.window.visible = visible;
     if (!visible) bongo_cat_window_snapshot_discard(app);
     if (!visible) {
@@ -137,6 +140,7 @@ void bongo_cat_window_schedule_hit_check(BongoCatApp *app) {
 void bongo_cat_window_sync_click_through(BongoCatApp *app) {
     if (!app || !app->window) return;
     bool forced = app->settings.window.pass_through || app->hover_hidden;
+    if (forced) bongo_cat_window_resize_end(app);
     if (forced && app->window_snapshot) bongo_cat_window_snapshot_end(app);
     if (!forced && !bongo_cat_platform_dynamic_hit_supported()) {
         app->pointer_transparent = false;
@@ -169,7 +173,7 @@ void bongo_cat_window_sync_click_through(BongoCatApp *app) {
 void bongo_cat_window_apply_pending_resize(BongoCatApp *app) {
     if (!app) return;
     if (app->window_snapshot) return;
-    if (app->wheel_animation_active) {
+    if (app->wheel_animation_active || app->resize_gesture) {
         if (!app->resize_pending) return;
         app->resize_pending = false;
         app->resize_render_target_pending = true;

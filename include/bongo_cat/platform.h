@@ -2,7 +2,12 @@
 #define BONGO_CAT_PLATFORM_H
 
 #include "bongo_cat/config.h"
+#ifdef __cplusplus
+/* C++ platform helpers only need a pointer to the C11 atomic input state. */
+typedef struct BongoCatInputState BongoCatInputState;
+#else
 #include "bongo_cat/input.h"
+#endif
 
 #include <stdint.h>
 
@@ -55,8 +60,8 @@ typedef enum BongoCatMenuAction {
     BONGO_CAT_MENU_REMOVE_PET,
     BONGO_CAT_MENU_MODEL_FIRST = 1000,
     BONGO_CAT_MENU_MOTION_FIRST = 2000,
-    BONGO_CAT_MENU_EXPRESSION_FIRST = 3000,
-    BONGO_CAT_MENU_AUDIO_FIRST = 4000
+    BONGO_CAT_MENU_EXPRESSION_FIRST = BONGO_CAT_MENU_MOTION_FIRST + BONGO_CAT_BEHAVIOR_LIMIT,
+    BONGO_CAT_MENU_AUDIO_FIRST = BONGO_CAT_MENU_EXPRESSION_FIRST + BONGO_CAT_BEHAVIOR_LIMIT
 } BongoCatMenuAction;
 typedef void (*BongoCatMenuPreview)(void *userdata, BongoCatMenuAction action);
 
@@ -83,6 +88,8 @@ typedef struct BongoCatMenuLabels {
     const bool *audio_checked;
     size_t audio_count;
     const char *const *model_cover_directories;
+    /* Optional cancellation flag, read after the modal input tick. */
+    const bool *close_requested;
 } BongoCatMenuLabels;
 
 typedef void (*BongoCatTrayClick)(void *userdata);
@@ -126,7 +133,8 @@ bool bongo_cat_platform_single_instance_take_wake(void);
 bool bongo_cat_platform_update_shutdown_argument(int argc, char **argv);
 bool bongo_cat_platform_single_instance_take_update_shutdown(void);
 void bongo_cat_platform_single_instance_end(void);
-BongoCatResult bongo_cat_platform_set_autostart(bool enabled, BongoCatError *error);
+BongoCatResult bongo_cat_platform_set_autostart(bool enabled, bool administrator,
+    BongoCatError *error);
 BongoCatMenuAction bongo_cat_platform_context_menu(BongoCatPlatform *platform,
     const BongoCatMenuLabels *labels);
 BongoCatResult bongo_cat_platform_embedded_assets(const char *target, BongoCatError *error);

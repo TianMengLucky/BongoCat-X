@@ -253,7 +253,9 @@ void bongo_cat_platform_single_instance_end(void) {
     if (instance_lock >= 0) close(instance_lock);
     instance_lock = -1;
 }
-BongoCatResult bongo_cat_platform_set_autostart(bool enabled, BongoCatError *error) {
+BongoCatResult bongo_cat_platform_set_autostart(bool enabled, bool administrator,
+    BongoCatError *error) {
+    (void)administrator;
     const char *base = getenv("XDG_CONFIG_HOME"), *home = getenv("HOME");
     char config[BONGO_CAT_PATH_CAP], directory[BONGO_CAT_PATH_CAP], path[BONGO_CAT_PATH_CAP];
     if (base && base[0]) snprintf(config, sizeof(config), "%s", base);

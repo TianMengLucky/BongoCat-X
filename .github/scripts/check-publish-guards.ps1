@@ -5,7 +5,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $upstreamGuards = @(
-    "github.repository == 'vladelaina/BongoCat'"
+    "github.repository == 'vladelaina/BongoCat'",
+    "github.repository == 'TianMengLucky/BongoCat-X'"
 )
 $workflowDirectory = Join-Path (Split-Path $PSScriptRoot -Parent) 'workflows'
 $sensitiveMarkers = @(

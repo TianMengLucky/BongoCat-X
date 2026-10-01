@@ -27,7 +27,7 @@ jobs:
   build:
     name: build / ${{ matrix.platform }}
     needs: version-check
-    if: github.repository == 'vladelaina/BongoCat'
+    if: github.repository == 'TianMengLucky/BongoCat-X'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -267,7 +267,7 @@ jobs:
   publish:
     name: publish / all platforms
     needs: build
-    if: github.repository == 'vladelaina/BongoCat'
+    if: github.repository == 'TianMengLucky/BongoCat-X'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -337,28 +337,18 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
             -Append -Encoding utf8
 
+      - name: Extract release notes from CHANGELOG
+        run: |
+          python3 .github/scripts/extract-changelog.py \
+            --tag "$GITHUB_REF_NAME" \
+            --repository "$GITHUB_REPOSITORY" \
+            --output release-notes.md
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: BongoCat v${{ steps.version.outputs.version }}
-          body: |
-            ## Download
-
-            <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self">
-              <img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
-            </a>
-
-            ### GitHub Downloads
-
-            - [Windows x64 installer](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-windows-x64-setup.exe)
-            - [Windows x64 portable](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-windows-x64-portable.exe)
-            - [Windows x86 installer](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-windows-x86-setup.exe)
-            - [Windows x86 portable](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-windows-x86-portable.exe)
-            - [macOS Apple Silicon](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-macos-arm64.zip)
-            - [macOS Intel](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-macos-x64.zip)
-            - [Linux x64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-linux-x64.tar.gz)
-            - [Linux x64 AppImage](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/BongoCat-${{ steps.version.outputs.version }}-linux-x64.AppImage)
-
+          body_path: release-notes.md
           generate_release_notes: true
           fail_on_unmatched_files: true
           make_latest: true

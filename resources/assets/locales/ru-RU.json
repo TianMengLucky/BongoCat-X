@@ -218,10 +218,10 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Cubism SDK для Live2D не найден — рендеринг Live2D отключён. Скачайте Cubism SDK for Native с сайта Live2D, распакуйте в vendor/CubismSdkForNative и выполните повторную сборку.",
-    "live2dCoreMissing": "Live2D Cubism Core не найден — рендеринг Live2D отключён. Поместите официальный zip \"Cubism SDK for Native\" без изменений в папку live2d рядом с приложением или в каталоге данных и перезапустите приложение; пересборка не нужна. Также можно указать путь к Live2DCubismCore.dll в значении CoreDll реестра HKCU\\Software\\BongoCat\\Live2D.",
+    "live2dSdkMissing": "Эта сборка не поддерживает Live2D (диагностическая сборка), поэтому рендеринг Live2D недоступен. Используйте сборку со встроенной поддержкой Live2D.",
+    "live2dCoreMissing": "Live2D Cubism Core не найден: импортируйте библиотеку Core или официальный zip SDK в окне настроек либо поместите zip в папку live2d (рядом с приложением или в каталоге данных) и перезапустите приложение.",
     "live2dCoreImport": "Импортировать Live2D Core",
-    "live2dCoreImportHint": "Выберите Live2DCubismCore.dll или официальный zip-архив Cubism SDK, чтобы включить рендеринг Live2D без перезапуска",
+    "live2dCoreImportHint": "Выберите библиотеку Core Cubism или официальный zip-архив Cubism SDK, чтобы включить рендеринг Live2D без перезапуска",
     "live2dCoreImportButton": "Выбрать файл",
     "live2dCoreImportSuccess": "Live2D Cubism Core импортирован: рендеринг Live2D включён",
     "live2dCoreImportFailed": "Не удалось импортировать Live2D Cubism Core",

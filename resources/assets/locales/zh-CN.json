@@ -218,10 +218,10 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "未检测到 Live2D Cubism SDK，Live2D 渲染不可用。请从 Live2D 官网下载 Cubism SDK for Native 并解压到 vendor/CubismSdkForNative，然后重新构建。",
-    "live2dCoreMissing": "未检测到 Live2D Cubism Core，Live2D 渲染不可用。将官方「Cubism SDK for Native」的 zip 原封放入应用目录或数据目录下的 live2d 文件夹后重启应用即可，无需重新构建；也可在注册表 HKCU\\Software\\BongoCat\\Live2D 的 CoreDll 值中指定 Live2DCubismCore.dll 的完整路径。",
+    "live2dSdkMissing": "当前构建不包含 Live2D 支持（诊断构建），Live2D 渲染不可用。请使用自带 Live2D 支持的版本。",
+    "live2dCoreMissing": "未检测到 Live2D Cubism Core：可在设置窗口导入 Core 库文件或官方 SDK 压缩包，或将 zip 放入 live2d 文件夹（应用目录或数据目录下）后重启。",
     "live2dCoreImport": "导入 Live2D Core",
-    "live2dCoreImportHint": "选择 Live2DCubismCore.dll 或官方 Cubism SDK 的 zip 压缩包，无需重启即可启用 Live2D 渲染",
+    "live2dCoreImportHint": "选择 Cubism Core 库文件或官方 Cubism SDK 的 zip 压缩包，无需重启即可启用 Live2D 渲染",
     "live2dCoreImportButton": "选择文件",
     "live2dCoreImportSuccess": "Live2D Cubism Core 导入成功，Live2D 渲染已启用",
     "live2dCoreImportFailed": "Live2D Cubism Core 导入失败",

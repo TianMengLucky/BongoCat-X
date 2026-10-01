@@ -218,10 +218,10 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Live2D Cubism SDK not found: Live2D rendering is disabled. Download Cubism SDK for Native from the Live2D website, extract it to vendor/CubismSdkForNative, then rebuild.",
-    "live2dCoreMissing": "Live2D Cubism Core not found, so Live2D rendering is unavailable. Drop the official \"Cubism SDK for Native\" zip, unmodified, into the live2d folder next to the application or inside the data directory, then restart - no rebuild needed. You can also point the CoreDll value of HKCU\\Software\\BongoCat\\Live2D at Live2DCubismCore.dll.",
+    "live2dSdkMissing": "This build does not include Live2D support (diagnostic build), so Live2D rendering is unavailable. Please use a build shipped with Live2D support.",
+    "live2dCoreMissing": "Live2D Cubism Core not found: import the Core library or the official SDK zip in the settings window, or drop the zip into the live2d folder (next to the application or inside the data directory) and restart.",
     "live2dCoreImport": "Import Live2D Core",
-    "live2dCoreImportHint": "Select Live2DCubismCore.dll or the official Cubism SDK zip to enable Live2D rendering without a restart",
+    "live2dCoreImportHint": "Select the Cubism Core library or the official Cubism SDK zip to enable Live2D rendering without a restart",
     "live2dCoreImportButton": "Choose file",
     "live2dCoreImportSuccess": "Live2D Cubism Core imported: Live2D rendering is now enabled",
     "live2dCoreImportFailed": "Live2D Cubism Core import failed",

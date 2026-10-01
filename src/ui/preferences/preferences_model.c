@@ -248,8 +248,8 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
         if (bongo_cat_pref_button(context, "live2d-core-import", tr(app,
                 "native.live2dCoreImport", "Import Live2D Core"),
                 tr(app, "native.live2dCoreImportHint",
-                "Select Live2DCubismCore.dll or the official Cubism SDK zip "
-                "to enable Live2D rendering without a restart"),
+                "Select the Cubism Core library or the official Cubism SDK "
+                "zip to enable Live2D rendering without a restart"),
                 tr(app, "native.live2dCoreImportButton", "Choose file")))
             value->sdk_import_requested = true;
     }

@@ -46,6 +46,27 @@ set_target_properties(Live2DCubismCore PROPERTIES
   IMPORTED_LOCATION "${CUBISM_CORE_LIBRARY}"
   INTERFACE_INCLUDE_DIRECTORIES "${CUBISM_CORE_PATH}/include")
 
+if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
+  # POSIX runtime-Core builds never link the proprietary Core: a generated
+  # shim owns the csm* ABI and forwards every call through dlsym to the
+  # user-supplied shared library located at runtime (see the POSIX loader).
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  set(BONGO_CAT_CORE_SHIM "${CMAKE_BINARY_DIR}/generated/cubism_core_shim.c")
+  add_custom_command(OUTPUT "${BONGO_CAT_CORE_SHIM}"
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_core_shim.py"
+      --header "${CUBISM_CORE_PATH}/include/Live2DCubismCore.h"
+      --output "${BONGO_CAT_CORE_SHIM}"
+    DEPENDS "${CUBISM_CORE_PATH}/include/Live2DCubismCore.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_core_shim.py"
+    COMMENT "Generating the Cubism Core runtime shim" VERBATIM)
+  add_library(bongo_cat_core_shim STATIC "${BONGO_CAT_CORE_SHIM}")
+  target_include_directories(bongo_cat_core_shim SYSTEM PUBLIC
+    "${CUBISM_CORE_PATH}/include")
+  target_link_libraries(bongo_cat_core_shim PUBLIC bongo_cat_warnings
+    ${CMAKE_DL_LIBS})
+endif()
+
 add_library(glew_s STATIC "${CUBISM_GLEW_PATH}/src/glew.c")
 target_include_directories(glew_s SYSTEM PUBLIC "${CUBISM_GLEW_PATH}/include")
 target_compile_definitions(glew_s PUBLIC GLEW_STATIC GLEW_NO_GLU)
@@ -76,4 +97,8 @@ endif()
 target_include_directories(Framework SYSTEM PUBLIC
   "${CUBISM_FRAMEWORK_PATH}/src"
   "${CUBISM_CORE_PATH}/include")
-target_link_libraries(Framework PUBLIC Live2DCubismCore glew_s)
+if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
+  target_link_libraries(Framework PUBLIC bongo_cat_core_shim glew_s)
+else()
+  target_link_libraries(Framework PUBLIC Live2DCubismCore glew_s)
+endif()

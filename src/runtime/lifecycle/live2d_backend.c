@@ -1,6 +1,6 @@
-/* Runtime import of the user-supplied Cubism Core (Windows runtime-Core
-   builds): load the DLL, swap the diagnostic stub for the Live2D bridge,
-   and reload the active model without restarting the application. */
+/* Runtime import of the user-supplied Cubism Core (runtime-Core builds):
+   load the library, swap the diagnostic stub for the Live2D bridge, and
+   reload the active model without restarting the application. */
 #include "runtime.h"
 #include "bongo_cat/platform.h"
 

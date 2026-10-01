@@ -89,7 +89,14 @@ static void SDLCALL sdk_import_callback(void *userdata,
 static void open_sdk_import_dialog(BongoCatPreferences *value) {
     if (!value || !value->sdk_import_event_type || !value->window) return;
     const SDL_DialogFileFilter filters[] = {
-        {"Live2DCubismCore.dll / SDK zip", "dll;zip"}, {NULL, NULL}};
+#ifdef _WIN32
+        {"Live2DCubismCore.dll / SDK zip", "dll;zip"},
+#elif defined(__APPLE__)
+        {"Live2DCubismCore.dylib / SDK zip", "dylib;zip"},
+#else
+        {"libLive2DCubismCore.so / SDK zip", "so;zip"},
+#endif
+        {NULL, NULL}};
     SDL_ShowOpenFileDialog(sdk_import_callback, value, value->window,
         filters, 1, NULL, false);
 }

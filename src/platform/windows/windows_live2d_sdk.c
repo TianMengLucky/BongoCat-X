@@ -295,6 +295,13 @@ void bongo_cat_windows_live2d_sdk_prepare(const char *data_dir) {
         for (i = 0; i < count && !core_module; ++i)
             scan_directory(directories[i], work_dirs[i]);
     }
+    if (!core_module) {
+        /* Nothing loaded: leave the live2d folders behind so the user has a
+           visible drop-in place for the Core library or the SDK zip. */
+        unsigned i;
+        for (i = 0; i < count; ++i)
+            (void)bongo_cat_path_create_directory(directories[i]);
+    }
     SDL_free((void *)base);
 }
 

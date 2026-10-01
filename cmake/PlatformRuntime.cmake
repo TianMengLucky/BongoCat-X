@@ -49,11 +49,13 @@ elseif(APPLE)
   find_package(CURL REQUIRED)
   enable_language(OBJC)
   target_sources(bongo_cat_runtime PRIVATE
+    src/platform/posix/posix_live2d_sdk.c
     src/platform/macos/macos.m
     src/platform/macos/macos_preferences.m
     src/platform/macos/macos_input.m
     src/platform/macos/macos_keys.m
     src/platform/macos/macos_tray.m)
+  target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE "-framework Cocoa"
     "-framework ApplicationServices" CURL::libcurl)
 else()
@@ -64,6 +66,7 @@ else()
       "Linux native build requires XInput2 and Xfixes development packages")
   endif()
   target_sources(bongo_cat_runtime PRIVATE
+    src/platform/posix/posix_live2d_sdk.c
     src/platform/linux/linux.c
     src/platform/linux/linux_evdev.c
     src/platform/linux/linux_evdev_devices.c
@@ -72,6 +75,7 @@ else()
     src/platform/linux/linux_shape.c
     src/platform/linux/linux_wayland_shape.c
     src/platform/linux/linux_x11.c)
+  target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE
     X11::X11 X11::Xi X11::Xfixes m CURL::libcurl)
   target_link_libraries(bongo_cat_core PRIVATE m)

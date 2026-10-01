@@ -8,9 +8,10 @@ option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
 option(BONGO_CAT_REQUIRE_CUBISM
   "Require the Cubism SDK; set OFF to build the diagnostic backend instead" ON)
 option(BONGO_CAT_RUNTIME_CORE
-  "Windows: keep the Cubism Core out of the executable and load it at runtime \
-(from the registry or an SDK zip dropped by the user); OFF links Core \
-statically into a self-contained full build" ON)
+  "Keep the Cubism Core out of the executable and load it at runtime \
+(user-supplied Core library, an SDK zip dropped by the user, or the \
+settings-window import); OFF links Core statically into a self-contained \
+full build" ON)
 option(BONGO_CAT_WARNINGS_AS_ERRORS "Treat native source warnings as errors" OFF)
 option(BONGO_CAT_STATIC_ANALYZER "Run GCC's static analyzer on project C sources" OFF)
 set(BONGO_CAT_CUBISM_SDK "${CMAKE_CURRENT_SOURCE_DIR}/vendor/CubismSdkForNative"
@@ -83,10 +84,10 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       src/live2d/cubism_model_validate.cpp)
     set(BONGO_CAT_CUBISM_ENABLED ON)
   endif()
-  if(BONGO_CAT_CUBISM_ENABLED AND WIN32 AND BONGO_CAT_RUNTIME_CORE)
+  if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_RUNTIME_CORE)
     # The executable ships without the Core; the dispatch layer routes the
-    # Live2D ABI to the bridge once the runtime loader finds the user's DLL,
-    # and to the stub until then.
+    # Live2D ABI to the bridge once the runtime loader finds the user's Core
+    # library, and to the stub until then.
     set(BONGO_CAT_LIVE2D_ABI
       create destroy load load_ex ready canvas_size frame measure_frame
       set_frame viewport resize reshape try_reuse_texture_quality
@@ -192,9 +193,10 @@ include(cmake/AboutWebP.cmake)
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
-if(BONGO_CAT_RUNTIME_CORE_MODE)
+if(BONGO_CAT_RUNTIME_CORE_MODE AND WIN32)
   # The Core is a user-supplied DLL; route its imports through delay-load so
-  # the executable itself never embeds (or requires) the binary.
+  # the executable itself never embeds (or requires) the binary. POSIX builds
+  # reach the Core through the generated dlopen shim instead.
   target_link_options(bongo_cat PRIVATE "/DELAYLOAD:Live2DCubismCore.dll")
   target_link_libraries(bongo_cat PRIVATE delayimp)
 endif()

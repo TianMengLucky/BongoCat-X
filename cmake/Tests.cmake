@@ -435,43 +435,42 @@ if(BUILD_TESTING)
   endif()
 
   if(BONGO_CAT_RUNTIME_CORE_MODE)
-    # Test executables linking bongo_cat_runtime inherit the Cubism Core DLL
-    # import (the runtime links the Core import library in this mode). Delay-
-    # load it so every test binary still starts when the user-supplied DLL is
-    # absent, and stage the SDK DLL next to the Live2D tests that actually
-    # exercise it - the runtime loader finds a bare DLL beside the executable.
-    set(BONGO_CAT_RUNTIME_CORE_DLL
-      "${CUBISM_CORE_PATH}/dll/windows/${CUBISM_WINDOWS_ARCH}/Live2DCubismCore.dll")
-    foreach(BONGO_CAT_TEST_TARGET IN ITEMS
-        bongo_cat_multi_pet_shortcut_tests
-        bongo_cat_image_filter_tests
-        bongo_cat_image_png_stream_tests
-        bongo_cat_image_texture_cache_tests
-        bongo_cat_image_upload_fallback_tests
-        bongo_cat_overlay_layout_tests
-        bongo_cat_audio_tests
-        bongo_cat_log_policy_tests
-        bongo_cat_mver_import_tests
-        bongo_cat_preferences_lifecycle_tests
-        bongo_cat_windows_presentation_tests
-        bongo_cat_windows_capture_tests)
-      target_link_options(${BONGO_CAT_TEST_TARGET} PRIVATE
-        "/DELAYLOAD:Live2DCubismCore.dll")
-      target_link_libraries(${BONGO_CAT_TEST_TARGET} PRIVATE delayimp)
-    endforeach()
-    foreach(BONGO_CAT_TEST_TARGET IN ITEMS
-        bongo_cat_core_profile_tests
-        bongo_cat_render_resources_tests
-        bongo_cat_model_lifetime_tests
-        bongo_cat_texture_sharing_tests
-        bongo_cat_texture_equivalence_tests
-        bongo_cat_motion_state_tests)
-      target_link_options(${BONGO_CAT_TEST_TARGET} PRIVATE
-        "/DELAYLOAD:Live2DCubismCore.dll")
-      target_link_libraries(${BONGO_CAT_TEST_TARGET} PRIVATE delayimp)
+    # Test executables linking bongo_cat_runtime inherit the Cubism Core
+    # import of this mode. On Windows delay-load the Core DLL import so every
+    # test binary still starts when the user-supplied DLL is absent; on POSIX
+    # the Core is reached through the generated dlopen shim. Either way,
+    # stage the SDK's Core binary next to the Live2D tests that actually
+    # exercise it - the runtime loader finds it beside the executable.
+    set(BONGO_CAT_LIVE2D_TEST_TARGETS
+      bongo_cat_core_profile_tests bongo_cat_render_resources_tests
+      bongo_cat_model_lifetime_tests bongo_cat_texture_sharing_tests
+      bongo_cat_texture_equivalence_tests bongo_cat_motion_state_tests)
+    if(WIN32)
+      set(BONGO_CAT_RUNTIME_CORE_LIBRARY
+        "${CUBISM_CORE_PATH}/dll/windows/${CUBISM_WINDOWS_ARCH}/Live2DCubismCore.dll")
+      set(BONGO_CAT_DELAYLOAD_TARGETS ${BONGO_CAT_LIVE2D_TEST_TARGETS}
+        bongo_cat_multi_pet_shortcut_tests bongo_cat_image_filter_tests
+        bongo_cat_image_png_stream_tests bongo_cat_image_texture_cache_tests
+        bongo_cat_image_upload_fallback_tests bongo_cat_overlay_layout_tests
+        bongo_cat_audio_tests bongo_cat_log_policy_tests
+        bongo_cat_mver_import_tests bongo_cat_preferences_lifecycle_tests
+        bongo_cat_windows_presentation_tests bongo_cat_windows_capture_tests)
+      foreach(BONGO_CAT_TEST_TARGET IN LISTS BONGO_CAT_DELAYLOAD_TARGETS)
+        target_link_options(${BONGO_CAT_TEST_TARGET} PRIVATE
+          "/DELAYLOAD:Live2DCubismCore.dll")
+        target_link_libraries(${BONGO_CAT_TEST_TARGET} PRIVATE delayimp)
+      endforeach()
+    elseif(APPLE)
+      set(BONGO_CAT_RUNTIME_CORE_LIBRARY
+        "${CUBISM_CORE_PATH}/dll/macos/libLive2DCubismCore.dylib")
+    else()
+      set(BONGO_CAT_RUNTIME_CORE_LIBRARY
+        "${CUBISM_CORE_PATH}/dll/linux/x86_64/libLive2DCubismCore.so")
+    endif()
+    foreach(BONGO_CAT_TEST_TARGET IN LISTS BONGO_CAT_LIVE2D_TEST_TARGETS)
       add_custom_command(TARGET ${BONGO_CAT_TEST_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${BONGO_CAT_RUNTIME_CORE_DLL}"
+          "${BONGO_CAT_RUNTIME_CORE_LIBRARY}"
           "$<TARGET_FILE_DIR:${BONGO_CAT_TEST_TARGET}>"
         VERBATIM)
     endforeach()

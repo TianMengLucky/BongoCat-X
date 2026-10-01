@@ -5,24 +5,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_properties.h>
 
-bool bongo_cat_platform_live2d_core_available(void) {
-#ifdef BONGO_CAT_HAS_CUBISM
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool bongo_cat_platform_live2d_core_import_supported(void) { return false; }
-
-bool bongo_cat_platform_live2d_core_import(const char *path,
-    const char *data_dir, BongoCatError *error) {
-    (void)path; (void)data_dir;
-    bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Runtime Cubism Core import is only available on Windows");
-    return false;
-}
-
 BongoCatResult bongo_cat_platform_set_autostart(bool enabled, bool administrator,
     BongoCatError *error) {
     (void)administrator;

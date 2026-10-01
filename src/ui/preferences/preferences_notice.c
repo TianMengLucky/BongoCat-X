@@ -98,11 +98,21 @@ static int notice_line(const struct nk_user_font *font, const char *text,
     return length;
 }
 
+/* Keep toasts within a fraction of the window so long messages wrap into a
+   compact block instead of covering the options underneath. */
+static float notice_toast_cap(float width) {
+    return NK_MAX(120.0f, NK_MIN(width - 64.0f, width * .58f));
+}
+
+static float notice_text_maximum(float width) {
+    return NK_MAX(40.0f, notice_toast_cap(width) - 36.0f);
+}
+
 static float notice_height(struct nk_context *context,
     BongoCatPreferenceNotice *notice, float width, float *text_width_out,
     size_t *lines_out) {
     const struct nk_user_font *font = bongo_cat_ui_label_font(context);
-    float maximum = NK_MAX(40.0f, width - 100.0f);
+    float maximum = notice_text_maximum(width);
     float text_width = 0;
     size_t lines = 0;
     for (const char *cursor = notice->message; *cursor; ++lines) {
@@ -128,8 +138,8 @@ static float draw_notice(BongoCatPreferences *value,
     float toast_height = notice_height(context, notice, width, &text_width,
         &lines);
     float line_height = font->height + 5.0f;
-    float maximum = NK_MAX(40.0f, width - 100.0f);
-    float toast_width = NK_MIN(text_width + 36.0f, width - 64.0f);
+    float maximum = notice_text_maximum(width);
+    float toast_width = NK_MIN(text_width + 36.0f, notice_toast_cap(width));
     float elapsed = (float)(now - notice->started_ns) /
         (NOTICE_ENTER_MS * 1000000.0f);
     float progress = bongo_cat_ui_ease(BONGO_CAT_UI_EASE_SPRING,

@@ -218,10 +218,10 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Live2D Cubism SDK が見つからないため、Live2D レンダリングは無効です。Live2D の公式サイトから Cubism SDK for Native をダウンロードし、vendor/CubismSdkForNative に展開してから再ビルドしてください。",
-    "live2dCoreMissing": "Live2D Cubism Core が見つからないため、Live2D レンダリングは無効です。公式の「Cubism SDK for Native」の zip を展開せずに、アプリケーションまたはデータディレクトリ内の live2d フォルダに入れて再起動すれば、再ビルドは不要です。レジストリ HKCU\\Software\\BongoCat\\Live2D の CoreDll 値で Live2DCubismCore.dll のパスを指定することもできます。",
+    "live2dSdkMissing": "このビルドは Live2D サポートを含まない（診断ビルド）ため、Live2D レンダリングは無効です。Live2D サポート付きのビルドをご利用ください。",
+    "live2dCoreMissing": "Live2D Cubism Core が見つかりません：設定ウィンドウから Core ライブラリまたは公式 SDK の zip を読み込むか、zip を live2d フォルダ（アプリケーションまたはデータディレクトリ内）に入れて再起動してください。",
     "live2dCoreImport": "Live2D Core をインポート",
-    "live2dCoreImportHint": "Live2DCubismCore.dll または公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
+    "live2dCoreImportHint": "Cubism Core ライブラリまたは公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
     "live2dCoreImportButton": "ファイルを選択",
     "live2dCoreImportSuccess": "Live2D Cubism Core をインポートしました。Live2D レンダリングが有効になりました",
     "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",

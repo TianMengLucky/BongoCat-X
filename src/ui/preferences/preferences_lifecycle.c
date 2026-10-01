@@ -1,6 +1,7 @@
 #include "preferences_controls.h"
 #include "preferences_gl.h"
 #include "preferences_model_cover.h"
+#include "preferences_notice.h"
 #include "preferences_state.h"
 #include "ui_animation.h"
 #include "bongo_cat/memory.h"
@@ -18,6 +19,8 @@
 #include <windows.h>
 #include <dwmapi.h>
 #endif
+
+enum { SDK_NOTICE_DURATION_MS = 12000 };
 
 static void hide_window_immediately(SDL_Window *window) {
 #ifdef _WIN32
@@ -131,6 +134,20 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     value->visible = true;
     bongo_cat_model_memory_ui_state(true, true);
     bongo_cat_about_refresh(value);
+#ifndef BONGO_CAT_HAS_CUBISM
+    /* Diagnostic build: the Cubism SDK was absent from vendor/CubismSdkForNative
+       at build time, so no runtime folder can restore Live2D rendering. Point
+       the user at the manual import once per run instead of staying silent. */
+    if (!value->sdk_notice_shown) {
+        value->sdk_notice_shown = true;
+        bongo_cat_preferences_notice_show_anchored(value->app,
+            bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
+                "Live2D Cubism SDK not found: Live2D rendering is disabled. "
+                "Download Cubism SDK for Native from the Live2D website, "
+                "extract it to vendor/CubismSdkForNative, then rebuild."),
+            true, SDK_NOTICE_DURATION_MS, true);
+    }
+#endif
     if (!opening) {
         SDL_StartTextInput(value->window);
         bongo_cat_preferences_live_resize_install(value);

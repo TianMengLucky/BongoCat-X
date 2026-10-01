@@ -212,6 +212,7 @@
     }
   },
   "native": {
+    "live2dSdkMissing": "Live2D Cubism SDK nicht gefunden – Live2D-Rendering ist deaktiviert. Laden Sie Cubism SDK for Native von der Live2D-Website herunter, entpacken Sie es nach vendor/CubismSdkForNative und bauen Sie das Projekt neu.",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

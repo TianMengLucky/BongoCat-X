@@ -23,8 +23,9 @@ static void update_notice_timer(BongoCatPreferences *value,
     notice->hovered = hovered;
 }
 
-void bongo_cat_preferences_notice_show(BongoCatApp *app,
-    const char *message, bool error) {
+void bongo_cat_preferences_notice_show_anchored(BongoCatApp *app,
+    const char *message, bool error, unsigned duration_ms,
+    bool bottom_right) {
     if (!app || !app->preferences || !message || !message[0]) return;
     BongoCatPreferences *value = app->preferences;
     uint64_t now = SDL_GetTicksNS();
@@ -46,10 +47,17 @@ void bongo_cat_preferences_notice_show(BongoCatApp *app,
         value->font_reload_defer_once = false;
     }
     target->error = error;
+    target->bottom_right = bottom_right;
     target->started_ns = now;
-    target->until_ns = now + NOTICE_DURATION_MS * 1000000ULL;
+    target->until_ns = now + (uint64_t)duration_ms * 1000000ULL;
     target->timer_updated_ns = now;
     value->render_dirty = true;
+}
+
+void bongo_cat_preferences_notice_show(BongoCatApp *app,
+    const char *message, bool error) {
+    bongo_cat_preferences_notice_show_anchored(app, message, error,
+        NOTICE_DURATION_MS, false);
 }
 
 static size_t active_notices(BongoCatPreferences *value, uint64_t now,
@@ -90,11 +98,9 @@ static int notice_line(const struct nk_user_font *font, const char *text,
     return length;
 }
 
-static float draw_notice(BongoCatPreferences *value,
-    struct nk_context *context, BongoCatPreferenceNotice *notice,
-    float width, float y, uint64_t now) {
-    BongoCatUIPalette p = bongo_cat_ui_palette(
-        bongo_cat_ui_dark(context));
+static float notice_height(struct nk_context *context,
+    BongoCatPreferenceNotice *notice, float width, float *text_width_out,
+    size_t *lines_out) {
     const struct nk_user_font *font = bongo_cat_ui_label_font(context);
     float maximum = NK_MAX(40.0f, width - 100.0f);
     float text_width = 0;
@@ -106,7 +112,23 @@ static float draw_notice(BongoCatPreferences *value,
         if (*cursor == '\n') cursor++;
     }
     float line_height = font->height + 5.0f;
-    float toast_height = NK_MAX(41.0f, lines * line_height + 15.0f);
+    if (text_width_out) *text_width_out = text_width;
+    if (lines_out) *lines_out = lines;
+    return NK_MAX(41.0f, lines * line_height + 15.0f);
+}
+
+static float draw_notice(BongoCatPreferences *value,
+    struct nk_context *context, BongoCatPreferenceNotice *notice,
+    float width, float y, uint64_t now) {
+    BongoCatUIPalette p = bongo_cat_ui_palette(
+        bongo_cat_ui_dark(context));
+    const struct nk_user_font *font = bongo_cat_ui_label_font(context);
+    float text_width = 0;
+    size_t lines = 0;
+    float toast_height = notice_height(context, notice, width, &text_width,
+        &lines);
+    float line_height = font->height + 5.0f;
+    float maximum = NK_MAX(40.0f, width - 100.0f);
     float toast_width = NK_MIN(text_width + 36.0f, width - 64.0f);
     float elapsed = (float)(now - notice->started_ns) /
         (NOTICE_ENTER_MS * 1000000.0f);
@@ -114,8 +136,12 @@ static float draw_notice(BongoCatPreferences *value,
         NK_CLAMP(0.0f, elapsed, 1.0f));
     float opacity = NK_CLAMP(0.0f, progress, 1.0f);
     float shown_width = toast_width * (.9f + .1f * progress);
-    struct nk_rect bounds = nk_rect((width - shown_width) * .5f,
-        y - 12.0f * (1.0f - progress), shown_width, toast_height);
+    float slide = 12.0f * (1.0f - progress);
+    struct nk_rect bounds = nk_rect(
+        notice->bottom_right ? (width - shown_width - 20.0f)
+                             : (width - shown_width) * .5f,
+        notice->bottom_right ? (y + slide) : (y - slide),
+        shown_width, toast_height);
     notice->bounds = bounds;
     struct nk_color tone = notice->error ? p.danger : p.pink;
     if (p.effects) bongo_cat_ui_paint_shadow(context, bounds, 20, 0, 8,
@@ -141,12 +167,25 @@ static float draw_notice(BongoCatPreferences *value,
 
 void bongo_cat_preferences_notice_draw(BongoCatPreferences *value,
     struct nk_context *context, float width, float height) {
-    (void)height;
     if (!value) return;
     uint64_t now = SDL_GetTicksNS();
     BongoCatPreferenceNotice *items[4];
+    BongoCatPreferenceNotice *bottom[sizeof(items) / sizeof(items[0])];
     size_t count = active_notices(value, now, items);
+    size_t bottom_count = 0;
     float y = 20.0f;
-    for (size_t i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i) {
+        if (items[i]->bottom_right) {
+            bottom[bottom_count++] = items[i];
+            continue;
+        }
         y += draw_notice(value, context, items[i], width, y, now) + 10.0f;
+    }
+    if (!bottom_count) return;
+    float total = 0.0f;
+    for (size_t i = 0; i < bottom_count; ++i)
+        total += notice_height(context, bottom[i], width, NULL, NULL) + 10.0f;
+    y = height - 20.0f - (total - 10.0f);
+    for (size_t i = 0; i < bottom_count; ++i)
+        y += draw_notice(value, context, bottom[i], width, y, now) + 10.0f;
 }

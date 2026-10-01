@@ -23,6 +23,7 @@ typedef struct BongoCatPreferenceNotice {
     struct nk_rect bounds;
     bool hovered;
     bool error;
+    bool bottom_right;
 } BongoCatPreferenceNotice;
 
 struct BongoCatPreferences {
@@ -32,6 +33,7 @@ struct BongoCatPreferences {
     bool owns_gl_context;
     bool transparent_window;
     bool visible;
+    bool sdk_notice_shown;
     unsigned release_wait_flags;
     bool ui_initialized;
     BongoCatUIBackend ui;

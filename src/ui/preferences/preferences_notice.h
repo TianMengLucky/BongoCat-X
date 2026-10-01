@@ -7,6 +7,10 @@
 
 void bongo_cat_preferences_notice_show(BongoCatApp *app,
     const char *message, bool error);
+/* Same toast with an explicit duration and corner anchor (bottom-right). */
+void bongo_cat_preferences_notice_show_anchored(BongoCatApp *app,
+    const char *message, bool error, unsigned duration_ms,
+    bool bottom_right);
 void bongo_cat_preferences_notice_draw(BongoCatPreferences *preferences,
     struct nk_context *context, float width, float height);
 

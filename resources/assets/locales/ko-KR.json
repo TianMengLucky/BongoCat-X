@@ -212,6 +212,7 @@
     }
   },
   "native": {
+    "live2dSdkMissing": "Live2D Cubism SDK를 찾을 수 없어 Live2D 렌더링이 비활성화되었습니다. Live2D 공식 웹사이트에서 Cubism SDK for Native를 다운로드해 vendor/CubismSdkForNative에 압축을 푼 뒤 다시 빌드하세요.",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

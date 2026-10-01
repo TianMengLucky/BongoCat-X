@@ -212,6 +212,7 @@
     }
   },
   "native": {
+    "live2dSdkMissing": "未检测到 Live2D Cubism SDK，Live2D 渲染不可用。请从 Live2D 官网下载 Cubism SDK for Native 并解压到 vendor/CubismSdkForNative，然后重新构建。",
     "about": {
       "wechat": "微信群",
       "wechatHint": "悬停扫码，一起交流",

@@ -212,6 +212,7 @@
     }
   },
   "native": {
+    "live2dSdkMissing": "SDK do Cubism da Live2D não encontrado: a renderização do Live2D está desativada. Baixe o Cubism SDK for Native no site da Live2D, extraia em vendor/CubismSdkForNative e recompile.",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

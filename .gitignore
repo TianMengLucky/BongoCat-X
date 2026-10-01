@@ -29,6 +29,9 @@
 *.exp
 *.dSYM/
 
+# Python bytecode from local helper script runs
+__pycache__/
+
 # Local licensed dependency; install it separately on each machine
 /vendor/CubismSdkForNative/
 

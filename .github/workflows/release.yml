@@ -84,26 +84,43 @@ jobs:
       - name: Configure Unix release
         if: runner.os != 'Windows'
         run: |
-          cmake -S . -B build-release -G Ninja \
+          attempt=1
+          until cmake -S . -B build-release -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
-            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
+            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "Configure failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "Configure attempt $attempt failed (likely a transient dependency download error); retrying"
+            attempt=$((attempt + 1))
+          done
 
       - name: Build Windows release
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          & ./scripts/build-windows.ps1 `
-            -SkipTests `
-            -BuildDir build-release `
-            -Configuration Release `
-            -Architecture '${{ matrix.cmake_arch }}' `
-            -Jobs 2 `
-            -Target ALL_BUILD
+          :retry foreach ($attempt in 1..3) {
+            try {
+              & ./scripts/build-windows.ps1 `
+                -SkipTests `
+                -BuildDir build-release `
+                -Configuration Release `
+                -Architecture '${{ matrix.cmake_arch }}' `
+                -Jobs 2 `
+                -Target ALL_BUILD
+              if ($LASTEXITCODE -eq 0) { break retry }
+              if ($attempt -eq 3) { exit $LASTEXITCODE }
+            } catch {
+              if ($attempt -eq 3) { throw }
+            }
+            Write-Host "Build attempt $attempt failed (likely a transient dependency download error); retrying"
+          }
 
       - name: Build Unix release
         if: runner.os != 'Windows'

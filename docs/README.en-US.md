@@ -2,14 +2,13 @@
 
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
-    <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
+    <img src="resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
   
   <h1>
     <a href="https://bongocat.pet" target="_blank" style="text-decoration: none; color: inherit;">BongoCat</a>
   </h1>
 </div>
-
 
 <!-- Project Description + Rocket Icon -->
 <p align="center"> 
@@ -19,18 +18,13 @@
 <strong>English</strong> • <a href="../README.md">简体中文</a> • <a href="README.zh-Hant.md">繁體中文</a> • <a href="README.fr-FR.md">Français</a> • <a href="README.de-DE.md">Deutsch</a> • <a href="README.ja-JP.md">日本語</a> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
 </p>
 > [!NOTE]
-> This repository (**BongoCat-X**) is a fork of [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat) and is not affiliated with the upstream project or Live2D Inc.
->
-> The Live2D Cubism SDK (proprietary software) is not bundled, embedded, or distributed with this repository. Before building, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below.
+> This repository (**BongoCat-X**) is a fork of [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat). It is not affiliated with Live2D Inc. and does not bundle the Cubism SDK - see the Live2D Disclaimer section below.
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
   <a href="https://github.com/TianMengLucky/BongoCat-X"><img src="https://img.shields.io/badge/C-54AEFF?style=flat&logo=c&logoColor=white"></a>
-<a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/Discord-F77DAA?logo=discord&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.md"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
-  <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/422616922-12B7F5?logo=qq&logoColor=12B7F5&labelColor=FFFFFF"></a>
-</p>
 
+</p>
 
 <!-- Demo Video -->
 <div align="center" style="margin-bottom: 30px;">
@@ -38,9 +32,7 @@
 " autoplay loop style="border-radius: 8px; max-width: 800px;"></video>
 </div>
 
-
 <img width="1149" height="904" alt="image" src="https://github.com/user-attachments/assets/aa376965-539e-4bbd-827d-bb9a29006069" />
-
 
 > [!TIP]
 > The model featured in this demonstration is from [宇痕冫](https://space.bilibili.com/348616056).
@@ -61,6 +53,10 @@
 - GitHub Releases
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
+
+## ⚠️ Live2D Disclaimer
+
+This repository is not affiliated with Live2D Inc. or its official projects in any way. The Live2D Cubism SDK is proprietary software of Live2D Inc.: it is not bundled, embedded, or distributed with this repository. Before building, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below, and follow Live2D's license terms.
 
 ## 🛠️ Build From Source
 
@@ -182,7 +178,6 @@ cmake -S . -B build -G Ninja \
 
 ## 📌 Project Status
 
-
 ## 📜 License
 
 The BongoCat source code and native runtime are licensed under
@@ -193,7 +188,6 @@ bundled model assets in `resources/assets/models/standard`, `keyboard`, and
 `gamepad` are covered by the separate [MIT license notice](LICENSE-MIT).
 That MIT license applies to the model assets and their accompanying artwork
 only; it does not relicense the BongoCat source code or native runtime.
-
 
 ## 🧭 Technical Architecture
 
@@ -279,7 +273,6 @@ bridge and Cubism implementation live in `src/live2d` and use C++17 only when
 the Cubism SDK is enabled; the rest of the native runtime uses C11. Cubism
 types remain behind opaque C handles, while `src/live2d/live2d_stub.c` provides
 the diagnostic backend when the SDK is unavailable.
-
 
 ```mermaid
 flowchart TB
@@ -376,12 +369,9 @@ users. For BongoCat's current workload, OpenGL keeps the renderer smaller,
 easier to debug, and easier to maintain while still delivering the performance
 we need.
 
-
-
 ## 🙏 Special Thanks
 > [!TIP]
 > Every step BongoCat takes is powered by the spirit of open source. We sincerely thank all our community contributors for their selfless contributions It is your support that makes desktop companionship more free and genuine.❤️‍🔥
-
 
 <a href="https://github.com/TianMengLucky/BongoCat-X/graphs/contributors">
     <img src="https://contrib.rocks/image?repo=TianMengLucky/BongoCat-X" />

@@ -1,5 +1,6 @@
 #include "preferences_theme.h"
 #include "bongo_cat/config.h"
+#include "preferences_controls.h"
 #include "preferences_widgets_internal.h"
 #include "ui_animation.h"
 #include "ui_backend.h"
@@ -222,42 +223,54 @@ int bongo_cat_pref_theme(struct nk_context *context, const char *id,
     return choice_row(context, id, title, labels, 3, true, selected, NULL, NULL);
 }
 
+/* Shared form for slider-based rows: label on the left, slider with an
+   editable value box on the right. #result always receives the current
+   value; #changed reports user interaction this frame. */
+static void slider_row(struct nk_context *context, const char *id,
+    const char *title, const char *detail, float minimum, float value,
+    float maximum, float step, float default_value, float *result,
+    bool *changed) {
+    *changed = false;
+    *result = value;
+    int lines = bongo_cat_pref_detail_lines(context, detail);
+    ThemeFormStyle saved;
+    if (!form_begin(context, id, lines, &saved)) return;
+    float available = nk_window_get_content_region(context).w;
+    nk_layout_row_begin(context, NK_STATIC, 36, 2);
+    nk_layout_row_push(context, NK_MAX(1.0f, available - 228.0f));
+    bongo_cat_pref_form_label(context, title);
+    nk_layout_row_push(context, 220.0f);
+    *changed = bongo_cat_pref_control_slider(context, id, minimum, result,
+        maximum, step, default_value, "");
+    nk_layout_row_end(context);
+    bongo_cat_pref_description(context, detail, lines);
+    form_end(context, &saved);
+}
+
 int bongo_cat_pref_fps(struct nk_context *context, const char *id,
     const char *title, int fps, int display_fps) {
-    char display_label[32];
-    snprintf(display_label, sizeof(display_label), "%d FPS", display_fps);
-    const char *labels[] = {"30 FPS", "60 FPS", display_label};
-    bool high_refresh = display_fps > BONGO_CAT_DEFAULT_MAX_FPS;
-    int selected = fps == 30 ? 0 :
-        (fps == BONGO_CAT_DISPLAY_MAX_FPS && high_refresh ? 2 : 1);
-    bool clicked = false;
-    int next = choice_row(context, id, title, labels, high_refresh ? 3 : 2,
-        false, selected, &clicked, NULL);
-    /* Keep the saved display choice when temporarily falling back to 60 FPS. */
-    if (!clicked) return fps;
-    return next == 0 ? 30 : next == 1 ? 60 : BONGO_CAT_DISPLAY_MAX_FPS;
+    /* The legacy "match display" choice (-1) shows the display maximum;
+       it stays saved untouched until the slider or value box is used. */
+    float maximum = NK_MAX(60.0f, (float)display_fps);
+    float value = fps <= 0 ? maximum :
+        NK_CLAMP(30.0f, (float)fps, maximum);
+    float result = value;
+    bool changed = false;
+    slider_row(context, id, title, NULL, 30.0f, value, maximum, 1.0f,
+        (float)BONGO_CAT_DEFAULT_MAX_FPS, &result, &changed);
+    /* Returning the original keeps saved values (including the legacy -1)
+       untouched while the user only looks at the page. */
+    return changed ? (int)(result + 0.5f) : fps;
 }
 
 float bongo_cat_pref_render_quality(struct nk_context *context, const char *id,
     const char *title, const char *detail, float quality_percent) {
-    char labels[12][4];
-    const char *items[12];
-    snprintf(labels[0], sizeof(labels[0]), "0.1");
-    items[0] = labels[0];
-    snprintf(labels[1], sizeof(labels[1]), "1");
-    items[1] = labels[1];
-    for (int i = 2; i < 12; ++i) {
-        snprintf(labels[i], sizeof(labels[i]), "%d", (i - 1) * 10);
-        items[i] = labels[i];
-    }
-    int selected = quality_percent == 0.1f ? 0 : quality_percent == 1.0f ? 1 :
-        quality_percent >= 10.0f && quality_percent <= 100.0f &&
-        fmodf(quality_percent, 10.0f) == 0.0f ? (int)(quality_percent / 10.0f) + 1 : 11;
-    bool clicked = false;
-    int next = choice_row(context, id, title, items, 12, false, selected,
-        &clicked, detail);
-    return clicked ? (next == 0 ? 0.1f : next == 1 ? 1.0f :
-        (float)(next - 1) * 10.0f) : quality_percent;
+    float value = NK_CLAMP(0.1f, quality_percent, 100.0f);
+    float result = value;
+    bool changed = false;
+    slider_row(context, id, title, detail, 0.1f, value, 100.0f, 1.0f,
+        (float)BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT, &result, &changed);
+    return changed ? result : quality_percent;
 }
 
 bool bongo_cat_pref_capsule_button(struct nk_context *context,

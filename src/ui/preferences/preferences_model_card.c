@@ -142,6 +142,47 @@ static void draw_cover(BongoCatPreferences *value,
 #define MODEL_HIDE_TAB_RADIUS 40.0f
 #define MODEL_CARD_ROUNDING 14.0f
 
+/* After hiding a model that is on display, move to another visible model:
+   single-pet mode switches to the first remaining model through the regular
+   (deferred) selection flow; multiple-pet mode deactivates the hidden pet
+   and, if it was the last one, activates a replacement. */
+static void switch_away_from_hidden(BongoCatPreferences *value,
+    const BongoCatModelEntry *entry) {
+    BongoCatApp *app = value->app;
+    if (!bongo_cat_app_model_active(app, entry->id)) return;
+    const BongoCatModelEntry *fallback = NULL;
+    static const char *const preset_ids[] = {"standard", "keyboard",
+        "gamepad"};
+    /* Prefer a visible preset model, then any other visible model. */
+    for (size_t pass = 0; pass < 2 && !fallback; ++pass) {
+        bool presets_only = pass == 0;
+        for (size_t i = 0; i < app->models.count; ++i) {
+            const BongoCatModelEntry *other = &app->models.entries[i];
+            bool is_preset = false;
+            for (size_t s = 0; s < sizeof(preset_ids) / sizeof(preset_ids[0]);
+                    ++s)
+                is_preset = is_preset || !strcmp(other->id, preset_ids[s]);
+            if (strcmp(other->id, entry->id) &&
+                (!presets_only || is_preset) &&
+                !bongo_cat_settings_model_hidden(&app->settings, other->id)) {
+                fallback = other;
+                break;
+            }
+        }
+    }
+    if (app->settings.model.multiple_pets) {
+        BongoCatError error = {0};
+        if (bongo_cat_app_active_model_count(app) > 1) {
+            bongo_cat_app_set_model_active(app, entry->id, false, &error);
+        } else if (fallback) {
+            bongo_cat_app_set_model_active(app, entry->id, false, &error);
+            bongo_cat_app_set_model_active(app, fallback->id, true, &error);
+        }
+    } else if (fallback) {
+        bongo_cat_preferences_model_select(value, fallback);
+    }
+}
+
 /* Quarter-circle pocket in the top-right corner, clipped to the card's
    rounded corner: it follows the top edge, wraps around the card rounding
    and sweeps back along the right edge. Translucent gray to hide, pink to
@@ -201,6 +242,7 @@ static bool draw_hide_tab(BongoCatPreferences *value,
             &value->app->settings, entry->id);
         bongo_cat_settings_set_model_hidden(&value->app->settings,
             entry->id, !hidden);
+        if (!hidden) switch_away_from_hidden(value, entry);
         value->render_dirty = true;
     }
     if (hover) {

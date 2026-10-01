@@ -14,9 +14,12 @@ bool bongo_cat_pref_control_float(struct nk_context *context, const char *id,
     float default_value);
 bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
     int minimum, int *value, int maximum, int step, int default_value);
+/* Slider with a value box on the right. The box is editable: click it to
+ * type a number, double-click to restore the default. #suffix is drawn
+ * inside the box while not editing (for example "%"). */
 bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     float minimum, float *value, float maximum, float step,
-    float default_value);
+    float default_value, const char *suffix);
 bool bongo_cat_pref_control_toggle(struct nk_context *context,
     const char *id, bool *value);
 bool bongo_cat_pref_control_toggle_available(struct nk_context *context,

@@ -71,6 +71,20 @@ void test_config(void) {
     CHECK(bongo_cat_settings_set_model_removed(&settings, "model~2", true));
     CHECK(bongo_cat_settings_set_model_removed(&settings, "model-extra", true));
     CHECK(bongo_cat_settings_set_model_hidden(&settings, "model~3", true));
+    /* Random selection defaults to every behavior; disabling excludes it. */
+    CHECK(bongo_cat_settings_random_enabled(&settings, "model:expression:2"));
+    CHECK(bongo_cat_settings_random_set_enabled(&settings,
+        "model:expression:2", false));
+    CHECK(!bongo_cat_settings_random_enabled(&settings, "model:expression:2"));
+    CHECK(bongo_cat_settings_random_set_enabled(&settings,
+        "model:motion:Tap:0", false));
+    CHECK(!bongo_cat_settings_random_set_enabled(&settings,
+        "model:motion:Tap:0", false));
+    CHECK(bongo_cat_settings_random_set_enabled(&settings,
+        "model:expression:2", true));
+    CHECK(bongo_cat_settings_random_enabled(&settings, "model:expression:2"));
+    CHECK(bongo_cat_settings_random_set_enabled(&settings,
+        "model:expression:0", false));
     session.window.x = -321;
     session.window.position_known = true;
     session.window.opacity_percent = 75.0f;
@@ -111,6 +125,10 @@ void test_config(void) {
         contains_text(settings_path, "\"model~2\""));
     CHECK(contains_text(settings_path, "\"hiddenModels\"") &&
         contains_text(settings_path, "\"model~3\""));
+    CHECK(contains_text(settings_path, "\"randomBehaviorDisabled\"") &&
+        contains_text(settings_path, "\"model:expression:0\"") &&
+        contains_text(settings_path, "\"model:motion:Tap:0\"") &&
+        !contains_text(settings_path, "\"model:expression:2\""));
     CHECK(contains_text(settings_path, "\"example\""));
     CHECK(!contains_text(settings_path, "activeModelId"));
     CHECK(contains_text(session_path, "\"format\": \"bongocat/session\""));
@@ -154,6 +172,12 @@ void test_config(void) {
     CHECK(bongo_cat_settings_set_model_hidden(&loaded_settings, "model~3",
         false) && !bongo_cat_settings_model_hidden(&loaded_settings,
         "model~3"));
+    CHECK(!bongo_cat_settings_random_enabled(&loaded_settings,
+        "model:expression:0") &&
+        !bongo_cat_settings_random_enabled(&loaded_settings,
+        "model:motion:Tap:0") &&
+        bongo_cat_settings_random_enabled(&loaded_settings,
+        "model:expression:2"));
     CHECK(bongo_cat_settings_restore_model_package(&loaded_settings, "model"));
     CHECK(!bongo_cat_settings_model_removed(&loaded_settings, "model~2") &&
         bongo_cat_settings_model_removed(&loaded_settings, "model-extra"));

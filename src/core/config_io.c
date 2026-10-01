@@ -165,6 +165,28 @@ static bool read_behaviors(yyjson_val *array, BongoCatSettings *settings,
     return true;
 }
 
+static bool read_random_disabled(yyjson_val *array, BongoCatSettings *settings,
+    BongoCatError *error) {
+    if (!array) return true;
+    if (yyjson_arr_size(array) > BONGO_CAT_RANDOM_DISABLED_CAP)
+        return type_error(error, "randomBehaviorDisabled", "a smaller array");
+    settings->random_disabled_count = 0;
+    size_t index, count;
+    yyjson_val *item;
+    yyjson_arr_foreach(array, index, count, item) {
+        const char *id = yyjson_get_str(item);
+        size_t length = yyjson_get_len(item);
+        if (!yyjson_is_str(item) || !id || !length || strlen(id) != length)
+            return type_error(error, "randomBehaviorDisabled[]",
+                "a non-empty string without embedded nulls");
+        char *entry = settings->random_disabled[settings->random_disabled_count++];
+        memset(entry, 0, BONGO_CAT_BEHAVIOR_ID_CAP);
+        if (!copy_text(entry, BONGO_CAT_BEHAVIOR_ID_CAP, id, length,
+                "randomBehaviorDisabled[]", error)) return false;
+    }
+    return true;
+}
+
 static bool read_model_labels(yyjson_val *array, BongoCatSettings *settings,
     BongoCatError *error) {
     if (!array) return true;
@@ -271,6 +293,7 @@ BongoCatResult bongo_cat_settings_load(const char *path,
     yyjson_val *application = NULL;
     yyjson_val *shortcuts = NULL;
     yyjson_val *behaviors = NULL;
+    yyjson_val *random_disabled = NULL;
     yyjson_val *models = NULL;
     yyjson_val *removed_models = NULL;
     yyjson_val *hidden_models = NULL;
@@ -280,6 +303,7 @@ BongoCatResult bongo_cat_settings_load(const char *path,
         read_object(root, "application", &application, error) &&
         read_object(root, "shortcuts", &shortcuts, error) &&
         read_array(root, "behaviorOverrides", &behaviors, error) &&
+        read_array(root, "randomBehaviorDisabled", &random_disabled, error) &&
         read_array(root, "modelOverrides", &models, error) &&
         read_array(root, "removedModels", &removed_models, error) &&
         read_array(root, "hiddenModels", &hidden_models, error) &&
@@ -289,6 +313,7 @@ BongoCatResult bongo_cat_settings_load(const char *path,
         (!application || read_app(application, &loaded.app, error)) &&
         (!shortcuts || read_shortcuts(shortcuts, &loaded.shortcuts, error)) &&
         read_behaviors(behaviors, &loaded, error) &&
+        read_random_disabled(random_disabled, &loaded, error) &&
         read_model_labels(models, &loaded, error) &&
         read_removed_models(removed_models, &loaded, error) &&
         read_hidden_models(hidden_models, &loaded, error);

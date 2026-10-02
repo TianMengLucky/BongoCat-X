@@ -5,6 +5,9 @@
 
 #include <SDL3/SDL.h>
 #include <string.h>
+#ifndef _WIN32
+#include <strings.h>
+#endif
 
 /* The user-facing switch lives in a small ini file beside the executable so
    that it can also be edited by hand before the first launch. The storage

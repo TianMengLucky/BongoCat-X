@@ -143,6 +143,9 @@ static bool append(BongoCatAboutRequest *job, const void *data, size_t size) {
 static const char CONTRIBUTORS_HOST[] = "api.github.com";
 static const char CONTRIBUTORS_PATH[] =
     "/repos/TianMengLucky/BongoCat-X/contributors?per_page=100";
+static const char CONTRIBUTORS_SVG_HEADER[] =
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" "
+    "xmlns:xlink=\"http://www.w3.org/1999/xlink\">";
 
 typedef struct fetch_buffer {
     char *data;
@@ -341,9 +344,8 @@ static bool build_contributors_svg(BongoCatAboutRequest *job, void *client) {
         yyjson_doc_free(doc);
         return false;
     }
-    bool ok = append(job,
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" "
-        "xmlns:xlink=\"http://www.w3.org/1999/xlink\">", 96);
+    bool ok = append(job, CONTRIBUTORS_SVG_HEADER,
+        sizeof(CONTRIBUTORS_SVG_HEADER) - 1);
     yyjson_arr_iter iter = yyjson_arr_iter_with(root);
     yyjson_val *item;
     int count = 0;

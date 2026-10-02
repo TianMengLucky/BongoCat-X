@@ -124,6 +124,14 @@ Notes:
   (`feat:`, `fix:`, `chore:`, `docs:`), body only when the why is not
   obvious from the diff.
 
+## Branch Protection
+
+- The `X` branch is **protected**: never commit to it directly and never
+  push to it. Keep the local `X` branch in sync with `origin/X` only.
+- All work happens on unprotected branches (`dev` or per-feature branches
+  created from `X`). When the work is ready, open a pull request from the
+  unprotected branch into `X`; merges into `X` go through PRs only.
+
 ## Agent Workflow Preferences (repository owner)
 
 - **Do not launch the built application** after completing a task, and **do

@@ -84,3 +84,8 @@ Desktop.ini
 /.diagnostic-storage/
 /.diagnostic-storage-morning/
 /vendor/inox2d/
+
+# Local environment artifacts
+/n
+/.zcode/
+/.zcodeignore

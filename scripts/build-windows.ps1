@@ -150,9 +150,22 @@ if ($SkipConfigure) {
     Write-BuildProgress 20 'Using existing CMake configuration.' -NewLine
 } else {
     Write-BuildProgress 5 'Configuring project...'
+    # Pick the generator from the newest installed Visual Studio: the classic
+    # default is VS 2022 ("Visual Studio 17 2022"); VS 18 (2026) needs its own
+    # generator name.
+    $generator = 'Visual Studio 17 2022'
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} `
+        'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) {
+        $instance = & $vswhere -latest -products * -format value `
+            -property installationVersion
+        if ($instance -match '^(\d+)\.' -and [int]$Matches[1] -ge 18) {
+            $generator = 'Visual Studio 18 2026'
+        }
+    }
     $configureArgs = @(
         '-S', $root, '-B', $BuildDir,
-        '-G', 'Visual Studio 17 2022', '-A', $Architecture,
+        '-G', $generator, '-A', $Architecture,
         '-DBONGO_CAT_WARNINGS_AS_ERRORS=ON',
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"

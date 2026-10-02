@@ -3,6 +3,7 @@
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
 #include "preferences_widgets.h"
+#include "ui_icons.h"
 #include "model_import.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/platform.h"
@@ -159,7 +160,7 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value) {
     }
     value->model_loading = false;
     value->loading_model_id[0] = '\0';
-    if (!selected) SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+    if (!selected) SDL_LogError(SDL_LOG_CATEGORY_CUSTOM,
         "Model selection failed: id=%s error=%s", id,
         error.message[0] ? error.message : "Unable to display this model");
     bongo_cat_preferences_invalidate(value);
@@ -241,21 +242,35 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
             "Display multiple"), "", &multiple))
         bongo_cat_app_set_multiple_pets(app, multiple);
     /* Runtime-Core builds: offer the Live2D Core import while rendering is
-       still disabled; the row disappears as soon as the Core is loaded. */
+       still disabled; the row disappears as soon as the Core is loaded. The
+       sync icon re-runs the drop-in folder scan on demand. */
     if (bongo_cat_platform_live2d_core_import_supported() &&
         !bongo_cat_platform_live2d_core_available()) {
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_LIVE2D_CORE);
-        if (bongo_cat_pref_button(context, "live2d-core-import", tr(app,
-                "native.live2dCoreImport", "Import Live2D Core"),
-                tr(app, "native.live2dCoreImportHint",
-                "Select the Cubism Core library or the official Cubism SDK "
-                "zip to enable Live2D rendering without a restart"),
-                tr(app, "native.live2dCoreImportButton", "Choose file")))
+        int action = bongo_cat_pref_button_with_icon(context,
+            "live2d-core-import",
+            tr(app, "native.live2dCoreImport", "Import Live2D Core"),
+            tr(app, "native.live2dCoreImportHint",
+            "Select the Cubism Core library or the official Cubism SDK "
+            "zip to enable Live2D rendering without a restart"),
+            BONGO_CAT_UI_ICON_SYNC,
+            tr(app, "native.live2dCoreImportButton", "Choose file"));
+        if (action == 1) {
+            SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM,
+                "Live2D Core import requested from settings");
             value->sdk_import_requested = true;
+        } else if (action == 2) {
+            /* The scan (zip extraction included) runs on a worker thread;
+               the result toast comes from the completion event handler. */
+            bongo_cat_preferences_request_live2d_rescan(value);
+            bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(
+                app->i18n, "native.live2dCoreScanning",
+                "Scanning the live2d folders for the Cubism Core..."), false);
+        }
     }
     if (bongo_cat_preferences_model_section(value, context) &&
         !SDL_OpenURL("https://bongocat.pet/models"))
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+        SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
             "Cannot open model library: %s", SDL_GetError());
     float width = nk_window_get_content_region(context).w;
     int columns = width >= 780 ? 4 : width >= 620 ? 3 : width >= 400 ? 2 : 1;

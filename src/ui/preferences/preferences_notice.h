@@ -11,6 +11,9 @@ void bongo_cat_preferences_notice_show(BongoCatApp *app,
 void bongo_cat_preferences_notice_show_anchored(BongoCatApp *app,
     const char *message, bool error, unsigned duration_ms,
     bool bottom_right);
+/* Dismiss every active toast immediately (used when a state change makes
+   them obsolete, e.g. the missing-Core notice after the Core is loaded). */
+void bongo_cat_preferences_notice_clear(BongoCatApp *app);
 void bongo_cat_preferences_notice_draw(BongoCatPreferences *preferences,
     struct nk_context *context, float width, float height);
 

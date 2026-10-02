@@ -36,7 +36,10 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
         if (!value->import_dialog) { free(value); return NULL; }
         value->sdk_import_event_type = SDL_RegisterEvents(1);
         if (value->sdk_import_event_type == -1)
-            value->sdk_import_event_type = 0; }
+            value->sdk_import_event_type = 0;
+        value->live2d_rescan_event_type = SDL_RegisterEvents(1);
+        if (value->live2d_rescan_event_type == -1)
+            value->live2d_rescan_event_type = 0; }
     if (value && app->smoke_preference_page >= 0)
         value->page = app->smoke_preference_page;
     return value;
@@ -62,6 +65,8 @@ static void sdk_import_result(BongoCatPreferences *value, const char *path) {
             "Live2D Core import failed: %s", error.message);
     if (path) {
         char message[1024];
+        /* The missing-Core notice is obsolete once a Core is imported. */
+        if (ok) bongo_cat_preferences_notice_clear(app);
         snprintf(message, sizeof(message), ok
             ? "%s" : "%s\n%s",
             bongo_cat_i18n_get(app->i18n, "native.live2dCoreImportSuccess",
@@ -97,11 +102,62 @@ static void open_sdk_import_dialog(BongoCatPreferences *value) {
         {"libLive2DCubismCore.so / SDK zip", "so;zip"},
 #endif
         {NULL, NULL}};
+    SDL_ClearError();
     SDL_ShowOpenFileDialog(sdk_import_callback, value, value->window,
         filters, 1, NULL, false);
+    if (SDL_GetError()[0])
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+            "Live2D Core file dialog could not be shown: %s", SDL_GetError());
 }
 void bongo_cat_preferences_request_sdk_import(BongoCatPreferences *value) {
     open_sdk_import_dialog(value);
+}
+
+/* Runs on a worker thread: the drop-in folder scan may extract a whole SDK
+   zip, which is far too slow for a UI frame. Only file IO and LoadLibrary
+   happen here; the GL hot swap runs on the main thread when the event
+   lands. */
+static int SDLCALL live2d_rescan_worker(void *userdata) {
+    BongoCatPreferences *value = userdata;
+    BongoCatApp *app = value ? value->app : NULL;
+    if (!app || !value->live2d_rescan_event_type) return 0;
+    bool found = bongo_cat_platform_live2d_core_rescan(app->data_root);
+    SDL_Event event = {0};
+    event.type = (Uint32)value->live2d_rescan_event_type;
+    event.user.data1 = value;
+    event.user.data2 = (void *)(size_t)(found ? 1 : 0);
+    SDL_PushEvent(&event);
+    return 0;
+}
+
+void bongo_cat_preferences_request_live2d_rescan(BongoCatPreferences *value) {
+    if (!value || !value->live2d_rescan_event_type) return;
+    if (value->live2d_rescan_worker) return; /* a scan is already running */
+    if (bongo_cat_platform_live2d_core_available()) return;
+    value->live2d_rescan_worker = SDL_CreateThread(live2d_rescan_worker,
+        BONGO_CAT_SLUG "-live2d-rescan", value);
+    if (!value->live2d_rescan_worker)
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+            "Cannot start the Live2D Core rescan worker: %s", SDL_GetError());
+}
+
+/* Runs on the main thread when the background rescan finishes: bind the GL
+   context, swap the Live2D backend in, and report the outcome as a toast. */
+static void live2d_rescan_result(BongoCatPreferences *value, bool found) {
+    BongoCatApp *app = value->app;
+    BongoCatError error = {0};
+    bool active = found && bongo_cat_app_activate_live2d_core(app, &error);
+    if (found && !active && error.message[0])
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+            "Live2D Core activation failed: %s", error.message);
+    /* The stale missing-Core notice is obsolete once the Core is loaded. */
+    if (active) bongo_cat_preferences_notice_clear(app);
+    bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
+        active ? "native.live2dCoreRescanFound"
+        : "native.live2dCoreRescanMissing", active
+        ? "Live2D Core detected and loaded"
+        : "No Live2D Core found in the live2d folders yet"), !active);
+    value->render_dirty = true;
 }
 bool bongo_cat_preferences_visible(const BongoCatPreferences *value) {
     return value && value->window && value->visible;
@@ -267,6 +323,16 @@ bool bongo_cat_preferences_event(BongoCatPreferences *value, const SDL_Event *ev
         char *path = (char *)event->user.data1;
         sdk_import_result(value, path);
         SDL_free(path);
+        return true;
+    }
+    if (value->live2d_rescan_event_type &&
+        event->type == (Uint32)value->live2d_rescan_event_type &&
+        event->user.data1 == value) {
+        if (value->live2d_rescan_worker) {
+            SDL_WaitThread(value->live2d_rescan_worker, NULL);
+            value->live2d_rescan_worker = NULL;
+        }
+        live2d_rescan_result(value, (size_t)event->user.data2 != 0);
         return true;
     }
     if (bongo_cat_about_event(value, event)) return true;

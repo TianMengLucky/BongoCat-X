@@ -52,6 +52,11 @@ int bongo_cat_pref_edit(struct nk_context *context, const char *id,
     bool recording, const char *idle_hint, const char *record_hint);
 bool bongo_cat_pref_button(struct nk_context *context, const char *id,
     const char *title, const char *description, const char *button);
+/* Button row with an extra square icon button before the main action
+   button; returns 0 (none), 1 (main button) or 2 (icon button). */
+int bongo_cat_pref_button_with_icon(struct nk_context *context,
+    const char *id, const char *title, const char *description,
+    int icon, const char *button);
 void bongo_cat_pref_status(struct nk_context *context, const char *id,
     const char *title, const char *description);
 

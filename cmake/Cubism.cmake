@@ -94,6 +94,11 @@ elseif(APPLE)
 else()
   target_compile_definitions(Framework PUBLIC CSM_TARGET_LINUX_GL)
 endif()
+# The upstream Framework is not warning-clean; keep project /Werror flags
+# from reaching it (release CI builds with warnings-as-errors).
+target_compile_options(Framework PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/w>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-w>)
 target_include_directories(Framework SYSTEM PUBLIC
   "${CUBISM_FRAMEWORK_PATH}/src"
   "${CUBISM_CORE_PATH}/include")

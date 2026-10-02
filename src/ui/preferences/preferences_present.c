@@ -12,6 +12,7 @@
 void bongo_cat_preferences_render(BongoCatPreferences *value) {
     bongo_cat_preferences_release_idle_window(value);
     if (!value || !value->window || !value->visible) return;
+    if (bongo_cat_preferences_window_fade_tick(value)) return;
     /* Also cover native resize/expose paths reached by SDL_PumpEvents. Keep
        the main GL context current until the atlas transfer has completed. */
     if (bongo_cat_preferences_model_texture_busy(value)) {

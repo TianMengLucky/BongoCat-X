@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-enum { NOTICE_DURATION_MS = 2600, NOTICE_ENTER_MS = 250 };
+enum { NOTICE_DURATION_MS = 2600, NOTICE_ENTER_MS = 250, NOTICE_EXIT_MS = 160 };
 
 static void update_notice_timer(BongoCatPreferences *value,
     BongoCatPreferenceNotice *notice, uint64_t now) {
@@ -33,7 +33,8 @@ void bongo_cat_preferences_notice_show_anchored(BongoCatApp *app,
     for (size_t i = 0; i < sizeof(value->notices) / sizeof(value->notices[0]); ++i) {
         BongoCatPreferenceNotice *notice = &value->notices[i];
         update_notice_timer(value, notice, now);
-        if (!notice->message[0] || notice->until_ns <= now) {
+        if (!notice->message[0] || (notice->closing_ns &&
+            now - notice->closing_ns >= NOTICE_EXIT_MS * 1000000ULL)) {
             target = notice; break;
         }
         if ((target->hovered && !notice->hovered) ||
@@ -60,14 +61,36 @@ void bongo_cat_preferences_notice_show(BongoCatApp *app,
         NOTICE_DURATION_MS, false);
 }
 
+void bongo_cat_preferences_notice_clear(BongoCatApp *app) {
+    if (!app || !app->preferences) return;
+    BongoCatPreferences *value = app->preferences;
+    bool cleared = false;
+    for (size_t i = 0; i < sizeof(value->notices) / sizeof(value->notices[0]);
+        ++i) {
+        if (value->notices[i].message[0]) {
+            memset(&value->notices[i], 0, sizeof(value->notices[i]));
+            cleared = true;
+        }
+    }
+    if (cleared) value->render_dirty = true;
+}
+
 static size_t active_notices(BongoCatPreferences *value, uint64_t now,
     BongoCatPreferenceNotice **items) {
     size_t count = 0;
     for (size_t i = 0; i < sizeof(value->notices) / sizeof(value->notices[0]); ++i) {
         BongoCatPreferenceNotice *notice = &value->notices[i];
         update_notice_timer(value, notice, now);
-        if (notice->message[0] && notice->until_ns <= now)
-            memset(notice, 0, sizeof(*notice));
+        if (notice->message[0]) {
+            if (!notice->closing_ns && notice->until_ns <= now) {
+                notice->closing_ns = now;
+                value->render_dirty = true;
+            } else if (notice->closing_ns &&
+                now - notice->closing_ns >= NOTICE_EXIT_MS * 1000000ULL) {
+                memset(notice, 0, sizeof(*notice));
+                value->render_dirty = true;
+            }
+        }
         if (notice->message[0]) items[count++] = notice;
     }
     for (size_t i = 1; i < count; ++i) {
@@ -145,8 +168,15 @@ static float draw_notice(BongoCatPreferences *value,
     float progress = bongo_cat_ui_ease(BONGO_CAT_UI_EASE_SPRING,
         NK_CLAMP(0.0f, elapsed, 1.0f));
     float opacity = NK_CLAMP(0.0f, progress, 1.0f);
+    if (notice->closing_ns) {
+        /* Expired toasts ease out toward their entry edge instead of
+           vanishing, with the fade finished NOTICE_EXIT_MS after expiry. */
+        opacity *= 1.0f - bongo_cat_ui_ease(BONGO_CAT_UI_EASE_STANDARD,
+            NK_CLAMP(0.0f, (float)(now - notice->closing_ns) /
+                (NOTICE_EXIT_MS * 1000000.0f), 1.0f));
+    }
     float shown_width = toast_width * (.9f + .1f * progress);
-    float slide = 12.0f * (1.0f - progress);
+    float slide = 12.0f * (1.0f - progress) + 8.0f * (1.0f - opacity);
     struct nk_rect bounds = nk_rect(
         notice->bottom_right ? (width - shown_width - 20.0f)
                              : (width - shown_width) * .5f,

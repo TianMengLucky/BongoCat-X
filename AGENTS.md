@@ -90,6 +90,24 @@ Notes:
   `resources/assets/locales/*.json`. There are ten locales (en-US, zh-CN,
   zh-Hant, ja-JP, ko-KR, de-DE, es-ES, fr-FR, pt-BR, ru-RU) — when adding or
   changing a key, update **all** of them in the same commit.
+- **Logging:** SDL3 (`SDL_Log*`). At startup `src/runtime/lifecycle/startup.c`
+  installs a custom output function (`log_output`) that appends to
+  `<data>/state/runtime-diagnostics.log` and mirrors to stderr with a
+  `[time] [source] [PRIORITY:category]` prefix. Filtering lives in
+  `include/bongo_cat/log.h` (`bongo_cat_log_enabled`): WARN and above always
+  pass, but **INFO is dropped unless the category is one of the app's own**
+  (`BONGO_CAT_LOG_LIFECYCLE` = `SDL_LOG_CATEGORY_CUSTOM`, `BONGO_CAT_LOG_UPDATE`,
+  `BONGO_CAT_LOG_INPUT`). Messages logged with plain
+  `SDL_LOG_CATEGORY_APPLICATION` are visible only in the brief window before
+  the sink installs (very early startup) and are silently discarded afterwards
+  — use the `BONGO_CAT_LOG_*` categories for anything meant to be seen at
+  runtime.
+- **SDL memory ownership (SDL2 → SDL3 migration hazard):** several SDL3
+  functions return strings/objects owned by SDL that must **not** be freed —
+  unlike SDL2. The known trap: `SDL_GetBasePath()` now returns an internal
+  cached pointer; `SDL_free()`-ing it corrupts the heap and crashes the next
+  caller of the same function (double free). Audit every `SDL_free` /
+  `free` against the SDL3 API docs when touching platform or path code.
 - **Docs:** the root `README.md` is Simplified Chinese; `docs/README.en-US.md`
   mirrors it in English alongside the other translations
   (`docs/README.<lang>.md`). `CHANGELOG.md` records the fork's changes vs

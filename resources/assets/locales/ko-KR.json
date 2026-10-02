@@ -218,13 +218,16 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "이 빌드는 Live2D 지원이 포함되지 않은(진단 빌드) 버전이라 Live2D 렌더링을 사용할 수 없습니다. 실행 중에 SDK를 넣어도 Live2D가 활성화되지 않습니다. Live2D 지원이 포함된 빌드(공식 릴리스 등)를 이용해 주세요.",
-    "live2dCoreMissing": "Live2D Cubism Core를 찾을 수 없습니다: 설정 창에서 Core 라이브러리나 공식 SDK zip을 가져오거나, zip 또는 Live2DCubismCore.dll을 live2d 폴더(응용 프로그램 또는 데이터 디렉터리 내)에 넣고 다시 시작하면 자동으로 활성화됩니다.",
+    "live2dSdkMissing": "이 빌드는 Live2D 지원이 포함되지 않은(진단 빌드) 버전이라 Live2D 렌더링을 사용할 수 없습니다. Live2D 지원이 포함된 빌드를 이용해 주세요.",
+    "live2dCoreMissing": "Live2D Cubism Core를 찾을 수 없습니다: 설정 창에서 Core 라이브러리나 공식 SDK zip을 가져오거나, zip을 live2d 폴더(응용 프로그램 또는 데이터 디렉터리 내)에 넣고 다시 시작하세요.",
     "live2dCoreImport": "Live2D Core 가져오기",
     "live2dCoreImportHint": "Cubism Core 라이브러리 또는 공식 Cubism SDK zip을 선택하면 다시 시작하지 않고 Live2D 렌더링을 사용할 수 있습니다",
     "live2dCoreImportButton": "파일 선택",
     "live2dCoreImportSuccess": "Live2D Cubism Core를 가져왔습니다. Live2D 렌더링이 활성화되었습니다",
-    "live2dCoreImportFailed": "Live2D Cubism Core 가져오기 실패",
+    "live2dCoreImportFailed": "Live2D Cubism Core 가져오기 실패",
+    "live2dCoreRescanFound": "Live2D Core가 감지되어 로드되었습니다",
+    "live2dCoreRescanMissing": "live2d 폴더에서 Live2D Core를 찾지 못했습니다",
+    "live2dCoreScanning": "live2d 폴더에서 Cubism Core를 검색하는 중...",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

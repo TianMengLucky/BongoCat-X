@@ -218,13 +218,16 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Эта сборка не содержит рендеринг Live2D (она собрана без SDK Cubism): отображение, анимация, отслеживание указателя и создание обложек Live2D отключены. Используйте сборку со встроенной поддержкой Live2D, например официальный выпуск.",
-    "live2dCoreMissing": "Live2D Cubism Core не найден, поэтому Live2D остаётся отключённым до его подключения. Поместите Live2DCubismCore.dll или официальный zip SDK в папку live2d в каталоге данных и перезапустите приложение — он будет найден автоматически при запуске. Также можно импортировать его в этом окне без перезапуска.",
+    "live2dSdkMissing": "Эта сборка не поддерживает Live2D (диагностическая сборка), поэтому рендеринг Live2D недоступен. Используйте сборку со встроенной поддержкой Live2D.",
+    "live2dCoreMissing": "Live2D Cubism Core не найден: импортируйте библиотеку Core или официальный zip SDK в окне настроек либо поместите zip в папку live2d (рядом с приложением или в каталоге данных) и перезапустите приложение.",
     "live2dCoreImport": "Импортировать Live2D Core",
     "live2dCoreImportHint": "Выберите библиотеку Core Cubism или официальный zip-архив Cubism SDK, чтобы включить рендеринг Live2D без перезапуска",
     "live2dCoreImportButton": "Выбрать файл",
     "live2dCoreImportSuccess": "Live2D Cubism Core импортирован: рендеринг Live2D включён",
-    "live2dCoreImportFailed": "Не удалось импортировать Live2D Cubism Core",
+    "live2dCoreImportFailed": "Не удалось импортировать Live2D Cubism Core",
+    "live2dCoreRescanFound": "Live2D Core обнаружен и загружен",
+    "live2dCoreRescanMissing": "Live2D Core пока не найден в папках live2d",
+    "live2dCoreScanning": "Идёт поиск Cubism Core в папках live2d...",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

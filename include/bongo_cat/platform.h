@@ -164,6 +164,9 @@ bool bongo_cat_platform_live2d_core_import_supported(void);
    bongo_cat_platform_live2d_core_import_supported reports true. */
 bool bongo_cat_platform_live2d_core_import(const char *path,
     const char *data_dir, BongoCatError *error);
+/* Re-run the runtime Core discovery over the live2d drop-in folders; true
+   when a Core is loaded afterwards. No-op success when one is loaded. */
+bool bongo_cat_platform_live2d_core_rescan(const char *data_dir);
 
 #ifdef __APPLE__
 /* Read the permission macOS grants the app right now, without prompting.

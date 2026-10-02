@@ -218,13 +218,16 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "このビルドは Live2D サポートを含まない（診断ビルド）ため、Live2D レンダリングは無効です。実行時に SDK を置いても Live2D は有効になりません。Live2D サポート付きのビルド（公式リリースなど）をご利用ください。",
-    "live2dCoreMissing": "Live2D Cubism Core が見つかりません：設定ウィンドウから Core ライブラリまたは公式 SDK の zip を読み込むか、zip または Live2DCubismCore.dll を live2d フォルダ（アプリケーションまたはデータディレクトリ内）に入れて再起動すると自動的に有効になります。",
+    "live2dSdkMissing": "このビルドは Live2D サポートを含まない（診断ビルド）ため、Live2D レンダリングは無効です。Live2D サポート付きのビルドをご利用ください。",
+    "live2dCoreMissing": "Live2D Cubism Core が見つかりません：設定ウィンドウから Core ライブラリまたは公式 SDK の zip を読み込むか、zip を live2d フォルダ（アプリケーションまたはデータディレクトリ内）に入れて再起動してください。",
     "live2dCoreImport": "Live2D Core をインポート",
     "live2dCoreImportHint": "Cubism Core ライブラリまたは公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
     "live2dCoreImportButton": "ファイルを選択",
     "live2dCoreImportSuccess": "Live2D Cubism Core をインポートしました。Live2D レンダリングが有効になりました",
-    "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",
+    "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",
+    "live2dCoreRescanFound": "Live2D Core を検出して読み込みました",
+    "live2dCoreRescanMissing": "live2d フォルダーに Live2D Core が見つかりません",
+    "live2dCoreScanning": "live2d フォルダー内の Cubism Core を検索中...",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

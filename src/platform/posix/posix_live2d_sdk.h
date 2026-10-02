@@ -21,6 +21,9 @@ bool bongo_cat_posix_live2d_sdk_ready(void);
    does not contain a usable Core. */
 bool bongo_cat_posix_live2d_sdk_import(const char *path,
     const char *data_dir, BongoCatError *error);
+/* Re-run the discovery over the drop-in folders; true when a Core is
+   loaded afterwards. */
+bool bongo_cat_posix_live2d_sdk_rescan(const char *data_dir);
 /* dlopen handle of the loaded Core, or NULL. Called by the generated Core
    shim; opens the library on first use when the startup scan has not run. */
 void *bongo_cat_posix_live2d_core_library(void);

@@ -13,10 +13,14 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 - **修复贡献者列表构建时的全局缓冲区越界读（ASan 报错）**：`preferences_about_online.c` 拼接 SVG 头时长度硬编码为 96，而字符串实际为 84 字节，多读 12 字节；改为以 `sizeof - 1` 取真实长度。
 - **修复 Linux 严格 C11 下 `strcasecmp` 未声明的编译错误**：`portable_mode.c` 中 `SDL_strcasecmp` 在非 Windows 平台展开为 `strcasecmp`，需包含 `<strings.h>`（与 `model_import_path.c` 等既有做法一致）。
+- **修复 Release 工作流 `skip-check` 步骤在 GitHub Release 不存在时崩溃**：`gh api` 返回 404 时，`try/catch` 不捕获本机命令非零退出码，导致 `$release` 为 null、`$assets` 含 null 元素，`Where-Object` 调用 `.StartsWith()` 报空引用错误（"You cannot call a method on a null-valued expression"）；改用 `gh release view --json assets` 并以 `$LASTEXITCODE` 判断，加 `$ErrorActionPreference = 'Continue'`、`exit 0` 显式退出码与 null 防护。
+- **修复 `skip-check` 步骤以 exit code 1 退出**：`gh api` 的 stderr 经 `2>&1` 重定向后，PowerShell 将其包装为 `ErrorRecord` 混入管道，即使走 else 分支仍使脚本非零退出；改为 `2>$null` 丢弃 stderr 文本，`$GITHUB_OUTPUT` 写入从 `Out-File` 改为 `Add-Content` 避免 UTF-8 BOM 污染输出值。
+- **修复 GitHub Actions 警告**：`actions/cache@v4` 与 `softprops/action-gh-release@v2` 使用已废弃的 Node.js 20 运行时，分别升级到 `@v5` 与 `@v3`；`action-gh-release` 的 `allow_updates` 输入在 v3 中已改名为 `overwrite_files`，同步更名。
 
 ### 变更
 
 - **发布说明与 README 明确 runtime-Core 构建**：GitHub Release 说明脚注不再误标为「诊断渲染后端」，改为说明官方产物为 runtime-Core 构建（内置 Live2D 渲染、不附带 Core 运行库，未检出时回退诊断后端），并新增「启用 Live2D 教程」（应用内导入 / `live2d` 文件夹投放 + 官方 Cubism SDK 下载页链接）；根 `README.md` 与全部 10 个语言版本的「下载」章节同步补充 runtime-Core 说明与 SDK 下载教程。
+- **CI 触发条件限定为 X 分支**：`ci.yml` 的 push 触发条件从 `branches: ["**"]`（所有分支）改为仅 `branches: ["X"]`，`build` job 的分支条件从 `refs/heads/test` 改为 `refs/heads/X`；PR 与手动触发不受影响。
 
 ## [2.0.2] · 2026-10-02
 

@@ -219,7 +219,7 @@
   },
   "native": {
     "live2dSdkMissing": "Dieser Build enthält kein Live2D-Rendering (er wurde ohne Cubism SDK übersetzt): Live2D-Darstellung, Animation, Zeigernachverfolgung und Cover-Erzeugung sind deaktiviert. Verwenden Sie einen Build mit Live2D-Unterstützung, zum Beispiel das offizielle Release.",
-    "live2dCoreMissing": "Live2D Cubism Core wurde nicht gefunden; Live2D bleibt deaktiviert, bis es bereitgestellt wird. Legen Sie Live2DCubismCore.dll oder das offizielle SDK-ZIP in den live2d-Ordner im Datenverzeichnis und starten Sie neu – es wird beim Start automatisch erkannt. Alternativ können Sie es in diesem Fenster ohne Neustart importieren.",
+    "live2dCoreMissing": "Live2D Cubism Core wurde nicht gefunden; Live2D bleibt deaktiviert, bis es bereitgestellt wird. Legen Sie Live2DCubismCore.dll oder das offizielle SDK-ZIP in den live2d-Ordner im Datenverzeichnis und starten Sie neu: es wird beim Start automatisch erkannt. Alternativ können Sie es in diesem Fenster ohne Neustart importieren.",
     "live2dCoreImport": "Live2D Core importieren",
     "live2dCoreImportHint": "Wählen Sie die Cubism-Core-Bibliothek oder das offizielle Cubism-SDK-ZIP, um Live2D-Rendering ohne Neustart zu aktivieren",
     "live2dCoreImportButton": "Datei auswählen",

@@ -218,8 +218,8 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "当前构建未包含 Live2D 渲染（编译时未引入 Cubism SDK）：Live2D 渲染、动画、指针追踪与封面生成均不可用。请使用包含 Live2D 支持的构建（例如官方 Release）。",
-    "live2dCoreMissing": "未检测到 Live2D Cubism Core，Live2D 暂时停用：将 Live2DCubismCore.dll 或官方 SDK 压缩包放入数据目录下的 live2d 文件夹后重启即可自动启用，也可在本窗口直接导入、无需重启。",
+    "live2dSdkMissing": "当前构建未包含 Live2D 支持（诊断构建），Live2D 渲染不可用；运行时放入 SDK 也无法获得 Live2D，请使用自带 Live2D 支持的版本（官方 Release）。",
+    "live2dCoreMissing": "未检测到 Live2D Cubism Core，Live2D 暂时停用：将 Live2DCubismCore.dll 或官方 SDK 压缩包放入 live2d 文件夹（应用目录或数据目录下）后重启即可自动启用，也可在设置窗口导入、无需重启。",
     "live2dCoreImport": "导入 Live2D Core",
     "live2dCoreImportHint": "选择 Cubism Core 库文件或官方 Cubism SDK 的 zip 压缩包，无需重启即可启用 Live2D 渲染",
     "live2dCoreImportButton": "选择文件",

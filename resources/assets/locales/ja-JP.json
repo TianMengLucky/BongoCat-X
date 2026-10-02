@@ -218,8 +218,8 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "このビルドには Live2D レンダリングが含まれていません（Cubism SDK なしでビルドされました）：Live2D の描画、アニメーション、ポインター追踪、カバー生成は無効です。Live2D 対応のビルド（公式リリースなど）をご利用ください。",
-    "live2dCoreMissing": "Live2D Cubism Core が見つからないため Live2D は一時的に無効です。Live2DCubismCore.dll または公式 SDK の zip をデータディレクトリの live2d フォルダーに入れて再起動すると自動的に有効になります。このウィンドウからインポートして再起動なしで有効にすることもできます。",
+    "live2dSdkMissing": "このビルドは Live2D サポートを含まない（診断ビルド）ため、Live2D レンダリングは無効です。実行時に SDK を置いても Live2D は有効になりません。Live2D サポート付きのビルド（公式リリースなど）をご利用ください。",
+    "live2dCoreMissing": "Live2D Cubism Core が見つかりません：設定ウィンドウから Core ライブラリまたは公式 SDK の zip を読み込むか、zip または Live2DCubismCore.dll を live2d フォルダ（アプリケーションまたはデータディレクトリ内）に入れて再起動すると自動的に有効になります。",
     "live2dCoreImport": "Live2D Core をインポート",
     "live2dCoreImportHint": "Cubism Core ライブラリまたは公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
     "live2dCoreImportButton": "ファイルを選択",

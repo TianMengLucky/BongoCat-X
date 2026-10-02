@@ -218,8 +218,8 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "目前建置未包含 Live2D 渲染（編譯時未導入 Cubism SDK）：Live2D 渲染、動畫、指標追蹤與封面生成皆不可用。請使用包含 Live2D 支援的建置（例如官方 Release）。",
-    "live2dCoreMissing": "未偵測到 Live2D Cubism Core，Live2D 暫時停用：將 Live2DCubismCore.dll 或官方 SDK 壓縮檔放入資料目錄下的 live2d 資料夾後重啟即可自動啟用，也可在本視窗直接匯入、無須重啟。",
+    "live2dSdkMissing": "目前建置未包含 Live2D 支援（診斷建置），Live2D 渲染不可用；執行時放入 SDK 也無法啟用 Live2D，請使用自帶 Live2D 支援的版本（官方 Release）。",
+    "live2dCoreMissing": "未偵測到 Live2D Cubism Core，Live2D 暫時停用：將 Live2DCubismCore.dll 或官方 SDK 壓縮檔放入 live2d 資料夾（應用程式目錄或資料目錄下）後重啟即可自動啟用，也可在設定視窗匯入、不用重啟。",
     "live2dCoreImport": "匯入 Live2D Core",
     "live2dCoreImportHint": "選擇 Cubism Core 程式庫檔案或官方 Cubism SDK 的 zip 壓縮檔，無需重新啟動即可啟用 Live2D 渲染",
     "live2dCoreImportButton": "選擇檔案",

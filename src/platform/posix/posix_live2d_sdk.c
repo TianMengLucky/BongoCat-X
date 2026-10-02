@@ -5,6 +5,11 @@
    zip extracted on first sight. The search runs once per process, before the
    Live2D backend initializes. The Cubism Core symbols themselves are reached
    through the generated dlopen shim (cmake/gen_core_shim.py). */
+/* d_type and DT_DIR are BSD/POSIX extensions that strict C11 hides. */
+#if !defined(_DEFAULT_SOURCE)
+#define _DEFAULT_SOURCE 1
+#endif
+
 #include "bongo_cat/common.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"

@@ -166,6 +166,12 @@ if ($SkipConfigure) {
         $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=OFF'
     }
     if ($SkipTests) { $configureArgs += '-DBUILD_TESTING=OFF' }
+    # Wrap the compilers with sccache when it is installed (CI does; local
+    # machines without it keep the plain build).
+    if (Get-Command sccache -ErrorAction SilentlyContinue) {
+        $configureArgs += '-DCMAKE_C_COMPILER_LAUNCHER=sccache'
+        $configureArgs += '-DCMAKE_CXX_COMPILER_LAUNCHER=sccache'
+    }
     $configureWriter = New-Object IO.StreamWriter(
         $configureLog, $false, (New-Object Text.UTF8Encoding($false)))
     $configureActivity = 0

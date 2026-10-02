@@ -7,6 +7,17 @@
 Release 工作流构建并发布 GitHub Release；发布说明取自本文件，优先匹配 `## [<版本号>]`
 小节，若无匹配则使用最上方小节。发版前请把「未发布」小节标题改为对应版本号。
 
+## [2.0.2] · 2026-10-02
+
+### 修复
+
+- **修复 Linux 构建失败**：严格 C11（无扩展）下 glibc 隐藏 POSIX 扩展，`posix_live2d_sdk.c` 使用 `d_type` / `DT_DIR` 报未声明；在包含头文件前定义 `_DEFAULT_SOURCE` 解决。
+- **修复 Windows x86 构建失败**：runtime-Core 构建链接 Core DLL 导入库时未定义 `CSM_CORE_WIN32_DLL`，头文件按 cdecl 声明而 x86 导入库导出 stdcall 装饰名（`_csmXxx@N`），链接出现 52 个未解析外部符号（x64 只有一种调用约定不受影响）；现于 `cmake/Cubism.cmake` 中在 Windows runtime-Core 构建下全局定义 `CSM_CORE_WIN32_DLL=1`。
+
+### 变更
+
+- **CI 构建缓存统一改用 sccache**：`ci.yml` 与 `release.yml` 的三平台构建作业安装 sccache（Linux apt / macOS brew / Windows choco），经 `actions/cache` 按平台缓存编译产物；Windows 侧通过 `build-windows.ps1` 检测 PATH 中的 sccache 决定是否启用，本地构建不受影响。
+
 ## [2.0.1] · 2026-10-02
 
 ### 修复

@@ -83,9 +83,28 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev libx11-dev libxi-dev \
-            libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev \
+            cmake ninja-build sccache libgl1-mesa-dev libegl1-mesa-dev libx11-dev \
+            libxi-dev libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev \
             curl file desktop-file-utils
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install sccache
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install sccache -y --no-progress
+
+      - name: Restore compiler cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/sccache
+            ~/Library/Caches/Mozilla.sccache
+            ~/AppData/Local/Mozilla/sccache/cache
+          key: sccache-${{ matrix.platform }}-${{ github.sha }}
+          restore-keys: sccache-${{ matrix.platform }}-
 
       # Compiles the Cubism Framework + bridge into the runtime-Core binary.
       # The Core binary extracted here is build-time only: the package steps
@@ -140,6 +159,8 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
             if [ "$attempt" -ge 3 ]; then
               echo "Configure failed after $attempt attempts" >&2

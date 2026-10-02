@@ -91,13 +91,13 @@ static void cache_path(const wchar_t *path) {
 
 static wchar_t *registry_path(void) {
     wchar_t buffer[BONGO_CAT_PATH_CAP];
-    wchar_t *copy;
     DWORD size = sizeof(buffer);
     if (RegGetValueW(HKEY_CURRENT_USER, REGISTRY_KEY, REGISTRY_VALUE,
             RRF_RT_REG_SZ, NULL, buffer, &size) != ERROR_SUCCESS)
         return NULL;
-    copy = (wchar_t *)malloc(size + sizeof(wchar_t));
-    return copy ? wcscpy(copy, buffer), copy : NULL;
+    wchar_t *copy = (wchar_t *)malloc(size + sizeof(wchar_t));
+    if (copy) memcpy(copy, buffer, size); /* size includes the terminator */
+    return copy;
 }
 
 /* Pick the Core DLL entry inside an SDK zip: matching architecture only;

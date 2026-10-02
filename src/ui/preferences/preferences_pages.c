@@ -165,6 +165,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS))
         bongo_cat_preferences_random_dialog_open(value,
             BONGO_CAT_BEHAVIOR_MOTION);
+    bongo_cat_preferences_random_model_pref_row(value, context);
 
     section_gap(context, 10);
     bongo_cat_pref_section_icon(context, tr(app,
@@ -228,15 +229,23 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         tr(app, "pages.preference.cat.hints.renderQuality",
             "Try to find a visual balance and save memory."),
         model->render_quality_percent);
+    /* Reload after 300 ms without change; per-frame reloads stutter the UI. */
+    static float quality_reload_from = 0.0f;
+    static uint64_t quality_settle_deadline_ns = 0;
     if (next_quality != model->render_quality_percent) {
-        float old_quality = model->render_quality_percent;
+        quality_reload_from = model->render_quality_percent;
         model->render_quality_percent = next_quality;
+        quality_settle_deadline_ns = SDL_GetTicksNS() + 300000000ull;
+    } else if (quality_settle_deadline_ns &&
+        SDL_GetTicksNS() >= quality_settle_deadline_ns) {
+        quality_settle_deadline_ns = 0;
         BongoCatError reload_error = {0};
         bool reloaded = !app->loaded_model[0] ||
-            bongo_cat_live2d_try_reuse_texture_quality(app->live2d, next_quality) ||
+            bongo_cat_live2d_try_reuse_texture_quality(app->live2d,
+                model->render_quality_percent) ||
             bongo_cat_app_reload_model_with_error(app, &reload_error);
         if (!reloaded) {
-            model->render_quality_percent = old_quality;
+            model->render_quality_percent = quality_reload_from;
             char message[1024];
             snprintf(message, sizeof(message), "%s\n%s", tr(app,
                 "pages.preference.cat.hints.dynamicTextureResolutionFailed",

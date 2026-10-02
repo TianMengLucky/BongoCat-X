@@ -301,7 +301,7 @@ bool bongo_cat_pref_slider(struct nk_context *context, const char *id,
     if (!form_begin(context, id, lines, &saved)) return false;
     form_title(context, title);
     bool changed = bongo_cat_pref_control_slider(context, id,
-        minimum, value, maximum, step, default_value, "%");
+        minimum, value, maximum, step, default_value, "%", 0.0f);
     nk_layout_row_end(context); bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved); return changed;
 }

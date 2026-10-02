@@ -11,6 +11,8 @@
 #define BONGO_CAT_DEFAULT_WINDOW_OPACITY_PERCENT 100.0f
 #define BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS 5.0f
 #define BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS 5.0f
+/* Switching models reloads textures; a much longer default avoids churn. */
+#define BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES 15.0f
 #define BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT 6.0f
 #define BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS 0.3f
 #define BONGO_CAT_MAX_HIDE_FADE_SECONDS 3.0f
@@ -72,12 +74,14 @@ typedef struct BongoCatWindowPreferences {
     bool obs_background;
     bool random_expression;
     bool random_motion;
+    bool random_model;
     bool rounded_corners;
     BongoCatObsBackgroundColor obs_background_color;
     float hide_delay_seconds;
     float hide_fade_seconds;
     float random_expression_interval_seconds;
     float random_motion_interval_seconds;
+    float random_model_interval_minutes;
     float corner_radius_percent;
 } BongoCatWindowPreferences;
 
@@ -182,6 +186,9 @@ extern "C" {
 
 void bongo_cat_settings_defaults(BongoCatSettings *settings);
 void bongo_cat_settings_validate(BongoCatSettings *settings);
+/* Snaps a render quality percent to the nearest valid level
+   (0.1, 1, 10, 20, ... 100). */
+float bongo_cat_settings_snap_render_quality(float percent);
 void bongo_cat_session_defaults(BongoCatSessionState *session);
 void bongo_cat_session_validate(BongoCatSessionState *session);
 bool bongo_cat_session_model_active(const BongoCatSessionState *session,

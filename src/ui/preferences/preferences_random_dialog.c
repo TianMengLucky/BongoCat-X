@@ -1,6 +1,7 @@
 #include "preferences_state.h"
 #include "preferences_overlay.h"
 #include "preferences_controls.h"
+#include "preferences_widgets.h"
 #include "runtime.h"
 #include "ui_backend.h"
 
@@ -36,9 +37,31 @@ static size_t candidate_count(BongoCatApp *app, BongoCatBehaviorKind kind) {
     return count;
 }
 
+static size_t model_candidate_count(BongoCatApp *app) {
+    size_t count = 0;
+    for (size_t i = 0; i < app->models.count; ++i)
+        if (!bongo_cat_settings_model_hidden(&app->settings,
+            app->models.entries[i].id)) count++;
+    return count;
+}
+
 bool bongo_cat_preferences_random_dialog_active(
     const BongoCatPreferences *value) {
     return value && value->random_dialog;
+}
+
+void bongo_cat_preferences_random_model_dialog_open(
+    BongoCatPreferences *value) {
+    if (!value) return;
+    bongo_cat_preferences_shortcut_cancel(value);
+    value->random_model_dialog = true;
+    value->random_dialog_scroll = 0;
+    bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
+    value->random_dialog = true;
+    value->random_dialog_input_armed = false;
+    value->random_dialog_opened_ns = SDL_GetTicksNS();
+    value->random_dialog_closing_ns = 0;
+    value->render_dirty = true;
 }
 
 void bongo_cat_preferences_random_dialog_open(BongoCatPreferences *value,
@@ -65,13 +88,21 @@ void bongo_cat_preferences_random_dialog_close(BongoCatPreferences *value) {
     value->render_dirty = true;
 }
 
+static const char *dialog_title(BongoCatPreferences *value) {
+    if (value->random_model_dialog)
+        return tr(value, "pages.preference.cat.labels.randomModel",
+            "Random Models");
+    return value->random_dialog_kind == BONGO_CAT_BEHAVIOR_MOTION ?
+        tr(value, "pages.preference.cat.labels.randomMotion",
+        "Random Motions") :
+        tr(value, "pages.preference.cat.labels.randomExpression",
+        "Random Expressions");
+}
+
 static bool draw_header(BongoCatPreferences *value, struct nk_context *context,
     struct nk_command_buffer *canvas, struct nk_rect panel,
     BongoCatUIPalette p, float opacity, bool enabled) {
-    const char *title = value->random_dialog_kind == BONGO_CAT_BEHAVIOR_MOTION ?
-        tr(value, "pages.preference.cat.labels.randomMotion", "Random Motions") :
-        tr(value, "pages.preference.cat.labels.randomExpression",
-        "Random Expressions");
+    const char *title = dialog_title(value);
     struct nk_rect bounds = nk_rect(panel.x + 20, panel.y + 21, panel.w - 74, 24);
     nk_draw_text(canvas, bounds, title, nk_strlen(title), value->ui.label_font,
         nk_rgba(0, 0, 0, 0), alpha(nk_rgb(247, 125, 170), opacity));
@@ -101,6 +132,40 @@ static void draw_rows(BongoCatPreferences *value, struct nk_context *context,
     nk_push_scissor(canvas, viewport);
     size_t shown = 0;
     BongoCatApp *app = value->app;
+    if (value->random_model_dialog) {
+        for (size_t i = 0; i < app->models.count; ++i) {
+            const BongoCatModelEntry *entry = &app->models.entries[i];
+            if (bongo_cat_settings_model_hidden(&app->settings, entry->id))
+                continue;
+            struct nk_rect row = nk_rect(viewport.x,
+                viewport.y + shown++ * 56.0f - offset, row_width, 56);
+            if (row.y + row.h < viewport.y || row.y > viewport.y + viewport.h)
+                continue;
+            struct nk_rect toggle = nk_rect(row.x + row.w - 78, row.y + 10, 80, 36);
+            struct nk_rect name = nk_rect(row.x + 8, row.y + 9,
+                NK_MAX(48.0f, toggle.x - row.x - 16), 38);
+            const char *label = entry->display_name[0] ?
+                entry->display_name : entry->id;
+            nk_draw_text(canvas, name, label, nk_strlen(label),
+                value->ui.caption_font, nk_rgba(0, 0, 0, 0),
+                alpha(p.text, opacity));
+            char switch_id[BONGO_CAT_BEHAVIOR_ID_CAP];
+            snprintf(switch_id, sizeof(switch_id), "switch:%.*s",
+                (int)sizeof(switch_id) - 8, entry->id);
+            char id[BONGO_CAT_BEHAVIOR_ID_CAP + 16];
+            snprintf(id, sizeof(id), "random-model-%.*s",
+                (int)sizeof(id) - 16, entry->id);
+            bool state = bongo_cat_settings_random_enabled(&app->settings,
+                switch_id);
+            if (bongo_cat_pref_control_toggle_rect(context, id, &state,
+                    toggle, enabled) &&
+                bongo_cat_settings_random_set_enabled(&app->settings,
+                    switch_id, state))
+                value->render_dirty = true;
+        }
+        nk_push_scissor(canvas, nk_window_get_content_region(context));
+        return;
+    }
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *entry = &app->behaviors.entries[i];
         if (!candidate(app, entry, value->random_dialog_kind)) continue;
@@ -135,7 +200,9 @@ void bongo_cat_preferences_random_dialog_draw(
     if (!bongo_cat_preferences_random_dialog_active(value)) return;
     bongo_cat_ui_cursor_reset(context);
     struct nk_rect region = nk_window_get_bounds(context);
-    size_t count = candidate_count(value->app, value->random_dialog_kind);
+    size_t count = value->random_model_dialog ?
+        model_candidate_count(value->app) :
+        candidate_count(value->app, value->random_dialog_kind);
     float width = NK_MIN(540.0f, region.w - 48.0f);
     float height = NK_MIN(92.0f + count * 56.0f, region.h - 48.0f);
     BongoCatOverlayFrame frame = bongo_cat_preferences_overlay_frame(
@@ -143,6 +210,7 @@ void bongo_cat_preferences_random_dialog_draw(
         value->random_dialog_closing_ns);
     if (frame.finished) {
         value->random_dialog = false;
+        value->random_model_dialog = false;
         value->random_dialog_opened_ns = value->random_dialog_closing_ns = 0;
         value->random_dialog_scroll = 0;
         bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
@@ -166,4 +234,17 @@ void bongo_cat_preferences_random_dialog_draw(
         !nk_input_is_mouse_hovering_rect(&context->input, frame.panel);
     if (close || outside) bongo_cat_preferences_random_dialog_close(value);
     if (frame.visibility < 1.0f || closing) value->render_dirty = true;
+}
+
+void bongo_cat_preferences_random_model_pref_row(
+    BongoCatPreferences *value, struct nk_context *context) {
+    BongoCatApp *app = value->app;
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MULTIPLE_MODELS);
+    if (bongo_cat_pref_toggle_float_config(context, "random-model", tr(value,
+        "pages.preference.cat.labels.randomModel", "Random Models"),
+        tr(value, "pages.preference.cat.labels.minutesUnit", "min"),
+        &app->settings.window.random_model, 1.0f,
+        &app->settings.window.random_model_interval_minutes, 360.0f, 1.0f,
+        BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES))
+        bongo_cat_preferences_random_model_dialog_open(value);
 }

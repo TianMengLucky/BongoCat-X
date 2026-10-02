@@ -80,6 +80,9 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
         !read_bool(object, "randomExpression", &value->random_expression,
             error) ||
         !read_bool(object, "randomMotion", &value->random_motion, error) ||
+        !read_bool(object, "randomModel", &value->random_model, error) ||
+        !read_float(object, "randomModelIntervalMinutes",
+            &value->random_model_interval_minutes, error) ||
         !read_bool(object, "roundedCorners", &value->rounded_corners, error) ||
         !read_float(object, "cornerRadiusPercent", &value->corner_radius_percent,
             error) ||
@@ -87,11 +90,10 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
             error) ||
         !read_float(object, "hideFadeSeconds", &value->hide_fade_seconds,
             error) ||
-        !read_float(object, "randomMotionIntervalSeconds",
-            &value->random_motion_interval_seconds, error) ||
         !read_float(object, "randomExpressionIntervalSeconds",
-            &value->random_expression_interval_seconds,
-            error)) return false;
+            &value->random_expression_interval_seconds, error) ||
+        !read_float(object, "randomMotionIntervalSeconds",
+            &value->random_motion_interval_seconds, error)) return false;
     const char *color;
     size_t length;
     if (!read_string(object, "captureBackgroundColor", &color, &length,

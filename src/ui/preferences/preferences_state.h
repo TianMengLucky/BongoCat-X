@@ -127,6 +127,7 @@ struct BongoCatPreferences {
     /* Random expression/motion picker: rows with per-entry toggles. */
     bool random_dialog;
     BongoCatBehaviorKind random_dialog_kind;
+    bool random_model_dialog;
     bool random_dialog_input_armed;
     uint64_t random_dialog_opened_ns;
     uint64_t random_dialog_closing_ns;

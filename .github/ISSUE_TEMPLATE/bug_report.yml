@@ -80,7 +80,6 @@ body:
   - type: upload
     attributes:
       label: "🎞️ 辅助信息"
-      id: "auxiliary-info"
       description: >-
         可选，上传与问题相关的其他辅助信息，例如复现视频、完整日志文件。
         如果您要提供的日志过长以至不适合直接填写到上一栏，您可以选择只在上一栏贴关键日志，将完整的日志文件上传到这里。

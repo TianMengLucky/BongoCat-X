@@ -57,7 +57,17 @@
 
 - GitHub Releases
 
-  Unduh rilis terbaru dari [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
+
+  > [!IMPORTANT]
+  > Rilis resmi adalah **build runtime-Core**: dukungan rendering Live2D sudah tertanam, tetapi pustaka runtime Live2D Cubism Core **tidak disertakan** (lisensi berpemilik, tidak pernah didistribusikan bersama paket). Ini **bukan** build diagnostik tanpa Live2D. Jika Core tidak ditemukan, aplikasi beralih ke backend diagnostik dan menampilkan petunjuk di jalan pengaturan.
+
+  **Mengaktifkan rendering Live2D (pilih salah satu):**
+
+  1. **Impor dari aplikasi (disarankan)**: buka *Pengaturan → Model*, klik *Impor Live2D Core*, lalu pilih file `Live2DCubismCore.dll` atau zip resmi Cubism SDK. Berlaku seketika tanpa perlu memulai ulang.
+  2. **Letakkan di folder live2d**: unduh **Cubism SDK for Native** dari [halaman unduhan resmi](https://www.live2d.com/en/sdk/download/native/) (harus menyetujui lisensi Live2D), lalu letakkan zip atau `Live2DCubismCore.dll` yang diekstrak ke folder `live2d` di samping aplikasi atau di dalam direktori data; setelah aplikasi dimulai ulang, ia dikenali secara otomatis.
+
+  Untuk langkah impor SDK lengkap saat membangun dari kode sumber, lihat bagian «Live2D / Cubism SDK» di bawah.
 
 ## 🛠️ Membangun dari Kode Sumber
 

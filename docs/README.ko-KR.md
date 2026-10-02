@@ -38,7 +38,17 @@
 
 - GitHub Releases
 
-  [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest)에서 최신 버전을 다운로드하세요.
+  [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
+
+  > [!IMPORTANT]
+  > 공식 릴리스는 **runtime-Core 빌드**입니다: Live2D 렌더링 지원이 내장되어 있지만, Live2D Cubism Core 런타임 라이브러리는 **포함되지 않습니다**(독점 라이선스로 패키지에 절대 포함되지 않음). Live2D 없는 진단 빌드가 **아닙니다**. Core를 찾지 못하면 진단 백엔드로 전환되고 설정 창에 안내가 표시됩니다.
+
+  **Live2D 렌더링 활성화 (둘 중 하나 선택):**
+
+  1. **앱 내 가져오기 (권장)**: *설정 → 모델* 페이지를 열고 *Live2D Core 가져오기*를 클릭한 뒤 `Live2DCubismCore.dll` 또는 공식 Cubism SDK zip 파일을 선택하세요. 재시작 없이 즉시 적용됩니다.
+  2. **live2d 폴더에 넣기**: [공식 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에서(Live2D 라이선스에 동의 필요) **Cubism SDK for Native**를 다운로드하여 zip 또는 압축을 푼 `Live2DCubismCore.dll`을 앱 옆 또는 데이터 디렉터리의 `live2d` 폴더에 넣고 앱을 재시작하면 자동으로 인식됩니다.
+
+  소스에서 빌드할 때의 전체 SDK 가져오기 절차는 아래 «Live2D / Cubism SDK» 섹션을 참고하세요.
 
 ## 🛠️ 소스 코드로 빌드하기
 

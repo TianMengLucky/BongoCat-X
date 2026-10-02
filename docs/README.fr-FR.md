@@ -54,7 +54,17 @@
 
 - GitHub Releases
 
-  Téléchargez la dernière version depuis [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  Téléchargez la dernière version depuis [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
+
+  > [!IMPORTANT]
+  > Les versions officielles sont des **builds runtime-Core** : la prise en charge du rendu Live2D est intégrée, mais la bibliothèque d'exécution Live2D Cubism Core n'est **pas fournie** (licence propriétaire, jamais distribuée avec les paquets). Ce ne sont **pas** des builds de diagnostic dépourvus de Live2D. Lorsqu'aucun Core n'est détecté, l'application revient au backend de diagnostic et affiche un avertissement dans la fenêtre de paramètres.
+
+  **Activer le rendu Live2D (au choix) :**
+
+  1. **Import dans l'application (recommandé)** : ouvrez *Paramètres → Modèles*, cliquez sur *Importer Live2D Core*, puis sélectionnez un fichier `Live2DCubismCore.dll` ou le zip officiel du SDK Cubism. Effet immédiat, sans redémarrage.
+  2. **Dépôt dans le dossier live2d** : téléchargez **Cubism SDK for Native** depuis la [page de téléchargement officielle](https://www.live2d.com/en/sdk/download/native/) (acceptez la licence Live2D), puis placez le zip ou le `Live2DCubismCore.dll` extrait dans le dossier `live2d` à côté de l'application ou dans le répertoire de données, et redémarrez l'application.
+
+  Pour les étapes complètes d'import du SDK lors d'une compilation depuis les sources, consultez la section « Live2D / Cubism SDK » ci-dessous.
 
 ## 🛠️ Compilation depuis les sources
 

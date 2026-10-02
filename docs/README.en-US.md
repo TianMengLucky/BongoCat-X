@@ -54,6 +54,16 @@
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
+  > [!IMPORTANT]
+  > Official releases are **runtime-Core builds**: Live2D rendering support is built in, but the Live2D Cubism Core runtime is **not bundled** (proprietary license, never shipped with the packages). These are **not** diagnostic builds without Live2D. When no Core is found the app falls back to the diagnostic backend and shows a hint in the settings window.
+
+  **Enable Live2D rendering (either way works):**
+
+  1. **In-app import (recommended)**: open *Settings → Models* and click *Import Live2D Core*, then pick a `Live2DCubismCore.dll` or the official Cubism SDK zip. Takes effect immediately, no restart needed.
+  2. **Drop into the live2d folder**: download **Cubism SDK for Native** from the [official download page](https://www.live2d.com/en/sdk/download/native/) (accept Live2D's license), then put the zip or the extracted `Live2DCubismCore.dll` into the `live2d` folder next to the app or inside the data directory and restart the app.
+
+  For full SDK import steps when building from source, see the "Live2D / Cubism SDK" section below.
+
 ## ⚠️ Live2D Disclaimer
 
 This repository is not affiliated with Live2D Inc. or its official projects in any way. The Live2D Cubism SDK is proprietary software of Live2D Inc.: it is not bundled, embedded, or distributed with this repository. To build with Live2D support, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below, and follow Live2D's license terms.

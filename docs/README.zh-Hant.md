@@ -56,7 +56,17 @@
 
 - GitHub Releases
 
-  從 [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest) 下載最新版本。
+  從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
+
+  > [!IMPORTANT]
+  > 官方 Release 為 **runtime-Core 建置**：內建 Live2D 渲染支援，但**不附帶** Live2D Cubism Core 執行階段程式庫（專有授權，不隨套件散布），**並非**無 Live2D 能力的診斷建置。未偵測到 Core 時會回退到診斷後端並在設定視窗提示。
+
+  **啟用 Live2D 渲染（任選其一）：**
+
+  1. **應用內匯入（推薦）**：開啟「設定 → 模型」頁，點擊「匯入 Live2D Core」，選擇 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 壓縮包，匯入後立即生效（無需重新啟動）。
+  2. **live2d 資料夾投放**：從 [Cubism SDK 下載頁面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 授權協議）下載 **Cubism SDK for Native**，將 zip 或解壓縮出的 `Live2DCubismCore.dll` 放入應用目錄/資料目錄下的 `live2d` 資料夾，重新啟動應用後自動識別啟用。
+
+  從原始碼建置時 SDK 的完整匯入步驟見下方「Live2D / Cubism SDK」章節。
 
 ## 🛠️ 從原始碼建置
 

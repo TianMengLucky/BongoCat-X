@@ -62,8 +62,30 @@ def main() -> None:
         f"## 📦 下载 / Download ({heading})\n\n"
         f"{links}\n\n"
         "每个产物都附带 `.sha256` 校验文件。\n\n"
-        "> 本构建不包含 Live2D Cubism SDK（使用诊断渲染后端）。SDK 为专有授权，"
-        "如需启用 Live2D 模型，请按 README 的说明在本地自行构建。\n")
+        "## ℹ️ 关于本构建 / About this build\n\n"
+        "> 本构建为 **runtime-Core 构建**：内置 Live2D 渲染支持，但**不包含** Live2D "
+        "Cubism Core 运行库（专有授权，不随包分发），**并非**无 Live2D 能力的诊断构建。"
+        "检测到 Core 后即可渲染 Live2D 模型；未检测到时回退到诊断后端并在设置窗口提示。\n\n"
+        "## 🎭 启用 Live2D 教程 / Enable Live2D\n\n"
+        "1. **应用内导入（推荐 / Recommended）**：打开「设置 → 模型」页，点击"
+        "「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip "
+        "压缩包，导入后立即生效（无需重启）。\n"
+        "   Open *Settings → Models* and click *Import Live2D Core*, then pick a "
+        "`Live2DCubismCore.dll` or the official Cubism SDK zip. Takes effect "
+        "immediately, no restart needed.\n"
+        "2. **live2d 文件夹投放 / Drop into the live2d folder**：从 "
+        "[Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)"
+        "（需同意 Live2D 许可协议）下载 **Cubism SDK for Native**，将 zip 或解压出的 "
+        "`Live2DCubismCore.dll` 放入应用目录/数据目录下的 `live2d` 文件夹，重启应用后"
+        "自动识别启用。\n"
+        "   Download **Cubism SDK for Native** from the [official download page]"
+        "(https://www.live2d.com/en/sdk/download/native/) (accept Live2D's "
+        "license), then put the zip or the extracted `Live2DCubismCore.dll` into "
+        "the `live2d` folder next to the app or inside the data directory and "
+        "restart the app.\n\n"
+        "SDK 为 Live2D Inc. 的专有软件，本仓库与其无关联、不分发该 SDK，使用须遵守 "
+        "Live2D 的许可协议。The SDK is proprietary software of Live2D Inc.; this "
+        "repository is not affiliated with and does not distribute it.\n")
 
     pathlib.Path(args.output).write_text(body, encoding="utf-8")
     print(f"release notes written from section [{heading}] -> {args.output}")

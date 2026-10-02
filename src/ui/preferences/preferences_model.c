@@ -226,6 +226,13 @@ static void draw_models(BongoCatPreferences *value,
     }
 }
 
+static bool builtin_models_missing(const BongoCatApp *app) {
+    static const char *const names[] = {"standard", "keyboard", "gamepad"};
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
+        if (!bongo_cat_models_find(&app->models, names[i])) return true;
+    return false;
+}
+
 void bongo_cat_preferences_page_model(BongoCatPreferences *value,
     struct nk_context *context) {
     BongoCatApp *app = value->app;
@@ -266,6 +273,30 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
             bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(
                 app->i18n, "native.live2dCoreScanning",
                 "Scanning the live2d folders for the Cubism Core..."), false);
+        }
+    }
+    /* Deleted built-in models can be copied back from the app assets; the
+       row only appears while one of them is missing from the catalog. */
+    if (builtin_models_missing(app)) {
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_MODEL);
+        int action = bongo_cat_pref_button_with_icon(context,
+            "restore-builtins",
+            tr(app, "native.restoreBuiltins", "Restore default models"),
+            tr(app, "native.restoreBuiltinsHint",
+                "One or more built-in models were deleted; restore them "
+                "from the application assets"),
+            BONGO_CAT_UI_ICON_SYNC,
+            tr(app, "native.restoreBuiltinsButton", "Restore"));
+        if (action == 1 || action == 2) {
+            BongoCatError error = {0};
+            if (bongo_cat_app_restore_builtins(app, &error) == BONGO_CAT_OK)
+                bongo_cat_preferences_notice_show(app, tr(app,
+                    "native.restoreBuiltinsDone",
+                    "Default models restored"), false);
+            else
+                bongo_cat_preferences_notice_show(app, tr(app,
+                    "native.restoreBuiltinsFailed",
+                    "Failed to restore the default models"), true);
         }
     }
     if (bongo_cat_preferences_model_section(value, context) &&

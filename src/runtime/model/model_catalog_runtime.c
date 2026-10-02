@@ -111,6 +111,21 @@ BongoCatResult bongo_cat_model_catalog_scan(BongoCatApp *app, bool cleanup,
     return app->models.count ? BONGO_CAT_OK : result;
 }
 
+BongoCatResult bongo_cat_app_restore_builtins(BongoCatApp *app,
+    BongoCatError *error) {
+    if (!app) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_ARGUMENT,
+            "Missing application");
+        return BONGO_CAT_ERROR_ARGUMENT;
+    }
+    bongo_cat_import_storage_lock();
+    BongoCatResult result = bongo_cat_model_restore_builtins(app->asset_root,
+        app->models_root, error);
+    bongo_cat_import_storage_unlock();
+    bongo_cat_app_rescan_models(app);
+    return result;
+}
+
 void bongo_cat_app_rescan_models(BongoCatApp *app) {
     if (!app) return;
     bongo_cat_model_refresh_invalidate(app);

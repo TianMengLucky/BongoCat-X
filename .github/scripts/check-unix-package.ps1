@@ -92,6 +92,7 @@ try {
                 & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
                     gdb -batch -return-child-result `
                     -ex 'handle SIGPIPE nostop noprint pass' `
+                    -ex 'set environment LD_DEBUG=libs' `
                     -ex run -ex 'thread apply all bt full' --args @appArgs
             } else {
                 & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `

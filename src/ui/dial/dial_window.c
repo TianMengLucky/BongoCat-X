@@ -12,7 +12,7 @@
 static bool SDLCALL collect_event(void *userdata, SDL_Event *event) {
     Dial *d = userdata;
     if (event->type == SDL_EVENT_QUIT || event->type == SDL_EVENT_TERMINATING) {
-        d->done = true; return true; /* Let the main application handle shutdown. */
+        d->done = d->skip_fade = true; return true; /* Let the main application handle shutdown. */
     }
     SDL_Window *window = SDL_GetWindowFromEvent(event);
     if (window != d->window) {
@@ -238,6 +238,22 @@ BongoCatMenuAction bongo_cat_platform_context_menu(BongoCatPlatform *platform,
         }
         uint64_t elapsed = SDL_GetTicks()-start;
         if (elapsed < 16) SDL_Delay((Uint32)(16-elapsed));
+    }
+    /* Fade the popup out where it stands so dismissal does not pop. Skipped
+       when the surface is already going away (quit, external destroy). */
+    if (ready && d->window && !d->skip_fade &&
+        SDL_GetWindowFromID(d->window_id)) {
+        Uint64 fade_started = SDL_GetTicks();
+        for (;;) {
+            float progress = (float)(SDL_GetTicks()-fade_started)/DIAL_CLOSE_FADE_MS;
+            if (progress >= 1) break;
+            if (!SDL_GetWindowFromID(d->window_id)) break;
+            SDL_PumpEvents();
+            SDL_SetWindowOpacity(d->window,1-progress);
+            if (SDL_GL_MakeCurrent(d->window,d->context)) dial_paint_frame(d);
+            SDL_Delay(16);
+        }
+        SDL_SetWindowOpacity(d->window,0);
     }
     trace_menu(d, "before-release");
     uint64_t cleanup_started_ns = SDL_GetTicksNS();

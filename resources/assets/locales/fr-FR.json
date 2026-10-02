@@ -218,13 +218,16 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Cette version n'inclut pas le rendu Live2D (elle a été compilée sans le SDK Cubism) : le rendu, l'animation, le suivi du pointeur et la génération de couverture Live2D sont désactivés. Utilisez une version incluant la prise en charge de Live2D, par exemple la version officielle.",
-    "live2dCoreMissing": "Live2D Cubism Core est introuvable : Live2D reste désactivé jusqu'à ce qu'il soit fourni. Déposez Live2DCubismCore.dll ou le zip officiel du SDK dans le dossier live2d du répertoire de données et relancez — il sera détecté automatiquement au démarrage. Vous pouvez aussi l'importer dans cette fenêtre sans redémarrer.",
+    "live2dSdkMissing": "Cette version n'inclut pas la prise en charge de Live2D (version de diagnostic) : le rendu Live2D est donc indisponible. Veuillez utiliser une version incluant la prise en charge de Live2D.",
+    "live2dCoreMissing": "Live2D Cubism Core introuvable : importez la bibliothèque Core ou le zip officiel du SDK dans la fenêtre de réglages, ou déposez le zip dans le dossier live2d (à côté de l'application ou dans le répertoire de données) puis relancez.",
     "live2dCoreImport": "Importer Live2D Core",
     "live2dCoreImportHint": "Sélectionnez la bibliothèque Core de Cubism ou le zip officiel de Cubism SDK pour activer le rendu Live2D sans redémarrage",
     "live2dCoreImportButton": "Choisir un fichier",
     "live2dCoreImportSuccess": "Live2D Cubism Core importé : le rendu Live2D est désormais activé",
-    "live2dCoreImportFailed": "Échec de l'import de Live2D Cubism Core",
+    "live2dCoreImportFailed": "Échec de l'import de Live2D Cubism Core",
+    "live2dCoreRescanFound": "Live2D Core détecté et chargé",
+    "live2dCoreRescanMissing": "Aucun Live2D Core trouvé dans les dossiers live2d pour l'instant",
+    "live2dCoreScanning": "Recherche du Cubism Core dans les dossiers live2d...",
     "about": {
       "wechat": "WeChat",
       "wechatHint": "Hover to scan and chat",

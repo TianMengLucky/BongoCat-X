@@ -218,13 +218,16 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "目前建置未包含 Live2D 支援（診斷建置），Live2D 渲染不可用；執行時放入 SDK 也無法啟用 Live2D，請使用自帶 Live2D 支援的版本（官方 Release）。",
-    "live2dCoreMissing": "未偵測到 Live2D Cubism Core，Live2D 暫時停用：將 Live2DCubismCore.dll 或官方 SDK 壓縮檔放入 live2d 資料夾（應用程式目錄或資料目錄下）後重啟即可自動啟用，也可在設定視窗匯入、不用重啟。",
+    "live2dSdkMissing": "目前建置不包含 Live2D 支援（診斷建置），Live2D 渲染不可用。請使用自帶 Live2D 支援的版本。",
+    "live2dCoreMissing": "未偵測到 Live2D Cubism Core：可在設定視窗匯入 Core 程式庫檔案或官方 SDK 壓縮檔，或將 zip 放入 live2d 資料夾（應用程式目錄或資料目錄下）後重新啟動。",
     "live2dCoreImport": "匯入 Live2D Core",
     "live2dCoreImportHint": "選擇 Cubism Core 程式庫檔案或官方 Cubism SDK 的 zip 壓縮檔，無需重新啟動即可啟用 Live2D 渲染",
     "live2dCoreImportButton": "選擇檔案",
     "live2dCoreImportSuccess": "Live2D Cubism Core 匯入成功，Live2D 渲染已啟用",
-    "live2dCoreImportFailed": "Live2D Cubism Core 匯入失敗",
+    "live2dCoreImportFailed": "Live2D Cubism Core 匯入失敗",
+    "live2dCoreRescanFound": "Live2D Core 偵測並載入成功",
+    "live2dCoreRescanMissing": "在 live2d 資料夾中尚未發現 Live2D Core",
+    "live2dCoreScanning": "正在掃描 live2d 資料夾中的 Cubism Core...",
     "about": {
       "wechat": "微信群組",
       "wechatHint": "懸停掃碼，一起交流",

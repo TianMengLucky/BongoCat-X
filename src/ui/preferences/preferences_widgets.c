@@ -324,6 +324,48 @@ bool bongo_cat_pref_button(struct nk_context *context, const char *id,
     nk_layout_row_end(context); bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved); return result;
 }
+static bool icon_action_button(struct nk_context *context, int icon) {
+    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_rect bounds;
+    /* Consume the widget slot: a bounds peek leaves it to the next widget,
+       which then paints over this button entirely. */
+    enum nk_widget_layout_states state = nk_widget(&bounds, context);
+    if (state != NK_WIDGET_VALID && state != NK_WIDGET_ROM) return false;
+    bool hovered = nk_input_is_mouse_hovering_rect(&context->input, bounds);
+    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
+    if (hovered)
+        bongo_cat_ui_cursor_hover_rect(context, bounds,
+            BONGO_CAT_UI_CURSOR_POINTER);
+    nk_fill_rect(canvas, bounds, 10, hovered ? p.selection : p.field);
+    nk_stroke_rect(canvas, bounds, 10, 1, p.border_subtle);
+    float icon_size = NK_MAX(0.0f, NK_MIN(bounds.w, bounds.h) - 14.0f);
+    struct nk_rect icon_bounds = nk_rect(
+        bounds.x + (bounds.w - icon_size) * .5f,
+        bounds.y + (bounds.h - icon_size) * .5f, icon_size, icon_size);
+    bongo_cat_ui_draw_icon(canvas, icon, icon_bounds,
+        hovered ? p.accent : p.text);
+    return hovered && nk_input_is_mouse_click_in_rect(&context->input,
+        NK_BUTTON_LEFT, bounds);
+}
+int bongo_cat_pref_button_with_icon(struct nk_context *context,
+    const char *id, const char *title, const char *detail, int icon,
+    const char *button) {
+    int lines = bongo_cat_pref_detail_lines(context, detail); FormStyle saved;
+    if (!form_begin(context, id, lines, &saved)) return 0;
+    float available = nk_window_get_content_region(context).w;
+    float left = NK_MAX(220.0f, available - 250.0f);
+    nk_layout_row_begin(context, NK_STATIC, 36, 3);
+    nk_layout_row_push(context, left);
+    bongo_cat_pref_form_label(context, title);
+    nk_layout_row_push(context, 36);
+    bool detect = icon_action_button(context, icon);
+    nk_layout_row_push(context, NK_MAX(140.0f, available - left - 44.0f));
+    bool main = secondary_button(context, button);
+    nk_layout_row_end(context);
+    bongo_cat_pref_description(context, detail, lines);
+    form_end(context, &saved);
+    return main ? 1 : detect ? 2 : 0;
+}
 void bongo_cat_pref_status(struct nk_context *context, const char *id,
     const char *title, const char *detail) {
     int lines = bongo_cat_pref_detail_lines(context, detail); FormStyle saved;

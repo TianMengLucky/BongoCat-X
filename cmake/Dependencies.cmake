@@ -35,9 +35,8 @@ if(BONGO_CAT_FETCH_DEPS)
   set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
   set(SDL_POWER OFF CACHE BOOL "" FORCE)
   set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
-  if(WIN32)
-    set(SDL_DIALOG OFF CACHE BOOL "" FORCE)
-  endif()
+  # Keep dialogs enabled: the settings window opens native file and
+  # folder pickers for model imports and the Live2D Core import.
   set(YYJSON_DISABLE_INCR_READER ON CACHE BOOL "" FORCE)
   set(YYJSON_DISABLE_UTILS ON CACHE BOOL "" FORCE)
   set(YYJSON_BUILD_TESTS OFF CACHE BOOL "" FORCE)

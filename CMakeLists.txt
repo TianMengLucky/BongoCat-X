@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.0.0")
+set(BONGO_CAT_VERSION "2.0.1")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
@@ -110,6 +110,9 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     endforeach()
     set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
       COMPILE_DEFINITIONS "${BONGO_CAT_BRIDGE_DEFS}")
+    # The dispatch layer falls back to the stub until the user's Core library
+    # is available, so the stub must ship alongside the bridge.
+    list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
     set_source_files_properties(src/live2d/live2d_stub.c PROPERTIES
       COMPILE_DEFINITIONS "${BONGO_CAT_STUB_DEFS}")
     list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_dispatch.c)

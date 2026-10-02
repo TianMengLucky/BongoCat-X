@@ -56,15 +56,12 @@ void bongo_cat_preferences_random_dialog_open(BongoCatPreferences *value,
 }
 
 void bongo_cat_preferences_random_dialog_close(BongoCatPreferences *value) {
-    if (!value || !value->random_dialog) return;
-    /* Dismiss instantly: a fade-out over a tall panel reads as lag when the
-       user asks for a close. The open animation keeps its fade-in. */
-    value->random_dialog = false;
+    if (!value || !value->random_dialog || value->random_dialog_closing_ns) return;
+    /* Close with the shared overlay fade: input is dropped immediately, and
+       the 180 ms eased scale-and-slide keeps the tall panel responsive
+       instead of reading as lag. */
+    value->random_dialog_closing_ns = SDL_GetTicksNS();
     value->random_dialog_input_armed = false;
-    value->random_dialog_opened_ns = 0;
-    value->random_dialog_closing_ns = 0;
-    value->random_dialog_scroll = 0;
-    bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
     value->render_dirty = true;
 }
 
@@ -147,6 +144,9 @@ void bongo_cat_preferences_random_dialog_draw(
     if (frame.finished) {
         value->random_dialog = false;
         value->random_dialog_opened_ns = value->random_dialog_closing_ns = 0;
+        value->random_dialog_scroll = 0;
+        bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
+        value->render_dirty = true;
         return;
     }
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));

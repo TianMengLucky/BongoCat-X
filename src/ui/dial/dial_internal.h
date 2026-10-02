@@ -10,6 +10,7 @@
 #define DIAL_ROOTS 12
 #define DIAL_REVEAL_DELAY_MS 22
 #define DIAL_REVEAL_DURATION_MS 360
+#define DIAL_CLOSE_FADE_MS 140
 #define DIAL_PATH_POINTS 160
 #define DIAL_CENTER_SEGMENTS 64
 #define DIAL_CENTER_RINGS 16
@@ -60,7 +61,7 @@ typedef struct Dial {
     const BongoCatMenuLabels *labels;
     DialItem items[DIAL_ROOTS];
     int count, active, child, page, pressed;
-    bool done, dark, dirty, child_focus, shown, popup;
+    bool done, dark, dirty, child_focus, shown, popup, skip_fade;
     uint64_t input_after_ns;
     BongoCatMenuAction result, preview;
     int width, height, pixel_width, pixel_height;

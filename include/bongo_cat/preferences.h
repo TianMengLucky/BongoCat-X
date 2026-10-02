@@ -33,5 +33,8 @@ bool bongo_cat_preferences_open_model_import(BongoCatPreferences *preferences,
     SDL_Window *parent);
 /* Opens the file picker for the runtime Live2D Core import. */
 void bongo_cat_preferences_request_sdk_import(BongoCatPreferences *preferences);
+/* Re-runs the drop-in folder scan for the Live2D Core on a worker thread;
+   the completion (including the GL hot swap) lands on the main thread. */
+void bongo_cat_preferences_request_live2d_rescan(BongoCatPreferences *preferences);
 
 #endif

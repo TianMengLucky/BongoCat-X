@@ -267,6 +267,12 @@ BongoCatResult bongo_cat_app_remove_model(BongoCatApp *app, const char *id, Bong
    swap the diagnostic stub for the Live2D bridge without a restart. */
 bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
     BongoCatError *error);
+/* Re-run the runtime Core discovery over the live2d drop-in folders and hot
+   swap the backend when a Core turns up. True when Live2D is usable. */
+bool bongo_cat_app_rescan_live2d_core(BongoCatApp *app);
+/* Hot swap the diagnostic stub for the Live2D bridge after a Core has been
+   loaded out of band (e.g. by the background rescan worker). */
+bool bongo_cat_app_activate_live2d_core(BongoCatApp *app, BongoCatError *error);
 void bongo_cat_app_rescan_models(BongoCatApp *app);
 void bongo_cat_app_refresh_installed_models(BongoCatApp *app);
 void bongo_cat_app_refresh_nearby_models(BongoCatApp *app);

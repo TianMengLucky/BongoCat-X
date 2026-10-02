@@ -19,6 +19,7 @@ typedef struct BongoCatPreferenceNotice {
     char message[1024];
     uint64_t started_ns;
     uint64_t until_ns;
+    uint64_t closing_ns;
     uint64_t timer_updated_ns;
     struct nk_rect bounds;
     bool hovered;
@@ -60,6 +61,10 @@ struct BongoCatPreferences {
     /* Runtime Live2D Core import: file picker plus its completion event. */
     bool sdk_import_requested;
     int sdk_import_event_type;
+    /* Background Live2D Core drop-in rescan (zip extraction can take a
+       while): worker thread plus its completion event. */
+    SDL_Thread *live2d_rescan_worker;
+    int live2d_rescan_event_type;
     bool frame_checked;
     bool render_dirty;
     bool font_reload_pending;
@@ -95,6 +100,8 @@ struct BongoCatPreferences {
     char model_load_visual_id[BONGO_CAT_ID_CAP];
     uint64_t last_render_ns;
     uint64_t shown_ns;
+    uint64_t fade_started_ns;
+    bool fade_closing;
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;

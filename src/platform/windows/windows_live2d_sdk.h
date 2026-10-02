@@ -19,6 +19,9 @@ bool bongo_cat_windows_live2d_sdk_ready(void);
    does not contain a usable Core. */
 bool bongo_cat_windows_live2d_sdk_import(const char *path,
     const char *data_dir, BongoCatError *error);
+/* Re-run the discovery over the drop-in folders; true when a Core is
+   loaded afterwards. */
+bool bongo_cat_windows_live2d_sdk_rescan(const char *data_dir);
 #ifdef __cplusplus
 }
 #endif

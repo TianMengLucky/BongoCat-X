@@ -1,0 +1,26 @@
+#ifndef BONGO_CAT_PORTABLE_MODE_H
+#define BONGO_CAT_PORTABLE_MODE_H
+
+#include "bongo_cat/app.h"
+
+/* Portable mode keeps config/data/models/... next to the executable instead
+   of the system profile. It is selected through the BongoCat.ini file beside
+   the executable ("portable = 1") rather than a settings entry: the storage
+   root must be known before settings.json can be located. The ini can also
+   be edited by hand before the first launch. An explicit --storage-root
+   argument always wins over the ini file. */
+bool bongo_cat_portable_mode_active(void);
+
+/* Create or update the ini beside the executable. When enabling, the current
+   settings file (may be NULL) is copied into <exe>/config and a stashed
+   Cubism Core in <data>/live2d is carried over to <exe>/data/live2d; a
+   failure rolls the ini back and reports the reason. When disabling, the
+   ini records "portable = 0": the previous system-profile data is still in
+   place and resumes with the next launch. */
+bool bongo_cat_portable_mode_set(bool enable, const char *settings_path,
+    const char *data_dir, BongoCatError *error);
+
+/* Executable directory without a trailing separator, for the storage root. */
+bool bongo_cat_portable_root(char *output, size_t capacity);
+
+#endif

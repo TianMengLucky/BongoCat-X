@@ -9,6 +9,7 @@
 #include "bongo_cat/log.h"
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/tray.h"
+#include "portable_mode.h"
 #include "runtime.h"
 #ifdef _WIN32
 #include "windows_game_compatibility.h"
@@ -397,6 +398,39 @@ static void page_general(BongoCatApp *app, struct nk_context *context) {
         }
     }
 #endif
+    /* Portable storage lives beside the executable; the switch only flips
+       the marker, the new location is used from the next launch on. */
+    bool portable = bongo_cat_portable_mode_active();
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
+    if (bongo_cat_pref_toggle_help(context, "portable-mode",
+        tr(app, "pages.preference.general.labels.portableMode",
+            "Portable Mode"), "",
+        tr(app, "pages.preference.general.hints.portableMode",
+            "Store settings and data in the application folder instead of "
+            "the system profile. Takes effect after a restart; existing "
+            "data is not moved automatically. The switch itself is stored "
+            "in BongoCat.ini beside the executable."),
+        &portable)) {
+        BongoCatError portable_error = {0};
+        if (bongo_cat_portable_mode_set(portable, app->settings_path,
+                app->data_root, &portable_error))
+            bongo_cat_preferences_notice_show(app, tr(app, portable ?
+                "pages.preference.general.hints.portableModeEnabled" :
+                "pages.preference.general.hints.portableModeDisabled",
+                portable ?
+                "Portable mode will be used after a restart" :
+                "The system data location will be used after a restart"),
+                false);
+        else {
+            char message[1024];
+            snprintf(message, sizeof(message), "%s\n%s", tr(app,
+                "pages.preference.general.hints.portableModeFailed",
+                "Unable to change the portable mode setting."),
+                portable_error.message[0] ? portable_error.message :
+                "unknown error");
+            bongo_cat_preferences_notice_show(app, message, true);
+        }
+    }
     section_gap(context, 7);
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.general.labels.appearanceSettings", "Appearance"),

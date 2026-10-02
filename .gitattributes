@@ -1,0 +1,3 @@
+# The locale JSON files are stored with CRLF line endings; keep git from
+# applying end-of-line conversion to them so diffs stay line-accurate.
+resources/assets/locales/*.json -text

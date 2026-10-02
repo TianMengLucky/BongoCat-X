@@ -90,14 +90,16 @@ jobs:
           $version = $env:GITHUB_REF_NAME.Substring(1)
           $prefix = "BongoCat-X-$version-${{ matrix.platform }}"
           $assets = @()
-          try {
-            $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME" |
-              ConvertFrom-Json
-            $assets = @($release.assets | ForEach-Object { $_.name })
-          } catch {
-            Write-Host 'No existing release for this tag yet'
+          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME" 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            $release = $releaseJson | ConvertFrom-Json
+            if ($release.assets) {
+              $assets = @($release.assets | ForEach-Object { $_.name })
+            }
+          } else {
+            Write-Host "No existing release for this tag yet: $releaseJson"
           }
-          $existing = @($assets | Where-Object { $_.StartsWith($prefix) })
+          $existing = @($assets | Where-Object { $_ -and $_.StartsWith($prefix) })
           if ($existing.Count) {
             Write-Host "Already published: $($existing -join ', ')"
             'skip=true' | Out-File -FilePath $env:GITHUB_OUTPUT `

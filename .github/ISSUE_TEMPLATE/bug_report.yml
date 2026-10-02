@@ -22,10 +22,10 @@ body:
     attributes:
       label: "📝 复现步骤"
       description: "列出触发问题的操作步骤，方便我们快速定位。"
-      placeholder: >-
-        例如：
-        1. 进行了什么操作
-        2. 然后发生了什么
+      placeholder: |
+        例如：<br>
+        1. 进行了什么操作<br>
+        2. 然后发生了什么<br>
         3. 问题出现
     validations:
       required: false
@@ -68,20 +68,19 @@ body:
     id: "logs"
     attributes:
       label: "📋 错误日志"
-      description: >-
-        请贴入 BongoCat.log 内相关日志以帮助我们定位问题。
-
-        打开日志目录：在「设置 → 关于」中点击「打开日志」，或手动前往：
-        - Windows：`%LOCALAPPDATA%\BongoCat\logs\`
-        - macOS：`~/Library/Logs/BongoCat/`
+      description: |
+        请贴入 BongoCat.log 内相关日志以帮助我们定位问题。<br>
+        打开日志目录：在「设置 → 关于」中点击「打开日志」，或手动前往：<br>
+        - Windows：`%LOCALAPPDATA%\BongoCat\logs\`<br>
+        - macOS：`~/Library/Logs/BongoCat/`<br>
         - Linux：`~/.local/state/bongocat/logs/`
     validations:
       required: true
   - type: upload
     attributes:
       label: "🎞️ 辅助信息"
-      description: >-
-        可选，上传与问题相关的其他辅助信息，例如复现视频、完整日志文件。
+      description: |
+        可选，上传与问题相关的其他辅助信息，例如复现视频、完整日志文件。<br>
         如果您要提供的日志过长以至不适合直接填写到上一栏，您可以选择只在上一栏贴关键日志，将完整的日志文件上传到这里。
     validations:
       required: false
@@ -94,5 +93,5 @@ body:
       options:
         - label: "⚡ 我确认正在使用最新版本，而不是旧版本。"
           required: true
-        - label: "📋 我已在已有 issue 中搜索过，确认这不是重复报告。"
+        - label: "🔍 我已在已有 issue 中搜索过，确认这不是重复报告。"
           required: true

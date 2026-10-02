@@ -1,0 +1,97 @@
+name: 🐛 问题报告 🐛
+description: "🛠️ 发现了问题？在这里告诉我们！"
+title: "[🐛Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: "describe-the-bug"
+    attributes:
+      label: "❓ 发生了什么"
+      description: "描述你看到的问题，越具体越好。"
+    validations:
+      required: true
+  - type: textarea
+    id: "expectation"
+    attributes:
+      label: "✨ 你期望的行为"
+      description: "遇到问题之前，你认为软件应该怎么工作？"
+    validations:
+      required: false
+  - type: textarea
+    id: "reproduction-method"
+    attributes:
+      label: "📝 复现步骤"
+      description: "列出触发问题的操作步骤，方便我们快速定位。"
+      placeholder: |
+        例如：
+        1. 进行了什么操作
+        2. 然后发生了什么
+        3. 问题出现
+    validations:
+      required: false
+  - type: dropdown
+    id: "platform"
+    attributes:
+      label: "📌 平台"
+      description: "你在哪个平台使用？Linux 用户请继续选择桌面环境。"
+      options:
+        - "Windows"
+        - "macOS"
+        - "Linux - GNOME"
+        - "Linux - KDE Plasma"
+        - "Linux - Xfce"
+        - "Linux - Cinnamon"
+        - "Linux - MATE"
+        - "Linux - LXQt"
+        - "Linux - Niri"
+        - "Linux - 其他桌面环境"
+    validations:
+      required: true
+  - type: input
+    id: "version"
+    attributes:
+      label: "🔖 应用版本"
+      description: "在「设置 → 关于」中可查看版本号。"
+    validations:
+      required: true
+  - type: dropdown
+    id: "install-source"
+    attributes:
+      label: "📦 获取方式"
+      description: "这个版本是如何安装的？"
+      options:
+        - "GitHub Releases 下载"
+        - "源码编译"
+    validations:
+      required: true
+  - type: textarea
+    id: "logs"
+    attributes:
+      label: "📋 错误日志"
+      description: |
+        请贴入 BongoCat.log 内相关日志以帮助我们定位问题。<br>
+        打开日志目录：在「设置 → 关于」中点击「打开日志」，或手动前往：<br>
+        - Windows：`%LOCALAPPDATA%\BongoCat\logs\`<br>
+        - macOS：`~/Library/Logs/BongoCat/`<br>
+        - Linux：`~/.local/state/bongocat/logs/`
+    validations:
+      required: true
+  - type: upload
+    attributes:
+      label: "🎞️ 辅助信息"
+      description: |
+        可选，上传与问题相关的其他辅助信息，例如复现视频、完整日志文件。<br>
+        如果您要提供的日志过长以至不适合直接填写到上一栏，您可以选择只在上一栏贴关键日志，将完整的日志文件上传到这里。
+    validations:
+      required: false
+      accept: ".txt,.log,.mp4,.mov,.webm,.zip,.gz"
+  - type: checkboxes
+    id: "final-checklist"
+    attributes:
+      label: "✅ 提交前确认"
+      description: "提交报告前，请确认以下事项："
+      options:
+        - label: "⚡ 我确认正在使用最新版本，而不是旧版本。"
+          required: true
+        - label: "🔍 我已在已有 issue 中搜索过，确认这不是重复报告。"
+          required: true

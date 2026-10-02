@@ -1,24 +1,45 @@
 ## Ciallo～(∠・ω<)⌒★
 
-### 🎉 You are awesome!
-
-Thank you for taking the time to make this project better! We truly value your contribution.💕
+感谢你愿意让 BongoCat 变得更好！我们非常重视你的参与。💕
 
 ---
 
-### 📝 What's changed?
-*(Briefly describe what you did or what problem you fixed)*
+### 📝 改了什么
 
-> 
+<!-- 简要描述你的改动，以及它解决了什么问题 -->
 
----
 
-### 🤝 Don't worry about perfection
-
-**We value your ideas and participation more than perfect code!**
-
-If there are any style, testing, or detail issues, **we will help fix and polish them**. Just submit it, and we'll handle the rest!
 
 ---
 
-*Thanks again! Happy to build this with you! 🙌*
+### 🔗 关联 Issue
+
+<!-- 如有，填写 issue 编号，如 `#12`；没有可删除或留空此段 -->
+
+
+
+---
+
+### ✅ 如何验证
+
+<!-- 在哪些平台上实际运行过？验证步骤是什么？多平台改动请逐一注明 -->
+
+
+
+---
+
+### 🤍 提交前自检
+
+**我们看重你的想法和参与，胜过完美的代码。**
+
+如果风格、测试或细节有任何问题，我们会帮你一起收拾，放心提交就好。
+
+- [ ] 已在对应平台实际运行验证
+- [ ] 涉及用户可见文案时，`resources/assets/locales/` 下十种语言的 JSON 已同步更新
+- [ ] 本地构建通过，`ctest` 与 `src/` 的 cppcheck 检查无新增告警
+- [ ] Commit Message 使用了约定前缀（`feat:` / `fix:` / `refactor:` / `chore:`）
+- [ ] 未引入 Cubism SDK 的源码或二进制文件
+
+---
+
+*再次感谢！期待和你一起完善 BongoCat 🙌*

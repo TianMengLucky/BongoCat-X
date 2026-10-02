@@ -5,6 +5,8 @@ chcp 65001 >nul
 set "BUILD_TYPE=%~1"
 if "%BUILD_TYPE%"=="" set "BUILD_TYPE=Release"
 set "BUILD_JOBS=%BONGOCAT_BUILD_JOBS%"
+rem Default to the CPU core count (capped at 16) instead of a fixed 2.
+if "%BUILD_JOBS%"=="" set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
 if "%BUILD_JOBS%"=="" set "BUILD_JOBS=2"
 set "CLEAN_ARG="
 if /I "%BONGOCAT_CLEAN_BUILD%"=="1" set "CLEAN_ARG=-Clean"

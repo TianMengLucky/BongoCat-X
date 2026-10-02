@@ -5,7 +5,7 @@ param(
     [ValidateSet('x64', 'Win32')]
     [string]$Architecture = 'x64',
     [ValidateRange(1, 64)]
-    [int]$Jobs = 2,
+    [int]$Jobs = [Math]::Max(2, [Math]::Min(16, [Environment]::ProcessorCount)),
     [switch]$SkipConfigure,
     [switch]$SkipTests,
     [string[]]$Target = @('bongo_cat'),

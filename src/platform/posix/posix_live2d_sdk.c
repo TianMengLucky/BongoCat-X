@@ -36,8 +36,7 @@ static void *core_handle;
 static bool attempted;
 
 static bool try_load(const char *path) {
-    const char *(*version)(void);
-    const char *text;
+    unsigned (*version)(void);
     if (core_handle) return true;
     if (!path) return false;
     void *handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
@@ -46,10 +45,12 @@ static bool try_load(const char *path) {
             "[live2d] Core candidate rejected (%s)", dlerror());
         return false;
     }
-    version = (const char *(*)(void))(void *)dlsym(handle, "csmGetVersion");
-    text = version ? version() : NULL;
+    /* csmGetVersion returns the encoded numeric csmVersion (unsigned int),
+       not a string (the smoke-test backtrace caught this dereference). */
+    version = (unsigned (*)(void))(void *)dlsym(handle, "csmGetVersion");
+    unsigned encoded = version ? version() : 0;
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-        "[live2d] Cubism Core loaded (%s)", text ? text : "version unknown");
+        "[live2d] Cubism Core loaded (version 0x%x)", encoded);
     core_handle = handle;
     return true;
 }

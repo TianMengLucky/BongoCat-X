@@ -113,7 +113,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gdb libc6-dbg libgl1-mesa-dev libegl1-mesa-dev \
+            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev \
             libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev \
             libfontconfig1-dev curl file desktop-file-utils
 
@@ -302,9 +302,6 @@ jobs:
       - name: Package Unix release
         if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
         timeout-minutes: 5
-        env:
-          # Temporary: capture a backtrace when the Linux smoke test crashes.
-          BONGOCAT_SMOKE_GDB: '1'
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()

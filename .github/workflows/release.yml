@@ -142,7 +142,7 @@ jobs:
 
       - name: Restore compiler cache
         if: steps.skip-check.outputs.skip != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/sccache
@@ -392,13 +392,13 @@ jobs:
       - name: Publish release assets
         if: github.repository == 'TianMengLucky/BongoCat-X' &&
           steps.skip-check.outputs.skip != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: BongoCat v${{ steps.version.outputs.version }}
           body_path: release-notes.md
           generate_release_notes: true
           fail_on_unmatched_files: true
-          allow_updates: true
+          overwrite_files: true
           make_latest: true
           files: release-output/*
 

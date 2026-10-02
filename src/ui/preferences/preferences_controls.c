@@ -268,8 +268,10 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     else snprintf(number, sizeof(number), "%.0f", *value);
     /* Editable value box: the number editor overlays the box and draws its
        own text cursor while active. */
+    double edited = *value;
     bool editing = bongo_cat_pref_number_edit(context, id, value_box,
-        number, minimum >= 1.0f, minimum, maximum, value);
+        number, minimum >= 1.0f, minimum, maximum, &edited);
+    *value = (float)NK_CLAMP((float)minimum, edited, (float)maximum);
     if (!editing) {
         char display[28];
         snprintf(display, sizeof(display), "%s%s", number,

@@ -100,6 +100,24 @@ const char *bongo_cat_mode_name(BongoCatModelMode value) {
     return (unsigned)value <= BONGO_CAT_MODE_GAMEPAD ? names[value] : names[0];
 }
 
+const char *bongo_cat_render_backend_name(BongoCatRenderBackend value) {
+    static const char *names[] = {"auto", "opengl", "vulkan"};
+    return (unsigned)value < BONGO_CAT_RENDER_BACKEND_COUNT ?
+        names[value] : names[BONGO_CAT_RENDER_BACKEND_AUTO];
+}
+
+bool bongo_cat_render_backend_parse(const char *name,
+    BongoCatRenderBackend *value) {
+    if (!name) return false;
+    for (int i = 0; i < BONGO_CAT_RENDER_BACKEND_COUNT; ++i)
+        if (!strcmp(name, bongo_cat_render_backend_name(
+                (BongoCatRenderBackend)i))) {
+            *value = (BongoCatRenderBackend)i;
+            return true;
+        }
+    return false;
+}
+
 const char *bongo_cat_obs_background_color_name(
     BongoCatObsBackgroundColor value) {
     static const char *names[] = {

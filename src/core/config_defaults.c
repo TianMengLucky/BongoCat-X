@@ -261,6 +261,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
     config->app.language = BONGO_CAT_LANG_EN_US;
+    config->app.render_backend = BONGO_CAT_RENDER_BACKEND_AUTO;
     memcpy(config->extensions_json, "{}", sizeof("{}"));
 }
 
@@ -297,6 +298,8 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
         config->app.theme = BONGO_CAT_THEME_AUTO;
     if ((unsigned)config->app.language >= BONGO_CAT_LANG_COUNT)
         config->app.language = BONGO_CAT_LANG_EN_US;
+    if ((unsigned)config->app.render_backend >= BONGO_CAT_RENDER_BACKEND_COUNT)
+        config->app.render_backend = BONGO_CAT_RENDER_BACKEND_AUTO;
     compact_behavior_overrides(config);
     compact_model_overrides(config);
     compact_removed_models(config);

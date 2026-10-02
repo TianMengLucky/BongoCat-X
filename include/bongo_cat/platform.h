@@ -12,12 +12,16 @@ typedef struct BongoCatInputState BongoCatInputState;
 #include <stdint.h>
 
 typedef struct SDL_Window SDL_Window;
+struct BongoCatRhiPresentOps;
 
 typedef struct BongoCatPlatform {
     SDL_Window *window;
     BongoCatInputState *input;
     void *native;
     void *presenter;
+    /* Backend-neutral frame submission hooks (see rhi.h); NULL means the
+       legacy direct-OpenGL presentation path. */
+    const struct BongoCatRhiPresentOps *present_ops;
     uint32_t wake_event_type;
     float window_opacity;
     bool hover_hide_unavailable;

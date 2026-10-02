@@ -34,6 +34,13 @@ typedef enum BongoCatModelMode {
     BONGO_CAT_MODE_KEYBOARD,
     BONGO_CAT_MODE_GAMEPAD
 } BongoCatModelMode;
+typedef enum BongoCatRenderBackend {
+    BONGO_CAT_RENDER_BACKEND_AUTO,
+    BONGO_CAT_RENDER_BACKEND_OPENGL,
+    BONGO_CAT_RENDER_BACKEND_VULKAN,
+    BONGO_CAT_RENDER_BACKEND_COUNT
+} BongoCatRenderBackend;
+
 typedef enum BongoCatObsBackgroundColor {
     BONGO_CAT_OBS_BACKGROUND_GREEN,
     BONGO_CAT_OBS_BACKGROUND_BLUE,
@@ -106,6 +113,7 @@ typedef struct BongoCatApplicationPreferences {
     bool tray_visible;
     BongoCatTheme theme;
     BongoCatLanguage language;
+    BongoCatRenderBackend render_backend;
 } BongoCatApplicationPreferences;
 
 typedef struct BongoCatShortcutPreferences {
@@ -224,6 +232,9 @@ bool bongo_cat_language_parse(const char *name, BongoCatLanguage *value);
 bool bongo_cat_language_from_locale(const char *language,
     const char *country, BongoCatLanguage *value);
 const char *bongo_cat_mode_name(BongoCatModelMode value);
+const char *bongo_cat_render_backend_name(BongoCatRenderBackend value);
+bool bongo_cat_render_backend_parse(const char *name,
+    BongoCatRenderBackend *value);
 const char *bongo_cat_obs_background_color_name(
     BongoCatObsBackgroundColor value);
 uint32_t bongo_cat_obs_background_color_rgb(

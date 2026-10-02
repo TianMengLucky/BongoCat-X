@@ -123,6 +123,10 @@ static bool read_app(yyjson_val *object, BongoCatApplicationPreferences *value,
     if (!read_string(object, "language", &text, &length, error)) return false;
     if (text && !bongo_cat_language_parse(text, &value->language))
         return type_error(error, "language", "a supported locale string");
+    if (!read_string(object, "renderBackend", &text, &length, error)) return false;
+    (void)length;
+    if (text && !bongo_cat_render_backend_parse(text, &value->render_backend))
+        return type_error(error, "renderBackend", "auto, opengl, or vulkan");
     return true;
 }
 

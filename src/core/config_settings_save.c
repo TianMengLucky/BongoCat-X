@@ -78,7 +78,9 @@ static bool write_app(yyjson_mut_doc *doc, yyjson_mut_val *object,
         yyjson_mut_obj_add_strcpy(doc, object, "theme",
             bongo_cat_theme_name(value->theme)) &&
         yyjson_mut_obj_add_strcpy(doc, object, "language",
-            bongo_cat_language_name(value->language));
+            bongo_cat_language_name(value->language)) &&
+        yyjson_mut_obj_add_strcpy(doc, object, "renderBackend",
+            bongo_cat_render_backend_name(value->render_backend));
 }
 
 static bool write_shortcuts(yyjson_mut_doc *doc, yyjson_mut_val *object,

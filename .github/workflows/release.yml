@@ -87,10 +87,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $ErrorActionPreference = 'Continue'
           $version = $env:GITHUB_REF_NAME.Substring(1)
           $prefix = "BongoCat-X-$version-${{ matrix.platform }}"
           $assets = @()
-          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME" 2>$null
+          $releaseJson = gh release view "$env:GITHUB_REF_NAME" --json assets --repo "$env:GITHUB_REPOSITORY" 2>$null
           if ($LASTEXITCODE -eq 0 -and $releaseJson) {
             $release = $releaseJson | ConvertFrom-Json
             if ($release.assets) {
@@ -100,15 +101,14 @@ jobs:
             Write-Host 'No existing release for this tag yet; building'
           }
           $existing = @($assets | Where-Object { $_ -and $_.StartsWith($prefix) })
-          if ($existing.Count) {
+          if ($existing.Count -gt 0) {
             Write-Host "Already published: $($existing -join ', ')"
-            'skip=true' | Out-File -FilePath $env:GITHUB_OUTPUT `
-              -Append -Encoding utf8
+            'skip=true' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           } else {
             Write-Host 'No assets for this platform yet; building'
-            'skip=false' | Out-File -FilePath $env:GITHUB_OUTPUT `
-              -Append -Encoding utf8
+            'skip=false' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           }
+          exit 0
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux' && steps.skip-check.outputs.skip != 'true'

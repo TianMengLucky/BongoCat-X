@@ -7,12 +7,26 @@
 Release 工作流构建并发布 GitHub Release；发布说明取自本文件，优先匹配 `## [<版本号>]`
 小节，若无匹配则使用最上方小节。发版前请把「未发布」小节标题改为对应版本号。
 
-## [未发布]
+## [2.0.1] · 2026-10-02
+
+### 修复
+
+- **修复连续点击「检测 Live2D Core」按钮导致的闪退（堆损坏）**：SDL3 中 `SDL_GetBasePath()` 返回内部持有的缓存指针，重复释放会在第二次重扫时触发 double free（0xC0000374）；相关代码已在 Windows 与 POSIX 平台移除该释放（SDL2 → SDL3 所有权变更）。
+- **随机行为选择器弹窗关闭不再弹出**：右键菜单弹窗增加关闭淡出动画，应用退出时跳过以避免残影。
+- 修复模型选择进度条与设置窗口淡入的相互干扰。
 
 ### 变更
 
 - **Live2D Cubism SDK 改为编译期可选**：`BONGO_CAT_REQUIRE_CUBISM` 默认值由 `ON` 改为 `OFF`——未放置 SDK 时 CMake 配置与编译照常完成，生成不含 Live2D 渲染的诊断后端。由于 Live2D 渲染器必须编译进二进制，该后端**无法**通过运行时放入 SDK 获得渲染能力；只有使用 SDK 构建的版本会响应 `live2d/` 目录（应用旁或数据目录内）的运行时放入，启动时自动检出、重启后生效，也可在设置界面直接导入。SDK 就位时按原方式配置即可得到 Live2D 版本；`ON` 现在仅用于 SDK 缺失时快速失败（release CI 显式传入）。同步调整 `build.bat`（默认不再要求 SDK，设 `BONGOCAT_REQUIRE_CUBISM=1` 恢复）、`release.yml` Unix 配置步骤（显式 `-DBONGO_CAT_REQUIRE_CUBISM=ON`）、诊断包内 `DiagnosticBuildNotice.txt`、`README.md` 与全部 10 个语言的文档。
 - **SDK/Core 缺失提示文案调整**：启动日志与设置界面提示按构建类型分别改写——诊断构建明确说明「运行时放入无法在本构建中启用 Live2D，请改用带 Live2D 支持的构建」；运行时 Core 缺失则说明在数据目录的 `live2d` 文件夹放入 `Live2DCubismCore.dll` 或官方 SDK zip（重启自动生效）或在设置窗口导入。10 个语言包的 `live2dSdkMissing` / `live2dCoreMissing` 同步更新。
+- **Live2D Core 发现即入库**：无论启动自动检测还是手动点击检测按钮，只要发现 Core（exe 旁裸 DLL、`live2d/` 目录裸 DLL 或官方 SDK zip 解压产物），都会复制一份到数据目录 `data/live2d/Live2DCubismCore.dll` 并把注册表缓存指向该副本；之后即使删除原始 zip/解压目录，重启也能直接从副本加载。
+- **检测按钮改为后台扫描**：解压 SDK zip 等耗时操作移入工作线程，点击后立即弹出「正在扫描…」提示，UI 不再卡顿；扫描中重复点击会被忽略，完成后在主线程完成 GL 热切换并弹出结果提示。Core 加载成功时立即清除过时的「缺少 Core」提示。
+- **关于页贡献者列表指向本仓库**：从上游站点切换为本仓库 GitHub 贡献者 API，逐人下载头像并本地组装缓存（24 小时）。
+- SDL 对话框组件恢复启用（Core 导入的文件选择器依赖）。
+
+### 开发者
+
+- `AGENTS.md` 新增应用日志系统（SDL3 sink 与 INFO 过滤规则）与 SDL3 内存所有权（`SDL_GetBasePath()` 禁止释放）说明。
 
 ## [2.0.0] · 2026-10-01
 

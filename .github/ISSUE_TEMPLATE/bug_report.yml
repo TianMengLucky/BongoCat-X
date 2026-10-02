@@ -23,9 +23,9 @@ body:
       label: "📝 复现步骤"
       description: "列出触发问题的操作步骤，方便我们快速定位。"
       placeholder: |
-        例如：<br>
-        1. 进行了什么操作<br>
-        2. 然后发生了什么<br>
+        例如：
+        1. 进行了什么操作
+        2. 然后发生了什么
         3. 问题出现
     validations:
       required: false

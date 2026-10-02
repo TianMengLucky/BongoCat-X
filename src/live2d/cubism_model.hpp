@@ -15,7 +15,7 @@
 #include <Motion/ACubismMotion.hpp>
 #include <Math/CubismMatrix44.hpp>
 #include <Rendering/OpenGL/CubismRenderer_OpenGLES2.hpp>
-#include <SDL3/SDL_opengl.h>
+#include "live2d_backend_sdl.h" /* SDL_GLContext, host-served SDL helpers */
 #include <map>
 #include <memory>
 #include <set>

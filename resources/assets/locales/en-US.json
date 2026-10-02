@@ -218,7 +218,7 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "This build does not include Live2D rendering (it was compiled without the Cubism SDK): Live2D rendering, animation, pointer tracking and cover generation are disabled. Use a build with Live2D support, for example the official release.",
+    "live2dSdkMissing": "This installation has no Live2D renderer: the bongo-cat-live2d-backend shared library is missing, so Live2D rendering, animation, pointer tracking and cover generation are disabled. Place the library next to the application or in its live2d folder and restart, or use a build with Live2D support such as the official release.",
     "live2dCoreMissing": "Live2D Cubism Core not found, so Live2D stays disabled until it is supplied. Drop Live2DCubismCore.dll or the official SDK zip into the live2d folder of the data directory and restart — startup picks it up automatically — or import it in this window without restarting.",
     "live2dCoreImport": "Import Live2D Core",
     "live2dCoreImportHint": "Select the Cubism Core library or the official Cubism SDK zip to enable Live2D rendering without a restart",

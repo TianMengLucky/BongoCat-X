@@ -99,7 +99,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK（可选：不安装也能编译）
 
-Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。SDK 现在是**可选的**：默认构建（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在缺少 SDK 时也能正常配置和编译，产物是不含 Live2D 渲染的诊断后端——由于 Live2D 渲染器必须在编译期链接进二进制，运行时把 SDK 投放进去也**无法**为该构建补上渲染能力（仅带渲染器的版本会响应投放），它只用于启动与平台诊断。
+Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。SDK 现在是**可选的**：默认构建（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在缺少 SDK 时也能正常配置和编译，但只会得到一个不含 Live2D 渲染的诊断版可执行文件，也不会生成渲染库——Live2D 渲染器已经拆成独立的共享库 `bongo-cat-live2d-backend`，只有 SDK 就位时才会生成。诊断版可执行文件启动时同样会查找这个库：把同版本的渲染库（例如官方 Release 自带的那份）放到应用旁或 `live2d` 目录即可启用 Live2D 渲染，只投放 SDK 本身则无效。该可执行文件本身只用于启动与平台诊断。
 
 若要构建带 Live2D 渲染支持的版本，仍需手动下载并导入 SDK：
 
@@ -115,13 +115,13 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。SDK 就位后照常配置即可得到带 Live2D 渲染的版本；`BONGO_CAT_REQUIRE_CUBISM=ON` 的作用是让 SDK 缺失时配置直接失败并打印导入方法（发布流水线使用），没有必要时保持默认的 `OFF` 即可。
+SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。SDK 就位后照常配置即可得到带 Live2D 渲染的版本：可执行文件之外还会生成共享库渲染器 `bongo-cat-live2d-backend`（Linux 为 `libbongo-cat-live2d-backend.so`、macOS 为 `libbongo-cat-live2d-backend.dylib`、Windows 为 `bongo-cat-live2d-backend.dll`），应用启动时自动加载它；`BONGO_CAT_REQUIRE_CUBISM=ON` 的作用是让 SDK 缺失时配置直接失败并打印导入方法（发布流水线使用），没有必要时保持默认的 `OFF` 即可。
 
 > [!TIP]
-> Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
+> 启用 Live2D Core 无需重新构建：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
 
 > [!NOTE]
-> 本仓库官方 Release 提供的安装包为 runtime-Core 构建：内置 Live2D 渲染支持，但**不附带 Core 运行库**。启动时会先检查 `live2d` 文件夹——把 `Live2DCubismCore.dll` 或官方 SDK zip 放入应用目录/数据目录下的该文件夹，重启后即被自动识别启用；也可以在应用内「设置 → 模型」页点击「导入 Live2D Core」立即生效。没有检测到 Core 时会回退到诊断后端，并在设置窗口给出提示。
+> 本仓库官方 Release 提供的安装包自带 Live2D 渲染库（`bongo-cat-live2d-backend`），但**不附带 Core 运行库**。启动时会依次检查渲染库与 Core：把渲染库或 `Live2DCubismCore.dll`／官方 SDK zip 放入应用目录/数据目录下的 `live2d` 文件夹，重启后即被自动识别启用；Core 也可以在应用内「设置 → 模型」页点击「导入 Live2D Core」立即生效。缺少渲染库或 Core 时应用照常启动（诊断逻辑），并在设置窗口提示缺的是哪一部分、该把文件放到哪里。
 
 ### ⚙️ CMake 选项
 
@@ -129,7 +129,7 @@ SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所�
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖。仅当 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可供 CMake 使用时才设为 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路径。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK 缺失时是否让配置失败。默认 `OFF`：缺失时构建不带 Live2D 渲染的诊断后端；设为 `ON` 则要求 SDK 必须存在（发布 CI 使用）。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK 缺失时是否让配置失败（并要求 SDK 存在才会生成 `bongo-cat-live2d-backend` 渲染库）。默认 `OFF`：缺失时只构建诊断版可执行文件、不生成渲染库；设为 `ON` 则要求 SDK 必须存在（发布 CI 使用）。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 将本地编译器警告视为错误。 |
 
 离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`）和 yyjson 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：
@@ -192,7 +192,7 @@ Windows Raw Input 接收器、macOS Quartz 事件 tap 和 Linux XInput2 监听�
 
 常规宠物路径仅在窗口可见、未最小化且标记为脏时渲染。每帧先清空背景，绘制模型，再合成指针、按键和效果覆盖层，最后调用平台呈现器。预览操作可以请求立即渲染，截图渲染可以跳过呈现。macOS 和 Linux 直接交换 SDL OpenGL 窗口；Windows 在未启用分层呈现时直接交换，否则读取帧缓冲并调用 `UpdateLayeredWindow`。偏好设置 UI 拥有独立的 SDL/OpenGL 窗口，并单独渲染和呈现。
 
-C 运行时调用 `include/bongo_cat/model.h` 中声明的 ABI。Live2D 桥接和 Cubism 实现在 `src/live2d` 中，仅在启用 Cubism SDK 时使用 C++17；其余本地运行时使用 C11。Cubism 类型保持在不透明 C 句柄之后；当 SDK 不可用时，`src/live2d/live2d_stub.c` 提供诊断后端。
+C 运行时调用 `include/bongo_cat/model.h` 中声明的 ABI。Live2D 桥接和 Cubism 实现在 `src/live2d` 中，仅在启用 Cubism SDK 时使用 C++17，并被编译成独立的 `bongo-cat-live2d-backend` 共享库；可执行文件只通过 `src/live2d/live2d_dispatch.c` 的分发表调用它，启动时若找不到该库就回到 `src/live2d/live2d_stub.c` 的诊断后端。其余本地运行时使用 C11。Cubism 类型保持在不透明 C 句柄之后；Core 运行库同样不在可执行文件中，由平台加载器在运行时解析。
 
 ```mermaid
 flowchart TB
@@ -211,7 +211,7 @@ flowchart TB
     State[("BongoCatApp 状态<br/>设置、会话、目录、运行时句柄")]
     Import["模型发现和导入<br/>验证、规范化为 Mver、安装/缓存"]
     Catalog[("模型和行为目录")]
-    Live2D["Live2D C ABI<br/>Cubism SDK 或诊断存根"]
+    Live2D["Live2D C ABI<br/>渲染库或诊断存根"]
     Overlay["覆盖层和音频"]
     Preferences["偏好设置和桌面外壳<br/>Nuklear UI、托盘、窗口操作"]
     Compose["OpenGL 帧合成"]

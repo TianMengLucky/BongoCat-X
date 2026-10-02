@@ -12,7 +12,7 @@
 
 #ifdef _WIN32
 #include "windows_package.h"
-#elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
+#else
 #include "posix_live2d_sdk.h"
 #endif
 
@@ -163,7 +163,7 @@ bool bongo_cat_startup_prepare(BongoCatApp *app, int argc, char **argv,
     BongoCatError *error) {
     if (!bongo_cat_startup_arguments(app, argc, argv, error) ||
         !bongo_cat_storage_paths_prepare(app, error)) return false;
-#if defined(BONGO_CAT_LIVE2D_CORE_RUNTIME) && !defined(_WIN32)
+#ifndef _WIN32
     /* Locate the user-supplied Cubism Core before the Live2D backend starts;
        Windows scans earlier in app_entry, POSIX scans now that the data
        directory is known. */

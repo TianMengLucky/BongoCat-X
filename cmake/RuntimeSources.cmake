@@ -1,4 +1,5 @@
 set(BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/live2d"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/input"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/lifecycle"

@@ -12,6 +12,10 @@ extern "C" {
    failures only leave Live2D rendering unavailable. */
 void bongo_cat_windows_live2d_sdk_prepare(const char *data_dir);
 bool bongo_cat_windows_live2d_sdk_ready(void);
+/* Module handle of the loaded Core DLL, or NULL. Opens the library on first
+   use when the startup scan has not run. Declared as void* so this header
+   stays free of a windows.h dependency. */
+void *bongo_cat_windows_live2d_core_library(void);
 /* Import a user-selected Core DLL or official SDK zip from the settings
    window: the file is copied or extracted into the data directory so later
    launches find it again, then loaded into this process immediately.

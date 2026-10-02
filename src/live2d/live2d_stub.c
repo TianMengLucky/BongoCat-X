@@ -1,4 +1,6 @@
+#include "bongo_cat/live2d_backend.h"
 #include "bongo_cat/model.h"
+#include "bongo_cat/platform.h"
 #include "model_import_manifest.h"
 #include "bongo_cat/json.h"
 #include "bongo_cat/path.h"
@@ -18,27 +20,27 @@ static BongoCatLive2D *create_runtime(const char *asset_root,
     (void)asset_root;
     if (!warning_logged) {
         warning_logged = true;
-#if defined(BONGO_CAT_HAS_CUBISM)
-        /* Runtime-Core build: the renderer is compiled in and activates as
-           soon as the user drops the Core library (or the official SDK zip,
-           whose Core is extracted on the spot) into a live2d folder — next
-           to the application or in the data directory — or imports it in the
-           settings window. */
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-            "Cubism Core not found at startup: Live2D stays disabled until "
-            "Live2DCubismCore.dll or the official SDK zip is dropped into a "
-            "live2d folder (next to the application or inside the data "
-            "directory) and the app is restarted, or imported in the "
-            "settings window");
-#else
-        /* Diagnostic build: the Cubism SDK was absent during compilation, so
-           no renderer exists and no runtime folder can restore Live2D. */
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-            "Cubism SDK was absent at build time: diagnostic backend "
-            "active; Live2D rendering will stay disabled and no runtime "
-            "drop-in can enable it in this build (rebuild with the SDK, or "
-            "use a build shipped with Live2D support)");
-#endif
+        /* The executable never compiles the Cubism SDK, so Live2D rendering
+           depends on two runtime parts: the backend shared library (shipped
+           with Live2D builds, or dropped into a live2d folder) and the
+           user-supplied Cubism Core. Report which part is missing. */
+        if (!bongo_cat_live2d_backend_ready()) {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                "Live2D backend library not found: Live2D rendering stays "
+                "disabled until bongo-cat-live2d-backend is placed next to "
+                "the application or inside a live2d folder (beside the "
+                "application or in the data directory); the settings window "
+                "shows the exact folder");
+        } else if (!bongo_cat_platform_live2d_core_available()) {
+            /* The renderer is ready; only the Core library is missing, and it
+               can be dropped in later or imported from the settings window. */
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                "Cubism Core not found at startup: Live2D stays disabled "
+                "until Live2DCubismCore.dll or the official SDK zip is "
+                "dropped into a live2d folder (next to the application or "
+                "inside the data directory) and the app is restarted, or "
+                "imported in the settings window");
+        }
     }
     BongoCatLive2D *value = calloc(1, sizeof(*value));
     if (!value) bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate Live2D runtime");

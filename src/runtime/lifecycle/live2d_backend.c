@@ -1,7 +1,8 @@
-/* Runtime import of the user-supplied Cubism Core (runtime-Core builds):
-   load the library, swap the diagnostic stub for the Live2D bridge, and
-   reload the active model without restarting the application. */
+/* Runtime import of the user-supplied Cubism Core: load the Core, load the
+   backend renderer when it is not loaded yet, swap the diagnostic stub for the
+   Live2D bridge, and reload the active model without restarting the app. */
 #include "runtime.h"
+#include "bongo_cat/live2d_backend.h"
 #include "bongo_cat/platform.h"
 
 bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
@@ -23,6 +24,10 @@ bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
     }
     if (!bongo_cat_platform_live2d_core_import(path, app->data_root, error))
         return false;
+    /* The renderer itself may still be missing: pick it up now so the swap
+       does not produce another stub when the user copied the backend library
+       into its folder while the application was running. */
+    bongo_cat_live2d_backend_load(NULL, app->data_root);
     /* The bridge needs a current OpenGL context when it starts its framework,
        so swap backends with the pet window's context bound. The previous
        instance is always a stub here because the Core was unavailable. */

@@ -4,6 +4,7 @@
 #include "preferences_notice.h"
 #include "preferences_state.h"
 #include "ui_animation.h"
+#include "bongo_cat/live2d_backend.h"
 #include "bongo_cat/memory.h"
 #include "bongo_cat/memory_policy.h"
 #include "bongo_cat/model_memory.h"
@@ -133,37 +134,34 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     value->visible = true;
     bongo_cat_model_memory_ui_state(true, true);
     bongo_cat_about_refresh(value);
-#ifndef BONGO_CAT_HAS_CUBISM
-    /* Diagnostic build: the Cubism SDK was absent from vendor/CubismSdkForNative
-       at build time, so no runtime folder can restore Live2D rendering. Tell
-       the user plainly instead of advertising an import this build lacks. */
-    if (!value->sdk_notice_shown) {
+    /* The executable never compiles the Cubism SDK, so Live2D rendering needs
+       two runtime parts: the backend shared library and the user-supplied
+       Cubism Core. Report the missing one once per session instead of
+       advertising an import this installation cannot use. */
+    if (!value->sdk_notice_shown && !bongo_cat_live2d_backend_ready()) {
         value->sdk_notice_shown = true;
-        bongo_cat_preferences_notice_show_anchored(value->app,
-            bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
-                "This build does not include Live2D rendering (it was "
-                "compiled without the Cubism SDK): Live2D rendering, "
-                "animation, pointer tracking and cover generation are "
-                "disabled. Use a build with Live2D support, for example the "
-                "official release."),
-            true, SDK_NOTICE_DURATION_MS, true);
+        if (bongo_cat_platform_live2d_core_available()) {
+            bongo_cat_preferences_notice_show_anchored(value->app,
+                bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
+                    "This installation has no Live2D renderer: the "
+                    "bongo-cat-live2d-backend shared library is missing, so "
+                    "Live2D rendering, animation, pointer tracking and cover "
+                    "generation are disabled. Place the library next to the "
+                    "application or in its live2d folder and restart, or use "
+                    "a build with Live2D support such as the official "
+                    "release."),
+                true, SDK_NOTICE_DURATION_MS, true);
+        } else {
+            bongo_cat_preferences_notice_show_anchored(value->app,
+                bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
+                    "Live2D Cubism Core not found, so Live2D stays disabled "
+                    "until it is supplied. Drop Live2DCubismCore.dll or the "
+                    "official SDK zip into the live2d folder of the data "
+                    "directory and restart — startup picks it up automatically "
+                    "— or import it in this window without restarting."),
+                true, SDK_NOTICE_DURATION_MS, true);
+        }
     }
-#elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
-    /* Runtime-Core build: rendering activates once the user supplies the
-       Core library; the live2d folders were created by the startup scan. */
-    if (!value->sdk_notice_shown &&
-        !bongo_cat_platform_live2d_core_available()) {
-        value->sdk_notice_shown = true;
-        bongo_cat_preferences_notice_show_anchored(value->app,
-            bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
-                "Live2D Cubism Core not found, so Live2D stays disabled "
-                "until it is supplied. Drop Live2DCubismCore.dll or the "
-                "official SDK zip into the live2d folder of the data "
-                "directory and restart — startup picks it up automatically "
-                "— or import it in this window without restarting."),
-            true, SDK_NOTICE_DURATION_MS, true);
-    }
-#endif
     if (!opening) {
         SDL_StartTextInput(value->window);
         bongo_cat_preferences_live_resize_install(value);

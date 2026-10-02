@@ -3,6 +3,7 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/image.h"
+#include "bongo_cat/live2d_backend.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -108,6 +109,17 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_window_apply(app);
     cache_startup_display_fps(app);
     bongo_cat_startup_stage(app, "platform-ready");
+    /* The Cubism SDK is never compiled into the executable: the renderer
+       arrives as a shared library the user ships with the app or drops into a
+       live2d folder, and it needs the Cubism Core the platform loader has just
+       scanned for. Loading is best effort — without the library the diagnostic
+       stub keeps the pet running and the settings window reports which runtime
+       part is missing. */
+    if (!bongo_cat_live2d_backend_load(NULL, app->data_root))
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+            "No Live2D backend library found: Live2D rendering stays "
+            "disabled (place %s next to the application or in a live2d folder "
+            "to enable it)", BONGO_CAT_LIVE2D_BACKEND_FILE_NAME);
     app->live2d = bongo_cat_live2d_create(app->asset_root, error);
     if (!app->live2d) return false;
     optional = (BongoCatError){0}; app->overlay = bongo_cat_overlay_create(&optional);

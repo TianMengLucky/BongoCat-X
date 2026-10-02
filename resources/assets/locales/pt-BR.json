@@ -218,7 +218,7 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "Esta compilação não inclui a renderização de Live2D (foi compilada sem o SDK Cubism): renderização, animação, rastreamento do ponteiro e geração de capa do Live2D estão desativados. Use uma compilação com suporte a Live2D, por exemplo a versão oficial.",
+    "live2dSdkMissing": "A biblioteca de renderização de Live2D (bongo-cat-live2d-backend) está ausente: renderização, animação, rastreamento do ponteiro e geração de capa do Live2D estão desativados. Coloque a biblioteca ao lado do aplicativo ou na pasta live2d e reinicie, ou use uma compilação com suporte a Live2D, como a versão oficial.",
     "live2dCoreMissing": "Live2D Cubism Core não encontrado: o Live2D permanece desativado até que ele seja fornecido. Coloque Live2DCubismCore.dll ou o zip oficial do SDK na pasta live2d do diretório de dados e reinicie — ele será detectado automaticamente na inicialização. Você também pode importá-lo nesta janela sem reiniciar.",
     "live2dCoreImport": "Importar Live2D Core",
     "live2dCoreImportHint": "Selecione a biblioteca Core do Cubism ou o zip oficial do Cubism SDK para ativar a renderização do Live2D sem reiniciar",

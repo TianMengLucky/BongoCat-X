@@ -3,12 +3,16 @@ foreach(template BongoCat install-lifecycle)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/${template}.iss.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${template}.iss" @ONLY)
 endforeach()
+set(BONGO_CAT_INSTALLER_DEPENDS bongo_cat)
+if(TARGET bongo-cat-live2d-backend)
+  list(APPEND BONGO_CAT_INSTALLER_DEPENDS bongo-cat-live2d-backend)
+endif()
 add_custom_target(package-installer
   COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
     -File "${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/build-installer.ps1"
     -BuildDir "${CMAKE_BINARY_DIR}" -Configuration "$<CONFIG>"
     -PackageName "${BONGO_CAT_PACKAGE_NAME}"
-  DEPENDS bongo_cat
+  DEPENDS ${BONGO_CAT_INSTALLER_DEPENDS}
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   COMMENT "Building the BongoCat Inno Setup installer"
   VERBATIM)

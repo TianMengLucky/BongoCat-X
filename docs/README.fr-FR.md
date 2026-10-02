@@ -126,11 +126,15 @@ ctest --test-dir build -C Release --output-on-failure
 Le SDK Cubism de Live2D est un logiciel propriétaire et n'est **pas**
 distribué avec ce dépôt. Le SDK est désormais **optionnel** : la compilation
 par défaut (`BONGO_CAT_REQUIRE_CUBISM=OFF`) se configure et se compile sans
-problème sans lui, et produit un backend de diagnostic sans rendu Live2D.
-Comme le rendu Live2D doit être compilé dans le binaire, déposer le SDK à
-l'exécution ne peut pas donner Live2D à cette compilation : seule une
-compilation réalisée avec le SDK réagit au dépôt à l'exécution. Le backend de
-diagnostic ne sert qu'au démarrage et au diagnostic de la plateforme.
+problème sans lui, mais ne produit qu'un exécutable de diagnostic sans rendu
+Live2D. Le rendu Live2D est désormais fourni par une bibliothèque partagée
+indépendante, `bongo-cat-live2d-backend`, qui n'est générée que lorsque le SDK
+est présent. L'exécutable la recherche cependant à chaque démarrage :
+déposer à côté de l'application, ou dans un dossier `live2d`, une
+bibliothèque de la même version (par exemple celle fournie par la version
+officielle) active le rendu Live2D, tandis que déposer le SDK seul ne sert
+à rien. L'exécutable de diagnostic ne sert qu'au démarrage et au
+diagnostic de la plateforme.
 
 Pour compiler avec la prise en charge du rendu Live2D, téléchargez et
 importez le SDK manuellement :
@@ -157,28 +161,35 @@ cmake -S . -B build -G Ninja \
 Le SDK doit contenir sa bibliothèque Core, les sources du Framework ainsi que
 l'arborescence tierce OpenGL GLEW dans la structure attendue par
 `cmake/Cubism.cmake`. Les compilations Cubism sous Windows nécessitent
-Visual Studio 2022. Une fois le SDK en place, configurez comme d'habitude
-pour obtenir une compilation avec rendu Live2D ; `BONGO_CAT_REQUIRE_CUBISM=ON`
-ne sert qu'à faire échouer rapidement la configuration, avec les instructions
-d'import, lorsque le SDK est absent (la CI de release l'utilise). Laissez-la
-à la valeur par défaut `OFF` lorsque vous n'en avez pas besoin.
+Visual Studio 2022. Une fois le SDK en place, configurez comme d'habitude :
+outre l'exécutable, le build produit la bibliothèque partagée de rendu
+`bongo-cat-live2d-backend` (`libbongo-cat-live2d-backend.so` sous Linux,
+`libbongo-cat-live2d-backend.dylib` sous macOS,
+`bongo-cat-live2d-backend.dll` sous Windows), que l'application charge
+automatiquement au démarrage. `BONGO_CAT_REQUIRE_CUBISM=ON` ne sert qu'à
+faire échouer la configuration, avec les instructions d'import, lorsque le SDK
+est absent (la CI de release l'utilise) ; laissez-la à la valeur par défaut
+`OFF` lorsque vous n'en avez pas besoin.
 
 > [!TIP]
-> Sous Windows, vous pouvez activer le rendu Live2D sans recompiler : ouvrez
+> Activer le Core Live2D ne demande aucune reconstruction : ouvrez
 > Paramètres → Modèle dans l’application, cliquez sur « Importer Live2D Core »
 > et sélectionnez un fichier `Live2DCubismCore.dll` ou l’archive zip officielle
 > du SDK Cubism. Le changement est immédiat, sans redémarrage.
 
 > [!NOTE]
-> Les versions officielles de ce dépôt sont des builds runtime-Core : elles
-> incluent le rendu Live2D mais n'embarquent **pas** le runtime Core. Au
-> démarrage, l'application vérifie le dossier `live2d` : déposez-y
-> `Live2DCubismCore.dll` ou le zip officiel du SDK (à côté de l'application
-> ou dans le répertoire de données) et il est pris en compte automatiquement
-> après un redémarrage ; vous pouvez aussi cliquer sur « Importer Live2D
-> Core » sous Paramètres → Modèle pour l'activer immédiatement. Lorsqu'aucun
-> Core n'est trouvé, l'application revient sur le backend de diagnostic et
-> affiche une indication dans la fenêtre des paramètres.
+> Les versions officielles de ce dépôt embarquent la bibliothèque de rendu
+> `bongo-cat-live2d-backend`, mais **pas** la bibliothèque d'exécution Core.
+> Au démarrage, l'application cherche la bibliothèque de rendu à côté de
+> l'exécutable, puis dans un sous-dossier `live2d` à côté de celui-ci, puis
+> dans un sous-dossier `live2d` du répertoire de données, et vérifie ensuite
+> le Core. Déposez la bibliothèque de rendu, ou bien `Live2DCubismCore.dll`
+> ou le zip officiel du SDK, dans ce dossier `live2d` et redémarrez : elle
+> est prise en compte automatiquement. Vous pouvez aussi importer le Core
+> sous Paramètres → Modèle (« Importer Live2D Core ») pour l'activer
+> immédiatement, sans redémarrer. S'il manque la bibliothèque de rendu ou le
+> Core, l'application démarre normalement en mode diagnostic et la fenêtre des
+> paramètres indique quel élément manque et où le placer.
 
 ### ⚙️ Options CMake
 
@@ -186,7 +197,7 @@ d'import, lorsque le SDK est absent (la CI de release l'utilise). Laissez-la
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Télécharge les dépendances tierces aux versions épinglées via `FetchContent` de CMake. Définissez cette option sur `OFF` uniquement si SDL3, yyjson, stb, miniaudio et Nuklear sont déjà accessibles à CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Chemin vers le Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Indique si l'absence du SDK fait échouer la configuration. Par défaut `OFF` : sans SDK, on compile le backend de diagnostic sans rendu Live2D ; mettez `ON` pour exiger le SDK (la CI de release l'utilise). |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Indique si l'absence du SDK fait échouer la configuration (et si le SDK est exigé pour produire la bibliothèque de rendu `bongo-cat-live2d-backend`). Par défaut `OFF` : sans SDK, on ne construit que l'exécutable de diagnostic, sans bibliothèque de rendu ; mettez `ON` pour exiger la présence du SDK (la CI de release l'utilise). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Traite les avertissements du compilateur natif comme des erreurs. |
 
 Pour une compilation hors ligne avec `BONGO_CAT_FETCH_DEPS=OFF`, fournissez
@@ -320,10 +331,15 @@ présentée indépendamment de la fenêtre de l'animal de compagnie.
 
 Le runtime C appelle l'ABI déclarée dans `include/bongo_cat/model.h`.
 Le pont Live2D et l'implémentation Cubism se trouvent dans `src/live2d` et
-n'utilisent C++17 que lorsque le SDK Cubism est activé ; le reste du runtime
-natif utilise C11. Les types Cubism restent masqués derrière des handles C
-opaques, tandis que `src/live2d/live2d_stub.c` fournit le backend de diagnostic
-lorsque le SDK n'est pas disponible.
+ne servent qu'à produire, lorsque le SDK Cubism est disponible, la
+bibliothèque partagée distincte `bongo-cat-live2d-backend` ; le reste du
+runtime natif utilise C11. L'exécutable ne fait qu'appeler cette
+bibliothèque via la table de dispatch de `src/live2d/live2d_dispatch.c`, une
+table de pointeurs de fonctions versionnée, et retombe, quand elle est
+absente, sur le backend de diagnostic `src/live2d/live2d_stub.c`. Les types
+Cubism restent masqués derrière des handles C opaques ; la bibliothèque
+d'exécution Core n'est pas davantage intégrée à l'exécutable et est résolue
+par le chargeur de la plateforme à l'exécution.
 
 ```mermaid
 flowchart TB
@@ -342,7 +358,7 @@ flowchart TB
     State[("État BongoCatApp<br/>paramètres, session, catalogues, handles d'exécution")]
     Import["Découverte et importation des modèles<br/>validation, normalisation vers Mver, installation/cache"]
     Catalog[("Catalogues des modèles et comportements")]
-    Live2D["ABI C de Live2D<br/>SDK Cubism ou stub de diagnostic"]
+    Live2D["ABI C de Live2D<br/>bibliothèque de rendu ou stub de diagnostic"]
     Overlay["Overlay et audio"]
     Preferences["Préférences et shell de bureau<br/>interface Nuklear, zone de notification, actions de fenêtre"]
     Compose["Composition de la frame OpenGL"]

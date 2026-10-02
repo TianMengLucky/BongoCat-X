@@ -6,11 +6,10 @@ extern "C" {
 #include "bongo_cat/sha256.h"
 }
 
-#include <SDL3/SDL_filesystem.h>
-#include <SDL3/SDL_log.h>
-#include <SDL3/SDL_thread.h>
-#include <SDL3/SDL_timer.h>
-#include <SDL3/SDL_video.h>
+#include "live2d_backend_sdl.h"
+/* The SDL helpers the bridge uses are served by the host table;
+   a second copy of SDL inside the backend would not share the
+   application's GL context. */
 #include <algorithm>
 #include <cstring>
 

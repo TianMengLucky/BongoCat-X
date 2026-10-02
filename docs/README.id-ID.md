@@ -128,11 +128,13 @@ ctest --test-dir build -C Release --output-on-failure
 Cubism SDK dari Live2D adalah perangkat lunak berpemilik dan **tidak** disertakan dalam
 repositori ini. Sekarang SDK bersifat **opsional**: build default
 (`BONGO_CAT_REQUIRE_CUBISM=OFF`) tetap dapat dikonfigurasi dan dikompilasi tanpa SDK
-serta menghasilkan backend diagnostik tanpa rendering Live2D. Karena renderer Live2D
-harus dikompilasi ke dalam biner, menaruh SDK saat runtime tidak dapat memberikan Live2D
-pada build tersebut — hanya build yang dibuat dengan SDK yang merespons penempatan
-runtime (berkas Core atau zip SDK di folder `live2d`). Backend diagnostik hanya untuk
-startup dan diagnostik platform.
+namun hanya menghasilkan eksekutabel diagnostik tanpa rendering Live2D. Renderer Live2D
+sudah dipisahkan menjadi shared library tersendiri, `bongo-cat-live2d-backend`, yang hanya
+dihasilkan bila SDK tersedia. Meski begitu, eksekutabel tetap mencari library tersebut setiap kali
+dijalankan: menaruh library dengan versi yang sama (misalnya yang menyertai
+rilis resmi) di samping aplikasi atau di folder `live2d` akan mengaktifkan
+rendering Live2D; menaruh SDK saja tidak berpengaruh. Eksekutabel diagnostik
+tersebut hanya untuk startup dan diagnostik platform.
 Untuk build dengan dukungan rendering Live2D, unduh dan pasang SDK secara manual:
 
 1. Buka [halaman unduhan Cubism SDK](https://www.live2d.com/en/sdk/download/native/), setujui Live2D Proprietary Software
@@ -157,27 +159,33 @@ cmake -S . -B build -G Ninja \
 SDK harus berisi Core library, source Framework, dan tree third-party OpenGL GLEW
 dengan tata letak yang diharapkan oleh `cmake/Cubism.cmake`. Build Cubism di
 Windows memerlukan Visual Studio 2022. Setelah SDK tersedia, lakukan konfigurasi
-seperti biasa untuk mendapatkan build dengan rendering Live2D;
-`BONGO_CAT_REQUIRE_CUBISM=ON` kini hanya menggagalkan konfigurasi lebih awal
-dengan instruksi impor ketika SDK tidak ada (digunakan oleh CI rilis). Biarkan
-pada default `OFF` bila Anda tidak membutuhkannya.
+seperti biasa: selain eksekutabel, build juga menghasilkan shared library renderer
+`bongo-cat-live2d-backend` (`libbongo-cat-live2d-backend.so` di Linux,
+`libbongo-cat-live2d-backend.dylib` di macOS, `bongo-cat-live2d-backend.dll` di
+Windows), yang dimuat aplikasi saat startup; `BONGO_CAT_REQUIRE_CUBISM=ON` kini hanya
+menggagalkan konfigurasi lebih awal dengan instruksi impor ketika SDK tidak ada
+(digunakan oleh CI rilis). Biarkan pada default `OFF` bila Anda tidak
+membutuhkannya.
 
 > [!TIP]
-> Di Windows, rendering Live2D dapat diaktifkan tanpa membangun ulang: buka
+> Mengaktifkan Live2D Core tidak perlu membangun ulang: buka
 > Pengaturan → Model di aplikasi, klik "Impor Live2D Core", lalu pilih berkas
 > `Live2DCubismCore.dll` atau zip SDK Cubism resmi. Perubahan langsung berlaku
 > tanpa perlu memulai ulang.
 
 > [!NOTE]
-> Paket Release resmi dari repositori ini adalah build runtime-Core: build
-> tersebut menyertakan renderer Live2D, tetapi **tidak** menyertakan runtime
-> Core. Saat startup, aplikasi memeriksa folder `live2d` — letakkan
-> `Live2DCubismCore.dll` atau zip SDK resmi di sana (di samping aplikasi
-> atau di direktori data) dan berkas itu akan terdeteksi otomatis setelah
-> aplikasi dimulai ulang; Anda juga dapat mengeklik "Impor Live2D Core" di
-> Pengaturan → Model untuk mengaktifkannya segera. Jika Core tidak
-> ditemukan, aplikasi kembali ke backend diagnostik dan menampilkan
-> petunjuk di jendela pengaturan.
+> Paket Release resmi dari repositori ini menyertakan library renderer
+> `bongo-cat-live2d-backend`, tetapi **tidak** menyertakan runtime Core. Saat
+> startup, aplikasi mencari library renderer di samping eksekutabel, lalu di
+> subfolder `live2d` di sampingnya, lalu di subfolder `live2d` di dalam
+> direktori data; setelah itu ia memeriksa Core. Letakkan library renderer,
+> atau `Live2DCubismCore.dll` atau zip SDK resmi, ke folder `live2d` tersebut
+> lalu mulai ulang aplikasi: berkas itu otomatis terdeteksi dan diaktifkan.
+> Anda juga dapat mengimpor Core melalui Pengaturan → Model ("Impor Live2D
+> Core") untuk mengaktifkannya segera, tanpa memulai ulang. Bila library
+> renderer atau Core tidak ada, aplikasi tetap berjalan normal dalam mode
+> diagnostik dan jendela pengaturan menunjukkan bagian mana yang kurang
+> serta di mana berkas harus diletakkan.
 
 ### ⚙️ Opsi CMake
 
@@ -185,7 +193,7 @@ pada default `OFF` bila Anda tidak membutuhkannya.
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent`. Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, dan Nuklear sudah tersedia untuk CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path ke Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Menentukan apakah SDK yang tidak tersedia menggagalkan konfigurasi. Default `OFF`: tanpa SDK dibangun backend diagnostik tanpa rendering Live2D; atur `ON` untuk mewajibkan SDK (digunakan oleh CI rilis). |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Menentukan apakah SDK yang tidak tersedia menggagalkan konfigurasi (dan apakah SDK wajib ada agar library renderer `bongo-cat-live2d-backend` dihasilkan). Default `OFF`: tanpa SDK hanya eksekutabel diagnostik yang dibangun, tanpa library renderer; atur `ON` untuk mewajibkan SDK (digunakan oleh CI rilis). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Perlakukan warning compiler native sebagai error. |
 
 Untuk build offline dengan `BONGO_CAT_FETCH_DEPS=OFF`, sediakan konfigurasi
@@ -297,11 +305,15 @@ UI preferensi memiliki jendela SDL/OpenGL terpisah yang dirender dan
 dipresentasikan secara independen dari jendela pet.
 
 Runtime C memanggil ABI yang dideklarasikan di `include/bongo_cat/model.h`.
-Bridge Live2D dan implementasi Cubism berada di `src/live2d` dan hanya
-menggunakan C++17 saat Cubism SDK diaktifkan; runtime native lainnya menggunakan
-C11. Tipe Cubism tetap berada di balik handle C yang opaque, sedangkan
-`src/live2d/live2d_stub.c` menyediakan backend diagnostik ketika SDK tidak
-tersedia.
+Bridge Live2D dan implementasi Cubism berada di `src/live2d` dan, ketika
+Cubism SDK tersedia, dikompilasi menjadi shared library terpisah
+`bongo-cat-live2d-backend`; runtime native lainnya menggunakan C11. Eksekutabel
+hanya memanggil library tersebut melalui tabel dispatch di
+`src/live2d/live2d_dispatch.c` (tabel pointer fungsi berversi) dan, bila
+library tidak ditemukan, kembali ke backend diagnostik
+`src/live2d/live2d_stub.c`. Tipe Cubism tetap berada di balik handle C yang
+opaque, sedangkan runtime Core juga tidak lagi dibundel di dalam eksekutabel,
+melainkan diresolfasi loader platform saat runtime.
 
 
 ```mermaid
@@ -322,7 +334,7 @@ flowchart TB
     State[("State BongoCatApp<br/>pengaturan, sesi, katalog, handle runtime")]
     Import["Penemuan dan impor model<br/>validasi, normalisasi ke Mver, instal/cache"]
     Catalog[("Katalog model dan perilaku")]
-    Live2D["ABI C Live2D<br/>Cubism SDK atau stub diagnostik"]
+    Live2D["ABI C Live2D<br/>library renderer atau stub diagnostik"]
     Overlay["Overlay dan audio"]
     Preferences["Preferensi dan shell desktop<br/>UI Nuklear, tray, aksi jendela"]
     Compose["Komposisi frame OpenGL"]

@@ -95,7 +95,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK (선택 사항 — 설치하지 않아도 빌드 가능)
 
-Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 이제 SDK는 **선택 사항**입니다: 기본 빌드(`BONGO_CAT_REQUIRE_CUBISM=OFF`)는 SDK 없이도 구성과 컴파일이 정상적으로 이루어지며, Live2D 렌더링이 없는 진단 백엔드가 생성됩니다. Live2D 렌더러는 바이너리에 컴파일되어 포함되어야 하므로, 런타임에 SDK를 추가한다고 해서 해당 빌드에 Live2D가 생기지는 않습니다 — SDK로 빌드한 바이너리만 런타임 드롭인에 반응합니다. 진단 백엔드는 시작 및 플랫폼 진단 전용입니다. Live2D 렌더링을 지원하도록 빌드하려면 SDK를 수동으로 다운로드하여 가져오세요:
+Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 이제 SDK는 빌드 시 **선택 사항**입니다: 기본 빌드(`BONGO_CAT_REQUIRE_CUBISM=OFF`)는 SDK 없이도 구성과 컴파일이 정상적으로 이루어지지만, 그 결과는 Live2D 렌더링이 없는 진단용 실행 파일이고 렌더링 라이브러리도 생성되지 않습니다. Live2D 렌더러는 별도의 공유 라이브러리 `bongo-cat-live2d-backend`로 분리되었고, SDK가 갖추어졌을 때만 생성됩니다. 진단용 실행 파일도 시작 시에는 이 라이브러리를 찾습니다: 같은 버전의 렌더링 라이브러리(예: 공식 Release에 포함된 것)를 앱 옆이나 `live2d` 디렉터리에 넣기만 하면 Live2D 렌더링이 활성화되고, SDK 자체만 넣어서는 아무 효과가 없습니다. 해당 실행 파일 자체는 시작과 플랫폼 진단 용도로만 사용됩니다. Live2D 렌더링을 지원하도록 빌드하려면 SDK를 수동으로 다운로드하여 가져오세요:
 
 1. [Cubism SDK 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에 접속하여 Live2D 전용 소프트웨어 라이선스 계약에 동의한 뒤 **Cubism SDK for Native**를 다운로드합니다(릴리스는 `5-r.5` SDK 기준으로 빌드 및 테스트됩니다).
 2. 압축을 풉니다. 풀린 폴더 이름이 `CubismSdkForNative-5-r.5`라면 `CubismSdkForNative`로 이름을 바꾸고 `vendor/` 아래에 두어 `Core/`와 `Framework/`가 포함되도록 합니다.
@@ -109,21 +109,25 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`가 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉터리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. SDK를 제자리에 두면 평소처럼 구성하기만 하면 Live2D 렌더링이 포함된 빌드를 얻을 수 있습니다. `BONGO_CAT_REQUIRE_CUBISM=ON`은 SDK가 없을 때 구성이 가져오기 안내와 함께 즉시 실패하도록 할 뿐입니다(릴리스 CI에서 사용합니다). 해당 동작이 필요하지 않다면 기본값인 `OFF`로 두세요.
+SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`가 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉터리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. SDK를 제자리에 두면 평소처럼 구성하기만 하면 Live2D 렌더링이 포함된 빌드를 얻을 수 있습니다. 실행 파일 외에도 공유 라이브러리 렌더러 `bongo-cat-live2d-backend`(Linux: `libbongo-cat-live2d-backend.so`, macOS: `libbongo-cat-live2d-backend.dylib`, Windows: `bongo-cat-live2d-backend.dll`)가 생성되며, 앱은 시작 시 이 라이브러리를 실행 파일 옆, 실행 파일 옆 `live2d/` 하위 폴더, 데이터 디렉터리 안의 `live2d/` 하위 폴더 순서로 찾아 자동으로 로드합니다. `BONGO_CAT_REQUIRE_CUBISM=ON`은 SDK가 없을 때 구성이 가져오기 안내와 함께 즉시 실패하도록 할 뿐입니다(릴리스 CI에서 사용합니다). 해당 동작이 필요하지 않다면 기본값인 `OFF`로 두세요.
 
 > [!TIP]
-> Windows에서는 다시 빌드하지 않고도 Live2D 렌더링을 활성화할 수 있습니다:
-> 앱에서 설정 → 모델 페이지를 연 뒤 «Live2D Core 가져오기»를 클릭하고
-> `Live2DCubismCore.dll` 파일 또는 공식 Cubism SDK zip을 선택하세요.
+> Live2D Core는 다시 빌드하지 않고도 활성화할 수 있습니다: 앱에서
+> 설정 → 모델 페이지를 연 뒤 «Live2D Core 가져오기»를 클릭하고
+> `Live2DCubismCore.dll`이나 공식 Cubism SDK zip을 선택하세요.
 > 즉시 적용되며 재시작이 필요하지 않습니다.
 
 > [!NOTE]
-> 이 저장소의 공식 Release 패키지는 runtime-Core 빌드입니다. Live2D 렌더러는 포함되지만
-> Core 런타임은 **번들로 제공되지 않습니다**. 앱은 시작 시 `live2d` 폴더를 확인합니다.
-> `Live2DCubismCore.dll` 또는 공식 SDK zip을 해당 폴더(응용 프로그램 옆이나 데이터
-> 디렉터리 안)에 넣으면 재시작 후 자동으로 인식됩니다. 설정 → 모델 페이지에서
-> «Live2D Core 가져오기»를 클릭하면 즉시 활성화할 수도 있습니다. Core를 찾지 못하면
-> 앱은 진단 백엔드로 대체되고 설정 창에 안내가 표시됩니다.
+> 이 저장소의 공식 Release 패키지에는 Live2D 렌더 라이브러리
+> (`bongo-cat-live2d-backend`)가 포함되지만 Core 런타임 라이브러리는
+> **번들로 제공되지 않습니다**. 시작 시 앱은 렌더링 라이브러리와 Core를
+> 순서대로 확인합니다. 렌더링 라이브러리 또는 `Live2DCubismCore.dll`
+> (또는 공식 SDK zip)를 앱 디렉터리나 데이터 디렉터리의 `live2d`
+> 폴더에 넣고 재시작하면 자동으로 인식되어 활성화됩니다. Core는 앱 내부의
+> 설정 → 모델 페이지에서 «Live2D Core 가져오기»를 클릭해 재시작 없이
+> 바로 가져올 수도 있습니다. 렌더링 라이브러리나 Core가 없어도 앱은
+> 진단 로직으로 정상적으로 시작하며, 설정 창에 어떤 부분이 부족한지와
+> 파일을 어디에 두어야 하는지가 표시됩니다.
 
 ### ⚙️ CMake 옵션
 
@@ -131,7 +135,7 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다. SDL3, yyjson, stb, miniaudio 및 Nuklear를 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native의 경로입니다. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK가 없을 때 구성을 실패하게 할지 여부입니다. 기본값 `OFF`: SDK가 없으면 Live2D 렌더링이 없는 진단 백엔드를 빌드합니다. SDK를 필수로 요구하려면 `ON`으로 설정하세요(릴리스 CI에서 사용합니다). |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK가 없을 때 구성을 실패하게 할지 여부입니다(SDK가 있어야 `bongo-cat-live2d-backend` 렌더링 라이브러리가 생성됩니다). 기본값 `OFF`: SDK가 없으면 렌더링 라이브러리를 만들지 않고 진단용 실행 파일만 빌드합니다. `ON`으로 설정하면 SDK가 반드시 존재해야 합니다(릴리스 CI에서 사용합니다). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 로컬 컴파일러 경고를 오류로 처리합니다. |
 
 오프라인 빌드 시 `BONGO_CAT_FETCH_DEPS=OFF`로 설정하고, SDL3(`SDL3-static` 포함) 및 yyjson의 CMake 패키지 구성을 제공하세요. stb, Nuklear 및 miniaudio를 자동으로 찾을 수 없는 경우 해당 include 디렉토리도 제공해야 합니다:
@@ -189,7 +193,7 @@ Windows Raw Input 수신기, macOS Quartz 이벤트 탭, Linux XInput2 리스너
 
 일반 펫 경로는 창이 보이고 최소화되지 않았으며 더티로 표시된 경우에만 렌더링됩니다. 각 프레임은 먼저 배경을 지우고, 모델을 그린 다음, 포인터, 키 및 효과 오버레이를 합성하고, 마지막으로 플랫폼 프리젠터를 호출합니다. 미리보기 작업은 즉시 렌더링을 요청할 수 있고, 스크린샷 렌더링은 프레젠테이션을 건너뛸 수 있습니다. macOS 및 Linux는 SDL OpenGL 창을 직접 교체합니다. Windows는 계층화된 프레젠테이션이 활성화되지 않은 경우 직접 교체하고, 그렇지 않으면 프레임 버퍼를 읽고 `UpdateLayeredWindow`를 호출합니다. 환경 설정 UI는 자체 SDL/OpenGL 창을 소유하고 별도로 렌더링 및 프레젠테이션을 수행합니다.
 
-C 런타임은 `include/bongo_cat/model.h`에 선언된 ABI를 호출합니다. Live2D 브리지 및 Cubism 구현은 `src/live2d`에 있으며, Cubism SDK가 활성화된 경우에만 C++17을 사용합니다. 나머지 로컬 런타임은 C11을 사용합니다. Cubism 타입은 불투명 C 핸들 뒤에 유지됩니다. SDK를 사용할 수 없을 때 `src/live2d/live2d_stub.c`는 진단 백엔드를 제공합니다.
+C 런타임은 `include/bongo_cat/model.h`에 선언된 ABI를 호출합니다. Live2D 브리지와 Cubism 구현은 `src/live2d`에 있으며, Cubism SDK가 활성화된 경우에만 C++17로 작성되어 별도의 공유 라이브러리 `bongo-cat-live2d-backend`로 빌드됩니다. 실행 파일은 `src/live2d/live2d_dispatch.c`의 버전이 지정된 함수 포인터 분할표를 통해서만 이 라이브러리를 호출하며, 시작 시 라이브러리를 찾지 못하면 `src/live2d/live2d_stub.c`의 진단 백엔드로 대체됩니다. 나머지 로컬 런타임은 C11을 사용합니다. Cubism 타입은 불투명 C 핸들 뒤에 유지되며, Core 런타임 라이브러리 역시 실행 파일에 포함되지 않고 플랫폼 로더가 런타임에 해석합니다.
 
 ```mermaid
 flowchart TB
@@ -208,7 +212,7 @@ flowchart TB
     State[("BongoCatApp 상태<br/>설정, 세션, 카탈로그, 런타임 핸들")]
     Import["모델 발견 및 가져오기<br/>검증, Mver로 정규화, 설치/캐싱"]
     Catalog[("모델 및 동작 카탈로그")]
-    Live2D["Live2D C ABI<br/>Cubism SDK 또는 진단 스텁"]
+    Live2D["Live2D C ABI<br/>렌더링 라이브러리 또는 진단 스텁"]
     Overlay["오버레이 및 오디오"]
     Preferences["환경 설정 및 데스크톱 셸<br/>Nuklear UI, 트레이, 창 작업"]
     Compose["OpenGL 프레임 합성"]

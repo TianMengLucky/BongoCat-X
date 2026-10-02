@@ -3,6 +3,10 @@
 
 #include "bongo_cat/common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void bongo_cat_sha256_bytes(const void *data, size_t size, char output[65]);
 BongoCatResult bongo_cat_sha256_file(const char *path, char output[65], BongoCatError *error);
 /* Checks cancellation between 8 KiB reads. Cancellation returns a platform
@@ -10,5 +14,9 @@ BongoCatResult bongo_cat_sha256_file(const char *path, char output[65], BongoCat
 typedef bool (*BongoCatSha256Cancelled)(void *userdata);
 BongoCatResult bongo_cat_sha256_file_cancellable(const char *path, char output[65],
     BongoCatSha256Cancelled cancelled, void *userdata, BongoCatError *error);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

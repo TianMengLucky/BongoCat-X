@@ -116,7 +116,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK（可選，不安裝也能建置）
 
-Live2D Cubism SDK 為專有軟體，**不會**隨本儲存庫散布。現在 SDK 為**可選**：預設建置（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在沒有 SDK 時也能正常配置與編譯，只會產生不含 Live2D 渲染的診斷後端。由於 Live2D 渲染器必須編譯進執行檔，在執行時放入 SDK 無法讓該建置獲得 Live2D——只有以 SDK 建置的版本才會回應執行時放入（應用程式旁或資料目錄下的 `live2d` 資料夾）。診斷後端僅用於啟動與平台診斷。
+Live2D Cubism SDK 為專有軟體，**不會**隨本儲存庫散布。現在 SDK 為**可選**：預設建置（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在沒有 SDK 時也能正常配置與編譯，只會產生不含 Live2D 渲染的診斷版執行檔。Live2D 渲染器已拆成獨立的共享庫 `bongo-cat-live2d-backend`，只有 SDK 就位時才會一併生成。不過執行檔在啟動時仍會尋找這個共享庫：把同版本的渲染庫（例如官方 Release 內建的那份）放到應用程式旁或 `live2d` 資料夾就能啟用 Live2D 渲染，只放入 SDK 本身則無效。該執行檔本身僅用於啟動與平台診斷。
 若要以 Live2D 渲染支援建置，請手動下載並放入 SDK：
 
 1. 開啟 [Cubism SDK 下載頁面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 專有軟體授權協議，下載 **Cubism SDK for Native**（專案以 `5-r.5` 版本建置與測試）。
@@ -131,13 +131,13 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cmake` 所預期的 OpenGL GLEW 第三方目錄結構。Windows 上的 Cubism 建置需要 Visual Studio 2022。SDK 就位後，照一般方式配置即可得到含 Live2D 渲染的建置；`BONGO_CAT_REQUIRE_CUBISM=ON` 現在僅在缺少 SDK 時讓配置快速失敗並提示匯入步驟（release CI 使用）。不需要時請維持預設的 `OFF`。
+SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cmake` 所預期的 OpenGL GLEW 第三方目錄結構。Windows 上的 Cubism 建置需要 Visual Studio 2022。SDK 就位後照一般方式配置即可得到含 Live2D 渲染的建置：除了執行檔之外還會生成共享庫渲染器 `bongo-cat-live2d-backend`（Linux 為 `libbongo-cat-live2d-backend.so`、macOS 為 `libbongo-cat-live2d-backend.dylib`、Windows 為 `bongo-cat-live2d-backend.dll`），應用程式啟動時會自動載入它；`BONGO_CAT_REQUIRE_CUBISM=ON` 現在僅在缺少 SDK 時讓配置快速失敗並提示匯入步驟（release CI 使用）。不需要時請維持預設的 `OFF`。
 
 > [!TIP]
-> Windows 使用者無需重新建置即可啟用 Live2D 渲染：在應用內開啟「設定 → 模型」頁，點擊「匯入 Live2D Core」，選擇 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 壓縮檔，匯入後立即生效（無需重新啟動）。
+> 啟用 Live2D Core 無需重新建置：在應用內開啟「設定 → 模型」頁，點擊「匯入 Live2D Core」，選擇 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 壓縮檔，匯入後立即生效（無需重新啟動）。
 
 > [!NOTE]
-> 本倉庫官方 Release 提供的安裝包為 runtime-Core 建置：內含 Live2D 渲染器，但**不附帶 Core 執行庫**。啟動時應用程式會檢查 `live2d` 資料夾——將 `Live2DCubismCore.dll` 或官方 SDK zip 放入其中（應用程式旁或資料目錄內），重新啟動後即自動啟用；也可在「設定 → 模型」頁點擊「匯入 Live2D Core」立即啟用。找不到 Core 時，應用程式會退回診斷後端並在設定視窗顯示提示。
+> 本倉庫官方 Release 提供的安裝包內含 Live2D 渲染庫（`bongo-cat-live2d-backend`），但**不附帶 Core 執行庫**。啟動時會依序在執行檔旁、執行檔旁的 `live2d` 子資料夾、資料目錄下的 `live2d` 子資料夾尋找渲染庫，接著檢查 Core：把渲染庫或 `Live2DCubismCore.dll`／官方 SDK zip 放入應用程式旁或資料目錄下的 `live2d` 資料夾，重新啟動後即被自動識別啟用；Core 也可以在「設定 → 模型」頁點擊「匯入 Live2D Core」立即啟用。缺少渲染庫或 Core 時應用程式照常啟動（診斷邏輯），並在設定視窗提示缺的是哪一部分、該把檔案放到哪裡。
 
 ### ⚙️ CMake 選項
 
@@ -145,7 +145,7 @@ SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cma
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下載固定的第三方依賴項。僅在 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可被 CMake 找到時設為 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路徑。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | 缺少 SDK 時是否讓配置失敗。預設 `OFF`：沒有 SDK 時建置不含 Live2D 渲染的診斷後端；設為 `ON` 則要求必須有 SDK（release CI 使用）。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | 缺少 SDK 時是否讓配置失敗（並要求必須有 SDK 才會生成 `bongo-cat-live2d-backend` 渲染庫）。預設 `OFF`：沒有 SDK 時只建置診斷版執行檔、不生成渲染庫；設為 `ON` 則要求必須有 SDK（release CI 使用）。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 將原生編譯器警告視為錯誤。 |
 
 若要進行離線建置，設定 `BONGO_CAT_FETCH_DEPS=OFF`，並提供 SDL3（含 `SDL3-static`）和 yyjson 的 CMake 套件配置，以及 stb、Nuklear、miniaudio 的包含路徑（若無法自動找到）：
@@ -205,7 +205,7 @@ Windows Raw Input 接收器、macOS Quartz 事件監聽，以及 Linux XInput2 �
 
 一般寵物路徑僅在視窗可見、未最小化且標記為髒污時才進行渲染。每個影格會清除背景、繪製模型，並合成指標、按鍵與特效覆疊層，最後呼叫平台呈現器。預覽操作可要求立即渲染，而擷取渲染則可能略過呈現。macOS 和 Linux 直接交換 SDL OpenGL 視窗。Windows 在圖層呈現未啟用時直接交換，否則會讀回影格供 `UpdateLayeredWindow` 使用。偏好設定 UI 擁有獨立的 SDL/OpenGL 視窗，且獨立於寵物視窗進行渲染和呈現。
 
-C 執行時期會呼叫 `include/bongo_cat/model.h` 中宣告的 ABI。Live2D 橋接與 Cubism 實作位於 `src/live2d`，且僅在啟用 Cubism SDK 時使用 C++17；其餘原生執行時期則使用 C11。Cubism 類型保留在不透明的 C 控制代碼之後，而 `src/live2d/live2d_stub.c` 則在 SDK 不可用時提供診斷後端。
+C 執行時期會呼叫 `include/bongo_cat/model.h` 中宣告的 ABI。Live2D 橋接與 Cubism 實作位於 `src/live2d`，有 SDK 時會被編譯成獨立的 `bongo-cat-live2d-backend` 共享庫；其餘原生執行時期則使用 C11。執行檔只透過 `src/live2d/live2d_dispatch.c` 的分發表（具版本號的函式指標表）呼叫它，啟動時找不到該庫就回到 `src/live2d/live2d_stub.c` 的診斷後端。Cubism 類型保留在不透明的 C 控制代碼之後；Core 執行庫同樣不在可執行檔中，而是由平台載入器在執行時期解析。
 
 
 ```mermaid
@@ -226,7 +226,7 @@ flowchart TB
     State[("BongoCatApp 狀態<br/>設定、工作階段、目錄、執行時期控制代碼")]
     Import["模型探索與匯入<br/>驗證、正規化為 Mver、安裝／快取"]
     Catalog[("模型與行為目錄")]
-    Live2D["Live2D C ABI<br/>Cubism SDK 或診斷存根"]
+    Live2D["Live2D C ABI<br/>渲染庫或診斷存根"]
     Overlay["覆疊層與音訊"]
     Preferences["偏好設定與桌面殼層<br/>Nuklear UI、系統匣、視窗動作"]
     Compose["OpenGL 影格合成"]

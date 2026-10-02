@@ -117,6 +117,13 @@ try {
 
     Copy-Item $ExecutablePath (Join-Path $stagingDirectory "BongoCat.exe")
 
+    # The Live2D backend library loads from next to the executable, so ship it
+    # whenever the build produced one.
+    $backendCandidate = Join-Path (Split-Path -Parent $ExecutablePath) "bongo-cat-live2d-backend.dll"
+    if (Test-Path -LiteralPath $backendCandidate) {
+        Copy-Item -LiteralPath $backendCandidate (Join-Path $stagingDirectory "bongo-cat-live2d-backend.dll")
+    }
+
     $manifestTemplate = Get-Content (Join-Path $scriptDirectory "AppxManifest.xml.in") -Raw
     $manifest = $manifestTemplate.Replace("@PACKAGE_VERSION@", $PackageVersion)
     $manifest = $manifest.Replace("@PROCESSOR_ARCHITECTURE@", $Architecture)

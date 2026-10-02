@@ -2,8 +2,8 @@
 #define BONGO_CAT_CUBISM_MODEL_TEXTURE_HPP
 
 #include "bongo_cat/image.h"
-#include <SDL3/SDL_opengl.h>
-#include <SDL3/SDL_video.h>
+#include "live2d_backend_sdl.h" /* SDL_GLContext, host-served SDL helpers */
+#include "live2d_backend_sdl.h" /* SDL_GLContext, host-served SDL helpers */
 
 namespace bongo_cat {
 struct ModelTexture {

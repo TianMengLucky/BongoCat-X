@@ -1,8 +1,8 @@
-/* Runtime discovery of the Cubism Core DLL. Runtime-Core builds keep the
-   proprietary Core out of the executable; the binary arrives at render time
-   from the user: a registry value pointing at it, a drop-in next to the
-   application, or an official SDK zip extracted on first sight. The search
-   runs once per process, before the Live2D backend initializes. */
+/* Runtime discovery of the Cubism Core DLL. The executable never embeds the
+   proprietary Core: the binary arrives at render time from the user - a
+   registry value pointing at it, a drop-in next to the application, or an
+   official SDK zip extracted on first sight. The search runs once per process,
+   before the Live2D backend initializes. */
 #include "bongo_cat/common.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
@@ -11,7 +11,6 @@
 #include <SDL3/SDL.h>
 #include <windows.h>
 
-#ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
 #include <delayimp.h>
 #include <miniz.h>
 #include <stdio.h>
@@ -302,12 +301,19 @@ void bongo_cat_windows_live2d_sdk_prepare(const char *data_dir) {
         for (i = 0; i < count; ++i)
             (void)bongo_cat_path_create_directory(directories[i]);
     }
-    SDL_free((void *)base);
+    /* SDL_GetBasePath() returns SDL's own cached string and must not be
+       freed: later callers (the asset locator, the backend loader) would be
+       left with a dangling pointer. */
 }
 
 bool bongo_cat_windows_live2d_sdk_ready(void) {
     if (!attempted) bongo_cat_windows_live2d_sdk_prepare(NULL);
     return core_module != NULL;
+}
+
+HMODULE bongo_cat_windows_live2d_core_library(void) {
+    if (!attempted) bongo_cat_windows_live2d_sdk_prepare(NULL);
+    return core_module;
 }
 
 bool bongo_cat_windows_live2d_sdk_import(const char *path,
@@ -386,22 +392,3 @@ bool bongo_cat_windows_live2d_sdk_import(const char *path,
     }
     return true;
 }
-#else
-void bongo_cat_windows_live2d_sdk_prepare(const char *data_dir) {
-    (void)data_dir;
-}
-bool bongo_cat_windows_live2d_sdk_import(const char *path,
-    const char *data_dir, BongoCatError *error) {
-    (void)path; (void)data_dir;
-    bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Runtime Cubism Core import requires the runtime-Core build");
-    return false;
-}
-bool bongo_cat_windows_live2d_sdk_ready(void) {
-#ifdef BONGO_CAT_HAS_CUBISM
-    return true;
-#else
-    return false;
-#endif
-}
-#endif

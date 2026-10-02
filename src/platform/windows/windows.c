@@ -19,13 +19,10 @@
 bool bongo_cat_platform_live2d_core_available(void) {
     return bongo_cat_windows_live2d_sdk_ready();
 }
-bool bongo_cat_platform_live2d_core_import_supported(void) {
-#ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
-    return true;
-#else
-    return false;
-#endif
+void *bongo_cat_platform_live2d_core_library(void) {
+    return bongo_cat_windows_live2d_core_library();
 }
+bool bongo_cat_platform_live2d_core_import_supported(void) { return true; }
 bool bongo_cat_platform_live2d_core_import(const char *path,
     const char *data_dir, BongoCatError *error) {
     return bongo_cat_windows_live2d_sdk_import(path, data_dir, error);

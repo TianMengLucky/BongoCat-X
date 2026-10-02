@@ -38,10 +38,19 @@ set(CPACK_INSTALL_CMAKE_PROJECTS
 if(WIN32)
   set(BONGO_CAT_PORTABLE_EXECUTABLE
     "${CMAKE_BINARY_DIR}/dist/${BONGO_CAT_PACKAGE_NAME}-portable.exe")
+  set(BONGO_CAT_PORTABLE_COMMANDS
+    ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
+    ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:bongo_cat>"
+      "${BONGO_CAT_PORTABLE_EXECUTABLE}")
+  if(TARGET bongo-cat-live2d-backend)
+    # The portable executable only renders Live2D with the library beside it.
+    list(APPEND BONGO_CAT_PORTABLE_COMMANDS
+      ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:bongo-cat-live2d-backend>"
+        "${CMAKE_BINARY_DIR}/dist/bongo-cat-live2d-backend.dll")
+  endif()
   add_custom_command(OUTPUT "${BONGO_CAT_PORTABLE_EXECUTABLE}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:bongo_cat>"
-      "${BONGO_CAT_PORTABLE_EXECUTABLE}"
+    COMMAND ${BONGO_CAT_PORTABLE_COMMANDS}
     DEPENDS bongo_cat
     COMMENT "Building the BongoCat Windows portable executable"
     VERBATIM)

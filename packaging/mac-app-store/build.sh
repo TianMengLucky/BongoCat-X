@@ -25,6 +25,17 @@ lipo -create \
   -output "$app/Contents/MacOS/BongoCat"
 lipo "$app/Contents/MacOS/BongoCat" -verify_arch arm64 x86_64
 
+# The Live2D backend library ships beside the executable, so each slice carries
+# its own copy and the universal bundle needs the same treatment.
+backend="libbongo-cat-live2d-backend.dylib"
+if [[ -f "build-app-store/arm64/BongoCat.app/Contents/MacOS/$backend" &&
+      -f "build-app-store/x86_64/BongoCat.app/Contents/MacOS/$backend" ]]; then
+  lipo -create "build-app-store/arm64/BongoCat.app/Contents/MacOS/$backend" \
+    "build-app-store/x86_64/BongoCat.app/Contents/MacOS/$backend" \
+    -output "$app/Contents/MacOS/$backend"
+  lipo "$app/Contents/MacOS/$backend" -verify_arch arm64 x86_64
+fi
+
 # The source ICNS stops at 512 pixels. App Store Connect also requires the
 # 512pt @2x (1024 pixel / ic10) representation. Preserve the existing artwork
 # and smaller representations, adding the missing size to the store bundle.

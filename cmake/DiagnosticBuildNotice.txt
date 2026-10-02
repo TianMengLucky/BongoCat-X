@@ -1,15 +1,17 @@
 BongoCat diagnostic build
 
-This package was built without the Live2D Cubism SDK, so it contains no
-Live2D renderer: Live2D rendering, animation, pointer tracking,
-imported-model rendering, and cover generation are disabled. Nothing
-dropped into the live2d folder later can change that, because the missing
-renderer can only be restored by compiling the app with the SDK. This
-package is only for startup and platform diagnostics.
+This package was built without the Live2D Cubism SDK, so it does not ship
+the bongo-cat-live2d-backend renderer library: Live2D rendering, animation,
+pointer tracking, imported-model rendering, and cover generation are
+disabled. Every build still loads that library at startup, so Live2D can be
+switched on by dropping a bongo-cat-live2d-backend library built from the
+same version (for example one from the official release) into a live2d
+folder next to the application or in the data directory; the Cubism Core
+itself is then picked up the same way, or imported in the settings window.
 
-To get Live2D, use a build produced with the Cubism SDK (for example the
-official release). Its binary checks the live2d folder on every startup
-and activates Live2D as soon as the Cubism Core library or the official
-SDK zip is found there.
+To get Live2D without hunting for a library, use a build produced with the
+Cubism SDK (for example the official release): it ships the renderer library
+next to the application and activates Live2D as soon as the Cubism Core
+library or the official SDK zip is found in the live2d folder.
 
 Do not distribute this package to end users or submit it to an app store.

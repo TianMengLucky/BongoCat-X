@@ -11,8 +11,10 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 ### 变更
 
-- **Live2D Cubism SDK 改为编译期可选**：`BONGO_CAT_REQUIRE_CUBISM` 默认值由 `ON` 改为 `OFF`——未放置 SDK 时 CMake 配置与编译照常完成，生成不含 Live2D 渲染的诊断后端。由于 Live2D 渲染器必须编译进二进制，该后端**无法**通过运行时放入 SDK 获得渲染能力；只有使用 SDK 构建的版本会响应 `live2d/` 目录（应用旁或数据目录内）的运行时放入，启动时自动检出、重启后生效，也可在设置界面直接导入。SDK 就位时按原方式配置即可得到 Live2D 版本；`ON` 现在仅用于 SDK 缺失时快速失败（release CI 显式传入）。同步调整 `build.bat`（默认不再要求 SDK，设 `BONGOCAT_REQUIRE_CUBISM=1` 恢复）、`release.yml` Unix 配置步骤（显式 `-DBONGO_CAT_REQUIRE_CUBISM=ON`）、诊断包内 `DiagnosticBuildNotice.txt`、`README.md` 与全部 10 个语言的文档。
-- **SDK/Core 缺失提示文案调整**：启动日志与设置界面提示按构建类型分别改写——诊断构建明确说明「运行时放入无法在本构建中启用 Live2D，请改用带 Live2D 支持的构建」；运行时 Core 缺失则说明在数据目录的 `live2d` 文件夹放入 `Live2DCubismCore.dll` 或官方 SDK zip（重启自动生效）或在设置窗口导入。10 个语言包的 `live2dSdkMissing` / `live2dCoreMissing` 同步更新。
+- **Live2D 渲染器改为独立的 `bongo-cat-live2d-backend` 共享库**：Cubism 桥接与渲染实现从可执行文件中拆出，编译为独立的 MODULE 共享库（Linux `libbongo-cat-live2d-backend.so`、macOS `libbongo-cat-live2d-backend.dylib`、Windows `bongo-cat-live2d-backend.dll`）。可执行文件只通过 ABI 分发表（`include/bongo_cat/live2d_backend.h`、`src/live2d/live2d_dispatch.c`）调用渲染能力；启动时 `src/live2d/live2d_backend_load.c` 按「可执行文件旁 → 旁侧 `live2d/` 目录 → 数据目录 `live2d/`」查找该库并加载，命中即启用真实渲染，缺失则继续走 `src/live2d/live2d_stub.c` 诊断后端。库与应用通过主机服务表交互（错误、文件、GL、图片/纹理任务、JSON、sha256、内存与资源统计等）与 10 个 SDL 服务转发（日志、GL 上下文、程序路径、线程、计时），因此库自身不链接 SDL，也能与应用共享同一个 GL 上下文与日志。可执行文件不再链接 Cubism SDK，也不再为 Core 做延迟加载；Core 运行库仍只存在于 `live2d/` 投放或设置界面导入。各打包流程（ZIP/TGZ、Windows 便携版与安装包、AppImage、macOS App Store、微软商店）随附该库；本地 SDK 构建会在构建后把库复制到可执行文件旁。
+- **Live2D Cubism SDK 改为编译期可选**：`BONGO_CAT_REQUIRE_CUBISM` 默认值由 `ON` 改为 `OFF`——未放置 SDK 时 CMake 配置与编译照常完成，只生成不含 Live2D 渲染的诊断版可执行文件（**不再**生成渲染库）；该可执行文件仍会在启动时查找 `bongo-cat-live2d-backend`，把同版本的渲染库（如官方 Release 自带的那份）放入应用旁或 `live2d/` 目录即可启用 Live2D 渲染。SDK 就位时按原方式配置即随构建产出该库，启动时自动检出、重启后生效，也可在设置界面直接导入 Core。`ON` 现在仅用于 SDK 缺失时快速失败（release CI 显式传入）。同步调整 `build.bat`（默认不再要求 SDK，设 `BONGOCAT_REQUIRE_CUBISM=1` 恢复）、`release.yml` Unix 配置步骤（显式 `-DBONGO_CAT_REQUIRE_CUBISM=ON`）、诊断包内 `DiagnosticBuildNotice.txt`、`README.md` 与全部 10 个语言的文档。
+- **SDK/渲染库/Core 缺失提示文案调整**：启动日志与设置界面提示改为按实际情况分别说明——渲染库缺失时说明把 `bongo-cat-live2d-backend` 放到应用旁或 `live2d` 文件夹（重启后自动启用），或改用自带渲染库的版本；Core 缺失时说明在 `live2d` 文件夹放入 `Live2DCubismCore.dll` 或官方 SDK zip（重启自动生效）或在设置窗口导入。10 个语言包的 `live2dSdkMissing` / `live2dCoreMissing` 同步更新。
+- **`gl_readback.c` 局部变量与测试宏重名修复**：`src/platform/common/gl_readback.c` 的 `GLenum error` 与 `tests/platform/test_gl_readback.c` 的 `#define glGetError error` 冲突导致启用测试的构建失败（CI 四个 job 均传 `-DBUILD_TESTING=OFF`，故此前未暴露），局部变量更名为 `gl_error`。
 
 ## [2.0.0] · 2026-10-01
 

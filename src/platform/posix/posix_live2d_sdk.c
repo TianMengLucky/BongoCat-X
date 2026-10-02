@@ -1,10 +1,15 @@
 /* Runtime discovery of the Cubism Core shared library on Linux and macOS.
-   Runtime-Core builds keep the proprietary Core out of the executable; the
-   binary arrives at render time from the user: a drop-in beside the
-   application, a file imported from the settings window, or an official SDK
-   zip extracted on first sight. The search runs once per process, before the
-   Live2D backend initializes. The Cubism Core symbols themselves are reached
-   through the generated dlopen shim (cmake/gen_core_shim.py). */
+   The executable never embeds the proprietary Core: the binary arrives at
+   render time from the user - a drop-in beside the application, a file
+   imported from the settings window, or an official SDK zip extracted on
+   first sight. The search runs once per process, before the Live2D backend
+   initializes. The Cubism Core symbols themselves are reached through the
+   generated dlopen shim (cmake/gen_core_shim.py). */
+/* Strict ISO mode (-std=c11) hides the dirent d_type constants; this build
+   needs them to tell directory entries apart from zip candidates. */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
 #include "bongo_cat/common.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
@@ -24,7 +29,6 @@
 #define CORE_LIBRARY_NAME "libLive2DCubismCore.so"
 #endif
 
-#ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
 #include <miniz.h>
 
 static void *core_handle;
@@ -61,7 +65,7 @@ static int select_core_entry(mz_zip_archive *zip) {
         const size_t suffix_length = sizeof(CORE_LIBRARY_NAME) - 1;
         memset(&stat, 0, sizeof(stat));
         if (!mz_zip_reader_file_stat(zip, i, &stat)) continue;
-        if (stat.m_is_directory || stat.m_uncompressed_size < 1024 * 1024)
+        if (stat.m_is_directory || stat.m_uncomp_size < 1024 * 1024)
             continue;
         name = stat.m_filename;
         length = strlen(name);
@@ -216,7 +220,9 @@ void bongo_cat_posix_live2d_sdk_prepare(const char *data_dir) {
         for (i = 0; i < count; ++i)
             (void)bongo_cat_path_create_directory(directories[i]);
     }
-    SDL_free((void *)base);
+    /* SDL_GetBasePath() returns SDL's own cached string and must not be
+       freed: later callers (the asset locator, the backend loader) would be
+       left with a dangling pointer. */
 }
 
 bool bongo_cat_posix_live2d_sdk_ready(void) {
@@ -299,37 +305,14 @@ bool bongo_cat_posix_live2d_sdk_import(const char *path,
     }
     return true;
 }
-#else
-void bongo_cat_posix_live2d_sdk_prepare(const char *data_dir) {
-    (void)data_dir;
-}
-bool bongo_cat_posix_live2d_sdk_ready(void) {
-#ifdef BONGO_CAT_HAS_CUBISM
-    return true;
-#else
-    return false;
-#endif
-}
-void *bongo_cat_posix_live2d_core_library(void) { return NULL; }
-bool bongo_cat_posix_live2d_sdk_import(const char *path,
-    const char *data_dir, BongoCatError *error) {
-    (void)path; (void)data_dir;
-    bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Runtime Cubism Core import requires the runtime-Core build");
-    return false;
-}
-#endif
 
 bool bongo_cat_platform_live2d_core_available(void) {
     return bongo_cat_posix_live2d_sdk_ready();
 }
-bool bongo_cat_platform_live2d_core_import_supported(void) {
-#ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
-    return true;
-#else
-    return false;
-#endif
+void *bongo_cat_platform_live2d_core_library(void) {
+    return bongo_cat_posix_live2d_core_library();
 }
+bool bongo_cat_platform_live2d_core_import_supported(void) { return true; }
 bool bongo_cat_platform_live2d_core_import(const char *path,
     const char *data_dir, BongoCatError *error) {
     return bongo_cat_posix_live2d_sdk_import(path, data_dir, error);

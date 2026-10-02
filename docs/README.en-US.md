@@ -56,7 +56,7 @@
 
 ## ⚠️ Live2D Disclaimer
 
-This repository is not affiliated with Live2D Inc. or its official projects in any way. The Live2D Cubism SDK is proprietary software of Live2D Inc.: it is not bundled, embedded, or distributed with this repository. Before building, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below, and follow Live2D's license terms.
+This repository is not affiliated with Live2D Inc. or its official projects in any way. The Live2D Cubism SDK is proprietary software of Live2D Inc.: it is not bundled, embedded, or distributed with this repository. To build with Live2D support, download and import it yourself from the official Live2D website as described in the "Live2D / Cubism SDK" section below, and follow Live2D's license terms.
 
 ## 🛠️ Build From Source
 
@@ -122,11 +122,18 @@ configuration explicitly:
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (Required — manual download)
+### 🎭 Live2D / Cubism SDK (Optional — builds without it too)
 
 The Live2D Cubism SDK is proprietary software and is **not** distributed with
-this repository. Each user must download it manually from the official Live2D
-website before building; CMake configuration fails when it is absent.
+this repository. The SDK is now **optional**: the default build
+(`BONGO_CAT_REQUIRE_CUBISM=OFF`) configures and compiles fine without it and
+produces a diagnostic backend without Live2D rendering. Because the Live2D
+renderer must be compiled into the binary, dropping the SDK in at runtime
+cannot give that build Live2D — only a build made with the SDK responds to
+the runtime drop-in. The diagnostic backend exists for startup and platform
+diagnostics only.
+To build with Live2D rendering support, download and import the SDK
+manually:
 
 1. Open the [Cubism SDK download page](https://www.live2d.com/en/sdk/download/native/),
    accept the Live2D Proprietary Software License Agreement, and download
@@ -149,10 +156,11 @@ cmake -S . -B build -G Ninja \
 
 The SDK must contain its Core library, Framework sources, and the OpenGL GLEW
 third-party tree in the layout expected by `cmake/Cubism.cmake`. Windows
-Cubism builds require Visual Studio 2022. Set
-`BONGO_CAT_REQUIRE_CUBISM=OFF` only to build the diagnostic backend for
-startup and platform diagnostics; that backend does not provide Live2D model
-rendering.
+Cubism builds require Visual Studio 2022. Once the SDK is in place, configure
+as usual to get a build with Live2D rendering; `BONGO_CAT_REQUIRE_CUBISM=ON`
+only makes configuration fail fast with import instructions when the SDK is
+missing (release CI uses it). Leave it at the default `OFF` when you do not
+need that.
 
 > [!TIP]
 > On Windows you can enable Live2D rendering without rebuilding: open
@@ -161,11 +169,14 @@ rendering.
 > effect immediately, no restart needed.
 
 > [!NOTE]
-> The official Release assets of this repository are runtime-Core builds with
-> Live2D rendering support, but they do **not** ship the Core runtime: on
-> first use, import the Core library or the official SDK zip in-app, or drop
-> the file into the `live2d` folder next to the application or inside the
-> data directory.
+> Official releases of this repository are runtime-Core builds: they include
+> the Live2D renderer but **do not bundle the Core runtime**. On startup the
+> app checks the `live2d` folder — drop `Live2DCubismCore.dll` or the official
+> SDK zip into it (next to the application or inside the data directory) and
+> it is picked up automatically after a restart; you can also click "Import
+> Live2D Core" under Settings → Models to activate it immediately. When no
+> Core is found the app falls back to the diagnostic backend and shows a hint
+> in the settings window.
 
 ### ⚙️ CMake Options
 
@@ -173,7 +184,7 @@ rendering.
 | --- | --- | --- |
 | `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent`. Set `OFF` only when SDL3, yyjson, stb, miniaudio, and Nuklear are already available to CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path to the Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Fail configuration when the manually downloaded Cubism SDK is unavailable. Set `OFF` to build the diagnostic backend without Live2D rendering. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Whether a missing SDK fails configuration. Default `OFF`: a missing SDK builds the diagnostic backend without Live2D rendering; set `ON` to require the SDK (release CI uses it). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Treat native compiler warnings as errors. |
 
 For an offline build with `BONGO_CAT_FETCH_DEPS=OFF`, provide CMake package

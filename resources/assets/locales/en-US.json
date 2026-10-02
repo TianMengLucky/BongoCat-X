@@ -218,8 +218,8 @@
     }
   },
   "native": {
-    "live2dSdkMissing": "This build does not include Live2D support (diagnostic build), so Live2D rendering is unavailable. Please use a build shipped with Live2D support.",
-    "live2dCoreMissing": "Live2D Cubism Core not found: import the Core library or the official SDK zip in the settings window, or drop the zip into the live2d folder (next to the application or inside the data directory) and restart.",
+    "live2dSdkMissing": "This build does not include Live2D rendering (it was compiled without the Cubism SDK): Live2D rendering, animation, pointer tracking and cover generation are disabled. Use a build with Live2D support, for example the official release.",
+    "live2dCoreMissing": "Live2D Cubism Core not found, so Live2D stays disabled until it is supplied. Drop Live2DCubismCore.dll or the official SDK zip into the live2d folder of the data directory and restart — startup picks it up automatically — or import it in this window without restarting.",
     "live2dCoreImport": "Import Live2D Core",
     "live2dCoreImportHint": "Select the Cubism Core library or the official Cubism SDK zip to enable Live2D rendering without a restart",
     "live2dCoreImportButton": "Choose file",

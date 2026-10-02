@@ -135,6 +135,7 @@ jobs:
           attempt=1
           until cmake -S . -B build-release -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DBONGO_CAT_REQUIRE_CUBISM=ON \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \

@@ -141,9 +141,11 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
         value->sdk_notice_shown = true;
         bongo_cat_preferences_notice_show_anchored(value->app,
             bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
-                "This build does not include Live2D support (diagnostic "
-                "build), so Live2D rendering is unavailable. Please use a "
-                "build shipped with Live2D support."),
+                "This build does not include Live2D rendering (it was "
+                "compiled without the Cubism SDK): Live2D rendering, "
+                "animation, pointer tracking and cover generation are "
+                "disabled. Use a build with Live2D support, for example the "
+                "official release."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
 #elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
@@ -154,10 +156,11 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
         value->sdk_notice_shown = true;
         bongo_cat_preferences_notice_show_anchored(value->app,
             bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
-                "Live2D Cubism Core not found: import the Core library or "
-                "the official SDK zip in the settings window, or drop the "
-                "zip into the live2d folder (next to the application or "
-                "inside the data directory) and restart."),
+                "Live2D Cubism Core not found, so Live2D stays disabled "
+                "until it is supplied. Drop Live2DCubismCore.dll or the "
+                "official SDK zip into the live2d folder of the data "
+                "directory and restart — startup picks it up automatically "
+                "— or import it in this window without restarting."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
 #endif

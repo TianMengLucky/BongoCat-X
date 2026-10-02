@@ -10,10 +10,12 @@ set "CLEAN_ARG="
 if /I "%BONGOCAT_CLEAN_BUILD%"=="1" set "CLEAN_ARG=-Clean"
 if /I "%~2"=="-Clean" set "CLEAN_ARG=-Clean"
 if /I "%~3"=="-Clean" set "CLEAN_ARG=-Clean"
-rem The Cubism SDK must be installed manually (see README); set BONGOCAT_REQUIRE_CUBISM=0
-rem to build the diagnostic backend without it.
-set "CUBISM_ARG=-RequireCubism"
-if /I "%BONGOCAT_REQUIRE_CUBISM%"=="0" set "CUBISM_ARG="
+rem The Cubism SDK is optional: the default build is the diagnostic backend
+rem (no Live2D rendering). Set BONGOCAT_REQUIRE_CUBISM=1 after installing the
+rem SDK (see README) to build the Live2D backend that loads the Core at
+rem runtime.
+set "CUBISM_ARG="
+if /I "%BONGOCAT_REQUIRE_CUBISM%"=="1" set "CUBISM_ARG=-RequireCubism"
 set "PACKAGE_ARG="
 if /I "%~2"=="-Package" set "PACKAGE_ARG=-Package"
 if /I "%~3"=="-Package" set "PACKAGE_ARG=-Package"

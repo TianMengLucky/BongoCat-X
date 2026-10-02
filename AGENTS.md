@@ -27,22 +27,26 @@ Key directories:
 ## Live2D Cubism SDK Constraint (important)
 
 The Cubism SDK is proprietary and is **not** committed here — it is
-gitignored. Builds require each developer to download "Cubism SDK for
-Native" manually from the official Live2D website and place it at
-`vendor/CubismSdkForNative` (see README for the exact steps, including the
-separate GLEW import). `BONGO_CAT_REQUIRE_CUBISM` defaults to `ON`; with it
-`OFF` CMake builds the diagnostic backend instead (no Live2D rendering).
-Never add SDK sources/binaries to the repository or to release artifacts of
-jobs that are not guarded for it (`.github/scripts/check-publish-guards.ps1`
-enforces this in CI).
+gitignored. The SDK is optional at build time: `BONGO_CAT_REQUIRE_CUBISM`
+now defaults to `OFF`, so CMake configures and builds fine without it and
+produces the diagnostic backend (no Live2D rendering). Because the Live2D
+renderer must be compiled into the binary, that backend can never gain
+Live2D from a runtime drop-in — only builds made with the SDK at
+`vendor/CubismSdkForNative` respond to the Core/SDK zip drop-in in a
+`live2d` folder (see README for the exact import steps, including the
+separate GLEW import). Set `BONGO_CAT_REQUIRE_CUBISM=ON` to fail
+configuration with import instructions when the SDK is missing (the
+release CI does). Never add SDK sources/binaries to the repository or to
+release artifacts of jobs that are not guarded for it
+(`.github/scripts/check-publish-guards.ps1` enforces this in CI).
 
 ## Build & Test
 
 Windows (MSVC, Visual Studio 2022 or newer):
 
 ```bat
-build.bat                 :: Release, requires the Cubism SDK by default
-set BONGOCAT_REQUIRE_CUBISM=0 && build.bat   :: diagnostic backend only
+build.bat                 :: Release, no Cubism SDK needed (diagnostic backend)
+set BONGOCAT_REQUIRE_CUBISM=1 && build.bat   :: require the SDK (Live2D build)
 ctest --test-dir build-cubism -C Release --output-on-failure
 ```
 
@@ -56,8 +60,10 @@ ctest --test-dir build --output-on-failure
 
 Notes:
 
-- Plain CMake configures fine without the wrapper; the SDK is required by
-  default, so absent SDKs fail configuration with import instructions.
+- Plain CMake configures fine without the wrapper; the SDK is optional by
+  default, and a missing SDK builds the diagnostic backend with a warning
+  instead of failing (pass `-DBONGO_CAT_REQUIRE_CUBISM=ON` to fail with
+  import instructions).
 - The local Windows test build directory convention is `build-tests/`
   (`build*/` is gitignored).
 - Dependencies (SDL3, yyjson, stb, miniaudio, Nuklear, about_webp) are

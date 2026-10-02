@@ -6,7 +6,8 @@ include(FetchContent)
 include(CTest)
 option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
 option(BONGO_CAT_REQUIRE_CUBISM
-  "Require the Cubism SDK; set OFF to build the diagnostic backend instead" ON)
+  "Require the Cubism SDK; set ON to fail the configure step when it is \
+missing, leave OFF (default) to build the diagnostic backend instead" OFF)
 option(BONGO_CAT_RUNTIME_CORE
   "Keep the Cubism Core out of the executable and load it at runtime \
 (user-supplied Core library, an SDK zip dropped by the user, or the \
@@ -133,8 +134,11 @@ elseif(BONGO_CAT_REQUIRE_CUBISM)
     "-DBONGO_CAT_REQUIRE_CUBISM=OFF.")
 else()
   message(WARNING
-    "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend\n"
-    "without Live2D model rendering")
+    "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend "
+    "without Live2D model rendering.\n"
+    "A diagnostic build can never render Live2D: rebuild with the SDK in place "
+    "(-DBONGO_CAT_REQUIRE_CUBISM=ON) to produce a binary that loads the Core "
+    "at runtime.")
 endif()
 add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_fields.c src/core/config_io.c src/core/config_settings_save.c

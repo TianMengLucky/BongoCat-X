@@ -28,7 +28,7 @@ bool bongo_cat_gl_read_window(int x, int y, int width, int height,
     glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
     glPixelStorei(GL_PACK_SKIP_ROWS, 0);
     glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    GLenum error = glGetError();
+    GLenum gl_error = glGetError();
     glPixelStorei(GL_PACK_ALIGNMENT, alignment);
     glPixelStorei(GL_PACK_ROW_LENGTH, row_length);
     glPixelStorei(GL_PACK_SKIP_PIXELS, skip_pixels);
@@ -36,6 +36,6 @@ bool bongo_cat_gl_read_window(int x, int y, int width, int height,
     glReadBuffer((GLenum)buffer);
     bind_buffer(GL_PIXEL_PACK_BUFFER, (GLuint)pack_buffer);
     bind_framebuffer(GL_READ_FRAMEBUFFER, (GLuint)framebuffer);
-    return error == GL_NO_ERROR ||
-        SDL_SetError("Window readback failed: 0x%x", (unsigned)error);
+    return gl_error == GL_NO_ERROR ||
+        SDL_SetError("Window readback failed: 0x%x", (unsigned)gl_error);
 }

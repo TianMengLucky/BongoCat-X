@@ -25,6 +25,7 @@
           "passThrough": "Clics traversants",
           "alwaysOnTop": "Toujours au premier plan",
           "keepInScreen": "Maintenir à l'écran",
+          "edgeSnap": "Aimant aux bords",
           "captureOnly": "Uniquement dans les logiciels de capture",
           "windowSize": "Taille de la fenêtre",
           "resetPosition": "Réinitialiser",

@@ -25,6 +25,7 @@
           "passThrough": "클릭 통과",
           "alwaysOnTop": "항상 위",
           "keepInScreen": "화면 안에 유지",
+          "edgeSnap": "화면 가장자리 스냅",
           "captureOnly": "녹화 프로그램에서만 표시",
           "windowSize": "창 크기",
           "resetPosition": "초기화",

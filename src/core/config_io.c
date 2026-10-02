@@ -73,6 +73,7 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
         !read_bool(object, "alwaysOnTop", &value->always_on_top, error) ||
         !read_bool(object, "hideOnPointerOver", &value->hide_on_hover, error) ||
         !read_bool(object, "keepOnScreen", &value->keep_in_screen, error) ||
+        !read_bool(object, "edgeSnap", &value->edge_snap, error) ||
         !read_bool(object, "captureOnly", &value->capture_only, error) ||
         !read_bool(object, "captureBackground", &value->obs_background,
             error) ||

@@ -25,6 +25,7 @@
           "passThrough": "Пропускать щелчки",
           "alwaysOnTop": "Поверх всех окон",
           "keepInScreen": "Удерживать на экране",
+          "edgeSnap": "Прилипание к краям",
           "captureOnly": "Только в программах записи",
           "windowSize": "Размер окна",
           "resetPosition": "Сброс",

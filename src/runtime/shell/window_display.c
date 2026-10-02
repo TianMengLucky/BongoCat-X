@@ -157,11 +157,38 @@ void bongo_cat_window_clamp_to_display(BongoCatApp *app) {
     (void)app;
 }
 
+/* Magnet distance: while dragging, a window edge within this many pixels of
+   a display edge snaps flush against it. */
+#define BONGO_CAT_EDGE_SNAP_PX 20
+
+static void snap_to_screen_edges(BongoCatApp *app, SDL_Point *next,
+    int width, int height) {
+    const SDL_Rect *rects = app->drag_display_bounds;
+    int count = app->drag_display_count;
+    int snap_x = 0, snap_y = 0;
+    int best_x = BONGO_CAT_EDGE_SNAP_PX, best_y = BONGO_CAT_EDGE_SNAP_PX;
+    bool found_x = false, found_y = false;
+    if (!app->settings.window.edge_snap || !rects) return;
+    for (int i = 0; i < count; ++i) {
+        const int xs[2] = { rects[i].x, rects[i].x + rects[i].w - width };
+        const int ys[2] = { rects[i].y, rects[i].y + rects[i].h - height };
+        for (int c = 0; c < 2; ++c) {
+            int dx = xs[c] - next->x; if (dx < 0) dx = -dx;
+            int dy = ys[c] - next->y; if (dy < 0) dy = -dy;
+            if (dx < best_x) { best_x = dx; snap_x = xs[c]; found_x = true; }
+            if (dy < best_y) { best_y = dy; snap_y = ys[c]; found_y = true; }
+        }
+    }
+    if (found_x) next->x = snap_x;
+    if (found_y) next->y = snap_y;
+}
+
 void bongo_cat_window_drag_to(BongoCatApp *app, int x, int y) {
     int width = 0, height = 0, current_x = 0, current_y = 0;
     if (!app || !app->window || !SDL_GetWindowSize(app->window, &width, &height) ||
         width <= 0 || height <= 0) return;
     SDL_Point next = {x, y};
+    snap_to_screen_edges(app, &next, width, height);
     if (SDL_GetWindowPosition(app->window, &current_x, &current_y) &&
         current_x == next.x && current_y == next.y) return;
     if (!SDL_SetWindowPosition(app->window, next.x, next.y)) return;

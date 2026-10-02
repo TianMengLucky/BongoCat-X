@@ -25,6 +25,7 @@
           "passThrough": "Klicks durchlassen",
           "alwaysOnTop": "Immer im Vordergrund",
           "keepInScreen": "Auf dem Bildschirm halten",
+          "edgeSnap": "Am Bildschirmrand andocken",
           "captureOnly": "Nur in Aufnahmeprogrammen",
           "windowSize": "Fenstergröße",
           "resetPosition": "Zurücksetzen",

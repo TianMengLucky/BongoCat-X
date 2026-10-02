@@ -48,6 +48,7 @@ void bongo_cat_window_drag_motion(BongoCatApp *app,
     app->drag_candidate = false;
     app->window_drag_active = true;
     bongo_cat_window_snapshot_begin(app);
+    bongo_cat_window_drag_bounds_refresh(app);
     if (use_pointer_drag(app)) {
         if (!SDL_CaptureMouse(true)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
             "Mouse capture is unavailable during window drag: %s",

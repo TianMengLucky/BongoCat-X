@@ -25,6 +25,7 @@
           "passThrough": "Pass Through",
           "alwaysOnTop": "Always on Top",
           "keepInScreen": "Keep on Screen",
+          "edgeSnap": "Edge Snapping",
           "captureOnly": "Capture Only",
           "windowSize": "Window Size",
           "resetPosition": "Reset",

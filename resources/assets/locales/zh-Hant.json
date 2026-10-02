@@ -25,6 +25,7 @@
           "passThrough": "視窗穿透",
           "alwaysOnTop": "視窗置頂",
           "keepInScreen": "保持在螢幕內",
+          "edgeSnap": "邊緣吸附",
           "captureOnly": "僅在錄影軟體中顯示",
           "windowSize": "視窗尺寸",
           "resetPosition": "復位",

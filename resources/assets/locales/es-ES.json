@@ -25,6 +25,7 @@
           "passThrough": "Dejar pasar clics",
           "alwaysOnTop": "Siempre visible",
           "keepInScreen": "Mantener en pantalla",
+          "edgeSnap": "Ajuste a los bordes",
           "captureOnly": "Solo en programas de grabación",
           "windowSize": "Tamaño de la ventana",
           "resetPosition": "Restablecer",

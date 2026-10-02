@@ -25,6 +25,7 @@
           "passThrough": "Janela Transparente",
           "alwaysOnTop": "Sempre no Topo",
           "keepInScreen": "Manter na Tela",
+          "edgeSnap": "Encaixe nas bordas",
           "captureOnly": "Somente em programas de captura",
           "windowSize": "Tamanho da Janela",
           "resetPosition": "Redefinir",

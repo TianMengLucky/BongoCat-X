@@ -2,7 +2,7 @@ name: BongoCat CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["X"]
   pull_request:
   workflow_dispatch:
 
@@ -238,12 +238,12 @@ jobs:
   build:
     name: build / ${{ matrix.platform }}
     # Heavy multi-platform compilation and artifact uploads only run when the
-    # main branch is merged into the test branch (a push that advances test),
-    # or on a manual dispatch from test. Ordinary pushes run checks only.
+    # main branch is merged into X (a push that advances X), or on a manual
+    # dispatch from X. Ordinary pushes run checks only.
     if: >-
       github.repository == 'TianMengLucky/BongoCat-X' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/test'
+      github.ref == 'refs/heads/X'
     strategy:
       fail-fast: false
       matrix:

@@ -16,6 +16,7 @@ void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
     value->composite_dirty = false;
     value->model_pointer_preferred = false;
     value->reference_width = value->reference_height = 0;
+    value->tight_uv_valid = false;
     for (size_t i = 0; i < 4; ++i) {
         if (value->cache[i].texture) glDeleteTextures(1, &value->cache[i].texture);
         memset(&value->cache[i], 0, sizeof(value->cache[i]));
@@ -113,7 +114,19 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
 #endif
     snprintf(value->directory, sizeof(value->directory), "%s", directory);
     snprintf(value->background_path, sizeof(value->background_path), "%s", path);
+    value->tight_uv_valid = false;
+    if (background)
+        value->tight_uv_valid = bongo_cat_image_opaque_bounds(path,
+            &value->tight_uv[0], &value->tight_uv[1],
+            &value->tight_uv[2], &value->tight_uv[3]);
     return BONGO_CAT_OK;
+}
+
+bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *value,
+    float out[4]) {
+    if (!value || !value->tight_uv_valid || !out) return false;
+    memcpy(out, value->tight_uv, sizeof(value->tight_uv));
+    return true;
 }
 
 #ifdef BONGO_CAT_HAS_CUBISM

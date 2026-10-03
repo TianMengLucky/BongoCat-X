@@ -23,6 +23,7 @@ bool bridge_live2d_frame(const BongoCatLive2D *live2d, BongoCatLive2DFrame *fram
 bool bridge_live2d_measure_frame(BongoCatLive2D *live2d, BongoCatLive2DFrame *required);
 void bridge_live2d_set_frame(BongoCatLive2D *live2d, const BongoCatLive2DFrame *frame);
 bool bridge_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
+bool bridge_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
 void bridge_live2d_resize(BongoCatLive2D *live2d, int width, int height);
 void bridge_live2d_reshape(BongoCatLive2D *live2d, int width, int height);
 bool bridge_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d, float quality_percent);
@@ -36,6 +37,8 @@ void bridge_live2d_draw(BongoCatLive2D *live2d);
 void bridge_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void bridge_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void bridge_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
+void bridge_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight);
+void bridge_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect);
 void bridge_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y);
 void bridge_live2d_set_centered_dragging(BongoCatLive2D *live2d, float x, float y);
 void bridge_live2d_prepare_viewer_audit(BongoCatLive2D *live2d);
@@ -64,6 +67,7 @@ bool stub_live2d_frame(const BongoCatLive2D *live2d, BongoCatLive2DFrame *frame)
 bool stub_live2d_measure_frame(BongoCatLive2D *live2d, BongoCatLive2DFrame *required);
 void stub_live2d_set_frame(BongoCatLive2D *live2d, const BongoCatLive2DFrame *frame);
 bool stub_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
+bool stub_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
 void stub_live2d_resize(BongoCatLive2D *live2d, int width, int height);
 void stub_live2d_reshape(BongoCatLive2D *live2d, int width, int height);
 bool stub_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d, float quality_percent);
@@ -77,6 +81,8 @@ void stub_live2d_draw(BongoCatLive2D *live2d);
 void stub_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void stub_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void stub_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
+void stub_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight);
+void stub_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect);
 void stub_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y);
 void stub_live2d_set_centered_dragging(BongoCatLive2D *live2d, float x, float y);
 void stub_live2d_prepare_viewer_audit(BongoCatLive2D *live2d);
@@ -159,6 +165,11 @@ bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int
     return stub_live2d_viewport(live2d, x, y, width, height);
 }
 
+bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height) {
+    if (bridge_instance) return bridge_live2d_overlay_viewport(live2d, x, y, width, height);
+    return stub_live2d_overlay_viewport(live2d, x, y, width, height);
+}
+
 void bongo_cat_live2d_resize(BongoCatLive2D *live2d, int width, int height) {
     if (bridge_instance) bridge_live2d_resize(live2d, width, height);
     else stub_live2d_resize(live2d, width, height);
@@ -222,6 +233,16 @@ void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped) {
 void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options) {
     if (bridge_instance) bridge_live2d_set_render_options(live2d, options);
     else stub_live2d_set_render_options(live2d, options);
+}
+
+void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight) {
+    if (bridge_instance) bridge_live2d_set_tight_frame(live2d, tight);
+    else stub_live2d_set_tight_frame(live2d, tight);
+}
+
+void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect) {
+    if (bridge_instance) bridge_live2d_set_tight_overlay_rect(live2d, rect);
+    else stub_live2d_set_tight_overlay_rect(live2d, rect);
 }
 
 void bongo_cat_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y) {

@@ -19,6 +19,32 @@ static BongoCatModelCatalog *model_catalog_snapshot(
     return snapshot;
 }
 
+/* Stable-sort the catalog into the user's drag order. Unlisted models keep
+   scan order after every listed one, so freshly imported models append. */
+static void apply_model_order(BongoCatApp *app) {
+    size_t count = app ? app->models.count : 0;
+    if (count < 2) return;
+    if (count > BONGO_CAT_MODEL_CAP) count = BONGO_CAT_MODEL_CAP;
+    size_t keys[BONGO_CAT_MODEL_CAP];
+    for (size_t i = 0; i < count; ++i) {
+        size_t order = bongo_cat_settings_model_order_index(&app->settings,
+            app->models.entries[i].id);
+        keys[i] = order ? order : (size_t)-1 - i;
+    }
+    for (size_t i = 1; i < count; ++i) {
+        BongoCatModelEntry entry = app->models.entries[i];
+        size_t key = keys[i];
+        size_t j = i;
+        while (j && keys[j - 1] > key) {
+            app->models.entries[j] = app->models.entries[j - 1];
+            keys[j] = keys[j - 1];
+            --j;
+        }
+        app->models.entries[j] = entry;
+        keys[j] = key;
+    }
+}
+
 static void restore_model_catalog(BongoCatApp *app,
     const BongoCatModelCatalog *snapshot, const char *active_model_id) {
     if (!app || !snapshot) return;
@@ -81,6 +107,7 @@ static BongoCatResult scan_owned_models(BongoCatApp *app, bool cleanup) {
 
 void bongo_cat_model_catalog_finish(BongoCatApp *app) {
     if (!app) return;
+    apply_model_order(app);
     /* Absence from a partial scan does not mean the user deleted a model. */
     bool selection_changed = bongo_cat_model_catalog_reconcile(app);
     if (app->preferences && (selection_changed || app->model_shortcuts))

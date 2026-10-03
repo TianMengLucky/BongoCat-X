@@ -91,10 +91,12 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     # library, and to the stub until then.
     set(BONGO_CAT_LIVE2D_ABI
       create destroy load load_ex ready canvas_size frame measure_frame
-      set_frame viewport resize reshape try_reuse_texture_quality
+      set_frame viewport overlay_viewport resize reshape
+      try_reuse_texture_quality
       texture_refresh_pending texture_refresh_due texture_refresh_busy
       cancel_texture_refresh refresh_textures update draw set_mirror
-      set_vertical_flip set_render_options set_dragging
+      set_vertical_flip set_render_options set_tight_frame
+      set_tight_overlay_rect set_dragging
       set_centered_dragging prepare_viewer_audit prepare_cover_capture
       set_parameter parameter start_motion restore_motion_state
       preview_motion restore_motion_preview commit_motion_preview
@@ -194,6 +196,21 @@ target_compile_definitions(bongo_cat_runtime PRIVATE
   BONGO_CAT_DEV_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
   BONGO_CAT_DEV_LOCALE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets/locales")
 
+option(BONGO_CAT_PCH
+  "Use precompiled headers for the core and runtime targets (faster builds)" ON)
+# SDL.h/SDL_opengl.h are pulled in by well over a hundred translation units;
+# precompiling them removes the single biggest repeated parse cost.
+if(BONGO_CAT_PCH)
+  target_precompile_headers(bongo_cat_core PRIVATE <yyjson.h>)
+  target_precompile_headers(bongo_cat_runtime PRIVATE
+    <SDL3/SDL.h>
+    <SDL3/SDL_opengl.h>)
+  # The Cubism bridge includes <GL/glew.h>, which must come before any GL
+  # headers; the runtime PCH pre-includes SDL_opengl.h, so those files opt out.
+  set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON)
+endif()
+
 include(cmake/PlatformRuntime.cmake)
 include(cmake/AboutWebP.cmake)
 
@@ -245,19 +262,26 @@ if(APPLE)
     VERBATIM)
 endif()
 
-add_custom_target(check-lines ALL
+# The repo-wide validation scripts run on every build in CI (GitHub Actions
+# sets CI); locally they are opt-in targets so routine rebuilds skip them.
+if(DEFINED ENV{CI})
+  set(BONGO_CAT_CHECK_ALL ALL)
+else()
+  set(BONGO_CAT_CHECK_ALL "")
+endif()
+add_custom_target(check-lines ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckLines.cmake
   VERBATIM)
-add_custom_target(check-localization ALL
+add_custom_target(check-localization ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckLocalization.cmake
   VERBATIM)
-add_custom_target(check-platform-runtime-safety ALL
+add_custom_target(check-platform-runtime-safety ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckPlatformRuntimeSafety.cmake
   VERBATIM)
-add_custom_target(check-cubism-user-model-safety ALL
+add_custom_target(check-cubism-user-model-safety ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismUserModelSafety.cmake
   VERBATIM)

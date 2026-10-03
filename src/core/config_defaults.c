@@ -250,15 +250,16 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->model.render_quality_percent =
         BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
-    config->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_GREEN;
+    config->window.tight_frame = false;
+    config->window.obs_background_rgb = BONGO_CAT_DEFAULT_OBS_BACKGROUND_RGB;
     config->window.corner_radius_percent = BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT;
     config->window.hide_fade_seconds = BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS;
     config->window.random_expression_interval_seconds =
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS;
     config->window.random_motion_interval_seconds =
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS;
-    config->window.random_model_interval_minutes =
-        BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES;
+    config->window.sequential_model_interval_seconds =
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
     config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
@@ -301,12 +302,9 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     config->window.random_motion_interval_seconds = clampf_or(
         config->window.random_motion_interval_seconds, 1.0f, 3600.0f,
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS);
-    config->window.random_model_interval_minutes = clampf_or(
-        config->window.random_model_interval_minutes, 1.0f, 360.0f,
-        BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES);
-    if ((unsigned)config->window.obs_background_color >=
-        BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT)
-        config->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_GREEN;
+    config->window.sequential_model_interval_seconds = clampf_or(
+        config->window.sequential_model_interval_seconds, 1.0f, 3600.0f,
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS);
     if ((unsigned)config->app.theme > BONGO_CAT_THEME_DARK)
         config->app.theme = BONGO_CAT_THEME_AUTO;
     if ((unsigned)config->app.language >= BONGO_CAT_LANG_COUNT)

@@ -52,6 +52,12 @@ static uint64_t settings_hash(const BongoCatSettings *settings) {
         hidden_count = BONGO_CAT_MODEL_CAP;
     hash = hash_bytes(hash, settings->hidden_models,
         hidden_count * sizeof(settings->hidden_models[0]));
+    HASH_FIELD(settings->model_order_count);
+    size_t order_count = settings->model_order_count;
+    if (order_count > BONGO_CAT_MODEL_CAP)
+        order_count = BONGO_CAT_MODEL_CAP;
+    hash = hash_bytes(hash, settings->model_order,
+        order_count * sizeof(settings->model_order[0]));
     HASH_FIELD(settings->extensions_json);
 #undef HASH_FIELD
     return hash;

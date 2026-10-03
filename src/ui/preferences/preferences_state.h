@@ -82,6 +82,16 @@ struct BongoCatPreferences {
     bool smoke_behavior_open_pending;
     bool model_show_hidden;
     bool model_selection_pending;
+    /* Model-dialog drag-reorder: the pressed row and the row being dragged
+       (both catalog indices, -1 when idle), plus where the press started so
+       a click on the toggle can be told apart from a drag. */
+    int model_press_index;
+    int model_drag_source;
+    struct nk_vec2 model_press_point;
+    /* Color picker debounce: timestamp of the latest drag change. The window
+       repaints once the color has stayed stable for a short while instead of
+       on every mouse move. */
+    uint64_t color_picker_pending_ns;
     bool pending_model_multiple;
     bool pending_model_active;
     bool model_loading;
@@ -127,7 +137,7 @@ struct BongoCatPreferences {
     /* Random expression/motion picker: rows with per-entry toggles. */
     bool random_dialog;
     BongoCatBehaviorKind random_dialog_kind;
-    bool random_model_dialog;
+    bool sequential_model_dialog;
     bool random_dialog_input_armed;
     uint64_t random_dialog_opened_ns;
     uint64_t random_dialog_closing_ns;

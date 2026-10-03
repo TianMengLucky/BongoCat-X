@@ -1,8 +1,15 @@
 #include "runtime.h"
 #include "../../live2d/model_frame_policy.h"
+#include "bongo_cat/log.h"
 
 #include <limits.h>
 #include <math.h>
+
+/* Floors a tight-cropped window; smaller targets are scaled up instead. */
+#define BONGO_CAT_TIGHT_MIN_WINDOW 160
+/* Same bounds as the scale slider (window_geometry.c). */
+#define BONGO_CAT_TIGHT_MIN_SCALE 10.0f
+#define BONGO_CAT_TIGHT_MAX_SCALE 500.0f
 
 void bongo_cat_window_store_content_origin(BongoCatApp *app) {
     if (!app || !app->loaded_model[0] || app->loading_model[0]) return;
@@ -83,8 +90,16 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
     bongo_cat_window_content_size(app, w, h, &cw, &ch);
     if (may_resize && cw > 0 && ch > 0 &&
         !bongo_cat_frame_equal(previous, required)) {
-        BongoCatLive2DFrame next = limit_display(app, previous, required, x, y, cw, ch);
-        next = limit_frame(app, previous, next, cw, ch);
+        BongoCatLive2DFrame next;
+        if (app->settings.window.tight_frame) {
+            /* Tight mode supplies a per-tick interpolation frame; the coarse
+               1/8 budget grid would quantize each small animation step back
+               to zero and freeze the window until the whole bucket was due. */
+            next = required;
+        } else {
+            next = limit_display(app, previous, required, x, y, cw, ch);
+            next = limit_frame(app, previous, next, cw, ch);
+        }
         if (!bongo_cat_frame_equal(previous, next)) {
             bool flip = app->settings.model.vertical_flip;
             double next_x = (double)x + round(cw * (double)previous.left) -
@@ -93,6 +108,38 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
                 round(ch * (double)(flip ? next.bottom : next.top));
             int next_w = (int)lround(cw * (1.0 + next.left + next.right));
             int next_h = (int)lround(ch * (1.0 + next.top + next.bottom));
+            /* Sub-pixel animation steps do not change the native window yet;
+               leave frame_ at the allocated geometry and advance next tick. */
+            if (next_w == w && next_h == h &&
+                (int)next_x == x && (int)next_y == y)
+                goto frame_anchor_only;
+            /* Temporary tight-frame diagnostics. */
+            SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
+                "[tight] prev=%.4f,%.4f,%.4f,%.4f req=%.4f,%.4f,%.4f,%.4f "
+                "next=%.4f,%.4f,%.4f,%.4f cw=%d ch=%d w=%d h=%d nw=%d nh=%d",
+                previous.left, previous.right, previous.top, previous.bottom,
+                required.left, required.right, required.top, required.bottom,
+                next.left, next.right, next.top, next.bottom,
+                cw, ch, w, h, next_w, next_h);
+            /* A tight crop of a small-canvas model can target a window below
+               the usable minimum; raise the scale so the crop stays valid
+               instead of being rejected by the window manager. The raised
+               scale persists (also after disabling), so the slider and the
+               session keep describing the real window. */
+            float apply_scale = app->session.window.scale_percent;
+            if (app->settings.window.tight_frame &&
+                (next_w < BONGO_CAT_TIGHT_MIN_WINDOW ||
+                next_h < BONGO_CAT_TIGHT_MIN_WINDOW)) {
+                double factor = (double)BONGO_CAT_TIGHT_MIN_WINDOW /
+                    (double)SDL_min(next_w, next_h);
+                apply_scale = SDL_clamp(
+                    apply_scale * (float)factor,
+                    BONGO_CAT_TIGHT_MIN_SCALE, BONGO_CAT_TIGHT_MAX_SCALE);
+                next_w = (int)SDL_min(8192.0,
+                    lround(next_w * factor));
+                next_h = (int)SDL_min(8192.0,
+                    lround(next_h * factor));
+            }
             if (next_x >= INT_MIN && next_x <= INT_MAX &&
                 next_y >= INT_MIN && next_y <= INT_MAX) {
                 bongo_cat_live2d_set_frame(app->live2d, &next);
@@ -104,6 +151,7 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
                 int actual_w = w, actual_h = h;
                 SDL_GetWindowSize(app->window, &actual_w, &actual_h);
                 if (applied && actual_w == next_w && actual_h == next_h) {
+                    app->session.window.scale_percent = apply_scale;
                     app->session.window.content_width = cw;
                     app->session.window.content_height = ch;
                     if (SDL_GetWindowSizeInPixels(app->window,
@@ -114,6 +162,11 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
                     SDL_GetWindowSizeInPixels(app->window, &pw, &ph);
                 } else {
                     /* Keep fallback fitting if native allocation fails. */
+                    SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+                        "[tight] resize rejected: want %dx%d@(%d,%d) got "
+                        "%dx%d@(%d,%d) applied=%d",
+                        next_w, next_h, (int)next_x, (int)next_y,
+                        actual_w, actual_h, x, y, applied);
                     bongo_cat_live2d_set_frame(app->live2d, &previous);
                     int actual_x = x, actual_y = y;
                     SDL_GetWindowPosition(app->window, &actual_x, &actual_y);
@@ -129,6 +182,8 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
             }
         }
     }
+frame_anchor_only:
+    (void)0;
     int nx = 0, ny = 0, nw = 0, nh = 0;
     if (anchor_ready && pw > 0 && ph > 0 &&
         bongo_cat_live2d_viewport(app->live2d, &nx, &ny, &nw, &nh)) {

@@ -6,6 +6,7 @@
 #include "ui_catime.h"
 #include "ui_paint.h"
 #include "ui_tooltip.h"
+#include "../rendering/ui_icons.h"
 static struct nk_context *section_context;
 static bool section_first;
 static const float description_line_height = 19.0f;
@@ -229,11 +230,11 @@ bool bongo_cat_pref_toggle_help(struct nk_context *context, const char *id,
 }
 bool bongo_cat_pref_obs_background(struct nk_context *context, const char *id,
     const char *title, const char *question, const char *reply, bool *enabled,
-    BongoCatObsBackgroundColor *color) {
+    uint32_t *rgb) {
     int lines = question && question[0] ? 1 : 0; FormStyle saved;
     if (!form_begin(context, id, lines, &saved)) return false;
     bongo_cat_pref_form_title_sized(context, title, 230.0f);
-    bool changed = bongo_cat_pref_control_obs_background(context, id, enabled, color);
+    bool changed = bongo_cat_pref_control_obs_background(context, id, enabled, rgb);
     nk_layout_row_end(context);
     bongo_cat_ui_question_tooltip(context, question, reply);
     form_end(context, &saved); return changed;
@@ -271,6 +272,70 @@ bool bongo_cat_pref_float_action(struct nk_context *context, const char *id,
         minimum, value, maximum, step, default_value);
     nk_layout_row_push(context, button_width);
     bool clicked = bongo_cat_pref_capsule_button(context, id, button);
+    nk_layout_row_end(context);
+    if (lines) {
+        nk_layout_row_dynamic(context, 19.0f * lines, 1);
+        struct nk_rect bounds;
+        if (nk_widget(&bounds, context) != NK_WIDGET_INVALID) {
+            bounds.x += 33.0f;
+            bounds.w = detail_width;
+            bongo_cat_pref_detail_text(context, detail, bounds, true);
+        }
+    }
+    form_end(context, &saved); return clicked;
+}
+
+/* float_action with an extra icon button (e.g. restore the default size);
+   the icon shows a question tooltip on hover. */
+static bool default_size_button(struct nk_context *context,
+    const char *id, const char *hint) {
+    (void)id;
+    struct nk_rect bounds;
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
+    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
+    bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
+    nk_fill_rect(canvas, bounds, 10, hover ? p.hover : p.field);
+    nk_stroke_rect(canvas, bounds, 10, 1, hover ? p.accent : p.border_subtle);
+    struct nk_rect icon = nk_rect(bounds.x + (bounds.w - 16.0f) * .5f,
+        bounds.y + (bounds.h - 16.0f) * .5f, 16.0f, 16.0f);
+    bongo_cat_ui_draw_icon(canvas, BONGO_CAT_UI_ICON_SYNC, icon,
+        hover ? p.accent : p.muted);
+    if (hover) {
+        bongo_cat_ui_cursor_hover_rect(context, bounds,
+            BONGO_CAT_UI_CURSOR_POINTER);
+        bongo_cat_ui_question_tooltip(context, hint, "");
+    }
+    return hover && nk_input_is_mouse_click_in_rect(&context->input,
+        NK_BUTTON_LEFT, bounds);
+}
+
+bool bongo_cat_pref_float_action_default(struct nk_context *context,
+    const char *id, const char *title, const char *detail, float minimum,
+    float *value, float maximum, float step, float default_value,
+    const char *button, const char *default_hint, bool *default_clicked) {
+    float detail_width = NK_MAX(1.0f,
+        nk_window_get_content_region(context).w - 26.0f - 33.0f);
+    int lines = bongo_cat_pref_detail_text(context, detail,
+        nk_rect(0, 0, detail_width, 0), false);
+    FormStyle saved;
+    if (!form_begin(context, id, lines, &saved)) return false;
+    const struct nk_user_font *font = context->style.font;
+    float button_width = NK_MAX(88.0f, font->width(font->userdata,
+        font->height, button, nk_strlen(button)) + 24.0f);
+    float available = nk_window_get_content_region(context).w;
+    nk_layout_row_begin(context, NK_STATIC, 36, 4);
+    nk_layout_row_push(context, NK_MAX(1.0f, available - 124.0f -
+        button_width - 36.0f - 24.0f));
+    bongo_cat_pref_form_label(context, title);
+    nk_layout_row_push(context, 124.0f);
+    bongo_cat_pref_control_float(context, id,
+        minimum, value, maximum, step, default_value);
+    nk_layout_row_push(context, button_width);
+    bool clicked = bongo_cat_pref_capsule_button(context, id, button);
+    nk_layout_row_push(context, 36.0f);
+    if (default_clicked) *default_clicked =
+        default_size_button(context, id, default_hint);
     nk_layout_row_end(context);
     if (lines) {
         nk_layout_row_dynamic(context, 19.0f * lines, 1);

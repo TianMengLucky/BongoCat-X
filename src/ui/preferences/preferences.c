@@ -32,6 +32,8 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
     if (!app) return NULL;
     BongoCatPreferences *value = calloc(1, sizeof(*value));
     if (value) { value->app = app;
+        value->model_drag_source = -1;
+        value->model_press_index = -1;
         value->import_dialog = bongo_cat_preferences_import_create();
         if (!value->import_dialog) { free(value); return NULL; }
         value->sdk_import_event_type = SDL_RegisterEvents(1);

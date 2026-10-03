@@ -1,6 +1,14 @@
 #include "config_internal.h"
 
+#include <stdio.h>
 #include <string.h>
+
+/* yyjson needs the string to outlive the call; saving runs on one thread. */
+static const char *capture_background_color_text(uint32_t rgb) {
+    static char text[8];
+    snprintf(text, sizeof(text), "#%06x", (unsigned)(rgb & 0xffffffu));
+    return text;
+}
 
 #define SETTINGS_FORMAT "bongocat/settings"
 
@@ -46,19 +54,20 @@ static bool write_window(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->capture_only) &&
         yyjson_mut_obj_add_bool(doc, object, "captureBackground",
             value->obs_background) &&
+        yyjson_mut_obj_add_bool(doc, object, "tightFrame",
+            value->tight_frame) &&
         yyjson_mut_obj_add_bool(doc, object, "randomExpression",
             value->random_expression) &&
         yyjson_mut_obj_add_bool(doc, object, "randomMotion",
             value->random_motion) &&
-        yyjson_mut_obj_add_bool(doc, object, "randomModel",
-            value->random_model) &&
+        yyjson_mut_obj_add_bool(doc, object, "sequentialModel",
+            value->sequential_model) &&
         yyjson_mut_obj_add_bool(doc, object, "roundedCorners",
             value->rounded_corners) &&
         yyjson_mut_obj_add_real(doc, object, "cornerRadiusPercent",
             value->corner_radius_percent) &&
-        yyjson_mut_obj_add_strcpy(doc, object, "captureBackgroundColor",
-            bongo_cat_obs_background_color_name(
-                value->obs_background_color)) &&
+        yyjson_mut_obj_add_str(doc, object, "captureBackgroundColor",
+            capture_background_color_text(value->obs_background_rgb)) &&
         yyjson_mut_obj_add_real(doc, object, "hideDelaySeconds",
             value->hide_delay_seconds) &&
         yyjson_mut_obj_add_real(doc, object, "hideFadeSeconds",
@@ -68,8 +77,8 @@ static bool write_window(yyjson_mut_doc *doc, yyjson_mut_val *object,
             value->random_expression_interval_seconds) &&
         yyjson_mut_obj_add_real(doc, object, "randomMotionIntervalSeconds",
             value->random_motion_interval_seconds) &&
-        yyjson_mut_obj_add_real(doc, object, "randomModelIntervalMinutes",
-            value->random_model_interval_minutes);
+        yyjson_mut_obj_add_real(doc, object, "sequentialModelIntervalSeconds",
+            value->sequential_model_interval_seconds);
 }
 
 static bool write_app(yyjson_mut_doc *doc, yyjson_mut_val *object,
@@ -180,6 +189,12 @@ static bool write_hidden_models(yyjson_mut_doc *doc, yyjson_mut_val *root,
         settings->hidden_models, settings->hidden_model_count);
 }
 
+static bool write_model_order(yyjson_mut_doc *doc, yyjson_mut_val *root,
+    const BongoCatSettings *settings) {
+    return write_model_id_array(doc, root, "modelOrder",
+        settings->model_order, settings->model_order_count);
+}
+
 static yyjson_mut_val *write_extensions(yyjson_mut_doc *target,
     const BongoCatSettings *settings, BongoCatResult *failure,
     BongoCatError *error) {
@@ -264,6 +279,7 @@ BongoCatResult bongo_cat_settings_save(const char *path,
         write_model_labels(doc, root, &canonical) &&
         write_removed_models(doc, root, &canonical) &&
         write_hidden_models(doc, root, &canonical) &&
+        write_model_order(doc, root, &canonical) &&
         yyjson_mut_obj_add_val(doc, root, "extensions", extensions);
     if (!built) {
         yyjson_mut_doc_free(doc);

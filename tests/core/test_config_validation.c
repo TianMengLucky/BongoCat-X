@@ -37,8 +37,8 @@ static void check_defaults_and_validation(void) {
     CHECK(!settings.window.random_expression &&
         settings.window.random_expression_interval_seconds ==
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS);
-    CHECK(settings.window.obs_background_color ==
-        BONGO_CAT_OBS_BACKGROUND_GREEN);
+    CHECK(settings.window.obs_background_rgb ==
+        BONGO_CAT_DEFAULT_OBS_BACKGROUND_RGB);
     CHECK(session.window.visible && session.window.width == 612 &&
         session.window.height == 354 && session.window.content_width == 612 &&
         session.window.content_height == 354);
@@ -55,7 +55,7 @@ static void check_defaults_and_validation(void) {
         !bongo_cat_session_model_active(&session, "keyboard"));
     bongo_cat_session_clear_additional_models(&session);
     settings.model.max_fps = 900;
-    settings.window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT;
+    settings.window.obs_background_rgb = 0xffffffff;
     settings.window.hide_delay_seconds = NAN;
     settings.window.random_expression_interval_seconds = NAN;
     settings.window.random_motion_interval_seconds = NAN;
@@ -91,8 +91,7 @@ static void check_defaults_and_validation(void) {
     CHECK(settings.window.random_motion_interval_seconds == 3600.0f);
     CHECK(settings.window.random_expression_interval_seconds ==
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS);
-    CHECK(settings.window.obs_background_color ==
-        BONGO_CAT_OBS_BACKGROUND_GREEN);
+    CHECK(settings.window.obs_background_rgb == 0xffffffff);
     CHECK(session.window.scale_percent == 10.0f);
     CHECK(session.window.opacity_percent ==
         BONGO_CAT_DEFAULT_WINDOW_OPACITY_PERCENT);

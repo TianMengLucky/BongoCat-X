@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "../../live2d/model_frame_policy.h"
 #include "bongo_cat/resource_trace.h"
 
 #include <math.h>
@@ -16,10 +17,12 @@ static int round_dimension(double value) {
 static BongoCatLive2DFrame model_frame(BongoCatApp *app) {
     BongoCatLive2DFrame frame = {0};
     if (app && app->live2d) bongo_cat_live2d_frame(app->live2d, &frame);
-    if (!isfinite(frame.left) || frame.left < 0.0f) frame.left = 0.0f;
-    if (!isfinite(frame.top) || frame.top < 0.0f) frame.top = 0.0f;
-    if (!isfinite(frame.right) || frame.right < 0.0f) frame.right = 0.0f;
-    if (!isfinite(frame.bottom) || frame.bottom < 0.0f) frame.bottom = 0.0f;
+    /* Negative margins are the tight mode's crop and must survive: clamping
+       them to zero made every content/window derivation shrink the window a
+       little on every tight toggle. */
+    if (!bongo_cat_frame_valid(frame)) {
+        memset(&frame, 0, sizeof(frame));
+    }
     return frame;
 }
 

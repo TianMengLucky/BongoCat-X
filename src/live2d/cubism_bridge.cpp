@@ -171,6 +171,12 @@ extern "C" bool bongo_cat_live2d_viewport(const BongoCatLive2D *runtime,
         runtime->model->viewport(x, y, width, height);
 }
 
+extern "C" bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *runtime,
+    int *x, int *y, int *width, int *height) {
+    return runtime && runtime->model &&
+        runtime->model->overlay_viewport(x, y, width, height);
+}
+
 extern "C" void bongo_cat_live2d_resize(BongoCatLive2D *runtime, int width, int height) {
     if (!runtime) return;
     if (width > 0 && height > 0) {
@@ -239,6 +245,11 @@ extern "C" void bongo_cat_live2d_set_render_options(BongoCatLive2D *runtime,
     const BongoCatLive2DRenderOptions *options) {
     if (runtime && runtime->model && options)
         runtime->model->set_render_options(*options); }
+extern "C" void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *runtime, bool tight) {
+    if (runtime && runtime->model) runtime->model->set_tight_frame(tight); }
+extern "C" void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *runtime,
+    const float *rect) {
+    if (runtime && runtime->model) runtime->model->set_tight_overlay_rect(rect); }
 extern "C" void bongo_cat_live2d_set_dragging(BongoCatLive2D *runtime,
     float x, float y) {
     if (runtime && runtime->model) runtime->model->set_dragging(x, y); }

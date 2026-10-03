@@ -37,15 +37,22 @@ static bool parse_theme(const char *value, BongoCatTheme *target) {
     return true;
 }
 
-static bool parse_background_color(const char *value,
-    BongoCatObsBackgroundColor *target) {
-    for (int i = 0; i < BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT; ++i)
-        if (!strcmp(value, bongo_cat_obs_background_color_name(
-                (BongoCatObsBackgroundColor)i))) {
-            *target = (BongoCatObsBackgroundColor)i;
-            return true;
-        }
-    return false;
+static bool parse_background_color(const char *value, uint32_t *target) {
+    /* Accepts "#rrggbb" (older builds saved a fixed-color name that used
+       the same spelling), so old settings migrate without extra logic. */
+    if (value[0] != '#' || strlen(value) != 7) return false;
+    uint32_t rgb = 0;
+    for (int i = 1; i < 7; ++i) {
+        char c = value[i];
+        uint32_t digit;
+        if (c >= '0' && c <= '9') digit = (uint32_t)(c - '0');
+        else if (c >= 'a' && c <= 'f') digit = (uint32_t)(c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F') digit = (uint32_t)(c - 'A' + 10);
+        else return false;
+        rgb = (rgb << 4) | digit;
+    }
+    *target = rgb;
+    return true;
 }
 
 static bool read_model(yyjson_val *object, BongoCatModelPreferences *value,
@@ -69,6 +76,11 @@ static bool read_model(yyjson_val *object, BongoCatModelPreferences *value,
 
 static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
     BongoCatError *error) {
+    /* Pre-sequential builds stored the switch under randomModel with a
+       minutes interval; migrate both when the new keys are absent. */
+    float legacy_random_model_minutes = 0.0f;
+    float sequential_model_interval_seconds = 0.0f;
+    bool legacy_random_model = false;
     if (!read_bool(object, "clickThrough", &value->pass_through, error) ||
         !read_bool(object, "alwaysOnTop", &value->always_on_top, error) ||
         !read_bool(object, "hideOnPointerOver", &value->hide_on_hover, error) ||
@@ -77,12 +89,16 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
         !read_bool(object, "captureOnly", &value->capture_only, error) ||
         !read_bool(object, "captureBackground", &value->obs_background,
             error) ||
+        !read_bool(object, "tightFrame", &value->tight_frame, error) ||
         !read_bool(object, "randomExpression", &value->random_expression,
             error) ||
         !read_bool(object, "randomMotion", &value->random_motion, error) ||
-        !read_bool(object, "randomModel", &value->random_model, error) ||
+        !read_bool(object, "sequentialModel", &value->sequential_model, error) ||
+        !read_bool(object, "randomModel", &legacy_random_model, error) ||
+        !read_float(object, "sequentialModelIntervalSeconds",
+            &sequential_model_interval_seconds, error) ||
         !read_float(object, "randomModelIntervalMinutes",
-            &value->random_model_interval_minutes, error) ||
+            &legacy_random_model_minutes, error) ||
         !read_bool(object, "roundedCorners", &value->rounded_corners, error) ||
         !read_float(object, "cornerRadiusPercent", &value->corner_radius_percent,
             error) ||
@@ -96,12 +112,21 @@ static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
             &value->random_motion_interval_seconds, error)) return false;
     const char *color;
     size_t length;
+    /* A migrated value only applies when no new-format value was saved. */
+    if (sequential_model_interval_seconds > 0.0f)
+        value->sequential_model_interval_seconds =
+            sequential_model_interval_seconds;
+    else if (legacy_random_model_minutes > 0.0f)
+        value->sequential_model_interval_seconds =
+            legacy_random_model_minutes * 60.0f;
+    if (legacy_random_model) value->sequential_model = true;
     if (!read_string(object, "captureBackgroundColor", &color, &length,
             error)) return false;
     (void)length;
-    if (color && !parse_background_color(color, &value->obs_background_color))
+    if (color && !parse_background_color(color,
+            &value->obs_background_rgb))
         return type_error(error, "captureBackgroundColor",
-            "a supported color string");
+            "a #rrggbb color string");
     return true;
 }
 
@@ -265,6 +290,12 @@ static bool read_hidden_models(yyjson_val *array, BongoCatSettings *settings,
         &settings->hidden_model_count, "hiddenModels", error);
 }
 
+static bool read_model_order(yyjson_val *array, BongoCatSettings *settings,
+    BongoCatError *error) {
+    return read_model_id_array(array, settings->model_order,
+        &settings->model_order_count, "modelOrder", error);
+}
+
 static BongoCatResult read_extensions(yyjson_val *value,
     BongoCatSettings *settings, BongoCatError *error) {
     if (!value) return BONGO_CAT_OK;
@@ -311,6 +342,7 @@ BongoCatResult bongo_cat_settings_load(const char *path,
     yyjson_val *models = NULL;
     yyjson_val *removed_models = NULL;
     yyjson_val *hidden_models = NULL;
+    yyjson_val *model_order = NULL;
     yyjson_val *extensions_value = NULL;
     bool valid = read_object(root, "rendering", &model, error) &&
         read_object(root, "window", &window, error) &&
@@ -321,6 +353,7 @@ BongoCatResult bongo_cat_settings_load(const char *path,
         read_array(root, "modelOverrides", &models, error) &&
         read_array(root, "removedModels", &removed_models, error) &&
         read_array(root, "hiddenModels", &hidden_models, error) &&
+        read_array(root, "modelOrder", &model_order, error) &&
         read_value(root, "extensions", &extensions_value, error) &&
         (!model || read_model(model, &loaded.model, error)) &&
         (!window || read_window(window, &loaded.window, error)) &&
@@ -330,7 +363,8 @@ BongoCatResult bongo_cat_settings_load(const char *path,
         read_random_disabled(random_disabled, &loaded, error) &&
         read_model_labels(models, &loaded, error) &&
         read_removed_models(removed_models, &loaded, error) &&
-        read_hidden_models(hidden_models, &loaded, error);
+        read_hidden_models(hidden_models, &loaded, error) &&
+        read_model_order(model_order, &loaded, error);
     if (!valid) result = BONGO_CAT_ERROR_FORMAT;
     if (valid) result = read_extensions(extensions_value, &loaded, error);
     yyjson_doc_free(document);

@@ -172,38 +172,103 @@ static bool write_ini(const char *path, const char *current, bool exists,
     }
 }
 
-/* Carry the live2d drop-in content over: a Core stashed inside the current
-   data directory would be stranded after the switch, so copy it into the
-   portable data tree. Best effort: a missing copy just means the Core is
-   discovered again through the drop-in folders or the registry cache. */
-static void carry_live2d_core(const char *data_dir, const char *root) {
-    char source[BONGO_CAT_PATH_CAP], target_directory[BONGO_CAT_PATH_CAP];
-    char target[BONGO_CAT_PATH_CAP];
-    if (!data_dir || !data_dir[0]) return;
-    if (!bongo_cat_path_join(source, sizeof(source), data_dir, "live2d") ||
-        !bongo_cat_path_join(source, sizeof(source), source,
-            "Live2DCubismCore.dll") || !bongo_cat_path_is_file(source))
-        return;
-    if (!bongo_cat_path_join(target_directory, sizeof(target_directory),
-            root, "data") ||
-        !bongo_cat_path_join(target_directory, sizeof(target_directory),
-            target_directory, "live2d") ||
-        !bongo_cat_path_create_directory(target_directory) ||
-        !bongo_cat_path_join(target, sizeof(target), target_directory,
-            "Live2DCubismCore.dll"))
-        return;
-    if (!bongo_cat_path_is_file(target) &&
-        !bongo_cat_path_copy_file(source, target))
+/* Merge-copy a whole storage tree (data / models / state) into the portable
+   root. Existing files at the destination are KEPT (never overwritten): a
+   re-toggle or a prior portable run must not lose data, and the managed
+   <exe>/data/live2d tree this carries over must never fight with the
+   <exe>/live2d drop-in folder (a separate directory that is never touched).
+   Failures on individual files (e.g. a log the running app holds open) are
+   counted and logged but do not abort the migration. */
+typedef struct PortableMerge {
+    const char *target_root;
+    const char *skip_child; /* absolute path skipped at THIS level only */
+    unsigned copied;
+    unsigned skipped;
+    unsigned failed;
+} PortableMerge;
+
+static bool merge_tree(const char *source, const char *target,
+    PortableMerge *totals, const char *skip_child);
+
+static BongoCatPathVisit merge_visitor(void *userdata, const char *directory,
+    const char *name) {
+    PortableMerge *stats = (PortableMerge *)userdata;
+    char source[BONGO_CAT_PATH_CAP], target[BONGO_CAT_PATH_CAP];
+    if (!bongo_cat_path_join(source, sizeof(source), directory, name) ||
+        !bongo_cat_path_join(target, sizeof(target),
+            stats->target_root, name))
+        return BONGO_CAT_PATH_FAILURE;
+    if (stats->skip_child && strcmp(source, stats->skip_child) == 0)
+        return BONGO_CAT_PATH_CONTINUE; /* migrated as its own top-level tree */
+    if (bongo_cat_path_is_dir(source)) {
+        PortableMerge nested = { NULL, NULL, 0, 0, 0 };
+        if (!merge_tree(source, target, &nested, NULL))
+            return BONGO_CAT_PATH_FAILURE;
+        stats->copied += nested.copied;
+        stats->skipped += nested.skipped;
+        stats->failed += nested.failed;
+        return BONGO_CAT_PATH_CONTINUE;
+    }
+    if (bongo_cat_path_is_file(target)) {
+        ++stats->skipped;
+        return BONGO_CAT_PATH_CONTINUE;
+    }
+    if (bongo_cat_path_copy_file(source, target))
+        ++stats->copied;
+    else {
+        ++stats->failed;
         SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
-            "Cannot carry the Cubism Core into the portable data folder");
+            "Portable migration: cannot copy %s", source);
+    }
+    return BONGO_CAT_PATH_CONTINUE;
 }
 
-bool bongo_cat_portable_mode_set(bool enable, const char *settings_path,
-    const char *data_dir, BongoCatError *error) {
+static bool merge_tree(const char *source, const char *target,
+    PortableMerge *totals, const char *skip_child) {
+    PortableMerge level = { NULL, NULL, 0, 0, 0 };
+    bool ok;
+    if (!source || !source[0] || !bongo_cat_path_is_dir(source)) return true;
+    /* Source and target coincide (e.g. already portable): nothing to move. */
+    if (strcmp(source, target) == 0) return true;
+    if (!bongo_cat_path_create_directory(target)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
+            "Portable migration: cannot create %s", target);
+        return false;
+    }
+    level.target_root = target;
+    level.skip_child = skip_child;
+    ok = bongo_cat_path_enumerate(source, merge_visitor, &level);
+    totals->copied += level.copied;
+    totals->skipped += level.skipped;
+    totals->failed += level.failed;
+    return ok;
+}
+
+/* Best-effort migration of one named storage tree below the portable root.
+   exclude_dir (may be NULL) is the absolute path of a single top-level
+   child that lives elsewhere in the portable layout (e.g. on Linux the
+   models folder is inside the data root, but portable keeps models next to
+   data) — skipping it prevents duplicating a potentially large tree. */
+static void migrate_tree(const char *source_root, const char *portable_root,
+    const char *name, const char *exclude_dir, PortableMerge *totals) {
+    char target[BONGO_CAT_PATH_CAP];
+    PortableMerge stats = { NULL, NULL, 0, 0, 0 };
+    if (!source_root || !source_root[0]) return;
+    if (!bongo_cat_path_join(target, sizeof(target), portable_root, name))
+        return;
+    (void)merge_tree(source_root, target, &stats, exclude_dir);
+    totals->copied += stats.copied;
+    totals->skipped += stats.skipped;
+    totals->failed += stats.failed;
+}
+
+bool bongo_cat_portable_mode_set(bool enable, const BongoCatApp *app,
+    BongoCatError *error) {
     char ini[BONGO_CAT_PATH_CAP], root[BONGO_CAT_PATH_CAP];
     char previous[BONGO_CAT_INI_LIMIT];
     bool exists = false;
-    if (!ini_path(ini, sizeof(ini)) ||
+    const char *settings_path = app ? app->settings_path : NULL;
+    if (!app || !ini_path(ini, sizeof(ini)) ||
         !bongo_cat_portable_root(root, sizeof(root)) ||
         !read_ini(ini, previous, sizeof(previous), &exists)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
@@ -221,12 +286,17 @@ bool bongo_cat_portable_mode_set(bool enable, const char *settings_path,
     if (settings_path && settings_path[0] &&
         bongo_cat_path_is_file(settings_path)) {
         char config[BONGO_CAT_PATH_CAP], target[BONGO_CAT_PATH_CAP];
-        bool copied = bongo_cat_path_join(config, sizeof(config), root,
-                "config") &&
-            bongo_cat_path_create_directory(config) &&
-            bongo_cat_path_join(target, sizeof(target), config,
-                "settings.json") &&
-            bongo_cat_path_copy_file(settings_path, target);
+        bool copied;
+        if (!bongo_cat_path_join(config, sizeof(config), root, "config") ||
+            !bongo_cat_path_create_directory(config) ||
+            !bongo_cat_path_join(target, sizeof(target), config,
+                "settings.json")) {
+            copied = false;
+        } else if (bongo_cat_path_is_file(target)) {
+            copied = true; /* keep a pre-existing portable config */
+        } else {
+            copied = bongo_cat_path_copy_file(settings_path, target);
+        }
         if (!copied) {
             /* Roll the ini back so the switch does not lie. */
             if (exists) {
@@ -245,6 +315,22 @@ bool bongo_cat_portable_mode_set(bool enable, const char *settings_path,
             return false;
         }
     }
-    carry_live2d_core(data_dir, root);
+    /* Carry the existing storage trees over so the portable folder works
+       standalone after the restart. This is a merge: files already present
+       in the portable tree are kept, and individual copy failures (locked
+       files) only warn. The managed <root>/data/live2d content is part of
+       the data tree; the <exe>/live2d drop-in folder is never touched. */
+    PortableMerge totals = { NULL, NULL, 0, 0, 0 };
+    migrate_tree(app->data_root, root, "data", app->models_root, &totals);
+    migrate_tree(app->models_root, root, "models", NULL, &totals);
+    /* Primary state first; the active tree may be a secondary-pet subdir. */
+    migrate_tree(app->primary_state_root[0] ? app->primary_state_root
+            : app->state_root, root, "state", app->log_root, &totals);
+    if (app->state_root[0] &&
+        strcmp(app->state_root, app->primary_state_root) != 0)
+        migrate_tree(app->state_root, root, "state", app->log_root, &totals);
+    SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM,
+        "Portable migration finished: %u copied, %u already present, %u failed",
+        totals.copied, totals.skipped, totals.failed);
     return true;
 }

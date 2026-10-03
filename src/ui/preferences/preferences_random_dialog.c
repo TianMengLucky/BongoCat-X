@@ -50,11 +50,11 @@ bool bongo_cat_preferences_random_dialog_active(
     return value && value->random_dialog;
 }
 
-void bongo_cat_preferences_random_model_dialog_open(
+void bongo_cat_preferences_sequential_model_dialog_open(
     BongoCatPreferences *value) {
     if (!value) return;
     bongo_cat_preferences_shortcut_cancel(value);
-    value->random_model_dialog = true;
+    value->sequential_model_dialog = true;
     value->random_dialog_scroll = 0;
     bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
     value->random_dialog = true;
@@ -89,9 +89,9 @@ void bongo_cat_preferences_random_dialog_close(BongoCatPreferences *value) {
 }
 
 static const char *dialog_title(BongoCatPreferences *value) {
-    if (value->random_model_dialog)
-        return tr(value, "pages.preference.cat.labels.randomModel",
-            "Random Models");
+    if (value->sequential_model_dialog)
+        return tr(value, "pages.preference.cat.labels.sequentialModel",
+            "Sequential Models");
     return value->random_dialog_kind == BONGO_CAT_BEHAVIOR_MOTION ?
         tr(value, "pages.preference.cat.labels.randomMotion",
         "Random Motions") :
@@ -109,6 +109,27 @@ static bool draw_header(BongoCatPreferences *value, struct nk_context *context,
     struct nk_rect close = nk_rect(panel.x + panel.w - 52, panel.y + 17, 32, 32);
     return bongo_cat_ui_close_button(context, canvas, close,
         alpha(p.muted, opacity), alpha(p.accent, opacity), enabled);
+}
+
+/* Moves a catalog entry and rewrites the persisted drag order to the full
+   catalog sequence, so rescans reproduce it until the user reorders again.
+   The sequential model switch walks this same order. */
+static void model_order_move(BongoCatApp *app, size_t source, size_t target) {
+    BongoCatModelEntry entry = app->models.entries[source];
+    if (source < target)
+        memmove(&app->models.entries[source],
+            &app->models.entries[source + 1],
+            (target - source) * sizeof(entry));
+    else
+        memmove(&app->models.entries[target + 1],
+            &app->models.entries[target],
+            (source - target) * sizeof(entry));
+    app->models.entries[target] = entry;
+    const char *ids[BONGO_CAT_MODEL_CAP];
+    size_t count = app->models.count;
+    if (count > BONGO_CAT_MODEL_CAP) count = BONGO_CAT_MODEL_CAP;
+    for (size_t i = 0; i < count; ++i) ids[i] = app->models.entries[i].id;
+    bongo_cat_settings_model_order_set(&app->settings, ids, count);
 }
 
 static void draw_rows(BongoCatPreferences *value, struct nk_context *context,
@@ -132,7 +153,12 @@ static void draw_rows(BongoCatPreferences *value, struct nk_context *context,
     nk_push_scissor(canvas, viewport);
     size_t shown = 0;
     BongoCatApp *app = value->app;
-    if (value->random_model_dialog) {
+    if (value->sequential_model_dialog) {
+        struct nk_input *input = &context->input;
+        bool left_down = input->mouse.buttons[NK_BUTTON_LEFT].down;
+        struct nk_rect drag_rows[BONGO_CAT_MODEL_CAP];
+        size_t drag_indices[BONGO_CAT_MODEL_CAP];
+        size_t drag_count = 0;
         for (size_t i = 0; i < app->models.count; ++i) {
             const BongoCatModelEntry *entry = &app->models.entries[i];
             if (bongo_cat_settings_model_hidden(&app->settings, entry->id))
@@ -144,6 +170,35 @@ static void draw_rows(BongoCatPreferences *value, struct nk_context *context,
             struct nk_rect toggle = nk_rect(row.x + row.w - 78, row.y + 10, 80, 36);
             struct nk_rect name = nk_rect(row.x + 8, row.y + 9,
                 NK_MAX(48.0f, toggle.x - row.x - 16), 38);
+            /* The row body (name area) drags to reorder; the toggle
+               keeps its click. */
+            bool press_here = left_down && enabled &&
+                value->model_press_index < 0 &&
+                nk_input_is_mouse_hovering_rect(input, name);
+            if (enabled && nk_input_is_mouse_hovering_rect(input, name)) {
+                bongo_cat_ui_cursor_hover_rect(context, name,
+                    BONGO_CAT_UI_CURSOR_POINTER);
+                if (press_here) {
+                    value->model_press_index = (int)i;
+                    value->model_press_point = input->mouse.pos;
+                }
+            }
+            if (left_down && value->model_press_index == (int)i) {
+                float dx = input->mouse.pos.x - value->model_press_point.x;
+                float dy = input->mouse.pos.y - value->model_press_point.y;
+                if (value->model_drag_source < 0 && dx * dx + dy * dy > 64.0f)
+                    value->model_drag_source = (int)i;
+            }
+            bool dragging = value->model_drag_source == (int)i;
+            if (dragging) {
+                nk_fill_rect(canvas, row, 12, alpha(p.hover_pink, opacity));
+                value->render_dirty = true;
+            }
+            if (drag_count < BONGO_CAT_MODEL_CAP) {
+                drag_indices[drag_count] = i;
+                drag_rows[drag_count] = row;
+                drag_count++;
+            }
             const char *label = entry->display_name[0] ?
                 entry->display_name : entry->id;
             nk_draw_text(canvas, name, label, nk_strlen(label),
@@ -162,6 +217,37 @@ static void draw_rows(BongoCatPreferences *value, struct nk_context *context,
                 bongo_cat_settings_random_set_enabled(&app->settings,
                     switch_id, state))
                 value->render_dirty = true;
+        }
+        /* Drop the dragged row onto the hovered row's position. */
+        if (!left_down) {
+            value->model_press_index = -1;
+            value->model_drag_source = -1;
+        } else {
+            int source = value->model_drag_source;
+            if (source >= 0) {
+                if ((size_t)source >= app->models.count) {
+                    value->model_press_index = -1;
+                    value->model_drag_source = -1;
+                } else {
+                    int target = -1;
+                    for (size_t r = 0; r < drag_count; ++r) {
+                        if ((int)drag_indices[r] == source) continue;
+                        if (nk_input_is_mouse_hovering_rect(input,
+                                drag_rows[r])) {
+                            target = (int)drag_indices[r];
+                            break;
+                        }
+                    }
+                    if (target >= 0 && target != source) {
+                        model_order_move(app, (size_t)source,
+                            (size_t)target);
+                        if (value->model_press_index == source)
+                            value->model_press_index = target;
+                        value->model_drag_source = target;
+                        value->render_dirty = true;
+                    }
+                }
+            }
         }
         nk_push_scissor(canvas, nk_window_get_content_region(context));
         return;
@@ -200,7 +286,7 @@ void bongo_cat_preferences_random_dialog_draw(
     if (!bongo_cat_preferences_random_dialog_active(value)) return;
     bongo_cat_ui_cursor_reset(context);
     struct nk_rect region = nk_window_get_bounds(context);
-    size_t count = value->random_model_dialog ?
+    size_t count = value->sequential_model_dialog ?
         model_candidate_count(value->app) :
         candidate_count(value->app, value->random_dialog_kind);
     float width = NK_MIN(540.0f, region.w - 48.0f);
@@ -210,9 +296,11 @@ void bongo_cat_preferences_random_dialog_draw(
         value->random_dialog_closing_ns);
     if (frame.finished) {
         value->random_dialog = false;
-        value->random_model_dialog = false;
+        value->sequential_model_dialog = false;
         value->random_dialog_opened_ns = value->random_dialog_closing_ns = 0;
         value->random_dialog_scroll = 0;
+        value->model_press_index = -1;
+        value->model_drag_source = -1;
         bongo_cat_preferences_scrollbar_reset(&value->random_dialog_scrollbar);
         value->render_dirty = true;
         return;
@@ -236,15 +324,15 @@ void bongo_cat_preferences_random_dialog_draw(
     if (frame.visibility < 1.0f || closing) value->render_dirty = true;
 }
 
-void bongo_cat_preferences_random_model_pref_row(
+void bongo_cat_preferences_sequential_model_pref_row(
     BongoCatPreferences *value, struct nk_context *context) {
     BongoCatApp *app = value->app;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MULTIPLE_MODELS);
     if (bongo_cat_pref_toggle_float_config(context, "random-model", tr(value,
-        "pages.preference.cat.labels.randomModel", "Random Models"),
-        tr(value, "pages.preference.cat.labels.minutesUnit", "min"),
-        &app->settings.window.random_model, 1.0f,
-        &app->settings.window.random_model_interval_minutes, 360.0f, 1.0f,
-        BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES))
-        bongo_cat_preferences_random_model_dialog_open(value);
+        "pages.preference.cat.labels.sequentialModel", "Sequential Models"),
+        tr(value, "pages.preference.cat.labels.secondsUnit", "s"),
+        &app->settings.window.sequential_model, 1.0f,
+        &app->settings.window.sequential_model_interval_seconds, 3600.0f, 1.0f,
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS))
+        bongo_cat_preferences_sequential_model_dialog_open(value);
 }

@@ -30,7 +30,10 @@ bool bongo_cat_pref_control_toggle_available(struct nk_context *context,
 bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
     const char *id, bool *value, struct nk_rect cell, bool available);
 bool bongo_cat_pref_control_obs_background(struct nk_context *context,
-    const char *id, bool *enabled, BongoCatObsBackgroundColor *color);
+    const char *id, bool *enabled, uint32_t *rgb);
+/* Saturation/value square plus hue slider for the solid background color. */
+bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
+    uint32_t *rgb);
 int bongo_cat_pref_control_combo(struct nk_context *context, const char *id,
     const char *const *items, int count, int selected);
 bool bongo_cat_pref_controls_animating(struct nk_context *context);

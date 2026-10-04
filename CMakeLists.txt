@@ -217,12 +217,13 @@ if(BONGO_CAT_PCH)
   # headers; the runtime PCH pre-includes SDL_opengl.h, so those files opt out.
   set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
     SKIP_PRECOMPILE_HEADERS ON)
-  # Files that define feature-test macros (_POSIX_C_SOURCE / _DEFAULT_SOURCE)
-  # at the top of the file: the PCH pulls in libc headers before those
-  # definitions, hiding functions like fileno(3) under strict C11. Skip the
-  # PCH for them so the macros take effect first.
+  # Files that define feature-test macros (_GNU_SOURCE / _POSIX_C_SOURCE /
+  # _DEFAULT_SOURCE) at the top of the file: the PCH pulls in libc headers
+  # before those definitions, hiding functions like fileno(3)/openat(2) under
+  # strict C11. Skip the PCH for them so the macros take effect first.
   set_source_files_properties(
     src/platform/linux/linux.c
+    src/platform/linux/linux_evdev_devices.c
     src/platform/posix/posix_live2d_sdk.c
     src/ui/rendering/ui_font_atlas_sources.c
     PROPERTIES SKIP_PRECOMPILE_HEADERS ON)

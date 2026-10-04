@@ -69,34 +69,10 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
 
-      # The bongo-safe Rust crate is a hard build requirement (cmake/Rust.cmake).
-      - name: Set up Rust toolchain
-        run: |
-          rustup toolchain install stable --profile minimal --no-self-update
-          rustup default stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v5
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
-          restore-keys: cargo-registry-${{ runner.os }}-
-
-      - name: Validate tag version
-        id: version
-        shell: pwsh
-        run: |
-          $projectVersion = & ./packaging/get-project-version.ps1
-          $version = $projectVersion.AppVersion
-          if ($env:GITHUB_REF_NAME -ne "v$version") {
-            throw "Tag $env:GITHUB_REF_NAME does not match project version $version"
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
-            -Append -Encoding utf8
-
       # Per-platform resume: when a previous run of this tag already
       # published this platform's assets, skip the build entirely so one
       # failing platform can be rebuilt alone without re-running the rest.
+      # Runs before any dependency installation so skipped platforms exit fast.
       - name: Skip platforms already published
         id: skip-check
         shell: pwsh
@@ -125,6 +101,34 @@ jobs:
             'skip=false' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           }
           exit 0
+
+      # The bongo-safe Rust crate is a hard build requirement (cmake/Rust.cmake).
+      - name: Set up Rust toolchain
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      - name: Cache cargo registry
+        if: steps.skip-check.outputs.skip != 'true'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
+
+      - name: Validate tag version
+        id: version
+        if: steps.skip-check.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          $projectVersion = & ./packaging/get-project-version.ps1
+          $version = $projectVersion.AppVersion
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match project version $version"
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
+            -Append -Encoding utf8
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux' && steps.skip-check.outputs.skip != 'true'

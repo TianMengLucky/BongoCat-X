@@ -201,8 +201,13 @@ target_compile_definitions(bongo_cat_runtime PRIVATE
 
 option(BONGO_CAT_PCH
   "Use precompiled headers for the core and runtime targets (faster builds)" ON)
-# SDL.h/SDL_opengl.h are pulled in by well over a hundred translation units;
-# precompiling them removes the single biggest repeated parse cost.
+# The Visual Studio generator drops $<COMPILE_LANGUAGE:C> options from the PCH
+# compilation, so C sources using the PCH then fail with C2855 against the
+# /experimental:c11atomics flag that bongo_cat_warnings adds. PCH stays enabled
+# for Ninja/MSVC and other generators where the option propagates correctly.
+if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
+  set(BONGO_CAT_PCH OFF)
+endif()
 if(BONGO_CAT_PCH)
   target_precompile_headers(bongo_cat_core PRIVATE <yyjson.h>)
   target_precompile_headers(bongo_cat_runtime PRIVATE

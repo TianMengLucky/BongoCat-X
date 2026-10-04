@@ -2,6 +2,7 @@
 #define BONGO_CAT_AUDIO_INTERNAL_H
 
 #include "bongo_cat/audio.h"
+#include "bongo_cat/safe_ffi.h"
 #include <miniaudio.h>
 #ifdef _WIN32
 #include <SDL3/SDL_atomic.h>
@@ -12,6 +13,11 @@
 
 typedef struct AudioVoice {
     ma_sound sound;
+    /* Zero-copy buffer over the bongo-safe decoded PCM, freed with the
+       voice; files are fully decoded (bounded by the Rust-side caps). */
+    ma_audio_buffer buffer;
+    float *samples;
+    size_t sample_count;
     char path[BONGO_CAT_PATH_CAP];
     uint64_t used;
     uint64_t order;

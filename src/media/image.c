@@ -1,9 +1,9 @@
 #include "bongo_cat/image.h"
+#include "bongo_cat/safe_ffi.h"
 #include "image_internal.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
-#include <stb_image.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,7 +23,9 @@ void bongo_cat_image_free(BongoCatImage *image) {
     if (!image) return;
     if (image->surface) SDL_DestroySurface(image->surface);
     if (image->pixels) {
-        if (image->pixels_stbi) stbi_image_free(image->pixels);
+        if (image->pixels_ffi)
+            bongo_safe_free_pixels(image->pixels,
+                (size_t)image->width * (size_t)image->height * 4);
         else free(image->pixels);
     }
     memset(image, 0, sizeof(*image));

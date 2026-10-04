@@ -52,7 +52,7 @@
 
 ## 🛠️ Compilar a partir do código-fonte
 
-O BongoCat usa CMake e requer um compilador C11, um compilador C++17, CMake 3.24 ou superior e os arquivos de desenvolvimento de OpenGL para desktop. Por padrão, SDL3, yyjson, stb, miniaudio e Nuklear são baixados automaticamente durante a configuração, portanto a primeira configuração requer conexão com a internet.
+O BongoCat usa CMake e requer um compilador C11, um compilador C++17, CMake 3.24 ou superior, os arquivos de desenvolvimento de OpenGL para desktop e a toolchain do Rust (cargo, por exemplo via rustup): os analisadores críticos para a segurança de memória (SHA-256, decodificação de imagens, o feed de colaboradores e a decodificação de áudio) ficam no crate `src/rust/bongo-safe`, que o Corrosion compila durante a configuração. Por padrão, SDL3, yyjson, stb, miniaudio e Nuklear são baixados automaticamente durante a configuração, portanto a primeira configuração requer conexão com a internet.
 
 Execute os comandos abaixo na raiz do projeto (o diretório que contém `CMakeLists.txt`).
 
@@ -143,7 +143,7 @@ O SDK deve incluir a biblioteca Core, o código-fonte do Framework e o diretóri
 
 | Opção | Valor padrão | Descrição |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Baixa dependências de terceiros em versões fixadas via `FetchContent` do CMake. Defina como `OFF` apenas se SDL3, yyjson, stb, miniaudio e Nuklear já estiverem disponíveis para o CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Baixa dependências de terceiros em versões fixadas via `FetchContent` do CMake (incluindo Corrosion e as dependências do crate Rust). Defina como `OFF` apenas se SDL3, yyjson, stb, miniaudio, Nuklear e Corrosion já estiverem disponíveis para o CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Caminho para o Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Define se a ausência do SDK faz a configuração falhar. Padrão `OFF`: sem o SDK, compila o backend de diagnóstico sem renderização do Live2D; defina `ON` para exigir o SDK (a CI de releases usa essa opção). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Trata avisos do compilador nativo como erros. |

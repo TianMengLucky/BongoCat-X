@@ -32,16 +32,32 @@ ma_result bongo_cat_audio_initialize(BongoCatAudio *audio) {
 }
 
 static ma_result load_voice(BongoCatAudio *audio, AudioVoice *voice, const char *path) {
-    ma_uint32 flags = MA_SOUND_FLAG_STREAM | MA_SOUND_FLAG_ASYNC |
-        MA_SOUND_FLAG_NO_SPATIALIZATION;
-#ifdef _WIN32
-    wchar_t wide[BONGO_CAT_PATH_CAP];
-    if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1,
-        wide, BONGO_CAT_PATH_CAP)) return MA_INVALID_ARGS;
-    return ma_sound_init_from_file_w(&audio->engine, wide, flags, NULL, NULL, &voice->sound);
-#else
-    return ma_sound_init_from_file(&audio->engine, path, flags, NULL, NULL, &voice->sound);
-#endif
+    float *samples = NULL;
+    unsigned long long frames = 0;
+    unsigned int rate = 0, channels = 0;
+    /* Untrusted sound files decode in the bongo-safe Rust crate; miniaudio
+       only plays the decoded buffer. */
+    if (!bongo_safe_audio_decode_file(path, &samples, &frames, &rate, &channels))
+        return MA_INVALID_FILE;
+    ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32,
+        channels, (ma_uint64)frames, samples, NULL);
+    config.sampleRate = rate;
+    ma_result result = ma_audio_buffer_init(&config, &voice->buffer);
+    if (result != MA_SUCCESS) {
+        bongo_safe_free_samples(samples, (size_t)frames * channels);
+        return result;
+    }
+    voice->samples = samples;
+    voice->sample_count = (size_t)frames * channels;
+    result = ma_sound_init_from_data_source(&audio->engine, &voice->buffer,
+        MA_SOUND_FLAG_NO_SPATIALIZATION, NULL, &voice->sound);
+    if (result != MA_SUCCESS) {
+        voice->samples = NULL;
+        voice->sample_count = 0;
+        ma_audio_buffer_uninit(&voice->buffer);
+        bongo_safe_free_samples(samples, (size_t)frames * channels);
+    }
+    return result;
 }
 
 BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path,
@@ -107,4 +123,3 @@ BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path
 BongoCatResult bongo_cat_audio_play(BongoCatAudio *audio, const char *path, BongoCatError *error) {
     return bongo_cat_audio_play_sound(audio, path, false, error);
 }
-

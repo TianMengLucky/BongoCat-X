@@ -42,10 +42,11 @@ static BongoCatLive2DFrame limit_frame(BongoCatApp *app,
 
 void bongo_cat_window_limit_initial_frame(BongoCatApp *app,
     int content_width, int content_height) {
-    BongoCatLive2DFrame requested = {0}, empty = {0};
-    if (!app || !app->window || !bongo_cat_live2d_frame(app->live2d, &requested))
+    BongoCatLive2DFrame requested_frame = {0}, empty = {0};
+    if (!app || !app->window ||
+        !bongo_cat_live2d_frame(app->live2d, &requested_frame))
         return;
-    BongoCatLive2DFrame limited = limit_frame(app, empty, requested,
+    BongoCatLive2DFrame limited = limit_frame(app, empty, requested_frame,
         content_width, content_height);
     bongo_cat_live2d_set_frame(app->live2d, &limited);
 }

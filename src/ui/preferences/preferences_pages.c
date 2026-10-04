@@ -382,10 +382,19 @@ static void input_monitoring_section(BongoCatApp *app,
 static void page_general(BongoCatApp *app, struct nk_context *context) {
     BongoCatApplicationPreferences *options = &app->settings.app;
     // Keep each option in its own native language so the list is recognizable
-    // regardless of the language currently used by the settings window.
-    const char *ui_languages[] = {"简体中文", "繁體中文", "English",
-        "Français", "Deutsch", "日本語", "한국어", "Português",
-        "Русский", "Español"};
+    // regardless of the language currently used by the settings window. The
+    // names come from the i18n core so the font glyph ranges cover them.
+    const char *ui_languages[] = {
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_ZH_CN),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_ZH_HANT),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_EN_US),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_FR_FR),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_DE_DE),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_JA_JP),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_KO_KR),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_PT_BR),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_RU_RU),
+        bongo_cat_ui_language_name(BONGO_CAT_LANG_ES_ES)};
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.general.labels.appSettings", "Application"),
         BONGO_CAT_PREF_ICON_SECTION_APPLICATION);

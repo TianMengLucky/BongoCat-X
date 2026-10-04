@@ -46,6 +46,11 @@ bool bongo_cat_app_step_live2d(BongoCatApp *app, float elapsed) {
     return true;
 }
 void bongo_cat_app_render_now(BongoCatApp *app) { (void)app; }
+/* Called from the modal-frame tick; a no-op in this test. */
+void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app,
+    bool allow_start) {
+    (void)app; (void)allow_start;
+}
 
 static void reset(BongoCatApp *app) {
     memset(app, 0, sizeof(*app));

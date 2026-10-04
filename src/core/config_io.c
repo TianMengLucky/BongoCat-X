@@ -1,375 +1,111 @@
 #include "config_internal.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/safe_ffi.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#define SETTINGS_FORMAT "bongocat/settings"
-#define type_error(error, field, expected) bongo_cat_config_type_error( \
-    "Settings", error, field, expected)
-#define read_value(object, key, target, error) bongo_cat_config_read_value( \
-    "Settings", object, key, target, error)
-#define read_object(object, key, target, error) bongo_cat_config_read_object( \
-    "Settings", object, key, target, error)
-#define read_array(object, key, target, error) bongo_cat_config_read_array( \
-    "Settings", object, key, target, error)
-#define read_bool(object, key, target, error) bongo_cat_config_read_bool( \
-    "Settings", object, key, target, error)
-#define read_int(object, key, target, error) bongo_cat_config_read_int( \
-    "Settings", object, key, target, false, error)
-#define read_float(object, key, target, error) bongo_cat_config_read_float( \
-    "Settings", object, key, target, error)
-#define read_string(object, key, target, length, error) \
-    bongo_cat_config_read_string( \
-        "Settings", object, key, target, length, error)
-#define read_text(object, key, target, capacity, error) \
-    bongo_cat_config_read_text( \
-        "Settings", object, key, target, capacity, error)
-#define copy_text(target, capacity, value, length, field, error) \
-    bongo_cat_config_copy_text( \
-        "Settings", target, capacity, value, length, field, error)
-
-static bool parse_theme(const char *value, BongoCatTheme *target) {
-    if (!strcmp(value, "auto")) *target = BONGO_CAT_THEME_AUTO;
-    else if (!strcmp(value, "light")) *target = BONGO_CAT_THEME_LIGHT;
-    else if (!strcmp(value, "dark")) *target = BONGO_CAT_THEME_DARK;
-    else return false;
-    return true;
-}
-
-static bool parse_background_color(const char *value, uint32_t *target) {
-    /* Accepts "#rrggbb" (older builds saved a fixed-color name that used
-       the same spelling), so old settings migrate without extra logic. */
-    if (value[0] != '#' || strlen(value) != 7) return false;
-    uint32_t rgb = 0;
-    for (int i = 1; i < 7; ++i) {
-        char c = value[i];
-        uint32_t digit;
-        if (c >= '0' && c <= '9') digit = (uint32_t)(c - '0');
-        else if (c >= 'a' && c <= 'f') digit = (uint32_t)(c - 'a' + 10);
-        else if (c >= 'A' && c <= 'F') digit = (uint32_t)(c - 'A' + 10);
-        else return false;
-        rgb = (rgb << 4) | digit;
-    }
-    *target = rgb;
-    return true;
-}
-
-static bool read_model(yyjson_val *object, BongoCatModelPreferences *value,
+/* Maps the bongo-safe parse result onto the public result codes. The -1
+   layout sentinel means the mirrored struct definitions drifted from
+   bongo_cat/config.h — a build-time bug that must fail loudly. */
+static BongoCatResult map_parse_result(int result, const char *message,
     BongoCatError *error) {
-    return read_bool(object, "multiplePets", &value->multiple_pets, error) &&
-        read_bool(object, "modelMirrored", &value->mirror, error) &&
-        read_bool(object, "modelFlippedVertically", &value->vertical_flip, error) &&
-        read_bool(object, "pointerMirrored", &value->mouse_mirror, error) &&
-        read_bool(object, "pointerFlippedVertically",
-            &value->mouse_vertical_flip, error) &&
-        read_bool(object, "centerPointerTracking", &value->mouse_centered,
-            error) &&
-        read_bool(object, "ignorePointerInput", &value->ignore_mouse, error) &&
-        read_bool(object, "gamepadFourHands", &value->gamepad_four_hands, error) &&
-        read_bool(object, "dynamicTextureResolution",
-            &value->dynamic_texture_resolution, error) &&
-        read_float(object, "renderQualityPercent", &value->render_quality_percent,
-            error) &&
-        read_int(object, "maximumFps", &value->max_fps, error);
+    BongoCatResult mapped = result == -1 ? BONGO_CAT_ERROR_PLATFORM :
+        result == 2 ? BONGO_CAT_ERROR_IO :
+        result == 3 ? BONGO_CAT_ERROR_FORMAT : BONGO_CAT_ERROR_MEMORY;
+    bongo_cat_error_set(error, mapped, "%s",
+        result == -1 ? "Configuration struct layout mismatch" :
+        message && message[0] ? message : "Invalid configuration");
+    return mapped;
 }
 
-static bool read_window(yyjson_val *object, BongoCatWindowPreferences *value,
-    BongoCatError *error) {
-    /* Pre-sequential builds stored the switch under randomModel with a
-       minutes interval; migrate both when the new keys are absent. */
-    float legacy_random_model_minutes = 0.0f;
-    float sequential_model_interval_seconds = 0.0f;
-    bool legacy_random_model = false;
-    if (!read_bool(object, "clickThrough", &value->pass_through, error) ||
-        !read_bool(object, "alwaysOnTop", &value->always_on_top, error) ||
-        !read_bool(object, "hideOnPointerOver", &value->hide_on_hover, error) ||
-        !read_bool(object, "keepOnScreen", &value->keep_in_screen, error) ||
-        !read_bool(object, "edgeSnap", &value->edge_snap, error) ||
-        !read_bool(object, "captureOnly", &value->capture_only, error) ||
-        !read_bool(object, "captureBackground", &value->obs_background,
-            error) ||
-        !read_bool(object, "tightFrame", &value->tight_frame, error) ||
-        !read_bool(object, "randomExpression", &value->random_expression,
-            error) ||
-        !read_bool(object, "randomMotion", &value->random_motion, error) ||
-        !read_bool(object, "sequentialModel", &value->sequential_model, error) ||
-        !read_bool(object, "randomModel", &legacy_random_model, error) ||
-        !read_float(object, "sequentialModelIntervalSeconds",
-            &sequential_model_interval_seconds, error) ||
-        !read_float(object, "randomModelIntervalMinutes",
-            &legacy_random_model_minutes, error) ||
-        !read_bool(object, "roundedCorners", &value->rounded_corners, error) ||
-        !read_float(object, "cornerRadiusPercent", &value->corner_radius_percent,
-            error) ||
-        !read_float(object, "hideDelaySeconds", &value->hide_delay_seconds,
-            error) ||
-        !read_float(object, "hideFadeSeconds", &value->hide_fade_seconds,
-            error) ||
-        !read_float(object, "randomExpressionIntervalSeconds",
-            &value->random_expression_interval_seconds, error) ||
-        !read_float(object, "randomMotionIntervalSeconds",
-            &value->random_motion_interval_seconds, error)) return false;
-    const char *color;
-    size_t length;
-    /* A migrated value only applies when no new-format value was saved. */
-    if (sequential_model_interval_seconds > 0.0f)
-        value->sequential_model_interval_seconds =
-            sequential_model_interval_seconds;
-    else if (legacy_random_model_minutes > 0.0f)
-        value->sequential_model_interval_seconds =
-            legacy_random_model_minutes * 60.0f;
-    if (legacy_random_model) value->sequential_model = true;
-    if (!read_string(object, "captureBackgroundColor", &color, &length,
-            error)) return false;
-    (void)length;
-    if (color && !parse_background_color(color,
-            &value->obs_background_rgb))
-        return type_error(error, "captureBackgroundColor",
-            "a #rrggbb color string");
-    return true;
-}
-
-static bool read_app(yyjson_val *object, BongoCatApplicationPreferences *value,
-    BongoCatError *error) {
-    bool legacy_admin = false;
-    if (!read_bool(object, "launchAtLogin", &value->autostart, error) ||
-        !read_bool(object, "runAsAdmin", &value->run_as_admin, error) ||
-        !read_bool(object, "gameCompatibility", &legacy_admin, error) ||
-        !read_bool(object, "showTrayIcon", &value->tray_visible, error))
-        return false;
-    /* Settings written before the option was renamed carried the same
-       meaning under the old key; the new key wins when both are present. */
-    if (!yyjson_obj_get(object, "runAsAdmin") && legacy_admin)
-        value->run_as_admin = true;
-    const char *text;
-    size_t length;
-    if (!read_string(object, "theme", &text, &length, error)) return false;
-    (void)length;
-    if (text && !parse_theme(text, &value->theme))
-        return type_error(error, "theme", "auto, light, or dark");
-    if (!read_string(object, "language", &text, &length, error)) return false;
-    if (text && !bongo_cat_language_parse(text, &value->language))
-        return type_error(error, "language", "a supported locale string");
-    return true;
-}
-
-static bool read_shortcuts(yyjson_val *object,
-    BongoCatShortcutPreferences *value, BongoCatError *error) {
-    return read_text(object, "toggleVisibility", value->toggle_pet_visibility,
-            sizeof(value->toggle_pet_visibility), error) &&
-        read_text(object, "openSettings", value->visible_preferences,
-            sizeof(value->visible_preferences), error) &&
-        read_text(object, "openMenu", value->open_menu,
-            sizeof(value->open_menu), error) &&
-        read_text(object, "toggleModelMirror", value->mirror,
-            sizeof(value->mirror), error) &&
-        read_text(object, "toggleClickThrough", value->pass_through,
-            sizeof(value->pass_through), error) &&
-        read_text(object, "toggleAlwaysOnTop", value->always_on_top,
-            sizeof(value->always_on_top), error);
-}
-
-static bool read_behaviors(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    if (!array) return true;
-    if (yyjson_arr_size(array) > BONGO_CAT_BEHAVIOR_BINDING_CAP)
-        return type_error(error, "behaviorOverrides", "a smaller array");
-    settings->behavior_shortcut_count = 0;
-    size_t index, count;
-    yyjson_val *item;
-    yyjson_arr_foreach(array, index, count, item) {
-        if (!yyjson_is_obj(item))
-            return type_error(error, "behaviorOverrides[]", "an object");
-        const char *id, *shortcut, *label;
-        size_t id_length, shortcut_length, label_length;
-        if (!read_string(item, "behaviorId", &id, &id_length, error) ||
-            !read_string(item, "shortcut", &shortcut, &shortcut_length,
-                error) ||
-            !read_string(item, "displayName", &label, &label_length, error))
-            return false;
-        if (!id || !id_length)
-            return type_error(error, "behaviorId", "a non-empty string");
-        BongoCatBehaviorShortcut *entry = &settings->behavior_shortcuts[
-            settings->behavior_shortcut_count++];
-        memset(entry, 0, sizeof(*entry));
-        if (!read_bool(item, "shortcutDisabled", &entry->shortcut_disabled, error)) return false;
-        if (!copy_text(entry->id, sizeof(entry->id), id, id_length,
-                "behaviorId", error) ||
-            !copy_text(entry->shortcut, sizeof(entry->shortcut), shortcut,
-                shortcut_length, "shortcut", error) ||
-            !copy_text(entry->label, sizeof(entry->label), label,
-                label_length, "displayName", error)) return false;
-    }
-    return true;
-}
-
-static bool read_random_disabled(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    if (!array) return true;
-    if (yyjson_arr_size(array) > BONGO_CAT_RANDOM_DISABLED_CAP)
-        return type_error(error, "randomBehaviorDisabled", "a smaller array");
-    settings->random_disabled_count = 0;
-    size_t index, count;
-    yyjson_val *item;
-    yyjson_arr_foreach(array, index, count, item) {
-        const char *id = yyjson_get_str(item);
-        size_t length = yyjson_get_len(item);
-        if (!yyjson_is_str(item) || !id || !length || strlen(id) != length)
-            return type_error(error, "randomBehaviorDisabled[]",
-                "a non-empty string without embedded nulls");
-        char *entry = settings->random_disabled[settings->random_disabled_count++];
-        memset(entry, 0, BONGO_CAT_BEHAVIOR_ID_CAP);
-        if (!copy_text(entry, BONGO_CAT_BEHAVIOR_ID_CAP, id, length,
-                "randomBehaviorDisabled[]", error)) return false;
-    }
-    return true;
-}
-
-static bool read_model_labels(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    if (!array) return true;
-    if (yyjson_arr_size(array) > BONGO_CAT_MODEL_CAP)
-        return type_error(error, "modelOverrides", "a smaller array");
-    settings->model_label_count = 0;
-    size_t index, count;
-    yyjson_val *item;
-    yyjson_arr_foreach(array, index, count, item) {
-        if (!yyjson_is_obj(item))
-            return type_error(error, "modelOverrides[]", "an object");
-        const char *id, *label;
-        size_t id_length, label_length;
-        if (!read_string(item, "modelId", &id, &id_length, error) ||
-            !read_string(item, "displayName", &label, &label_length, error))
-            return false;
-        if (!id || !id_length || !label || !label_length)
-            return type_error(error, "modelOverrides[]",
-                "non-empty modelId and displayName strings");
-        BongoCatModelLabel *entry =
-            &settings->model_labels[settings->model_label_count++];
-        memset(entry, 0, sizeof(*entry));
-        if (!copy_text(entry->id, sizeof(entry->id), id, id_length,
-                "modelId", error) ||
-            !copy_text(entry->label, sizeof(entry->label), label,
-                label_length, "displayName", error)) return false;
-    }
-    return true;
-}
-
-static bool read_model_id_array(yyjson_val *array, BongoCatRemovedModel *entries,
-    size_t *count, const char *name, BongoCatError *error) {
-    if (!array) return true;
-    if (yyjson_arr_size(array) > BONGO_CAT_MODEL_CAP)
-        return type_error(error, name, "a smaller array");
-    *count = 0;
-    size_t index, count_items;
-    yyjson_val *item;
-    yyjson_arr_foreach(array, index, count_items, item) {
-        const char *id = yyjson_get_str(item);
-        size_t length = yyjson_get_len(item);
-        if (!yyjson_is_str(item) || !id || !length || strlen(id) != length)
-            return type_error(error, name,
-                "a non-empty string without embedded nulls");
-        BongoCatRemovedModel *entry = &entries[(*count)++];
-        memset(entry, 0, sizeof(*entry));
-        if (!copy_text(entry->id, sizeof(entry->id), id, length, name,
-                error)) return false;
-    }
-    return true;
-}
-
-static bool read_removed_models(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    return read_model_id_array(array, settings->removed_models,
-        &settings->removed_model_count, "removedModels", error);
-}
-
-static bool read_hidden_models(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    return read_model_id_array(array, settings->hidden_models,
-        &settings->hidden_model_count, "hiddenModels", error);
-}
-
-static bool read_model_order(yyjson_val *array, BongoCatSettings *settings,
-    BongoCatError *error) {
-    return read_model_id_array(array, settings->model_order,
-        &settings->model_order_count, "modelOrder", error);
-}
-
-static BongoCatResult read_extensions(yyjson_val *value,
-    BongoCatSettings *settings, BongoCatError *error) {
-    if (!value) return BONGO_CAT_OK;
-    if (!yyjson_is_obj(value)) {
-        type_error(error, "extensions", "an object");
-        return BONGO_CAT_ERROR_FORMAT;
-    }
+static BongoCatResult load_document(const char *path, bool settings_format,
+    void *loaded, size_t loaded_size, bool *present, BongoCatError *error) {
+    *present = false;
+    if (!bongo_cat_path_is_file(path)) return BONGO_CAT_OK;
+    unsigned char *bytes = NULL;
     size_t length = 0;
-    char *json = yyjson_val_write(value, YYJSON_WRITE_NOFLAG, &length);
-    if (!json) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
-            "Cannot preserve settings extensions");
-        return BONGO_CAT_ERROR_MEMORY;
-    }
-    if (length >= sizeof(settings->extensions_json)) {
-        free(json);
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
-            "Settings extensions exceed the %u-byte limit",
-            (unsigned)(sizeof(settings->extensions_json) - 1));
-        return BONGO_CAT_ERROR_FORMAT;
-    }
-    memset(settings->extensions_json, 0, sizeof(settings->extensions_json));
-    memcpy(settings->extensions_json, json, length + 1);
-    free(json);
+    BongoCatResult result = bongo_cat_config_read_bytes(path, &bytes,
+        &length, error);
+    if (result != BONGO_CAT_OK) return result;
+    char message[256] = {0};
+    int parsed = settings_format ?
+        bongo_safe_settings_parse(bytes, length, loaded, loaded_size,
+            message, sizeof(message)) :
+        bongo_safe_session_parse(bytes, length, loaded, loaded_size,
+            message, sizeof(message));
+    free(bytes);
+    if (parsed != 0) return map_parse_result(parsed, message, error);
+    *present = true;
     return BONGO_CAT_OK;
 }
 
 BongoCatResult bongo_cat_settings_load(const char *path,
     BongoCatSettings *settings, BongoCatError *error) {
     if (!path || !settings) return BONGO_CAT_ERROR_ARGUMENT;
-    if (!bongo_cat_path_is_file(path)) return BONGO_CAT_OK;
-    yyjson_doc *document = NULL;
-    BongoCatResult result = bongo_cat_config_read_document(path,
-        SETTINGS_FORMAT, BONGO_CAT_SETTINGS_SCHEMA, &document, error);
-    if (result != BONGO_CAT_OK) return result;
     BongoCatSettings loaded = *settings;
-    yyjson_val *root = yyjson_doc_get_root(document);
-    yyjson_val *model = NULL;
-    yyjson_val *window = NULL;
-    yyjson_val *application = NULL;
-    yyjson_val *shortcuts = NULL;
-    yyjson_val *behaviors = NULL;
-    yyjson_val *random_disabled = NULL;
-    yyjson_val *models = NULL;
-    yyjson_val *removed_models = NULL;
-    yyjson_val *hidden_models = NULL;
-    yyjson_val *model_order = NULL;
-    yyjson_val *extensions_value = NULL;
-    bool valid = read_object(root, "rendering", &model, error) &&
-        read_object(root, "window", &window, error) &&
-        read_object(root, "application", &application, error) &&
-        read_object(root, "shortcuts", &shortcuts, error) &&
-        read_array(root, "behaviorOverrides", &behaviors, error) &&
-        read_array(root, "randomBehaviorDisabled", &random_disabled, error) &&
-        read_array(root, "modelOverrides", &models, error) &&
-        read_array(root, "removedModels", &removed_models, error) &&
-        read_array(root, "hiddenModels", &hidden_models, error) &&
-        read_array(root, "modelOrder", &model_order, error) &&
-        read_value(root, "extensions", &extensions_value, error) &&
-        (!model || read_model(model, &loaded.model, error)) &&
-        (!window || read_window(window, &loaded.window, error)) &&
-        (!application || read_app(application, &loaded.app, error)) &&
-        (!shortcuts || read_shortcuts(shortcuts, &loaded.shortcuts, error)) &&
-        read_behaviors(behaviors, &loaded, error) &&
-        read_random_disabled(random_disabled, &loaded, error) &&
-        read_model_labels(models, &loaded, error) &&
-        read_removed_models(removed_models, &loaded, error) &&
-        read_hidden_models(hidden_models, &loaded, error) &&
-        read_model_order(model_order, &loaded, error);
-    if (!valid) result = BONGO_CAT_ERROR_FORMAT;
-    if (valid) result = read_extensions(extensions_value, &loaded, error);
-    yyjson_doc_free(document);
+    bool present = false;
+    BongoCatResult result = load_document(path, true, &loaded,
+        sizeof(loaded), &present, error);
     if (result != BONGO_CAT_OK) return result;
-    bongo_cat_settings_validate(&loaded);
-    *settings = loaded;
+    if (present) {
+        bongo_cat_settings_validate(&loaded);
+        *settings = loaded;
+    }
     return BONGO_CAT_OK;
+}
+
+BongoCatResult bongo_cat_session_load(const char *path,
+    BongoCatSessionState *session, BongoCatError *error) {
+    if (!path || !session) return BONGO_CAT_ERROR_ARGUMENT;
+    BongoCatSessionState loaded = *session;
+    bool present = false;
+    BongoCatResult result = load_document(path, false, &loaded,
+        sizeof(loaded), &present, error);
+    if (result != BONGO_CAT_OK) return result;
+    if (present) {
+        bongo_cat_session_validate(&loaded);
+        *session = loaded;
+    }
+    return BONGO_CAT_OK;
+}
+
+static BongoCatResult save_document(const char *path, const char *description,
+    const void *value, size_t value_size, bool settings, BongoCatError *error) {
+    unsigned char *json = NULL;
+    size_t length = 0;
+    int result = settings ?
+        bongo_safe_settings_write(value, value_size, &json, &length) :
+        bongo_safe_session_write(value, value_size, &json, &length);
+    if (result != 0) {
+        bongo_cat_error_set(error,
+            result == -1 ? BONGO_CAT_ERROR_PLATFORM :
+            result == 4 ? BONGO_CAT_ERROR_MEMORY : BONGO_CAT_ERROR_FORMAT,
+            "Cannot serialize %s%s", description,
+            result == -1 ? " (configuration struct layout mismatch)" : "");
+        return result == -1 ? BONGO_CAT_ERROR_PLATFORM :
+            result == 4 ? BONGO_CAT_ERROR_MEMORY : BONGO_CAT_ERROR_FORMAT;
+    }
+    BongoCatResult written = bongo_cat_config_write_bytes(path, json, length,
+        description, error);
+    bongo_safe_free_json(json, length);
+    return written;
+}
+
+BongoCatResult bongo_cat_settings_save(const char *path,
+    const BongoCatSettings *settings, BongoCatError *error) {
+    if (!path || !settings) return BONGO_CAT_ERROR_ARGUMENT;
+    BongoCatSettings canonical = *settings;
+    bongo_cat_settings_validate(&canonical);
+    return save_document(path, "settings file", &canonical,
+        sizeof(canonical), true, error);
+}
+
+BongoCatResult bongo_cat_session_save(const char *path,
+    const BongoCatSessionState *session, BongoCatError *error) {
+    if (!path || !session) return BONGO_CAT_ERROR_ARGUMENT;
+    BongoCatSessionState canonical = *session;
+    bongo_cat_session_validate(&canonical);
+    return save_document(path, "session file", &canonical,
+        sizeof(canonical), false, error);
 }

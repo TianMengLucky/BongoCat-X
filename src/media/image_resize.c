@@ -91,7 +91,7 @@ bool bongo_cat_image_resize_rgba_take(BongoCatImage *source,
     target->pixels = pixels;
     target->width = width;
     target->height = height;
-    target->pixels_stbi = false;
+    target->pixels_ffi = false;
     bongo_cat_image_free(source);
     return true;
 }

@@ -44,9 +44,35 @@ jobs:
   quality:
     name: quality / static-analysis
     runs-on: ubuntu-24.04
+    env:
+      RUSTC_WRAPPER: sccache
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      # The bongo-safe Rust crate is a hard build requirement (cmake/Rust.cmake).
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      # Keep the sccache install consistent with the build job (the official
+      # static binary) instead of relying on apt packaging.
+      - name: Install sccache
+        run: |
+          curl -fsSL -o /tmp/sccache.tar.gz \
+            https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf /tmp/sccache.tar.gz -C /tmp
+          sudo install /tmp/sccache-v0.9.1-x86_64-unknown-linux-musl/sccache \
+            /usr/local/bin/sccache
+          sccache --version
+
+      - name: Restore compiler cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/sccache
+          key: sccache-quality-${{ github.sha }}
+          restore-keys: sccache-quality-
 
       - name: Install quality and build dependencies
         run: |
@@ -106,6 +132,8 @@ jobs:
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
             if [ "$attempt" -ge 3 ]; then
               echo "Configure failed after $attempt attempts" >&2
@@ -128,6 +156,11 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
 
       - name: Install Clang analysis dependencies
         run: |
@@ -171,9 +204,34 @@ jobs:
     name: quality / ASan + UBSan
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      RUSTC_WRAPPER: sccache
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      # Keep the sccache install consistent with the build job (the official
+      # static binary) instead of relying on apt packaging.
+      - name: Install sccache
+        run: |
+          curl -fsSL -o /tmp/sccache.tar.gz \
+            https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf /tmp/sccache.tar.gz -C /tmp
+          sudo install /tmp/sccache-v0.9.1-x86_64-unknown-linux-musl/sccache \
+            /usr/local/bin/sccache
+          sccache --version
+
+      - name: Restore compiler cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/sccache
+          key: sccache-sanitizers-${{ github.sha }}
+          restore-keys: sccache-sanitizers-
 
       - name: Install sanitizer and display dependencies
         run: |
@@ -196,6 +254,8 @@ jobs:
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DCMAKE_C_FLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" \
             -DCMAKE_CXX_FLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" \
             -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"; do
@@ -264,9 +324,24 @@ jobs:
             platform: macos-arm64
             cmake_arch: arm64
     runs-on: ${{ matrix.os }}
+    env:
+      # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
+      RUSTC_WRAPPER: sccache
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'

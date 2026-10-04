@@ -6,26 +6,26 @@
 static const char release_json[] =
     "{"
     "\"tag_name\":\"v1.2.3\","
-    "\"html_url\":\"https://github.com/vladelaina/BongoCat/releases/tag/v1.2.3\","
+    "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/releases/tag/v1.2.3\","
     "\"draft\":false,\"prerelease\":false,"
     "\"body\":\"Fixed input and rendering.\","
     "\"assets\":["
     "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.exe.sha256\","
-    "\"browser_download_url\":\"https://github.com/vladelaina/BongoCat/"
+    "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.exe.sha256\"},"
     "{\"name\":\"BongoCat-1.2.3-windows-x64-setup.exe\","
-    "\"browser_download_url\":\"https://github.com/vladelaina/BongoCat/"
+    "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-setup.exe\"},"
     "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.exe\","
-    "\"browser_download_url\":\"https://github.com/vladelaina/BongoCat/"
+    "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.exe\"}]}";
 
 static const char unix_release_json[] =
     "{\"tag_name\":\"v2.0.0\","
-    "\"html_url\":\"https://github.com/vladelaina/BongoCat/releases/tag/v2.0.0\","
+    "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.0.0\","
     "\"draft\":false,\"prerelease\":false,\"assets\":["
     "{\"name\":\"BongoCat-2.0.0-linux-x64.tar.gz\","
-    "\"browser_download_url\":\"https://github.com/vladelaina/BongoCat/"
+    "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v2.0.0/BongoCat-2.0.0-linux-x64.tar.gz\"}]}";
 
 void test_update(void) {
@@ -65,7 +65,7 @@ void test_update(void) {
     const char oversized_tag[] =
         "{\"tag_name\":\"v1234567890123456789012345678901234567890\","
         "\"draft\":false,\"prerelease\":false,"
-        "\"html_url\":\"https://github.com/vladelaina/BongoCat/"
+        "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
         "releases/tag/oversized\",\"assets\":[]}";
     CHECK(!bongo_cat_update_parse_release(oversized_tag, "windows-x64",
         &release, &error));

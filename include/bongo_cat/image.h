@@ -10,7 +10,9 @@ typedef struct BongoCatImage {
     int width;
     int height;
     SDL_Surface *surface;
-    bool pixels_stbi;
+    /* pixels came from the bongo-safe FFI (release with
+       bongo_safe_free_pixels) instead of malloc (free with free()). */
+    bool pixels_ffi;
 } BongoCatImage;
 
 #define BONGO_CAT_ALPHA_MASK_SIZE 128

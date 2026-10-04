@@ -52,7 +52,7 @@
 
 ## 🛠️ Aus dem Quellcode erstellen
 
-BongoCat verwendet CMake und benötigt einen C11-Compiler, einen C++17-Compiler, CMake 3.24 oder neuer sowie die OpenGL-Entwicklungsdateien für den Desktop. Standardmäßig werden SDL3, yyjson, stb, miniaudio und Nuklear während der Konfigurationsphase automatisch heruntergeladen, daher ist für die erste Konfiguration eine Internetverbindung erforderlich.
+BongoCat verwendet CMake und benötigt einen C11-Compiler, einen C++17-Compiler, CMake 3.24 oder neuer, die OpenGL-Entwicklungsdateien für den Desktop sowie die Rust-Toolchain (cargo, z. B. über rustup): Die speichersicherheitskritischen Parser (SHA-256, Bilddekodierung, der Contributor-Feed, Audiodekodierung) liegen im Crate `src/rust/bongo-safe`, den Corrosion zur Konfigurationszeit baut. Standardmäßig werden SDL3, yyjson, stb, miniaudio und Nuklear während der Konfigurationsphase automatisch heruntergeladen, daher ist für die erste Konfiguration eine Internetverbindung erforderlich.
 
 Führe die folgenden Befehle im Projektstammverzeichnis aus (dem Verzeichnis, das `CMakeLists.txt` enthält).
 
@@ -159,7 +159,7 @@ auf dem Standard `OFF`, wenn Sie das nicht benötigen.
 
 | Option | Standard | Beschreibung |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Lädt Drittanbieter-Abhängigkeiten in festgelegten Versionen über CMake `FetchContent` herunter. Setze es nur auf `OFF`, wenn SDL3, yyjson, stb, miniaudio und Nuklear bereits für CMake verfügbar sind. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Lädt Drittanbieter-Abhängigkeiten in festgelegten Versionen über CMake `FetchContent` herunter (einschließlich Corrosion und der Rust-Crate-Abhängigkeiten). Setze es nur auf `OFF`, wenn SDL3, yyjson, stb, miniaudio, Nuklear und Corrosion bereits für CMake verfügbar sind. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Pfad zum Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Ob ein fehlendes SDK die Konfiguration fehlschlagen lässt. Standard `OFF`: Ein fehlendes SDK baut das Diagnose-Backend ohne Live2D-Rendering; setze auf `ON`, um das SDK vorauszusetzen (die Release-CI verwendet es). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Behandelt Warnungen des nativen Compilers als Fehler. |

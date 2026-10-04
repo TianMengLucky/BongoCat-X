@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.0.3")
+set(BONGO_CAT_VERSION "2.0.4")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
@@ -47,6 +47,7 @@ if(BONGO_CAT_STATIC_ANALYZER)
 endif()
 include(cmake/Dependencies.cmake)
 include(cmake/AudioDecoder.cmake)
+include(cmake/Rust.cmake)
 find_package(OpenGL REQUIRED)
 set(BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
 set(BONGO_CAT_CUBISM_ENABLED OFF)
@@ -146,8 +147,8 @@ else()
     "at runtime.")
 endif()
 add_library(bongo_cat_core STATIC
-  src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_fields.c src/core/config_io.c src/core/config_settings_save.c
-  src/core/config_file.c src/core/config_session_io.c
+  src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
+  src/core/config_file.c
   src/core/error.c
   src/core/file.c src/core/i18n.c
   src/core/input_state.c src/core/mver_pointer.c
@@ -158,7 +159,9 @@ add_library(bongo_cat_core STATIC
   src/core/sound_shortcut.c
   src/core/update_release.c src/core/update_version.c)
 target_include_directories(bongo_cat_core PUBLIC "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include)
-target_link_libraries(bongo_cat_core PUBLIC yyjson PRIVATE bongo_cat_warnings)
+# The Rust crate's CMake target name uses underscores (Corrosion normalizes
+# the crate name's dashes for library targets).
+target_link_libraries(bongo_cat_core PUBLIC yyjson bongo_safe PRIVATE bongo_cat_warnings)
 include(cmake/CubismAssets.cmake)
 if(WIN32)
   target_sources(bongo_cat_core PRIVATE
@@ -178,10 +181,10 @@ target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
 target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_warnings bongo_cat_archive)
 target_link_libraries(bongo_cat_runtime PUBLIC bongo_cat_core SDL3::SDL3-static OpenGL::GL ${BONGO_CAT_MINIAUDIO_TARGET})
 if(MSVC)
-  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c src/ui/preferences/about/preferences_about_svg.c
+  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c
     PROPERTIES COMPILE_OPTIONS "/W0")
 else()
-  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c src/ui/preferences/about/preferences_about_svg.c
+  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c
     PROPERTIES COMPILE_OPTIONS "-w")
 endif()
 if(BONGO_CAT_CUBISM_ENABLED)
@@ -212,7 +215,6 @@ if(BONGO_CAT_PCH)
 endif()
 
 include(cmake/PlatformRuntime.cmake)
-include(cmake/AboutWebP.cmake)
 
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)

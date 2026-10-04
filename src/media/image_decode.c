@@ -1,9 +1,9 @@
 #include "image_internal.h"
 
 #include "bongo_cat/file.h"
+#include "bongo_cat/safe_ffi.h"
 
 #include <SDL3/SDL.h>
-#include <stb_image.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,16 +15,41 @@
 #include <windows.h>
 #endif
 
+unsigned char *bongo_cat_image_read_stream(FILE *file, size_t *length) {
+    size_t capacity = 1 << 16, used = 0;
+    unsigned char *buffer = malloc(capacity);
+    if (!buffer) return NULL;
+    for (;;) {
+        if (used == capacity) {
+            if (capacity > SIZE_MAX / 2) { free(buffer); return NULL; }
+            unsigned char *grown = realloc(buffer, capacity *= 2);
+            if (!grown) { free(buffer); return NULL; }
+            buffer = grown;
+        }
+        size_t read = fread(buffer + used, 1, capacity - used, file);
+        used += read;
+        if (!read) break;
+    }
+    if (ferror(file)) { free(buffer); return NULL; }
+    *length = used;
+    return buffer;
+}
+
 BongoCatResult bongo_cat_image_decode_pixels(const char *path,
     BongoCatImage *image, BongoCatError *error) {
     if (!path || !image) return BONGO_CAT_ERROR_ARGUMENT;
     memset(image, 0, sizeof(*image));
-    int channels;
     FILE *file = bongo_cat_file_open(path, "rb");
-    image->pixels = file ? stbi_load_from_file(file, &image->width,
-        &image->height, &channels, STBI_rgb_alpha) : NULL;
-    image->pixels_stbi = image->pixels != NULL;
+    size_t length = 0;
+    unsigned char *data = file ? bongo_cat_image_read_stream(file, &length) : NULL;
     if (file) fclose(file);
+    int width = 0, height = 0;
+    /* Untrusted bytes: decoding happens in the bongo-safe Rust crate. */
+    image->pixels = data ? bongo_safe_image_decode(data, length, &width, &height) : NULL;
+    free(data);
+    image->width = width;
+    image->height = height;
+    image->pixels_ffi = image->pixels != NULL;
     if (image->pixels) return BONGO_CAT_OK;
     bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
         "Cannot decode image: %s", path);

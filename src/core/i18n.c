@@ -174,10 +174,34 @@ size_t bongo_cat_i18n_glyph_ranges(const BongoCatI18n *value, uint32_t *ranges,
     return build_ranges(points, count, ranges, capacity);
 }
 
+const char *bongo_cat_ui_language_name(BongoCatLanguage language) {
+    switch (language) {
+    case BONGO_CAT_LANG_EN_US: return "English";
+    case BONGO_CAT_LANG_ZH_CN: return "简体中文";
+    case BONGO_CAT_LANG_ZH_HANT: return "繁體中文";
+    case BONGO_CAT_LANG_FR_FR: return "Français";
+    case BONGO_CAT_LANG_DE_DE: return "Deutsch";
+    case BONGO_CAT_LANG_JA_JP: return "日本語";
+    case BONGO_CAT_LANG_KO_KR: return "한국어";
+    case BONGO_CAT_LANG_PT_BR: return "Português";
+    case BONGO_CAT_LANG_RU_RU: return "Русский";
+    case BONGO_CAT_LANG_ES_ES: return "Español";
+    default: return "";
+    }
+}
+
 size_t bongo_cat_i18n_all_glyph_ranges(const BongoCatI18n *value, uint32_t *ranges,
     size_t capacity) {
     if (!value || !ranges || capacity < 3) return 0;
-    uint32_t points[4096]; size_t count = 0;
+    /* The settings window renders the native language names verbatim
+       regardless of the active language, so their scripts are collected
+       first and can never be crowded out by the locale strings. */
+    uint32_t points[8192]; size_t count = 0;
+    for (int language = 0; language < BONGO_CAT_LANG_COUNT; ++language) {
+        const unsigned char *cursor = (const unsigned char *)
+            bongo_cat_ui_language_name((BongoCatLanguage)language);
+        while (*cursor) add_point(points, &count, decode_utf8(&cursor));
+    }
     collect_value(yyjson_doc_get_root(value->fallback), points, &count);
     for (int language = 0; language < BONGO_CAT_LANG_COUNT; ++language) {
         if (language == BONGO_CAT_LANG_EN_US) continue;

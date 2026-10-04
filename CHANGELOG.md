@@ -7,6 +7,39 @@
 Release 工作流构建并发布 GitHub Release；发布说明取自本文件，优先匹配 `## [<版本号>]`
 小节，若无匹配则使用最上方小节。发版前请把「未发布」小节标题改为对应版本号。
 
+## [未发布]
+
+## [2.0.4] · 2026-10-05
+
+### 新增
+
+- **内存安全关键的解析器迁移到 Rust**：新增 `src/rust/bongo-safe` crate（通过 Corrosion 以静态库链接进应用，C ABI 见 `include/bongo_cat/safe_ffi.h`），所有不可信字节流（网络响应、用户导入的模型文件）改由安全 Rust 解析：
+  - **SHA-256**：删除 `src/core/sha256.c` 中的手写实现，改用 `sha2` crate；`bongo_cat_sha256_*` 公共 API 与取消语义不变。
+  - **图像解码**：便携解码路径（模型贴图等）与贡献者头像的 PNG/JPEG/WebP 解码改用 `image` crate，带硬性尺寸/内存上限；移除 stb_image 解码实现与 libwebp 依赖（`cmake/AboutWebP.cmake` 删除）。Windows 的 WIC 系统解码路径、stb_image_write/resize2（编码与缩放，不解析不可信输入）保留。
+  - **贡献者信息流**：「关于」页 SVG 解析与头像（贡献者可控的网络数据）解码/缩放/圆形蒙版整体迁移到 Rust（`roxmltree` + `image`）；删除 `preferences_about_svg.c` 与 vendored nanosvg。
+  - **音频解码**：用户音效文件改由 `symphonia` crate 解码为 PCM，miniaudio 继续负责输出设备（`ma_sound` 现基于零拷贝 `ma_audio_buffer`）；解码量有硬性上限（约 5 分钟 48 kHz 立体声），取代原先的流式解码。
+  - **表情文件**：`.exp3.json` 解析迁移到 Rust（`serde_json`），桥接层直接以解析结果构造 `CubismExpressionMotion`，不再把表情字节交给 Cubism SDK 自带的 JSON 解析器。
+  - **配置 JSON**：`bongocat/settings` 与 `bongocat/session` 的解析与序列化迁移到 `bongo-safe`（`config.rs` + `unique.rs`，serde_json）。C 侧保留文件读取、原子写入（临时文件 + flush + replace + 目录 fsync）与 `settings_validate` 校验；字段级容忍语义全部复刻：缺省键保留默认值、类型错误报格式错、重复键拒绝（自定义 `UniqueValue` 反序列化器）、旧键迁移（`randomModel`→`sequentialModel`、`gameCompatibility`→`runAsAdmin`、`#rrggbb` 颜色）、扩展 JSON 原样透传。`config_fields.c`、`config_session_io.c`、`config_settings_save.c` 删除，`config_io.c` 改为薄 FFI 封装；FFI 入口校验 `sizeof` 防止镜像结构与 `config.h` 漂移。
+- **FFI 测试**：新增 `tests/core/test_safe_ffi.c`（CTest `safe-ffi`）与 crate 内 18 个单元测试（`cargo test --manifest-path src/rust/bongo-safe/Cargo.toml`）。
+
+### 修复
+
+- **语言列表字形缺失**：设置页语言切换列表的原生语言名自 WIP 起硬编码进 UI 代码，字体图集字形范围不再覆盖（「简」等字符渲染为方块）。语言名下沉为 `bongo_cat_ui_language_name`（i18n 核心单一来源，`preferences_pages.c` 改为引用），全字形范围收集优先纳入这些字符；i18n 测试的全范围容量放大（2048 → 8192 个数字，即约 1023 → 4095 个 range，避免韩文等高位码点被 `build_ranges` 静默截断）。
+- **更新检查测试夹具过期**：`test_update.c` 的发布资产 URL 仍指向上游 `vladelaina/BongoCat`，而 `update_release.c` 的信任前缀已改为 fork 仓库，导致解析一律失败；同步更新夹具 URL。
+- **frame-policy 测试断言过严**：余量花费步骤会把帧精确推到面积预算上，浮点边距令 `<= 2.0` 严格比较系统性失败；放宽为 `2.0 + 1e-4` 并注释原因。
+- **虚拟手柄测试环境适配**：宿主拒绝虚拟手柄时以 skip 返回码 77 优雅跳过，不再硬性失败。
+- **移除无法编译的僵尸测试**：`preferences-lifecycle` / `model-startup-recovery` 引用的 `qr_*` 字段随社区卡片功能移除（aaf6fc7）而消失，测试自那时起无法编译；连同 `CheckModelStartupRecovery.cmake` 一并移除。
+- **测试目标源列表补齐**：`hover-fade` 测试补上 `modal_frame.c` 新增调用所依赖的 `resource_trace.c` 与 `platform/common/memory.c` 并为新增调用提供测试桩；`gl_readback.c` / `window_frame.c` 修复 /W4 变量遮蔽（C4459）使相关测试目标恢复编译。
+
+### 变更
+
+- **CI 统一使用 sccache**：quality / sanitizers / build 各 job 的 C/C++（`CMAKE_*_COMPILER_LAUNCHER`）与 Rust（`RUSTC_WRAPPER`）编译统一经 sccache 缓存；build/release 矩阵增加 cargo registry 缓存，并在所有配置 CMake 的 job 显式固定 stable 工具链（minimal profile）。
+- **构建现在需要 Rust 工具链**（cargo，CI runner 自带；本地从 rustup 安装）：Corrosion v0.5.2 经 `FetchContent` 获取并在配置阶段构建 `bongo-safe`。全部 10 份 README、AGENTS.md 已同步更新构建说明。
+
+### 修复
+
+- **修复含科学计数法数字的表情文件被静默丢弃**：Cubism SDK 自带的 JSON 解析器（`CubismJson::ParseNumeric`）只接受 `-`、数字与小数点，数字带科学计数法（Cubism Editor 导出的预设即如此，如 `-2.980232238769531e-7`）时整个文件解析失败，表情虽在菜单中可见却永远无法生效（上游 [issue #68](https://github.com/vladelaina/BongoCat/issues/68)）。`.exp3.json` 现由 `bongo-safe` Rust crate 解析，桥接层子类化 `CubismExpressionMotion` 直接填充淡入淡出时间与参数，完整保留 SDK 语义（缺省淡入淡出 1 秒、未知混合模式回退 Add）。
+
 ## [2.0.3] · 2026-10-02
 
 ### 新增

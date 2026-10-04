@@ -72,7 +72,10 @@
 ## 🛠️ Membangun dari Kode Sumber
 
 BongoCat menggunakan CMake dan memerlukan compiler C11, compiler C++17, CMake 3.24
-atau yang lebih baru, serta file pengembangan OpenGL desktop. SDL3, yyjson, stb,
+atau yang lebih baru, file pengembangan OpenGL desktop, serta toolchain Rust
+(cargo, misalnya via rustup): parser yang kritis terhadap keamanan memori
+(SHA-256, decoding gambar, feed kontributor, decoding audio) berada di crate
+`src/rust/bongo-safe`, yang dibangun oleh Corrosion saat konfigurasi. SDL3, yyjson, stb,
 miniaudio, dan Nuklear secara default diunduh saat proses konfigurasi, sehingga
 konfigurasi pertama memerlukan akses jaringan.
 
@@ -193,7 +196,7 @@ pada default `OFF` bila Anda tidak membutuhkannya.
 
 | Opsi | Default | Deskripsi |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent`. Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, dan Nuklear sudah tersedia untuk CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent` (termasuk Corrosion dan dependency crate Rust). Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, Nuklear, dan Corrosion sudah tersedia untuk CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path ke Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Menentukan apakah SDK yang tidak tersedia menggagalkan konfigurasi. Default `OFF`: tanpa SDK dibangun backend diagnostik tanpa rendering Live2D; atur `ON` untuk mewajibkan SDK (digunakan oleh CI rilis). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Perlakukan warning compiler native sebagai error. |

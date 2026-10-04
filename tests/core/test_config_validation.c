@@ -25,11 +25,14 @@ static void check_defaults_and_validation(void) {
         bongo_cat_settings_validate(&settings);
         CHECK(settings.model.render_quality_percent == quality_levels[i]);
     }
+    /* Out-of-range values snap to the nearest valid level instead of
+       resetting to the default. */
     const float invalid_quality[] = {0, -1, 0.01f, 2, 11, 101, NAN, INFINITY};
+    const float snapped_quality[] = {0.1f, 0.1f, 0.1f, 1, 10, 100, 0.1f, 0.1f};
     for (size_t i = 0; i < sizeof(invalid_quality) / sizeof(invalid_quality[0]); ++i) {
         settings.model.render_quality_percent = invalid_quality[i];
         bongo_cat_settings_validate(&settings);
-        CHECK(settings.model.render_quality_percent == 100.0f);
+        CHECK(settings.model.render_quality_percent == snapped_quality[i]);
     }
     CHECK(!settings.window.random_motion &&
         settings.window.random_motion_interval_seconds ==
@@ -73,8 +76,9 @@ static void check_defaults_and_validation(void) {
     bongo_cat_session_validate(&session);
     CHECK(session.window.content_left == 0 && session.window.content_top == 0);
     CHECK(settings.model.max_fps == 60);
-    const int old_fps[] = {-2, BONGO_CAT_DISPLAY_MAX_FPS, 0, 1, 24, 30, 31, 60, 120, 240};
-    const int new_fps[] = {60, BONGO_CAT_DISPLAY_MAX_FPS, 60, 30, 30, 30, 60, 60, 60, 60};
+    /* Free numeric input clamps to 1-360; -1 keeps following the display. */
+    const int old_fps[] = {-2, BONGO_CAT_DISPLAY_MAX_FPS, 0, 1, 24, 30, 31, 60, 120, 240, 361};
+    const int new_fps[] = {60, BONGO_CAT_DISPLAY_MAX_FPS, 60, 1, 24, 30, 31, 60, 120, 240, 60};
     for (size_t i = 0; i < sizeof(old_fps) / sizeof(old_fps[0]); ++i) {
         settings.model.max_fps = old_fps[i];
         bongo_cat_settings_validate(&settings);

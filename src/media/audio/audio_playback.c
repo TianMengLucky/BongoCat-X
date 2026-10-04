@@ -33,7 +33,7 @@ ma_result bongo_cat_audio_initialize(BongoCatAudio *audio) {
 
 static ma_result load_voice(BongoCatAudio *audio, AudioVoice *voice, const char *path) {
     float *samples = NULL;
-    unsigned long long frames = 0;
+    uint64_t frames = 0;
     unsigned int rate = 0, channels = 0;
     /* Untrusted sound files decode in the bongo-safe Rust crate; miniaudio
        only plays the decoded buffer. */

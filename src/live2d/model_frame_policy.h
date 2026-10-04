@@ -30,7 +30,7 @@ static inline float bongo_cat_frame_margin(float previous, double overflow) {
 
 static inline BongoCatLive2DFrame bongo_cat_frame_tight(
     float min_x, float min_y, float max_x, float max_y) {
-    BongoCatLive2DFrame frame = {0};
+    BongoCatLive2DFrame frame = {0, 0, 0, 0};
     if (!isfinite(min_x) || !isfinite(min_y) || !isfinite(max_x) ||
         !isfinite(max_y) || min_x > max_x || min_y > max_y)
         return frame;

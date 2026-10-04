@@ -117,19 +117,3 @@ bool bongo_cat_render_backend_parse(const char *name,
         }
     return false;
 }
-
-const char *bongo_cat_obs_background_color_name(
-    BongoCatObsBackgroundColor value) {
-    static const char *names[] = {
-        "#00ff00", "#0000ff", "#ff0000", "#ff00ff"};
-    return (unsigned)value < BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT ?
-        names[value] : names[BONGO_CAT_OBS_BACKGROUND_GREEN];
-}
-
-uint32_t bongo_cat_obs_background_color_rgb(
-    BongoCatObsBackgroundColor value) {
-    static const uint32_t colors[] = {
-        0x00ff00, 0x0000ff, 0xff0000, 0xff00ff};
-    return (unsigned)value < BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT ?
-        colors[value] : colors[BONGO_CAT_OBS_BACKGROUND_GREEN];
-}

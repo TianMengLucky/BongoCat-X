@@ -62,9 +62,25 @@ jobs:
             platform: macos-arm64
             cmake_arch: arm64
 
+    env:
+      # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
+      RUSTC_WRAPPER: sccache
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      # The bongo-safe Rust crate is a hard build requirement (cmake/Rust.cmake).
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
 
       - name: Validate tag version
         id: version
@@ -78,19 +94,84 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
             -Append -Encoding utf8
 
+      # Per-platform resume: when a previous run of this tag already
+      # published this platform's assets, skip the build entirely so one
+      # failing platform can be rebuilt alone without re-running the rest.
+      - name: Skip platforms already published
+        id: skip-check
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $prefix = "BongoCat-X-$version-${{ matrix.platform }}"
+          $assets = @()
+          $releaseJson = gh release view "$env:GITHUB_REF_NAME" --json assets --repo "$env:GITHUB_REPOSITORY" 2>$null
+          if ($LASTEXITCODE -eq 0 -and $releaseJson) {
+            $release = $releaseJson | ConvertFrom-Json
+            if ($release.assets) {
+              $assets = @($release.assets | ForEach-Object { $_.name })
+            }
+          } else {
+            Write-Host 'No existing release for this tag yet; building'
+          }
+          $existing = @($assets | Where-Object { $_ -and $_.StartsWith($prefix) })
+          if ($existing.Count -gt 0) {
+            Write-Host "Already published: $($existing -join ', ')"
+            'skip=true' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          } else {
+            Write-Host 'No assets for this platform yet; building'
+            'skip=false' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          }
+          exit 0
+
       - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && steps.skip-check.outputs.skip != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev libx11-dev libxi-dev \
-            libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev \
-            curl file desktop-file-utils
+            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev \
+            libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev \
+            libfontconfig1-dev curl file desktop-file-utils
+
+      # sccache is not packaged for Ubuntu 22.04 (jammy); use the official
+      # static musl binary instead of an apt package.
+      - name: Install sccache (Linux)
+        if: runner.os == 'Linux' && steps.skip-check.outputs.skip != 'true'
+        run: |
+          curl -fsSL -o /tmp/sccache.tar.gz \
+            https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf /tmp/sccache.tar.gz -C /tmp
+          sudo install /tmp/sccache-v0.9.1-x86_64-unknown-linux-musl/sccache \
+            /usr/local/bin/sccache
+          sccache --version
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS' && steps.skip-check.outputs.skip != 'true'
+        run: brew install sccache
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
+        shell: pwsh
+        run: choco install sccache -y --no-progress
+
+      - name: Restore compiler cache
+        if: steps.skip-check.outputs.skip != 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/sccache
+            ~/Library/Caches/Mozilla.sccache
+            ~/AppData/Local/Mozilla/sccache/cache
+          key: sccache-${{ matrix.platform }}-${{ github.sha }}
+          restore-keys: sccache-${{ matrix.platform }}-
 
       # Compiles the Cubism Framework + bridge into the runtime-Core binary.
       # The Core binary extracted here is build-time only: the package steps
       # assert that no Live2DCubismCore.* ever reaches the release output.
       - name: Restore Cubism SDK
+        if: steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -130,15 +211,18 @@ jobs:
           Write-Host "Restored Cubism SDK $env:CUBISM_SDK_VERSION and GLEW $env:GLEW_VERSION"
 
       - name: Configure Unix release
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
         run: |
           attempt=1
           until cmake -S . -B build-release -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DBONGO_CAT_REQUIRE_CUBISM=ON \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
             if [ "$attempt" -ge 3 ]; then
               echo "Configure failed after $attempt attempts" >&2
@@ -149,7 +233,7 @@ jobs:
           done
 
       - name: Build Windows release
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: |
           :retry foreach ($attempt in 1..3) {
@@ -171,17 +255,17 @@ jobs:
           }
 
       - name: Build Unix release
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
         run: bash .github/scripts/build-unix.sh cmake --build build-release --parallel 2
 
       - name: Install Inno Setup
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: >-
           & ./.github/scripts/install-inno.ps1
 
       - name: Package Windows release
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: |
           $name = (Get-Content build-release/bongocat-package-name.txt -Raw).Trim()
@@ -226,7 +310,7 @@ jobs:
           }
 
       - name: Upload Windows installer failure log
-        if: failure() && runner.os == 'Windows'
+        if: failure() && runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: installer-log-${{ matrix.platform }}-${{ github.run_attempt }}
@@ -234,7 +318,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Package Unix release
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
         timeout-minutes: 5
         shell: pwsh
         run: |
@@ -282,6 +366,7 @@ jobs:
           }
 
       - name: Upload packaged release
+        if: steps.skip-check.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: bongocat-release-${{ matrix.platform }}
@@ -292,6 +377,7 @@ jobs:
       # Every platform publishes its own assets straight to the tag's
       # release, so one failing platform never blocks the others.
       - name: Verify release checksums
+        if: steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: |
           Get-ChildItem release-output -Filter *.sha256 | ForEach-Object {
@@ -311,6 +397,7 @@ jobs:
           }
 
       - name: Extract release notes from CHANGELOG
+        if: steps.skip-check.outputs.skip != 'true'
         shell: bash
         run: |
           python3 .github/scripts/extract-changelog.py \
@@ -319,14 +406,15 @@ jobs:
             --output release-notes.md
 
       - name: Publish release assets
-        if: github.repository == 'TianMengLucky/BongoCat-X'
-        uses: softprops/action-gh-release@v2
+        if: github.repository == 'TianMengLucky/BongoCat-X' &&
+          steps.skip-check.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v3
         with:
           name: BongoCat v${{ steps.version.outputs.version }}
           body_path: release-notes.md
           generate_release_notes: true
           fail_on_unmatched_files: true
-          allow_updates: true
+          overwrite_files: true
           make_latest: true
           files: release-output/*
 

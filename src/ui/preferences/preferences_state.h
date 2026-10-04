@@ -19,6 +19,7 @@ typedef struct BongoCatPreferenceNotice {
     char message[1024];
     uint64_t started_ns;
     uint64_t until_ns;
+    uint64_t closing_ns;
     uint64_t timer_updated_ns;
     struct nk_rect bounds;
     bool hovered;
@@ -60,6 +61,10 @@ struct BongoCatPreferences {
     /* Runtime Live2D Core import: file picker plus its completion event. */
     bool sdk_import_requested;
     int sdk_import_event_type;
+    /* Background Live2D Core drop-in rescan (zip extraction can take a
+       while): worker thread plus its completion event. */
+    SDL_Thread *live2d_rescan_worker;
+    int live2d_rescan_event_type;
     bool frame_checked;
     bool render_dirty;
     bool font_reload_pending;
@@ -77,6 +82,16 @@ struct BongoCatPreferences {
     bool smoke_behavior_open_pending;
     bool model_show_hidden;
     bool model_selection_pending;
+    /* Model-dialog drag-reorder: the pressed row and the row being dragged
+       (both catalog indices, -1 when idle), plus where the press started so
+       a click on the toggle can be told apart from a drag. */
+    int model_press_index;
+    int model_drag_source;
+    struct nk_vec2 model_press_point;
+    /* Color picker debounce: timestamp of the latest drag change. The window
+       repaints once the color has stayed stable for a short while instead of
+       on every mouse move. */
+    uint64_t color_picker_pending_ns;
     bool pending_model_multiple;
     bool pending_model_active;
     bool model_loading;
@@ -95,6 +110,8 @@ struct BongoCatPreferences {
     char model_load_visual_id[BONGO_CAT_ID_CAP];
     uint64_t last_render_ns;
     uint64_t shown_ns;
+    uint64_t fade_started_ns;
+    bool fade_closing;
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;
@@ -120,6 +137,7 @@ struct BongoCatPreferences {
     /* Random expression/motion picker: rows with per-entry toggles. */
     bool random_dialog;
     BongoCatBehaviorKind random_dialog_kind;
+    bool sequential_model_dialog;
     bool random_dialog_input_armed;
     uint64_t random_dialog_opened_ns;
     uint64_t random_dialog_closing_ns;

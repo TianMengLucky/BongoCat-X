@@ -16,10 +16,12 @@ bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
     int minimum, int *value, int maximum, int step, int default_value);
 /* Slider with a value box on the right. The box is editable: click it to
  * type a number, double-click to restore the default. #suffix is drawn
- * inside the box while not editing (for example "%"). */
+ * inside the box while not editing (for example "%"). #edit_maximum lets
+ * typed values exceed the slider range (dragging still clamps to
+ * #maximum); pass 0 to use #maximum. */
 bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     float minimum, float *value, float maximum, float step,
-    float default_value, const char *suffix);
+    float default_value, const char *suffix, float edit_maximum);
 bool bongo_cat_pref_control_toggle(struct nk_context *context,
     const char *id, bool *value);
 bool bongo_cat_pref_control_toggle_available(struct nk_context *context,
@@ -28,7 +30,10 @@ bool bongo_cat_pref_control_toggle_available(struct nk_context *context,
 bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
     const char *id, bool *value, struct nk_rect cell, bool available);
 bool bongo_cat_pref_control_obs_background(struct nk_context *context,
-    const char *id, bool *enabled, BongoCatObsBackgroundColor *color);
+    const char *id, bool *enabled, uint32_t *rgb);
+/* Saturation/value square plus hue slider for the solid background color. */
+bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
+    uint32_t *rgb);
 int bongo_cat_pref_control_combo(struct nk_context *context, const char *id,
     const char *const *items, int count, int selected);
 bool bongo_cat_pref_controls_animating(struct nk_context *context);

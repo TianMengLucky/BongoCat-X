@@ -30,6 +30,9 @@ bool bongo_cat_platform_live2d_core_import(const char *path,
     const char *data_dir, BongoCatError *error) {
     return bongo_cat_windows_live2d_sdk_import(path, data_dir, error);
 }
+bool bongo_cat_platform_live2d_core_rescan(const char *data_dir) {
+    return bongo_cat_windows_live2d_sdk_rescan(data_dir);
+}
 static HWND native_window(BongoCatPlatform *platform) {
     return (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(platform->window),
         SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);

@@ -40,13 +40,23 @@
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
+  > [!IMPORTANT]
+  > 官方 Release 为 **runtime-Core 构建**：内置 Live2D 渲染支持，但**不附带** Live2D Cubism Core 运行库（专有授权，不随包分发），**并非**无 Live2D 能力的诊断构建。未检测到 Core 时会回退到诊断后端并在设置窗口提示。
+
+  **启用 Live2D 渲染（任选其一）：**
+
+  1. **应用内导入（推荐）**：打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
+  2. **live2d 文件夹投放**：从 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 许可协议）下载 **Cubism SDK for Native**，将 zip 或解压出的 `Live2DCubismCore.dll` 放入应用目录/数据目录下的 `live2d` 文件夹，重启应用后自动识别启用。
+
+  源码构建时 SDK 的完整导入步骤见下方「Live2D / Cubism SDK」章节。
+
 ## ⚠️ Live2D 声明
 
 本仓库与 Live2D 公司（Live2D Inc.）及其官方项目无任何关联。Live2D Cubism SDK 为 Live2D Inc. 的专有软件：本仓库不附带、不内置、也不分发该 SDK。构建前需按下方「Live2D / Cubism SDK」章节的说明，从 Live2D 官网自行下载并导入，使用须遵守 Live2D 的许可协议。
 
 ## 🛠️ 从源码构建
 
-BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本，以及桌面 OpenGL 开发文件。默认情况下，SDL3、yyjson、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
+BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本、桌面 OpenGL 开发文件，以及 Rust 工具链（通过 rustup 安装 cargo）：内存安全关键的解析器（SHA-256、图像解码、贡献者信息流、音频解码）位于 `src/rust/bongo-safe` crate 中，配置阶段由 Corrosion 自动构建。默认情况下，SDL3、yyjson、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
 
 请在项目根目录（包含 `CMakeLists.txt` 的目录）运行以下命令。
 
@@ -97,9 +107,11 @@ ctest --test-dir build --output-on-failure
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK（必需，需手动下载）
+### 🎭 Live2D / Cubism SDK（可选：不安装也能编译）
 
-Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。构建前，每位用户都必须从 Live2D 官方网站手动下载 SDK；缺少 SDK 时 CMake 配置会直接失败。
+Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。SDK 现在是**可选的**：默认构建（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在缺少 SDK 时也能正常配置和编译，产物是不含 Live2D 渲染的诊断后端——由于 Live2D 渲染器必须在编译期链接进二进制，运行时把 SDK 投放进去也**无法**为该构建补上渲染能力（仅带渲染器的版本会响应投放），它只用于启动与平台诊断。
+
+若要构建带 Live2D 渲染支持的版本，仍需手动下载并导入 SDK：
 
 1. 打开 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 专有软件许可协议，下载 **Cubism SDK for Native**（项目按 `5-r.5` 版本构建和测试）。
 2. 解压压缩包。若解压出的文件夹名为 `CubismSdkForNative-5-r.5`，请将其重命名为 `CubismSdkForNative` 并放到 `vendor/` 目录下，使目录树包含 `Core/` 和 `Framework/`。
@@ -113,21 +125,21 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。仅当需要构建用于启动与平台诊断的诊断后端时，才设置 `BONGO_CAT_REQUIRE_CUBISM=OFF`；该后端不提供 Live2D 模型渲染。
+SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。SDK 就位后照常配置即可得到带 Live2D 渲染的版本；`BONGO_CAT_REQUIRE_CUBISM=ON` 的作用是让 SDK 缺失时配置直接失败并打印导入方法（发布流水线使用），没有必要时保持默认的 `OFF` 即可。
 
 > [!TIP]
 > Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
 
 > [!NOTE]
-> 本仓库官方 Release 提供的安装包为 runtime-Core 构建内置 Live2D 渲染支持，但**不附带 Core 运行库**：首次使用时在应用内导入 Core 库或官方 SDK zip，或将文件放入应用目录/数据目录下的 `live2d` 文件夹即可启用。
+> 本仓库官方 Release 提供的安装包为 runtime-Core 构建：内置 Live2D 渲染支持，但**不附带 Core 运行库**。启动时会先检查 `live2d` 文件夹——把 `Live2DCubismCore.dll` 或官方 SDK zip 放入应用目录/数据目录下的该文件夹，重启后即被自动识别启用；也可以在应用内「设置 → 模型」页点击「导入 Live2D Core」立即生效。没有检测到 Core 时会回退到诊断后端，并在设置窗口给出提示。
 
 ### ⚙️ CMake 选项
 
 | 选项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖。仅当 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可供 CMake 使用时才设为 `OFF`。 |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖（含 Corrosion 与 Rust crate 依赖）。仅当 SDL3、yyjson、stb、miniaudio、Nuklear 和 Corrosion 已可供 CMake 使用时才设为 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路径。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 手动下载的 Cubism SDK 不可用时使配置失败；设置为 `OFF` 可构建不带 Live2D 渲染的诊断后端。 |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK 缺失时是否让配置失败。默认 `OFF`：缺失时构建不带 Live2D 渲染的诊断后端；设为 `ON` 则要求 SDK 必须存在（发布 CI 使用）。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 将本地编译器警告视为错误。 |
 
 离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`）和 yyjson 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：
@@ -147,8 +159,11 @@ cmake -S . -B build -G Ninja \
 ![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
 ![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
 ![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
+![Release](https://img.shields.io/github/v/release/TianMengLucky/BongoCat-X?style=flat)
 
 See [Insights / Pulse](https://github.com/TianMengLucky/BongoCat-X/pulse) for live charts.
+
+![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
 
 ## 📜 许可证
 

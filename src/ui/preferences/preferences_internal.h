@@ -28,6 +28,11 @@ bool bongo_cat_preferences_random_dialog_active(
     const BongoCatPreferences *value);
 void bongo_cat_preferences_random_dialog_open(BongoCatPreferences *value,
     BongoCatBehaviorKind kind);
+void bongo_cat_preferences_sequential_model_dialog_open(
+    BongoCatPreferences *value);
+/* The "Random Models" preferences row: toggle + interval; opens the dialog. */
+void bongo_cat_preferences_sequential_model_pref_row(
+    BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_random_dialog_close(BongoCatPreferences *value);
 void bongo_cat_preferences_random_dialog_draw(
     BongoCatPreferences *value, struct nk_context *context);

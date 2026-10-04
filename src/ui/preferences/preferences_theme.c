@@ -229,7 +229,7 @@ int bongo_cat_pref_theme(struct nk_context *context, const char *id,
 static void slider_row(struct nk_context *context, const char *id,
     const char *title, const char *detail, float minimum, float value,
     float maximum, float step, float default_value, float *result,
-    bool *changed) {
+    bool *changed, float edit_maximum) {
     *changed = false;
     *result = value;
     int lines = bongo_cat_pref_detail_lines(context, detail);
@@ -241,7 +241,7 @@ static void slider_row(struct nk_context *context, const char *id,
     bongo_cat_pref_form_label(context, title);
     nk_layout_row_push(context, 220.0f);
     *changed = bongo_cat_pref_control_slider(context, id, minimum, result,
-        maximum, step, default_value, "");
+        maximum, step, default_value, "", edit_maximum);
     nk_layout_row_end(context);
     bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved);
@@ -250,14 +250,16 @@ static void slider_row(struct nk_context *context, const char *id,
 int bongo_cat_pref_fps(struct nk_context *context, const char *id,
     const char *title, int fps, int display_fps) {
     /* The legacy "match display" choice (-1) shows the display maximum;
-       it stays saved untouched until the slider or value box is used. */
+       it stays saved untouched until the slider or value box is used.
+       Dragging spans 1..display maximum; typed values may exceed the
+       display rate (up to 360) — the thumb pins to the end while the box
+       shows the real number. */
     float maximum = NK_MAX(60.0f, (float)display_fps);
-    float value = fps <= 0 ? maximum :
-        NK_CLAMP(30.0f, (float)fps, maximum);
+    float value = fps <= 0 ? maximum : (float)fps;
     float result = value;
     bool changed = false;
-    slider_row(context, id, title, NULL, 30.0f, value, maximum, 1.0f,
-        (float)BONGO_CAT_DEFAULT_MAX_FPS, &result, &changed);
+    slider_row(context, id, title, NULL, 1.0f, value, maximum, 1.0f,
+        (float)BONGO_CAT_DEFAULT_MAX_FPS, &result, &changed, 360.0f);
     /* Returning the original keeps saved values (including the legacy -1)
        untouched while the user only looks at the page. */
     return changed ? (int)(result + 0.5f) : fps;
@@ -268,9 +270,13 @@ float bongo_cat_pref_render_quality(struct nk_context *context, const char *id,
     float value = NK_CLAMP(0.1f, quality_percent, 100.0f);
     float result = value;
     bool changed = false;
-    slider_row(context, id, title, detail, 0.1f, value, 100.0f, 1.0f,
-        (float)BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT, &result, &changed);
-    return changed ? result : quality_percent;
+    /* Fine 0.1 steps while dragging; the committed value snaps to the
+       nearest valid level (0.1, 1, 10, 20, ... 100). */
+    slider_row(context, id, title, detail, 0.1f, value, 100.0f, 0.1f,
+        (float)BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT, &result, &changed,
+        0.0f);
+    return changed ? bongo_cat_settings_snap_render_quality(result) :
+        quality_percent;
 }
 
 bool bongo_cat_pref_capsule_button(struct nk_context *context,

@@ -4,13 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* App-thread owned. Streaming bounds decoded memory independently of clip
-   duration; the pool bounds decoder/file handles during rapid key presses. */
+/* App-thread owned. Decoded PCM is bounded by the bongo-safe decoder caps;
+   the voice pool bounds memory during rapid key presses. */
 void bongo_cat_audio_voice_release(AudioVoice *voice) {
     if (!voice->ready) return;
     ma_sound_stop(&voice->sound);
-    /* uninit waits for pending decoding jobs before releasing their data. */
     ma_sound_uninit(&voice->sound);
+    if (voice->samples) {
+        ma_audio_buffer_uninit(&voice->buffer);
+        bongo_safe_free_samples(voice->samples, voice->sample_count);
+    }
     memset(voice, 0, sizeof(*voice));
 }
 
@@ -47,12 +50,7 @@ void bongo_cat_audio_collect(BongoCatAudio *audio, uint64_t now) {
     for (size_t i = 0; i < AUDIO_VOICES; ++i) {
         AudioVoice *voice = &audio->voices[i];
         if (!voice->ready) continue;
-        ma_result result = ma_resource_manager_data_source_result(
-            voice->sound.pResourceManagerDataSource);
-        if (result != MA_SUCCESS && result != MA_BUSY) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "Cannot decode audio (%d): %s", result, voice->path);
-            bongo_cat_audio_voice_release(voice);
-        } else if (ma_sound_at_end(&voice->sound) || !ma_sound_is_playing(&voice->sound)) {
+        if (ma_sound_at_end(&voice->sound) || !ma_sound_is_playing(&voice->sound)) {
             if (now - voice->used >= AUDIO_IDLE_MS) bongo_cat_audio_voice_release(voice);
         } else active = true;
     }
@@ -98,9 +96,7 @@ bool bongo_cat_audio_is_playing(const BongoCatAudio *audio, const char *path) {
     for (size_t i = 0; i < AUDIO_VOICES; ++i) {
         const AudioVoice *voice = &audio->voices[i];
         if (!voice->ready || strcmp(voice->path, path)) continue;
-        ma_result result = ma_resource_manager_data_source_result(voice->sound.pResourceManagerDataSource);
-        if ((result == MA_SUCCESS || result == MA_BUSY) &&
-            ma_sound_is_playing(&voice->sound) && !ma_sound_at_end(&voice->sound)) return true;
+        if (ma_sound_is_playing(&voice->sound) && !ma_sound_at_end(&voice->sound)) return true;
     }
     return false;
 }
@@ -117,9 +113,7 @@ bool bongo_cat_audio_any_playing(const BongoCatAudio *audio) {
     for (size_t i = 0; i < AUDIO_VOICES; ++i) {
         const AudioVoice *voice = &audio->voices[i];
         if (!voice->ready) continue;
-        ma_result result = ma_resource_manager_data_source_result(voice->sound.pResourceManagerDataSource);
-        if ((result == MA_SUCCESS || result == MA_BUSY) &&
-            ma_sound_is_playing(&voice->sound) && !ma_sound_at_end(&voice->sound)) return true;
+        if (ma_sound_is_playing(&voice->sound) && !ma_sound_at_end(&voice->sound)) return true;
     }
     return false;
 }

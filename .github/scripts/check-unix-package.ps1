@@ -83,15 +83,33 @@ try {
                     Out-Null
                 Copy-Item -LiteralPath $coreLib -Destination $live2dDir
             }
-            & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
-                $executable --ci-smoke --ci-ignore-global-input `
-                --ci-live2d-scenario=visual-consistency "--storage-root=$storage"
+            $appArgs = @($executable, '--ci-smoke', '--ci-ignore-global-input',
+                '--ci-live2d-scenario=visual-consistency',
+                "--storage-root=$storage")
+            # BONGOCAT_SMOKE_GDB=1 runs the packaged app under gdb so a
+            # crash in the smoke test prints a full backtrace.
+            if ($env:BONGOCAT_SMOKE_GDB -and $Platform -eq 'linux-x64') {
+                & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
+                    gdb -batch -return-child-result `
+                    -ex 'handle SIGPIPE nostop noprint pass' `
+                    -ex 'set environment LD_DEBUG=libs' `
+                    -ex run -ex 'thread apply all bt full' --args @appArgs
+            } else {
+                & bash $testRunner env BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1 `
+                    @appArgs
+            }
             $smokeExitCode = $LASTEXITCODE
             if ($smokeExitCode -ne 0) {
                 Get-ChildItem -LiteralPath $storage -Recurse -File -Filter 'live2d-*audit.*' |
                     ForEach-Object {
-                        Write-Host "Live2D audit: $($_.FullName)"
+                        Write-Host "Live2d audit: $($_.FullName)"
                         Get-Content -LiteralPath $_.FullName | Write-Host
+                    }
+                Get-ChildItem -LiteralPath $storage -Recurse -File -Filter 'runtime-diagnostics.log' |
+                    ForEach-Object {
+                        Write-Host "Runtime diagnostics: $($_.FullName)"
+                        Get-Content -LiteralPath $_.FullName -ErrorAction SilentlyContinue |
+                            Select-Object -Last 60 | Write-Host
                     }
                 throw "Packaged application smoke test failed (exit code $smokeExitCode)"
             }

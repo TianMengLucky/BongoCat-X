@@ -238,10 +238,10 @@ int main(void) {
     BongoCatError error = {0};
     BongoCatI18n *all = bongo_cat_i18n_create(root,
         BONGO_CAT_LANG_EN_US, &error);
-    uint32_t all_ranges[2048];
+    uint32_t all_ranges[8192];
     const uint32_t menu_points[] = {0x7b80, 0x9ad4, 0x00e7, 0x00fc, 0x65e5,
         0xd55c, 0x00ea, 0x0420, 0x00f1};
-    if (!all || bongo_cat_i18n_all_glyph_ranges(all, all_ranges, 2048) < 3)
+    if (!all || bongo_cat_i18n_all_glyph_ranges(all, all_ranges, 8192) < 3)
         return 4;
     for (size_t i = 0; i < sizeof(menu_points) / sizeof(menu_points[0]); ++i)
         if (!includes(all_ranges, menu_points[i])) return 5;

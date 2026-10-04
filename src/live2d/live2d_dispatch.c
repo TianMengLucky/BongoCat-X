@@ -23,6 +23,7 @@ bool bridge_live2d_frame(const BongoCatLive2D *live2d, BongoCatLive2DFrame *fram
 bool bridge_live2d_measure_frame(BongoCatLive2D *live2d, BongoCatLive2DFrame *required);
 void bridge_live2d_set_frame(BongoCatLive2D *live2d, const BongoCatLive2DFrame *frame);
 bool bridge_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
+bool bridge_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
 void bridge_live2d_resize(BongoCatLive2D *live2d, int width, int height);
 void bridge_live2d_reshape(BongoCatLive2D *live2d, int width, int height);
 bool bridge_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d, float quality_percent);
@@ -36,6 +37,8 @@ void bridge_live2d_draw(BongoCatLive2D *live2d);
 void bridge_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void bridge_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void bridge_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
+void bridge_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight);
+void bridge_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect);
 void bridge_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y);
 void bridge_live2d_set_centered_dragging(BongoCatLive2D *live2d, float x, float y);
 void bridge_live2d_prepare_viewer_audit(BongoCatLive2D *live2d);
@@ -64,6 +67,7 @@ bool stub_live2d_frame(const BongoCatLive2D *live2d, BongoCatLive2DFrame *frame)
 bool stub_live2d_measure_frame(BongoCatLive2D *live2d, BongoCatLive2DFrame *required);
 void stub_live2d_set_frame(BongoCatLive2D *live2d, const BongoCatLive2DFrame *frame);
 bool stub_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
+bool stub_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height);
 void stub_live2d_resize(BongoCatLive2D *live2d, int width, int height);
 void stub_live2d_reshape(BongoCatLive2D *live2d, int width, int height);
 bool stub_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d, float quality_percent);
@@ -77,6 +81,8 @@ void stub_live2d_draw(BongoCatLive2D *live2d);
 void stub_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void stub_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void stub_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
+void stub_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight);
+void stub_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect);
 void stub_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y);
 void stub_live2d_set_centered_dragging(BongoCatLive2D *live2d, float x, float y);
 void stub_live2d_prepare_viewer_audit(BongoCatLive2D *live2d);
@@ -115,8 +121,8 @@ BongoCatLive2D *bongo_cat_live2d_create(const char *asset_root,
 }
 
 void bongo_cat_live2d_destroy(BongoCatLive2D *live2d) {
-    if (bridge_instance) return bridge_live2d_destroy(live2d);
-    return stub_live2d_destroy(live2d);
+    if (bridge_instance) bridge_live2d_destroy(live2d);
+    else stub_live2d_destroy(live2d);
 }
 
 BongoCatResult bongo_cat_live2d_load(BongoCatLive2D *live2d, const char *model_dir, const char *setting_file, bool preset, const BongoCatLive2DRenderOptions *render_options, BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error) {
@@ -157,8 +163,8 @@ bool bongo_cat_live2d_measure_frame(BongoCatLive2D *live2d, BongoCatLive2DFrame 
 
 void bongo_cat_live2d_set_frame(BongoCatLive2D *live2d, const BongoCatLive2DFrame *frame) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_frame(live2d, frame);
-    return stub_live2d_set_frame(live2d, frame);
+    if (bridge_instance) bridge_live2d_set_frame(live2d, frame);
+    else stub_live2d_set_frame(live2d, frame);
 }
 
 bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height) {
@@ -167,16 +173,21 @@ bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d, int *x, int *y, int
     return stub_live2d_viewport(live2d, x, y, width, height);
 }
 
+bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *live2d, int *x, int *y, int *width, int *height) {
+    if (bridge_instance) return bridge_live2d_overlay_viewport(live2d, x, y, width, height);
+    return stub_live2d_overlay_viewport(live2d, x, y, width, height);
+}
+
 void bongo_cat_live2d_resize(BongoCatLive2D *live2d, int width, int height) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_resize(live2d, width, height);
-    return stub_live2d_resize(live2d, width, height);
+    if (bridge_instance) bridge_live2d_resize(live2d, width, height);
+    else stub_live2d_resize(live2d, width, height);
 }
 
 void bongo_cat_live2d_reshape(BongoCatLive2D *live2d, int width, int height) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_reshape(live2d, width, height);
-    return stub_live2d_reshape(live2d, width, height);
+    if (bridge_instance) bridge_live2d_reshape(live2d, width, height);
+    else stub_live2d_reshape(live2d, width, height);
 }
 
 bool bongo_cat_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d, float quality_percent) {
@@ -205,8 +216,8 @@ bool bongo_cat_live2d_texture_refresh_busy(const BongoCatLive2D *live2d) {
 
 void bongo_cat_live2d_cancel_texture_refresh(BongoCatLive2D *live2d) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_cancel_texture_refresh(live2d);
-    return stub_live2d_cancel_texture_refresh(live2d);
+    if (bridge_instance) bridge_live2d_cancel_texture_refresh(live2d);
+    else stub_live2d_cancel_texture_refresh(live2d);
 }
 
 bool bongo_cat_live2d_refresh_textures(BongoCatLive2D *live2d, bool active, bool allow_start) {
@@ -223,44 +234,56 @@ bool bongo_cat_live2d_update(BongoCatLive2D *live2d, float delta_seconds) {
 
 void bongo_cat_live2d_draw(BongoCatLive2D *live2d) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_draw(live2d);
-    return stub_live2d_draw(live2d);
+    if (bridge_instance) bridge_live2d_draw(live2d);
+    else stub_live2d_draw(live2d);
 }
 
 void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_mirror(live2d, mirror);
-    return stub_live2d_set_mirror(live2d, mirror);
+    if (bridge_instance) bridge_live2d_set_mirror(live2d, mirror);
+    else stub_live2d_set_mirror(live2d, mirror);
 }
 
 void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_vertical_flip(live2d, flipped);
-    return stub_live2d_set_vertical_flip(live2d, flipped);
+    if (bridge_instance) bridge_live2d_set_vertical_flip(live2d, flipped);
+    else stub_live2d_set_vertical_flip(live2d, flipped);
 }
 
 void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_render_options(live2d, options);
-    return stub_live2d_set_render_options(live2d, options);
+    if (bridge_instance) bridge_live2d_set_render_options(live2d, options);
+    else stub_live2d_set_render_options(live2d, options);
+}
+
+void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight) {
+    if (!live2d) return;
+    if (bridge_instance) bridge_live2d_set_tight_frame(live2d, tight);
+    else stub_live2d_set_tight_frame(live2d, tight);
+}
+
+void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d, const float *rect) {
+    if (!live2d) return;
+    if (bridge_instance) bridge_live2d_set_tight_overlay_rect(live2d, rect);
+    else stub_live2d_set_tight_overlay_rect(live2d, rect);
 }
 
 void bongo_cat_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_dragging(live2d, x, y);
-    return stub_live2d_set_dragging(live2d, x, y);
+    if (bridge_instance) bridge_live2d_set_dragging(live2d, x, y);
+    else stub_live2d_set_dragging(live2d, x, y);
 }
 
 void bongo_cat_live2d_set_centered_dragging(BongoCatLive2D *live2d, float x, float y) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_set_centered_dragging(live2d, x, y);
-    return stub_live2d_set_centered_dragging(live2d, x, y);
+    if (bridge_instance) bridge_live2d_set_centered_dragging(live2d, x, y);
+    else stub_live2d_set_centered_dragging(live2d, x, y);
 }
 
 void bongo_cat_live2d_prepare_viewer_audit(BongoCatLive2D *live2d) {
     if (!live2d) return;
-    if (bridge_instance) return bridge_live2d_prepare_viewer_audit(live2d);
-    return stub_live2d_prepare_viewer_audit(live2d);
+    if (bridge_instance) bridge_live2d_prepare_viewer_audit(live2d);
+    else stub_live2d_prepare_viewer_audit(live2d);
 }
 
 bool bongo_cat_live2d_prepare_cover_capture(BongoCatLive2D *live2d) {

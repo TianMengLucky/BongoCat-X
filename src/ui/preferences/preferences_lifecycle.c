@@ -20,7 +20,7 @@
 #include <dwmapi.h>
 #endif
 
-enum { SDK_NOTICE_DURATION_MS = 12000 };
+enum { SDK_NOTICE_DURATION_MS = 12000, WINDOW_FADE_MS = 160 };
 
 static void hide_window_immediately(SDL_Window *window) {
 #ifdef _WIN32
@@ -87,6 +87,8 @@ static void release_window(BongoCatPreferences *value) {
     value->raster_retry_ns = 0;
     value->render_retry_ns = 0;
     value->shown_ns = 0;
+    value->fade_started_ns = 0;
+    value->fade_closing = false;
     SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
     SDL_GL_SetSwapInterval(1);
     bongo_cat_memory_policy_ui_released();
@@ -111,6 +113,14 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     bongo_cat_preferences_input_monitoring_refresh(value);
 #endif
     if (value->visible) {
+        if (value->fade_closing) {
+            /* Reopening during the close fade cancels the close; nothing was
+               torn down yet apart from input handling. */
+            value->fade_closing = false;
+            value->fade_started_ns = 0;
+            SDL_SetWindowOpacity(value->window, 1.0f);
+            bongo_cat_preferences_live_resize_install(value);
+        }
         bongo_cat_platform_raise_window(value->window);
         bongo_cat_app_request_nearby_model_refresh(value->app);
         return;
@@ -141,9 +151,11 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
         value->sdk_notice_shown = true;
         bongo_cat_preferences_notice_show_anchored(value->app,
             bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
-                "This build does not include Live2D support (diagnostic "
-                "build), so Live2D rendering is unavailable. Please use a "
-                "build shipped with Live2D support."),
+                "This build does not include Live2D rendering (it was "
+                "compiled without the Cubism SDK): Live2D rendering, "
+                "animation, pointer tracking and cover generation are "
+                "disabled. Use a build with Live2D support, for example the "
+                "official release."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
 #elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
@@ -154,10 +166,11 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
         value->sdk_notice_shown = true;
         bongo_cat_preferences_notice_show_anchored(value->app,
             bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
-                "Live2D Cubism Core not found: import the Core library or "
-                "the official SDK zip in the settings window, or drop the "
-                "zip into the live2d folder (next to the application or "
-                "inside the data directory) and restart."),
+                "Live2D Cubism Core not found, so Live2D stays disabled "
+                "until it is supplied. Drop Live2DCubismCore.dll or the "
+                "official SDK zip into the live2d folder of the data "
+                "directory and restart — startup picks it up automatically "
+                "— or import it in this window without restarting."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
 #endif
@@ -168,13 +181,62 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     value->render_dirty = true;
     bongo_cat_preferences_render(value);
     bongo_cat_preferences_resource_note(value, "shown");
+    /* Fade in from the first fully painted frame: the window shows at opacity
+       0 (bongo_cat_platform_raise_window reveals it) and the render loop
+       raises opacity over WINDOW_FADE_MS, so it never pops in. */
+    SDL_SetWindowOpacity(value->window, 0.0f);
+    value->fade_started_ns = SDL_GetTicksNS();
+    value->fade_closing = false;
+    value->render_dirty = true;
     bongo_cat_platform_raise_window(value->window);
     bongo_cat_app_request_nearby_model_refresh(value->app);
 }
 
 void bongo_cat_preferences_close(BongoCatPreferences *value) {
+    if (!value || !value->window || !value->visible || value->fade_closing) return;
+    /* Drop interaction at once, then let the render loop fade the last frame
+       out before bongo_cat_preferences_close_finish hides the window. */
+    bongo_cat_preferences_live_resize_uninstall(value);
+    if (value->input_active) bongo_cat_preferences_input_end(value);
+    if (value->ui_initialized) bongo_cat_ui_input_reset(&value->ui);
+    value->fade_started_ns = SDL_GetTicksNS();
+    value->fade_closing = true;
+    value->render_dirty = true;
+}
+
+static void bongo_cat_preferences_close_finish(BongoCatPreferences *value);
+
+bool bongo_cat_preferences_window_fade_tick(BongoCatPreferences *value) {
+    if (!value || !value->window || !value->fade_started_ns) return false;
+    uint64_t now = SDL_GetTicksNS();
+    float progress = SDL_clamp((float)(now - value->fade_started_ns) /
+        (WINDOW_FADE_MS * 1000000.0f), 0.0f, 1.0f);
+    if (progress < 1.0f) {
+        /* The painted frame is static while only the compositor opacity
+           moves, so no re-render is needed during the fade. */
+        float eased = bongo_cat_ui_ease(value->fade_closing ?
+            BONGO_CAT_UI_EASE_STANDARD : BONGO_CAT_UI_EASE_OUT_CUBIC, progress);
+        SDL_SetWindowOpacity(value->window,
+            value->fade_closing ? 1.0f - eased : eased);
+        value->render_dirty = true;
+        return true;
+    }
+    if (value->fade_closing) {
+        value->fade_started_ns = 0;
+        bongo_cat_preferences_close_finish(value);
+        return true;
+    }
+    SDL_SetWindowOpacity(value->window, 1.0f);
+    value->fade_started_ns = 0;
+    value->fade_closing = false;
+    return true;
+}
+
+static void bongo_cat_preferences_close_finish(BongoCatPreferences *value) {
     if (!value || !value->window || !value->visible) return;
     bongo_cat_preferences_live_resize_uninstall(value);
+    value->fade_started_ns = 0;
+    value->fade_closing = false;
     value->visible = false;
     hide_window_immediately(value->window);
     bongo_cat_model_memory_ui_state(true, false);
@@ -230,9 +292,13 @@ void bongo_cat_preferences_release_idle_window(BongoCatPreferences *value) {
 
 void bongo_cat_preferences_destroy(BongoCatPreferences *value) {
     if (!value) return;
+    if (value->live2d_rescan_worker) {
+        SDL_WaitThread(value->live2d_rescan_worker, NULL);
+        value->live2d_rescan_worker = NULL;
+    }
     bongo_cat_preferences_import_destroy(value->import_dialog);
     value->import_dialog = NULL;
-    bongo_cat_preferences_close(value);
+    if (value->window && value->visible) bongo_cat_preferences_close_finish(value);
     release_window(value);
     bongo_cat_about_clear(value, false);
     bongo_cat_about_shutdown(value);

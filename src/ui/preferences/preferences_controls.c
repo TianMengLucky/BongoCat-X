@@ -210,7 +210,7 @@ bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
 
 bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     float minimum, float *value, float maximum, float step,
-    float default_value, const char *suffix) {
+    float default_value, const char *suffix, float edit_maximum) {
     struct nk_rect bounds;
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
     bounds = nk_rect(bounds.x + bounds.w - 220.0f,
@@ -248,7 +248,11 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
         bongo_cat_pref_number_edit_reset(context);
         nk_edit_unfocus(context);
     }
-    float ratio = (*value - minimum) / (maximum - minimum);
+    /* The thumb and the filled track clamp to the slider range even when
+       the typed value exceeds it (edit_maximum); the value box still shows
+       the real number. */
+    float ratio = (NK_CLAMP(minimum, *value, maximum) - minimum) /
+        (maximum - minimum);
     nk_fill_rect(canvas, track, 3, p.field);
     nk_fill_rect(canvas, nk_rect(track.x, track.y, track.w * ratio, track.h),
         3, p.accent);
@@ -264,12 +268,17 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     nk_fill_rect(canvas, value_box, 8, p.field);
     nk_stroke_rect(canvas, value_box, 8, 1, p.border_subtle);
     char number[24];
-    if (*value < 1.0f) snprintf(number, sizeof(number), "%.1f", *value);
+    if (*value < 1.0f || fmodf(*value, 1.0f) != 0.0f)
+        snprintf(number, sizeof(number), "%.1f", *value);
     else snprintf(number, sizeof(number), "%.0f", *value);
     /* Editable value box: the number editor overlays the box and draws its
        own text cursor while active. */
+    double edited = *value;
     bool editing = bongo_cat_pref_number_edit(context, id, value_box,
-        number, minimum >= 1.0f, minimum, maximum, value);
+        number, minimum >= 1.0f, minimum, edit_maximum > maximum ?
+        edit_maximum : maximum, &edited);
+    *value = (float)NK_CLAMP((float)minimum, edited,
+        edit_maximum > maximum ? edit_maximum : maximum);
     if (!editing) {
         char display[28];
         snprintf(display, sizeof(display), "%s%s", number,
@@ -278,9 +287,11 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
             bongo_cat_ui_body_font(context), p.text);
     }
     float wheel = context->input.mouse.scroll_delta.y;
+    float wheel_cap = edit_maximum > maximum ? edit_maximum : maximum;
     if (!editing && (hover || nk_input_is_mouse_hovering_rect(&context->input,
             value_box)) && wheel != 0.0f) {
-        *value = NK_CLAMP(minimum, *value + (wheel > 0 ? step : -step), maximum);
+        *value = NK_CLAMP(minimum, *value + (wheel > 0 ? step : -step),
+            wheel_cap);
         context->input.mouse.scroll_delta.y = 0;
     }
     if (hover) bongo_cat_ui_cursor_hover_rect(context, hit,

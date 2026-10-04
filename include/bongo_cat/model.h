@@ -183,6 +183,11 @@ void bongo_cat_live2d_set_frame(BongoCatLive2D *live2d,
     const BongoCatLive2DFrame *frame);
 bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d,
     int *x, int *y, int *width, int *height);
+/* Rect the 2D overlay layers draw into: the canvas mapped into window
+   pixels with the model's own transform (tight mode crops it, so the rect
+   may extend past the window; GL clips that). */
+bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *live2d,
+    int *x, int *y, int *width, int *height);
 void bongo_cat_live2d_resize(BongoCatLive2D *live2d, int width, int height);
 void bongo_cat_live2d_reshape(BongoCatLive2D *live2d, int width, int height);
 /* Main-thread fast path with no GL calls. Commit the new quality only when
@@ -213,6 +218,12 @@ void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d,
     const BongoCatLive2DRenderOptions *options);
+void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight);
+/* Static 2D overlay art bounds in canvas NDC {min_x, min_y, max_x, max_y};
+   the tight-window envelope must cover them so the crop never slices the
+   desk art. NULL or an inverted rect clears the constraint. */
+void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d,
+    const float *rect);
 void bongo_cat_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y);
 void bongo_cat_live2d_set_centered_dragging(BongoCatLive2D *live2d,
     float x, float y);

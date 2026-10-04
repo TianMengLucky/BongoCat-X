@@ -38,11 +38,21 @@
 
 - GitHub Releases
 
-  Descarga la última versión desde [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  Descarga la última versión desde [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
+
+  > [!IMPORTANT]
+  > Las versiones oficiales son **builds runtime-Core**: incluyen soporte de renderizado Live2D, pero **no** incluyen la biblioteca en tiempo de ejecución Live2D Cubism Core (licencia propietaria, nunca se distribuye con los paquetes). **No** son builds de diagnóstico sin Live2D. Si no se encuentra el Core, la aplicación vuelve al backend de diagnóstico y muestra un aviso en la ventana de ajustes.
+
+  **Activar el renderizado Live2D (elige una opción):**
+
+  1. **Importar desde la aplicación (recomendado)**: abre *Ajustes → Modelos*, pulsa *Importar Live2D Core* y selecciona un archivo `Live2DCubismCore.dll` o el zip oficial del SDK de Cubism. Surte efecto de inmediato, sin reiniciar.
+  2. **Soltar en la carpeta live2d**: descarga **Cubism SDK for Native** desde la [página oficial de descargas](https://www.live2d.com/en/sdk/download/native/) (acepta la licencia de Live2D) y coloca el zip o el `Live2DCubismCore.dll` extraído en la carpeta `live2d` junto a la aplicación o en el directorio de datos; tras reiniciar se detecta automáticamente.
+
+  Para los pasos completos de importación del SDK al compilar desde el código fuente, consulta la sección «Live2D / Cubism SDK» más abajo.
 
 ## 🛠️ Compilar desde el código fuente
 
-BongoCat usa CMake y requiere un compilador C11, un compilador C++17, CMake 3.24 o superior y los archivos de desarrollo de OpenGL para escritorio. Por defecto, SDL3, yyjson, stb, miniaudio y Nuklear se descargan automáticamente durante la configuración, por lo que la primera configuración requiere conexión a internet.
+BongoCat usa CMake y requiere un compilador C11, un compilador C++17, CMake 3.24 o superior, los archivos de desarrollo de OpenGL para escritorio y la cadena de herramientas de Rust (cargo, por ejemplo mediante rustup): los analizadores críticos para la seguridad de memoria (SHA-256, decodificación de imágenes, el feed de colaboradores y la decodificación de audio) se encuentran en el crate `src/rust/bongo-safe`, que Corrosion compila durante la configuración. Por defecto, SDL3, yyjson, stb, miniaudio y Nuklear se descargan automáticamente durante la configuración, por lo que la primera configuración requiere conexión a internet.
 
 Ejecuta los siguientes comandos en la raíz del proyecto (el directorio que contiene `CMakeLists.txt`).
 
@@ -93,9 +103,19 @@ Para un generador de múltiples configuraciones como Visual Studio, especifica e
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / SDK de Cubism (obligatorio — descarga manual)
+### 🎭 Live2D / SDK de Cubism (Opcional: también compila sin él)
 
-El SDK de Cubism de Live2D es software propietario y **no** se distribuye con este repositorio. Antes de compilar, cada usuario debe descargarlo manualmente desde el sitio web oficial de Live2D; si no está presente, la configuración de CMake falla.
+El SDK de Cubism de Live2D es software propietario y **no** se distribuye
+con este repositorio. Ahora el SDK es **opcional**: la compilación
+predeterminada (`BONGO_CAT_REQUIRE_CUBISM=OFF`) se configura y compila
+con normalidad aunque falte el SDK, y genera un backend de diagnóstico
+sin renderizado de Live2D. Como el renderizador de Live2D debe compilarse
+dentro del binario, depositar el SDK en tiempo de ejecución no puede
+añadir Live2D a esa compilación: solo una compilación hecha con
+el SDK responde al depósito en tiempo de ejecución. El backend de
+diagnóstico existe únicamente para el arranque y el diagnóstico de la
+plataforma. Para compilar con compatibilidad de renderizado de Live2D,
+descargue e importe el SDK manualmente:
 
 1. Abra la [página de descarga del SDK de Cubism](https://www.live2d.com/en/sdk/download/native/), acepte el Live2D Proprietary Software License Agreement y descargue **Cubism SDK for Native** (las versiones se compilan y prueban con el SDK `5-r.5`).
 2. Extraiga el archivo. Si la carpeta extraída se llama `CubismSdkForNative-5-r.5`, cámbiele el nombre a `CubismSdkForNative` y colóquela en `vendor/` de modo que el árbol contenga `Core/` y `Framework/`.
@@ -109,7 +129,15 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-El SDK debe incluir la biblioteca Core, el código fuente de Framework y el directorio de terceros de OpenGL GLEW en la estructura esperada por `cmake/Cubism.cmake`. Las compilaciones de Cubism en Windows requieren Visual Studio 2022. Establezca `BONGO_CAT_REQUIRE_CUBISM=OFF` solo para compilar el backend de diagnóstico destinado al arranque y al diagnóstico de la plataforma; ese backend no proporciona renderizado de modelos Live2D.
+El SDK debe incluir la biblioteca Core, el código fuente de Framework y
+el directorio de terceros de OpenGL GLEW en la estructura esperada por
+`cmake/Cubism.cmake`. Las compilaciones de Cubism en Windows requieren
+Visual Studio 2022. Con el SDK ya en su sitio, configure como de
+costumbre para obtener una compilación con renderizado de Live2D;
+`BONGO_CAT_REQUIRE_CUBISM=ON` solo hace que la configuración falle de
+inmediato con instrucciones de importación cuando falta el SDK (la CI
+de releases lo usa). Déjelo en el valor predeterminado `OFF` cuando no
+lo necesite.
 
 > [!TIP]
 > En Windows puede habilitar el renderizado de Live2D sin recompilar: abra
@@ -119,19 +147,22 @@ El SDK debe incluir la biblioteca Core, el código fuente de Framework y el dire
 
 > [!NOTE]
 > Los paquetes oficiales de Release de este repositorio son compilaciones
-> runtime-Core con compatibilidad de renderizado de Live2D, pero **no**
-> incluyen la librería de ejecución Core: en el primer uso, importe la
-> librería Core o el zip oficial del SDK en la aplicación, o coloque el
-> archivo en la carpeta live2d junto a la aplicación o en el directorio de
-> datos.
+> runtime-Core: incluyen el renderizador de Live2D, pero **no** incluyen
+> el runtime de Core. Al arrancar, la aplicación comprueba la carpeta
+> `live2d`: deposite `Live2DCubismCore.dll` o el zip oficial del SDK
+> en ella (junto a la aplicación o dentro del directorio de datos)
+> y se detectará automáticamente tras un reinicio; también puede
+> pulsar «Importar Live2D Core» en Ajustes → Modelo para activarlo de
+> inmediato. Cuando no se encuentra ningún Core, la aplicación vuelve
+> al backend de diagnóstico y muestra un aviso en la ventana de ajustes.
 
 ### ⚙️ Opciones de CMake
 
 | Opción | Valor por defecto | Descripción |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Descarga dependencias de terceros en versiones fijadas mediante `FetchContent` de CMake. Establécelo en `OFF` solo si SDL3, yyjson, stb, miniaudio y Nuklear ya están disponibles para CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Descarga dependencias de terceros en versiones fijadas mediante `FetchContent` de CMake (incluidos Corrosion y las dependencias del crate de Rust). Establécelo en `OFF` solo si SDL3, yyjson, stb, miniaudio, Nuklear y Corrosion ya están disponibles para CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Ruta del Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Hace fallar la configuración cuando el SDK de Cubism descargado manualmente no está disponible. Establezca `OFF` para compilar el backend de diagnóstico sin renderizado de Live2D. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Si falta el SDK, la configuración falla. El valor predeterminado es `OFF`: sin el SDK compila el backend de diagnóstico sin renderizado de Live2D; establézcalo en `ON` para exigir el SDK (lo usa la CI de releases). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Trata las advertencias del compilador nativo como errores. |
 
 Para una compilación sin conexión, establece `BONGO_CAT_FETCH_DEPS=OFF` y proporciona las configuraciones de paquetes de CMake para SDL3 (incluido `SDL3-static`) y yyjson; si stb, Nuklear y miniaudio no se pueden detectar automáticamente, indica también sus directorios de inclusión:
@@ -146,6 +177,12 @@ cmake -S . -B build -G Ninja \
 ```
 
 ## 📌 Estado del proyecto
+
+![Commit activity](https://img.shields.io/github/commit-activity/m/TianMengLucky/BongoCat-X?style=flat)
+![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
+![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
+![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
+![Release](https://img.shields.io/github/v/release/TianMengLucky/BongoCat-X?style=flat)
 
 ![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
 

@@ -5,7 +5,7 @@ param(
     [ValidateSet('x64', 'Win32')]
     [string]$Architecture = 'x64',
     [ValidateRange(1, 64)]
-    [int]$Jobs = 2,
+    [int]$Jobs = [Math]::Max(2, [Math]::Min(16, [Environment]::ProcessorCount)),
     [switch]$SkipConfigure,
     [switch]$SkipTests,
     [string[]]$Target = @('bongo_cat'),
@@ -150,13 +150,34 @@ if ($SkipConfigure) {
     Write-BuildProgress 20 'Using existing CMake configuration.' -NewLine
 } else {
     Write-BuildProgress 5 'Configuring project...'
+    # Pick the generator from the newest installed Visual Studio: the classic
+    # default is VS 2022 ("Visual Studio 17 2022"); VS 18 (2026) needs its own
+    # generator name.
+    $generator = 'Visual Studio 17 2022'
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} `
+        'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) {
+        $instance = & $vswhere -latest -products * -format value `
+            -property installationVersion
+        if ($instance -match '^(\d+)\.' -and [int]$Matches[1] -ge 18) {
+            $generator = 'Visual Studio 18 2026'
+        }
+    }
+    # BONGOCAT_GENERATOR overrides the auto-picked generator (e.g. "Ninja");
+    # a Ninja configure requires cl.exe/link.exe already on PATH, so this is
+    # meant for shells launched from the VS developer prompt.
+    if ($env:BONGOCAT_GENERATOR) { $generator = $env:BONGOCAT_GENERATOR }
     $configureArgs = @(
         '-S', $root, '-B', $BuildDir,
-        '-G', 'Visual Studio 17 2022', '-A', $Architecture,
+        '-G', $generator,
         '-DBONGO_CAT_WARNINGS_AS_ERRORS=ON',
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"
     )
+    # -A is a Visual Studio generator concept; Ninja and NMake reject it.
+    if ($generator -like 'Visual Studio *') {
+        $configureArgs += @('-A', $Architecture)
+    }
     # Always pass the value explicitly: release CI restores the licensed SDK
     # and opts in with -RequireCubism, while local diagnostic builds set it
     # off when the SDK is absent.
@@ -166,6 +187,12 @@ if ($SkipConfigure) {
         $configureArgs += '-DBONGO_CAT_REQUIRE_CUBISM=OFF'
     }
     if ($SkipTests) { $configureArgs += '-DBUILD_TESTING=OFF' }
+    # Wrap the compilers with sccache when it is installed (CI does; local
+    # machines without it keep the plain build).
+    if (Get-Command sccache -ErrorAction SilentlyContinue) {
+        $configureArgs += '-DCMAKE_C_COMPILER_LAUNCHER=sccache'
+        $configureArgs += '-DCMAKE_CXX_COMPILER_LAUNCHER=sccache'
+    }
     $configureWriter = New-Object IO.StreamWriter(
         $configureLog, $false, (New-Object Text.UTF8Encoding($false)))
     $configureActivity = 0

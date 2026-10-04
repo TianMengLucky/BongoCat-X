@@ -18,6 +18,26 @@ static bool mark_builtin(const char *directory, BongoCatError *error) {
     return ok;
 }
 
+static BongoCatResult install_builtin(const char *source_root,
+    const char *models_root, const char *name, BongoCatError *error) {
+    char source[BONGO_CAT_PATH_CAP], target[BONGO_CAT_PATH_CAP];
+    if (!bongo_cat_path_join(source, sizeof(source), source_root, name) ||
+        !bongo_cat_path_join(target, sizeof(target), models_root, name) ||
+        !bongo_cat_path_is_dir(source)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
+            "Built-in model assets are missing: %s", name);
+        return BONGO_CAT_ERROR_IO;
+    }
+    if (!bongo_cat_path_is_dir(target)) {
+        if (bongo_cat_path_is_file(target) ||
+            bongo_cat_model_copy_directory(source, target, error) != BONGO_CAT_OK)
+            return error && error->code ? error->code : BONGO_CAT_ERROR_IO;
+    }
+    if (!mark_builtin(target, error))
+        return error && error->code ? error->code : BONGO_CAT_ERROR_IO;
+    return BONGO_CAT_OK;
+}
+
 BongoCatResult bongo_cat_model_install_builtins(const char *asset_root,
     const char *models_root, bool first_run, BongoCatError *error) {
     static const char *const names[] = {"standard", "keyboard", "gamepad"};
@@ -49,22 +69,39 @@ BongoCatResult bongo_cat_model_install_builtins(const char *asset_root,
         return BONGO_CAT_ERROR_IO;
     }
     if (!first_run) return BONGO_CAT_OK;
-    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
-        char source[BONGO_CAT_PATH_CAP], target[BONGO_CAT_PATH_CAP];
-        if (!bongo_cat_path_join(source, sizeof(source), source_root, names[i]) ||
-            !bongo_cat_path_join(target, sizeof(target), models_root, names[i]) ||
-            !bongo_cat_path_is_dir(source)) {
-            bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
-                "Built-in model assets are missing: %s", names[i]);
-            return BONGO_CAT_ERROR_IO;
-        }
-        if (!bongo_cat_path_is_dir(target)) {
-            if (bongo_cat_path_is_file(target) ||
-                bongo_cat_model_copy_directory(source, target, error) != BONGO_CAT_OK)
-                return error && error->code ? error->code : BONGO_CAT_ERROR_IO;
-        }
-        if (!mark_builtin(target, error))
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
+        if (install_builtin(source_root, models_root, names[i], error) !=
+            BONGO_CAT_OK)
             return error && error->code ? error->code : BONGO_CAT_ERROR_IO;
-    }
     return BONGO_CAT_OK;
+}
+
+/* Restore pass: copy back any built-in model whose directory is missing
+   (typically deleted by the user). Present directories are left untouched,
+   so user-customized copies survive; each missing model is restored
+   independently so one failure does not block the others. */
+BongoCatResult bongo_cat_model_restore_builtins(const char *asset_root,
+    const char *models_root, BongoCatError *error) {
+    static const char *const names[] = {"standard", "keyboard", "gamepad"};
+    char source_root[BONGO_CAT_PATH_CAP];
+    if (!asset_root || !models_root || !bongo_cat_path_join(source_root,
+            sizeof(source_root), asset_root, "models") ||
+        !bongo_cat_path_is_dir(source_root) ||
+        !bongo_cat_path_is_dir(models_root))
+        return BONGO_CAT_ERROR_ARGUMENT;
+    BongoCatResult result = BONGO_CAT_OK;
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+        char target[BONGO_CAT_PATH_CAP];
+        if (bongo_cat_path_join(target, sizeof(target), models_root,
+                names[i]) && bongo_cat_path_is_dir(target))
+            continue;
+        BongoCatError local = {0};
+        if (install_builtin(source_root, models_root, names[i], &local) !=
+            BONGO_CAT_OK) {
+            result = BONGO_CAT_ERROR_IO;
+            bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
+                "Cannot restore built-in model: %s", names[i]);
+        }
+    }
+    return result;
 }

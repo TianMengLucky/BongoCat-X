@@ -30,7 +30,7 @@ bool bongo_cat_pref_toggle_float_config(struct nk_context *context, const char *
     float maximum, float step, float default_value);
 bool bongo_cat_pref_obs_background(struct nk_context *context, const char *id,
     const char *title, const char *question, const char *reply, bool *enabled,
-    BongoCatObsBackgroundColor *color);
+    uint32_t *rgb);
 bool bongo_cat_pref_float(struct nk_context *context, const char *id,
     const char *title, const char *description, float minimum, float *value,
     float maximum, float step, float default_value);
@@ -38,6 +38,12 @@ bool bongo_cat_pref_float(struct nk_context *context, const char *id,
 bool bongo_cat_pref_float_action(struct nk_context *context, const char *id,
     const char *title, const char *detail, float minimum, float *value,
     float maximum, float step, float default_value, const char *button);
+/* float_action plus an icon button that reports clicks through
+   *default_clicked (e.g. restore the default window size). */
+bool bongo_cat_pref_float_action_default(struct nk_context *context,
+    const char *id, const char *title, const char *detail, float minimum,
+    float *value, float maximum, float step, float default_value,
+    const char *button, const char *default_hint, bool *default_clicked);
 bool bongo_cat_pref_int(struct nk_context *context, const char *id,
     const char *title, const char *description, int minimum, int *value,
     int maximum, int step, int default_value);
@@ -52,6 +58,11 @@ int bongo_cat_pref_edit(struct nk_context *context, const char *id,
     bool recording, const char *idle_hint, const char *record_hint);
 bool bongo_cat_pref_button(struct nk_context *context, const char *id,
     const char *title, const char *description, const char *button);
+/* Button row with an extra square icon button before the main action
+   button; returns 0 (none), 1 (main button) or 2 (icon button). */
+int bongo_cat_pref_button_with_icon(struct nk_context *context,
+    const char *id, const char *title, const char *description,
+    int icon, const char *button);
 void bongo_cat_pref_status(struct nk_context *context, const char *id,
     const char *title, const char *description);
 

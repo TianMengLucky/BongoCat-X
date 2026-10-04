@@ -57,12 +57,25 @@
 
 - GitHub Releases
 
-  Unduh rilis terbaru dari [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest).
+  Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
+
+  > [!IMPORTANT]
+  > Rilis resmi adalah **build runtime-Core**: dukungan rendering Live2D sudah tertanam, tetapi pustaka runtime Live2D Cubism Core **tidak disertakan** (lisensi berpemilik, tidak pernah didistribusikan bersama paket). Ini **bukan** build diagnostik tanpa Live2D. Jika Core tidak ditemukan, aplikasi beralih ke backend diagnostik dan menampilkan petunjuk di jalan pengaturan.
+
+  **Mengaktifkan rendering Live2D (pilih salah satu):**
+
+  1. **Impor dari aplikasi (disarankan)**: buka *Pengaturan → Model*, klik *Impor Live2D Core*, lalu pilih file `Live2DCubismCore.dll` atau zip resmi Cubism SDK. Berlaku seketika tanpa perlu memulai ulang.
+  2. **Letakkan di folder live2d**: unduh **Cubism SDK for Native** dari [halaman unduhan resmi](https://www.live2d.com/en/sdk/download/native/) (harus menyetujui lisensi Live2D), lalu letakkan zip atau `Live2DCubismCore.dll` yang diekstrak ke folder `live2d` di samping aplikasi atau di dalam direktori data; setelah aplikasi dimulai ulang, ia dikenali secara otomatis.
+
+  Untuk langkah impor SDK lengkap saat membangun dari kode sumber, lihat bagian «Live2D / Cubism SDK» di bawah.
 
 ## 🛠️ Membangun dari Kode Sumber
 
 BongoCat menggunakan CMake dan memerlukan compiler C11, compiler C++17, CMake 3.24
-atau yang lebih baru, serta file pengembangan OpenGL desktop. SDL3, yyjson, stb,
+atau yang lebih baru, file pengembangan OpenGL desktop, serta toolchain Rust
+(cargo, misalnya via rustup): parser yang kritis terhadap keamanan memori
+(SHA-256, decoding gambar, feed kontributor, decoding audio) berada di crate
+`src/rust/bongo-safe`, yang dibangun oleh Corrosion saat konfigurasi. SDL3, yyjson, stb,
 miniaudio, dan Nuklear secara default diunduh saat proses konfigurasi, sehingga
 konfigurasi pertama memerlukan akses jaringan.
 
@@ -123,11 +136,17 @@ build secara eksplisit:
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (wajib — unduh manual)
+### 🎭 Live2D / Cubism SDK (Opsional — tetap bisa dikompilasi tanpa SDK)
 
 Cubism SDK dari Live2D adalah perangkat lunak berpemilik dan **tidak** disertakan dalam
-repositori ini. Sebelum membangun, setiap pengguna harus mengunduhnya secara manual dari
-situs resmi Live2D; tanpa SDK, konfigurasi CMake akan gagal.
+repositori ini. Sekarang SDK bersifat **opsional**: build default
+(`BONGO_CAT_REQUIRE_CUBISM=OFF`) tetap dapat dikonfigurasi dan dikompilasi tanpa SDK
+serta menghasilkan backend diagnostik tanpa rendering Live2D. Karena renderer Live2D
+harus dikompilasi ke dalam biner, menaruh SDK saat runtime tidak dapat memberikan Live2D
+pada build tersebut — hanya build yang dibuat dengan SDK yang merespons penempatan
+runtime (berkas Core atau zip SDK di folder `live2d`). Backend diagnostik hanya untuk
+startup dan diagnostik platform.
+Untuk build dengan dukungan rendering Live2D, unduh dan pasang SDK secara manual:
 
 1. Buka [halaman unduhan Cubism SDK](https://www.live2d.com/en/sdk/download/native/), setujui Live2D Proprietary Software
    License Agreement, lalu unduh **Cubism SDK for Native** (rilis dibangun dan diuji dengan
@@ -150,9 +169,11 @@ cmake -S . -B build -G Ninja \
 
 SDK harus berisi Core library, source Framework, dan tree third-party OpenGL GLEW
 dengan tata letak yang diharapkan oleh `cmake/Cubism.cmake`. Build Cubism di
-Windows memerlukan Visual Studio 2022. Atur `BONGO_CAT_REQUIRE_CUBISM=OFF` hanya untuk
-membangun backend diagnostik yang ditujukan untuk startup dan diagnostik platform;
-backend tersebut tidak menyediakan rendering model Live2D.
+Windows memerlukan Visual Studio 2022. Setelah SDK tersedia, lakukan konfigurasi
+seperti biasa untuk mendapatkan build dengan rendering Live2D;
+`BONGO_CAT_REQUIRE_CUBISM=ON` kini hanya menggagalkan konfigurasi lebih awal
+dengan instruksi impor ketika SDK tidak ada (digunakan oleh CI rilis). Biarkan
+pada default `OFF` bila Anda tidak membutuhkannya.
 
 > [!TIP]
 > Di Windows, rendering Live2D dapat diaktifkan tanpa membangun ulang: buka
@@ -161,19 +182,23 @@ backend tersebut tidak menyediakan rendering model Live2D.
 > tanpa perlu memulai ulang.
 
 > [!NOTE]
-> Paket Release resmi dari repositori ini adalah build runtime-Core dengan
-> dukungan rendering Live2D, tetapi **tidak** menyertakan pustaka runtime
-> Core: pada penggunaan pertama, impor pustaka Core atau zip SDK resmi di
-> dalam aplikasi, atau letakkan berkas di folder live2d di samping aplikasi
-> atau di direktori data.
+> Paket Release resmi dari repositori ini adalah build runtime-Core: build
+> tersebut menyertakan renderer Live2D, tetapi **tidak** menyertakan runtime
+> Core. Saat startup, aplikasi memeriksa folder `live2d` — letakkan
+> `Live2DCubismCore.dll` atau zip SDK resmi di sana (di samping aplikasi
+> atau di direktori data) dan berkas itu akan terdeteksi otomatis setelah
+> aplikasi dimulai ulang; Anda juga dapat mengeklik "Impor Live2D Core" di
+> Pengaturan → Model untuk mengaktifkannya segera. Jika Core tidak
+> ditemukan, aplikasi kembali ke backend diagnostik dan menampilkan
+> petunjuk di jendela pengaturan.
 
 ### ⚙️ Opsi CMake
 
 | Opsi | Default | Deskripsi |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent`. Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, dan Nuklear sudah tersedia untuk CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent` (termasuk Corrosion dan dependency crate Rust). Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, Nuklear, dan Corrosion sudah tersedia untuk CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path ke Cubism SDK for Native. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | Menggagalkan konfigurasi jika Cubism SDK yang diunduh manual tidak tersedia. Atur `OFF` untuk membangun backend diagnostik tanpa rendering Live2D. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Menentukan apakah SDK yang tidak tersedia menggagalkan konfigurasi. Default `OFF`: tanpa SDK dibangun backend diagnostik tanpa rendering Live2D; atur `ON` untuk mewajibkan SDK (digunakan oleh CI rilis). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Perlakukan warning compiler native sebagai error. |
 
 Untuk build offline dengan `BONGO_CAT_FETCH_DEPS=OFF`, sediakan konfigurasi
@@ -192,6 +217,13 @@ cmake -S . -B build -G Ninja \
 
 ## 📌 Status Proyek
 
+![Commit activity](https://img.shields.io/github/commit-activity/m/TianMengLucky/BongoCat-X?style=flat)
+![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
+![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
+![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
+![Release](https://img.shields.io/github/v/release/TianMengLucky/BongoCat-X?style=flat)
+
+![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
 
 ## 📜 Lisensi
 

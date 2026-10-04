@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.0.0")
+set(BONGO_CAT_VERSION "2.0.4")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
 include(CTest)
 option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
 option(BONGO_CAT_REQUIRE_CUBISM
-  "Require the Cubism SDK; set OFF to build the diagnostic backend instead" ON)
+  "Require the Cubism SDK; set ON to fail the configure step when it is \
+missing, leave OFF (default) to build the diagnostic backend instead" OFF)
 option(BONGO_CAT_RUNTIME_CORE
   "Keep the Cubism Core out of the executable and load it at runtime \
 (user-supplied Core library, an SDK zip dropped by the user, or the \
@@ -46,6 +47,7 @@ if(BONGO_CAT_STATIC_ANALYZER)
 endif()
 include(cmake/Dependencies.cmake)
 include(cmake/AudioDecoder.cmake)
+include(cmake/Rust.cmake)
 find_package(OpenGL REQUIRED)
 set(BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
 set(BONGO_CAT_CUBISM_ENABLED OFF)
@@ -90,10 +92,12 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     # library, and to the stub until then.
     set(BONGO_CAT_LIVE2D_ABI
       create destroy load load_ex ready canvas_size frame measure_frame
-      set_frame viewport resize reshape try_reuse_texture_quality
+      set_frame viewport overlay_viewport resize reshape
+      try_reuse_texture_quality
       texture_refresh_pending texture_refresh_due texture_refresh_busy
       cancel_texture_refresh refresh_textures update draw set_mirror
-      set_vertical_flip set_render_options set_dragging
+      set_vertical_flip set_render_options set_tight_frame
+      set_tight_overlay_rect set_dragging
       set_centered_dragging prepare_viewer_audit prepare_cover_capture
       set_parameter parameter start_motion restore_motion_state
       preview_motion restore_motion_preview commit_motion_preview
@@ -109,6 +113,9 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     endforeach()
     set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
       COMPILE_DEFINITIONS "${BONGO_CAT_BRIDGE_DEFS}")
+    # The dispatch layer falls back to the stub until the user's Core library
+    # is available, so the stub must ship alongside the bridge.
+    list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
     set_source_files_properties(src/live2d/live2d_stub.c PROPERTIES
       COMPILE_DEFINITIONS "${BONGO_CAT_STUB_DEFS}")
     list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_dispatch.c)
@@ -133,12 +140,15 @@ elseif(BONGO_CAT_REQUIRE_CUBISM)
     "-DBONGO_CAT_REQUIRE_CUBISM=OFF.")
 else()
   message(WARNING
-    "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend\n"
-    "without Live2D model rendering")
+    "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend "
+    "without Live2D model rendering.\n"
+    "A diagnostic build can never render Live2D: rebuild with the SDK in place "
+    "(-DBONGO_CAT_REQUIRE_CUBISM=ON) to produce a binary that loads the Core "
+    "at runtime.")
 endif()
 add_library(bongo_cat_core STATIC
-  src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_fields.c src/core/config_io.c src/core/config_settings_save.c
-  src/core/config_file.c src/core/config_session_io.c
+  src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
+  src/core/config_file.c
   src/core/error.c
   src/core/file.c src/core/i18n.c
   src/core/input_state.c src/core/mver_pointer.c
@@ -149,7 +159,9 @@ add_library(bongo_cat_core STATIC
   src/core/sound_shortcut.c
   src/core/update_release.c src/core/update_version.c)
 target_include_directories(bongo_cat_core PUBLIC "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include)
-target_link_libraries(bongo_cat_core PUBLIC yyjson PRIVATE bongo_cat_warnings)
+# The Rust crate's CMake target name uses underscores (Corrosion normalizes
+# the crate name's dashes for library targets).
+target_link_libraries(bongo_cat_core PUBLIC yyjson bongo_safe PRIVATE bongo_cat_warnings)
 include(cmake/CubismAssets.cmake)
 if(WIN32)
   target_sources(bongo_cat_core PRIVATE
@@ -169,10 +181,10 @@ target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
 target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_warnings bongo_cat_archive)
 target_link_libraries(bongo_cat_runtime PUBLIC bongo_cat_core SDL3::SDL3-static OpenGL::GL ${BONGO_CAT_MINIAUDIO_TARGET})
 if(MSVC)
-  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c src/ui/preferences/about/preferences_about_svg.c
+  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c
     PROPERTIES COMPILE_OPTIONS "/W0")
 else()
-  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c src/ui/preferences/about/preferences_about_svg.c
+  set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c
     PROPERTIES COMPILE_OPTIONS "-w")
 endif()
 if(BONGO_CAT_CUBISM_ENABLED)
@@ -187,8 +199,27 @@ target_compile_definitions(bongo_cat_runtime PRIVATE
   BONGO_CAT_DEV_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
   BONGO_CAT_DEV_LOCALE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/resources/assets/locales")
 
+option(BONGO_CAT_PCH
+  "Use precompiled headers for the core and runtime targets (faster builds)" ON)
+# The Visual Studio generator drops $<COMPILE_LANGUAGE:C> options from the PCH
+# compilation, so C sources using the PCH then fail with C2855 against the
+# /experimental:c11atomics flag that bongo_cat_warnings adds. PCH stays enabled
+# for Ninja/MSVC and other generators where the option propagates correctly.
+if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
+  set(BONGO_CAT_PCH OFF)
+endif()
+if(BONGO_CAT_PCH)
+  target_precompile_headers(bongo_cat_core PRIVATE <yyjson.h>)
+  target_precompile_headers(bongo_cat_runtime PRIVATE
+    <SDL3/SDL.h>
+    <SDL3/SDL_opengl.h>)
+  # The Cubism bridge includes <GL/glew.h>, which must come before any GL
+  # headers; the runtime PCH pre-includes SDL_opengl.h, so those files opt out.
+  set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON)
+endif()
+
 include(cmake/PlatformRuntime.cmake)
-include(cmake/AboutWebP.cmake)
 
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
@@ -238,19 +269,26 @@ if(APPLE)
     VERBATIM)
 endif()
 
-add_custom_target(check-lines ALL
+# The repo-wide validation scripts run on every build in CI (GitHub Actions
+# sets CI); locally they are opt-in targets so routine rebuilds skip them.
+if(DEFINED ENV{CI})
+  set(BONGO_CAT_CHECK_ALL ALL)
+else()
+  set(BONGO_CAT_CHECK_ALL "")
+endif()
+add_custom_target(check-lines ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckLines.cmake
   VERBATIM)
-add_custom_target(check-localization ALL
+add_custom_target(check-localization ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckLocalization.cmake
   VERBATIM)
-add_custom_target(check-platform-runtime-safety ALL
+add_custom_target(check-platform-runtime-safety ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckPlatformRuntimeSafety.cmake
   VERBATIM)
-add_custom_target(check-cubism-user-model-safety ALL
+add_custom_target(check-cubism-user-model-safety ${BONGO_CAT_CHECK_ALL}
   COMMAND ${CMAKE_COMMAND}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismUserModelSafety.cmake
   VERBATIM)

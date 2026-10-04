@@ -1,6 +1,10 @@
 #include "runtime.h"
 
+#include <stdio.h>
+
 #define NANOSECONDS_PER_SECOND 1000000000ull
+/* Disabled-list prefix for sequential-model participation entries. */
+#define SEQUENTIAL_MODEL_ID_PREFIX "switch:"
 
 static uint32_t random_behavior_next(BongoCatApp *app, uint64_t now) {
     uint32_t state = app->random_behavior_state;
@@ -23,6 +27,8 @@ void bongo_cat_random_behavior_reset(BongoCatApp *app) {
     app->random_expression_interval_seconds = 0.0f;
     app->random_motion_due_ns = 0;
     app->random_motion_interval_seconds = 0.0f;
+    app->sequential_model_due_ns = 0;
+    app->sequential_model_interval_seconds = 0.0f;
 }
 
 static bool random_behavior_due(bool enabled, float seconds, float fallback,
@@ -84,6 +90,47 @@ static void random_behavior_run(BongoCatApp *app, uint64_t now,
     }
 }
 
+static bool sequential_model_candidate(BongoCatApp *app,
+    const BongoCatModelEntry *entry) {
+    if (bongo_cat_settings_model_hidden(&app->settings, entry->id)) return false;
+    char id[BONGO_CAT_BEHAVIOR_ID_CAP];
+    snprintf(id, sizeof(id), SEQUENTIAL_MODEL_ID_PREFIX "%.*s",
+        BONGO_CAT_BEHAVIOR_ID_CAP - 8, entry->id);
+    return bongo_cat_settings_random_enabled(&app->settings, id);
+}
+
+/* Sequential switch: advance to the next participating model in catalog
+   order (the model page's drag order), wrapping past the end. The active
+   model never needs an explicit exclusion — "next after active" covers it,
+   and an active model that is not participating restarts from the top. */
+static void sequential_model_run(BongoCatApp *app) {
+    const char *active = app->session.active_model_id;
+    const BongoCatModelEntry *first = NULL;
+    const BongoCatModelEntry *next = NULL;
+    bool after_active = false;
+    for (size_t i = 0; i < app->models.count; ++i) {
+        const BongoCatModelEntry *entry = &app->models.entries[i];
+        if (!sequential_model_candidate(app, entry)) continue;
+        if (active[0] && !strcmp(entry->id, active)) {
+            after_active = true;
+            continue;
+        }
+        if (!first) first = entry;
+        if (after_active) {
+            next = entry;
+            break;
+        }
+    }
+    if (!next) next = first;
+    if (!next) return;
+    BongoCatError error = {0};
+    if (bongo_cat_app_select_model_with_error(app, next->id, &error))
+        app->dirty = true;
+    else SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
+        "Sequential model switch failed: id=%s error=%s",
+        next->id, error.message);
+}
+
 void bongo_cat_random_behavior_update(BongoCatApp *app, uint64_t now) {
     if (app && app->window_snapshot) return;
     if (!app || !app->live2d) {
@@ -102,5 +149,10 @@ void bongo_cat_random_behavior_update(BongoCatApp *app, uint64_t now) {
             BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS, now,
             &app->random_motion_due_ns, &app->random_motion_interval_seconds))
         random_behavior_run(app, now, BONGO_CAT_BEHAVIOR_MOTION);
+    if (random_behavior_due(window->sequential_model,
+            window->sequential_model_interval_seconds,
+            BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS, now,
+            &app->sequential_model_due_ns, &app->sequential_model_interval_seconds))
+        sequential_model_run(app);
 }
 

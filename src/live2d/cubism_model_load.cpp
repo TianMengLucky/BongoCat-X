@@ -3,6 +3,8 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/image.h"
 #include "bongo_cat/json.h"
+#include "bongo_cat/log.h"
+#include "bongo_cat/safe_ffi.h"
 extern "C" {
 #include "bongo_cat/sha256.h"
 }
@@ -26,6 +28,55 @@ extern "C" {
 #include <new>
 
 namespace bongo_cat {
+
+namespace {
+
+/* Expression files are parsed by the bongo-safe Rust crate: the Cubism
+   SDK's bundled JSON parser rejects numbers in scientific notation, which
+   Cubism Editor itself exports (.exp3.json presets ship e.g.
+   -2.980232238769531e-7), and a rejected file silently never applied. */
+class ParsedExpressionMotion final : public Csm::CubismExpressionMotion {
+public:
+    /* Allocated with CSM_NEW: NativeModel releases expression motions
+       through ACubismMotion::Delete, which pairs with the SDK allocator. */
+    static ParsedExpressionMotion *create(const BongoSafeExpression &expression) {
+        auto *motion = CSM_NEW ParsedExpressionMotion();
+        if (!motion) return nullptr;
+        motion->SetFadeInTime(expression.fade_in_seconds);
+        motion->SetFadeOutTime(expression.fade_out_seconds);
+        if (expression.parameter_count > 0 && expression.parameters) {
+            auto *ids = Csm::CubismFramework::GetIdManager();
+            motion->_parameters.PrepareCapacity(expression.parameter_count);
+            for (int i = 0; i < expression.parameter_count; ++i) {
+                const BongoSafeExpressionParameter &parameter =
+                    expression.parameters[i];
+                Csm::CubismExpressionMotion::ExpressionParameter item;
+                item.ParameterId = ids->GetId(parameter.id);
+                switch (parameter.blend) {
+                case BONGO_SAFE_EXPRESSION_BLEND_MULTIPLY:
+                    item.BlendType = Csm::CubismExpressionMotion::Multiply;
+                    break;
+                case BONGO_SAFE_EXPRESSION_BLEND_OVERWRITE:
+                    item.BlendType = Csm::CubismExpressionMotion::Overwrite;
+                    break;
+                default:
+                    item.BlendType = Csm::CubismExpressionMotion::Additive;
+                    break;
+                }
+                item.Value = parameter.value;
+                motion->_parameters.PushBack(item);
+            }
+        }
+        return motion;
+    }
+
+private:
+    ParsedExpressionMotion() = default;
+};
+
+constexpr size_t maximum_expression_bytes = 4u * 1024u * 1024u;
+
+} // namespace
 
 NativeModel::NativeModel() {
     _mocConsistency = true;
@@ -161,11 +212,17 @@ void NativeModel::configure_builtin_accessories(const std::vector<unsigned char>
 void NativeModel::load_expressions() {
     expression_names_.resize((size_t)setting_->GetExpressionCount());
     for (int i = 0; i < setting_->GetExpressionCount(); ++i) {
-        const char *name = setting_->GetExpressionName(i);
-        std::vector<unsigned char> bytes = read(path(setting_->GetExpressionFileName(i)));
+        const char *file = setting_->GetExpressionFileName(i);
+        std::vector<unsigned char> bytes = read(path(file), maximum_expression_bytes);
         if (bytes.empty()) continue;
-        Csm::ACubismMotion *motion = LoadExpression(bytes.data(),
-            (Csm::csmSizeInt)bytes.size(), name);
+        BongoSafeExpression *expression = nullptr;
+        if (!bongo_safe_expression_parse(bytes.data(), bytes.size(), &expression)) {
+            SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+                "[live2d] expression rejected by the safe parser: %s", file);
+            continue;
+        }
+        Csm::ACubismMotion *motion = ParsedExpressionMotion::create(*expression);
+        bongo_safe_free_expression(expression);
         if (!motion) continue;
         std::string key = std::to_string(i);
         expressions_[key] = motion;

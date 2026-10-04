@@ -34,9 +34,6 @@ void test_config(void) {
     CHECK(bongo_cat_language_parse("zh-TW", &language) &&
         language == BONGO_CAT_LANG_ZH_HANT);
     CHECK(!bongo_cat_language_parse("zh-Hans", &language));
-    const uint32_t colors[] = {0x00ff00, 0x0000ff, 0xff0000, 0xff00ff};
-    for (int i = 0; i < BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT; ++i)
-        CHECK(bongo_cat_obs_background_color_rgb(i) == colors[i]);
 
     static BongoCatSettings settings;
     static BongoCatSessionState session;
@@ -61,7 +58,7 @@ void test_config(void) {
     settings.window.random_expression_interval_seconds = 12.0f;
     settings.window.random_motion = true;
     settings.window.random_motion_interval_seconds = 17.0f;
-    settings.window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_BLUE;
+    settings.window.obs_background_rgb = 0x0000ff;
     settings.app.language = BONGO_CAT_LANG_ZH_CN;
     memcpy(settings.extensions_json, "{\"example\":{\"enabled\":true}}",
         sizeof("{\"example\":{\"enabled\":true}}"));

@@ -1,6 +1,9 @@
 #include "cubism_model.hpp"
 #include "model_frame_policy.h"
 
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_timer.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -127,9 +130,11 @@ bool NativeModel::measure_frame(BongoCatLive2DFrame *required) {
     }
     /* Use the unpadded content aspect. The fitted viewport must never feed
        back into boundary measurement or an extreme motion could grow forever. */
-    int content_width = (int)std::max(1.0, std::round(width_ /
+    int content_width = tight_frame_ && tight_reference_content_width_ > 0 ?
+        tight_reference_content_width_ : (int)std::max(1.0, std::round(width_ /
         (1.0 + frame_.left + frame_.right)));
-    int content_height = (int)std::max(1.0, std::round(height_ /
+    int content_height = tight_frame_ && tight_reference_content_height_ > 0 ?
+        tight_reference_content_height_ : (int)std::max(1.0, std::round(height_ /
         (1.0 + frame_.top + frame_.bottom)));
     if (envelope.valid) {
         Csm::CubismMatrix44 projection;
@@ -140,11 +145,68 @@ bool NativeModel::measure_frame(BongoCatLive2DFrame *required) {
         float y1 = projection.TransformY(envelope.max_y);
         /* Trigger slightly before contact, including raster/filter coverage. */
         float guard_x = 4.0f / content_width, guard_y = 4.0f / content_height;
-        required_frame_ = bongo_cat_frame_observe(required_frame_,
-            std::min(x0, x1) - guard_x, std::min(y0, y1) - guard_y,
-            std::max(x0, x1) + guard_x, std::max(y0, y1) + guard_y);
+        float min_x = std::min(x0, x1) - guard_x;
+        float min_y = std::min(y0, y1) - guard_y;
+        float max_x = std::max(x0, x1) + guard_x;
+        float max_y = std::max(y0, y1) + guard_y;
+        if (!tight_frame_) {
+            required_frame_ = bongo_cat_frame_observe(required_frame_,
+                min_x, min_y, max_x, max_y);
+        }
+        /* Tight mode: required_frame_ is owned by the draw pass, which knows
+           the true rendered bounds; the vertex envelope over-counts for some
+           models (invisible oversized drawables) and would crop wrongly. */
     }
-    *required = required_frame_;
+    /* Tight mode: ease the ALLOCATED frame toward the target at constant
+       edge speeds instead of jumping a whole bucket at once. The runtime
+       resizes its window to whatever frame we return here, so returning an
+       intermediate frame animates the geometry linearly. The animation
+       always starts from frame_ (the truly allocated frame): if the window
+       manager rejects a resize, frame_ never advances and the next advance
+       simply tries again. Speeds are asymmetric: growth is quick (content
+       must not be clipped long), shrinking is slow and gentle. Geometry is
+       published at ~30 Hz to avoid hammering the window manager. */
+    BongoCatLive2DFrame output = required_frame_;
+    if (tight_frame_) {
+        constexpr float grow_speed_px_s = 1800.0f;
+        constexpr float shrink_speed_px_s = 420.0f;
+        constexpr uint64_t publish_interval_ns = 33ULL * 1000000ULL;
+        uint64_t now = SDL_GetTicksNS();
+        output = frame_;
+        if (tight_anim_last_ns_ != 0 &&
+            now - tight_anim_last_ns_ < publish_interval_ns) {
+            /* Throttle window: hold this tick, keep the established frame. */
+        } else {
+            float dt = tight_anim_last_ns_ == 0
+                ? 1.0f / 60.0f
+                : (float)((double)(now - tight_anim_last_ns_) / 1.0e9);
+            tight_anim_last_ns_ = now;
+            dt = std::max(0.001f, std::min(0.05f, dt));
+            auto approach = [](float current, float target, float step) {
+                float d = target - current;
+                if (std::fabs(d) <= step) return target;
+                return current + (d > 0.0f ? step : -step);
+            };
+            auto advance = [&](float current, float target, int ref) {
+                if (current == target) return target;
+                float speed = target > current ? grow_speed_px_s
+                                               : shrink_speed_px_s;
+                float step = speed * dt / std::max(1, ref);
+                return approach(current, target, step);
+            };
+            output.left = advance(frame_.left, required_frame_.left,
+                tight_reference_content_width_);
+            output.right = advance(frame_.right, required_frame_.right,
+                tight_reference_content_width_);
+            output.top = advance(frame_.top, required_frame_.top,
+                tight_reference_content_height_);
+            output.bottom = advance(frame_.bottom, required_frame_.bottom,
+                tight_reference_content_height_);
+        }
+    } else {
+        tight_anim_last_ns_ = 0;
+    }
+    *required = output;
     update_viewport();
     return true;
 }

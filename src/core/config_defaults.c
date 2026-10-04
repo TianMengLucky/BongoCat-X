@@ -250,13 +250,16 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->model.render_quality_percent =
         BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
-    config->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_GREEN;
+    config->window.tight_frame = false;
+    config->window.obs_background_rgb = BONGO_CAT_DEFAULT_OBS_BACKGROUND_RGB;
     config->window.corner_radius_percent = BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT;
     config->window.hide_fade_seconds = BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS;
     config->window.random_expression_interval_seconds =
         BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS;
     config->window.random_motion_interval_seconds =
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS;
+    config->window.sequential_model_interval_seconds =
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
     config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
@@ -265,18 +268,27 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     memcpy(config->extensions_json, "{}", sizeof("{}"));
 }
 
+float bongo_cat_settings_snap_render_quality(float percent) {
+    static const float levels[] = {0.1f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f,
+        50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f};
+    const int count = (int)(sizeof(levels) / sizeof(levels[0]));
+    float best = levels[0];
+    float best_delta = fabsf(percent - levels[0]);
+    for (int i = 1; i < count; ++i) {
+        float delta = fabsf(percent - levels[i]);
+        if (delta < best_delta) { best_delta = delta; best = levels[i]; }
+    }
+    return best;
+}
+
 void bongo_cat_settings_validate(BongoCatSettings *config) {
     if (!config) return;
-    float quality = config->model.render_quality_percent;
-    bool quality_valid = quality == 0.1f || quality == 1.0f ||
-        (quality >= 10.0f && quality <= 100.0f &&
-        fmodf(quality, 10.0f) == 0.0f);
-    if (!quality_valid)
-        config->model.render_quality_percent =
-            BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
-    if (config->model.max_fps != BONGO_CAT_DISPLAY_MAX_FPS)
-        config->model.max_fps = config->model.max_fps > 0 &&
-            config->model.max_fps <= 30 ? 30 : BONGO_CAT_DEFAULT_MAX_FPS;
+    config->model.render_quality_percent =
+        bongo_cat_settings_snap_render_quality(
+            config->model.render_quality_percent);
+    if (config->model.max_fps != BONGO_CAT_DISPLAY_MAX_FPS &&
+        (config->model.max_fps < 1 || config->model.max_fps > 360))
+        config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
     config->window.hide_delay_seconds = clampf_or(
         config->window.hide_delay_seconds, 0.0f, 60.0f, 0.0f);
     config->window.hide_fade_seconds = clampf_or(
@@ -291,9 +303,9 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     config->window.random_motion_interval_seconds = clampf_or(
         config->window.random_motion_interval_seconds, 1.0f, 3600.0f,
         BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS);
-    if ((unsigned)config->window.obs_background_color >=
-        BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT)
-        config->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_GREEN;
+    config->window.sequential_model_interval_seconds = clampf_or(
+        config->window.sequential_model_interval_seconds, 1.0f, 3600.0f,
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS);
     if ((unsigned)config->app.theme > BONGO_CAT_THEME_DARK)
         config->app.theme = BONGO_CAT_THEME_AUTO;
     if ((unsigned)config->app.language >= BONGO_CAT_LANG_COUNT)

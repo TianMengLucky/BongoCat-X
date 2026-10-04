@@ -61,6 +61,7 @@ public:
     bool measure_frame(BongoCatLive2DFrame *required);
     void set_frame(const BongoCatLive2DFrame &frame);
     bool viewport(int *x, int *y, int *width, int *height) const;
+    bool overlay_viewport(int *x, int *y, int *width, int *height) const;
     void resize(int width, int height);
     void reshape(int width, int height);
     bool texture_refresh_pending(bool active) const;
@@ -72,6 +73,8 @@ public:
     void draw();
     void set_mirror(bool mirror);
     void set_vertical_flip(bool flipped);
+    void set_tight_frame(bool tight);
+    void set_tight_overlay_rect(const float *rect);
     void set_render_options(const BongoCatLive2DRenderOptions &options);
     void set_dragging(float x, float y, bool angle_z = false);
     void prepare_viewer_audit();
@@ -224,6 +227,14 @@ private:
     int viewport_y_ = 0;
     int viewport_width_ = 612;
     int viewport_height_ = 354;
+    /* Rect the 2D overlay layers (desk art, key sprites) must draw into:
+       the canvas mapped into window pixels with the SAME transform the model
+       draw uses. In tight mode that is a frame_-derived sub-rect (which may
+       extend past a cropped window edge), not the letterbox. */
+    int overlay_x_ = 0;
+    int overlay_y_ = 0;
+    int overlay_width_ = 612;
+    int overlay_height_ = 354;
     int expression_index_ = -1;
     bool expression_clearing_ = false;
     bool expression_frame_pending_ = false;
@@ -240,6 +251,58 @@ private:
     bool automatic_idle_ = true;
     bool mirror_ = false;
     bool vertical_flip_ = false;
+    bool tight_frame_ = false;
+    /* Static 2D overlay art (desk/keyboard) bounds in canvas NDC; the
+       tight envelope must cover them so the crop never slices the art. */
+    bool tight_overlay_valid_ = false;
+    float tight_overlay_rect_[4] = {};
+    /* Frame to restore when tight mode turns off: the allocated frame at the
+       moment it was enabled (base canvas plus accumulated motion overflow). */
+    BongoCatLive2DFrame tight_reference_frame_ = {};
+    /* Content box frozen while tight mode is on. The envelope projection
+       must not follow the cropped window: the crop changes the window aspect
+       ratio, and the aspect-dependent fit branch would flip the envelope and
+       feed back into the crop (the window collapses or oscillates). */
+    int tight_reference_content_width_ = 0;
+    int tight_reference_content_height_ = 0;
+    /* "Observe, converge, track" tight-frame policy. While tight mode
+       (re)starts the window is held at its inherited frame for ~45 frames
+       and rendered bounds are accumulated as a union — bounds are
+       window-NDC, so they must be sampled from a STILL window. The union
+       sets the first target and the frame animates to it; once it arrives
+       the frame is considered locked and corrections switch to tracking the
+       live envelope (settled geometry only), so poses outside the short
+       observe window grow the crop instead of clipping, and the slack left
+       by transient observe poses shrinks back away. Model switch or
+       toggling tight mode starts a fresh cycle. */
+    bool tight_observed_ = false;
+    int tight_observe_frames_ = 0;
+    float tight_observe_bounds_[4] = {};
+    bool tight_locked_ = false;
+    /* Geometry-settlement detector: exact frame_/required_ equality is
+       unreachable when pixel rounding rejects a resize (the frame stays a
+       sub-bucket value forever), which deadlocked the draw-pass self
+       correction and left a stale inherited crop offset. Stable geometry
+       for a few frames is settled enough. */
+    int tight_geom_settle_ = 0;
+    BongoCatLive2DFrame tight_geom_last_frame_ = {};
+    int tight_geom_last_width_ = -1;
+    int tight_geom_last_height_ = -1;
+    /* Timestamp of the previous tight-frame measurement; drives the linear
+       window-size animation (frame_ eases toward required_frame_ at a constant
+       edge speed instead of jumping a whole bucket at once). */
+    uint64_t tight_anim_last_ns_ = 0;
+    /* Lazy-shrink deadline for the locked tight frame: slack is reclaimed
+       only after the content has stayed smaller for the whole dwell, so the
+       window stays still through ordinary pose changes. */
+    uint64_t tight_shrink_due_ns_ = 0;
+    static constexpr uint64_t tight_shrink_dwell_ns = 4ULL * 1000000000ULL;
+    /* The window crop target starts from a frozen observe union and then
+       tracks the live envelope while the geometry is settled: re-cropping
+       every animation frame would resize the window continuously, but never
+       re-cropping left a permanently offset window (green band on one side,
+       content clipped on the other). The 1/64 dead zone and the settle gate
+       keep the tracking quiet for ordinary motion. */
     BongoCatLive2DRenderOptions render_options_{};
     bool direct_textures_ = false;
     bool dynamic_texture_resolution_ = false;

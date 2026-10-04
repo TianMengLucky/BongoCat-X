@@ -12,6 +12,7 @@
 void bongo_cat_preferences_render(BongoCatPreferences *value) {
     bongo_cat_preferences_release_idle_window(value);
     if (!value || !value->window || !value->visible) return;
+    if (bongo_cat_preferences_window_fade_tick(value)) return;
     /* Also cover native resize/expose paths reached by SDL_PumpEvents. Keep
        the main GL context current until the atlas transfer has completed. */
     if (bongo_cat_preferences_model_texture_busy(value)) {
@@ -20,6 +21,12 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
     }
     bongo_cat_preferences_drag_tick(value);
     uint64_t now = SDL_GetTicksNS();
+    /* Repaint the color picker only after the dragged color has settled. */
+    if (value->color_picker_pending_ns &&
+        now - value->color_picker_pending_ns >= 150000000ull) {
+        value->color_picker_pending_ns = 0;
+        value->render_dirty = true;
+    }
     bool raster_due = value->pending_raster_scale > 0.0f &&
         value->raster_retry_ns <= now;
     if (value->render_retry_ns > now ||

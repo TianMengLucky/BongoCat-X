@@ -38,11 +38,21 @@
 
 - GitHub Releases
 
-  [GitHub Releases](https://github.com/vladelaina/BongoCat/releases/latest)에서 최신 버전을 다운로드하세요.
+  [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
+
+  > [!IMPORTANT]
+  > 공식 릴리스는 **runtime-Core 빌드**입니다: Live2D 렌더링 지원이 내장되어 있지만, Live2D Cubism Core 런타임 라이브러리는 **포함되지 않습니다**(독점 라이선스로 패키지에 절대 포함되지 않음). Live2D 없는 진단 빌드가 **아닙니다**. Core를 찾지 못하면 진단 백엔드로 전환되고 설정 창에 안내가 표시됩니다.
+
+  **Live2D 렌더링 활성화 (둘 중 하나 선택):**
+
+  1. **앱 내 가져오기 (권장)**: *설정 → 모델* 페이지를 열고 *Live2D Core 가져오기*를 클릭한 뒤 `Live2DCubismCore.dll` 또는 공식 Cubism SDK zip 파일을 선택하세요. 재시작 없이 즉시 적용됩니다.
+  2. **live2d 폴더에 넣기**: [공식 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에서(Live2D 라이선스에 동의 필요) **Cubism SDK for Native**를 다운로드하여 zip 또는 압축을 푼 `Live2DCubismCore.dll`을 앱 옆 또는 데이터 디렉터리의 `live2d` 폴더에 넣고 앱을 재시작하면 자동으로 인식됩니다.
+
+  소스에서 빌드할 때의 전체 SDK 가져오기 절차는 아래 «Live2D / Cubism SDK» 섹션을 참고하세요.
 
 ## 🛠️ 소스 코드로 빌드하기
 
-BongoCat은 CMake를 사용하며, C11 컴파일러, C++17 컴파일러, CMake 3.24 이상, 데스크톱 OpenGL 개발 파일이 필요합니다. 기본적으로 SDL3, yyjson, stb, miniaudio 및 Nuklear는 구성 단계에서 자동으로 다운로드되므로, 첫 구성 시 네트워크 연결이 필요합니다.
+BongoCat은 CMake를 사용하며, C11 컴파일러, C++17 컴파일러, CMake 3.24 이상, 데스크톱 OpenGL 개발 파일, 그리고 Rust 툴체인(rustup을 통해 설치한 cargo)이 필요합니다. 메모리 안전성이 중요한 파서(SHA-256, 이미지 디코딩, 기여자 피드, 오디오 디코딩)는 `src/rust/bongo-safe` 크레이트에 있으며 Corrosion이 구성 단계에서 빌드합니다. 기본적으로 SDL3, yyjson, stb, miniaudio 및 Nuklear는 구성 단계에서 자동으로 다운로드되므로, 첫 구성 시 네트워크 연결이 필요합니다.
 
 프로젝트 루트 디렉토리(`CMakeLists.txt`가 있는 디렉토리)에서 다음 명령어를 실행하세요.
 
@@ -93,9 +103,9 @@ Visual Studio와 같은 다중 구성 생성기의 경우 빌드 구성을 명�
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### 🎭 Live2D / Cubism SDK (필수 — 수동 다운로드)
+### 🎭 Live2D / Cubism SDK (선택 사항 — 설치하지 않아도 빌드 가능)
 
-Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 빌드하기 전에 각 사용자는 Live2D 공식 웹사이트에서 직접 다운로드해야 합니다. SDK가 없으면 CMake 구성이 실패합니다.
+Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 이제 SDK는 **선택 사항**입니다: 기본 빌드(`BONGO_CAT_REQUIRE_CUBISM=OFF`)는 SDK 없이도 구성과 컴파일이 정상적으로 이루어지며, Live2D 렌더링이 없는 진단 백엔드가 생성됩니다. Live2D 렌더러는 바이너리에 컴파일되어 포함되어야 하므로, 런타임에 SDK를 추가한다고 해서 해당 빌드에 Live2D가 생기지는 않습니다 — SDK로 빌드한 바이너리만 런타임 드롭인에 반응합니다. 진단 백엔드는 시작 및 플랫폼 진단 전용입니다. Live2D 렌더링을 지원하도록 빌드하려면 SDK를 수동으로 다운로드하여 가져오세요:
 
 1. [Cubism SDK 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에 접속하여 Live2D 전용 소프트웨어 라이선스 계약에 동의한 뒤 **Cubism SDK for Native**를 다운로드합니다(릴리스는 `5-r.5` SDK 기준으로 빌드 및 테스트됩니다).
 2. 압축을 풉니다. 풀린 폴더 이름이 `CubismSdkForNative-5-r.5`라면 `CubismSdkForNative`로 이름을 바꾸고 `vendor/` 아래에 두어 `Core/`와 `Framework/`가 포함되도록 합니다.
@@ -109,7 +119,7 @@ cmake -S . -B build -G Ninja \
   -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
 ```
 
-SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`가 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉터리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. 시작 및 플랫폼 진단용 진단 백엔드를 빌드할 때만 `BONGO_CAT_REQUIRE_CUBISM=OFF`를 설정하세요. 이 백엔드는 Live2D 모델 렌더링을 제공하지 않습니다.
+SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism.cmake`가 요구하는 레이아웃의 OpenGL GLEW 서드파티 디렉터리가 포함되어야 합니다. Windows Cubism 빌드에는 Visual Studio 2022가 필요합니다. SDK를 제자리에 두면 평소처럼 구성하기만 하면 Live2D 렌더링이 포함된 빌드를 얻을 수 있습니다. `BONGO_CAT_REQUIRE_CUBISM=ON`은 SDK가 없을 때 구성이 가져오기 안내와 함께 즉시 실패하도록 할 뿐입니다(릴리스 CI에서 사용합니다). 해당 동작이 필요하지 않다면 기본값인 `OFF`로 두세요.
 
 > [!TIP]
 > Windows에서는 다시 빌드하지 않고도 Live2D 렌더링을 활성화할 수 있습니다:
@@ -118,18 +128,20 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 > 즉시 적용되며 재시작이 필요하지 않습니다.
 
 > [!NOTE]
-> 이 저장소의 공식 Release 패키지는 Live2D 렌더링을 지원하는 runtime-Core 빌드이지만,
-> Core 런타임 라이브러리는 **포함되지 않습니다**: 처음 사용할 때 앱 내에서 Core 라이브러리나
-> 공식 SDK zip을 가져오거나, 파일을 응용 프로그램 디렉터리 또는 데이터 디렉터리의
-> `live2d` 폴더에 넣으세요.
+> 이 저장소의 공식 Release 패키지는 runtime-Core 빌드입니다. Live2D 렌더러는 포함되지만
+> Core 런타임은 **번들로 제공되지 않습니다**. 앱은 시작 시 `live2d` 폴더를 확인합니다.
+> `Live2DCubismCore.dll` 또는 공식 SDK zip을 해당 폴더(응용 프로그램 옆이나 데이터
+> 디렉터리 안)에 넣으면 재시작 후 자동으로 인식됩니다. 설정 → 모델 페이지에서
+> «Live2D Core 가져오기»를 클릭하면 즉시 활성화할 수도 있습니다. Core를 찾지 못하면
+> 앱은 진단 백엔드로 대체되고 설정 창에 안내가 표시됩니다.
 
 ### ⚙️ CMake 옵션
 
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다. SDL3, yyjson, stb, miniaudio 및 Nuklear를 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다(Corrosion 및 Rust crate 종속성 포함). SDL3, yyjson, stb, miniaudio, Nuklear 및 Corrosion을 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native의 경로입니다. |
-| `BONGO_CAT_REQUIRE_CUBISM` | `ON` | 수동으로 다운로드한 Cubism SDK를 사용할 수 없을 때 구성을 실패하게 합니다. `OFF`로 설정하면 Live2D 렌더링 없이 진단 백엔드를 빌드합니다. |
+| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK가 없을 때 구성을 실패하게 할지 여부입니다. 기본값 `OFF`: SDK가 없으면 Live2D 렌더링이 없는 진단 백엔드를 빌드합니다. SDK를 필수로 요구하려면 `ON`으로 설정하세요(릴리스 CI에서 사용합니다). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 로컬 컴파일러 경고를 오류로 처리합니다. |
 
 오프라인 빌드 시 `BONGO_CAT_FETCH_DEPS=OFF`로 설정하고, SDL3(`SDL3-static` 포함) 및 yyjson의 CMake 패키지 구성을 제공하세요. stb, Nuklear 및 miniaudio를 자동으로 찾을 수 없는 경우 해당 include 디렉토리도 제공해야 합니다:
@@ -144,6 +156,12 @@ cmake -S . -B build -G Ninja \
 ```
 
 ## 📌 프로젝트 상태
+
+![Commit activity](https://img.shields.io/github/commit-activity/m/TianMengLucky/BongoCat-X?style=flat)
+![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
+![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
+![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
+![Release](https://img.shields.io/github/v/release/TianMengLucky/BongoCat-X?style=flat)
 
 ![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
 

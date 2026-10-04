@@ -57,6 +57,7 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/lifecycle/shutdown.c
   src/runtime/lifecycle/startup.c
   src/runtime/lifecycle/startup_arguments.c
+  src/runtime/lifecycle/portable_mode.c
   src/runtime/lifecycle/system_language.c
   src/runtime/lifecycle/storage_paths.c)
 
@@ -247,7 +248,6 @@ set(BONGO_CAT_UI_PREFERENCES_ABOUT_SOURCES
   src/ui/preferences/about/preferences_about_lifecycle.c
   src/ui/preferences/about/preferences_about_online.c
   src/ui/preferences/about/preferences_about_page.c
-  src/ui/preferences/about/preferences_about_svg.c
   src/ui/preferences/about/preferences_about_text.c)
 
 set(BONGO_CAT_UI_PREFERENCES_SOURCES

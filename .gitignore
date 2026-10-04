@@ -29,6 +29,9 @@
 *.exp
 *.dSYM/
 
+# Rust build artifacts
+**/target/
+
 # Python bytecode from local helper script runs
 __pycache__/
 
@@ -83,3 +86,9 @@ Desktop.ini
 /.diagnostic-session/
 /.diagnostic-storage/
 /.diagnostic-storage-morning/
+/vendor/inox2d/
+
+# Local environment artifacts
+/n
+/.zcode/
+/.zcodeignore

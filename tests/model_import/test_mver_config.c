@@ -440,14 +440,14 @@ void test_mver_config(void) {
         settings->model.mirror = false;
         settings->model.max_fps = 30;
         settings->window.always_on_top = true;
-        settings->window.obs_background_color = BONGO_CAT_OBS_BACKGROUND_MAGENTA;
+        settings->window.obs_background_rgb = 0xff00ff;
         char own_path[BONGO_CAT_PATH_CAP];
         CHECK(child(own_path, sizeof(own_path), root, "global-settings.json", false));
         CHECK(bongo_cat_settings_save(own_path, settings, NULL) == BONGO_CAT_OK);
         CHECK(bongo_cat_settings_load(own_path, loaded, NULL) == BONGO_CAT_OK);
         CHECK(!loaded->model.mirror && loaded->model.max_fps == 30);
         CHECK(loaded->window.always_on_top);
-        CHECK(loaded->window.obs_background_color == BONGO_CAT_OBS_BACKGROUND_MAGENTA);
+        CHECK(loaded->window.obs_background_rgb == 0xff00ff);
         BongoCatSessionState session, restored;
         bongo_cat_session_defaults(&session);
         session.window.scale_percent = 150.0f;

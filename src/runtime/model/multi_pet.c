@@ -188,8 +188,8 @@ static void reload_secondary_settings(BongoCatApp *app) {
         settings.window.random_expression != app->settings.window.random_expression ||
         settings.window.random_motion != app->settings.window.random_motion ||
         settings.window.rounded_corners != app->settings.window.rounded_corners ||
-        settings.window.obs_background_color !=
-            app->settings.window.obs_background_color ||
+        settings.window.obs_background_rgb !=
+            app->settings.window.obs_background_rgb ||
         settings.window.hide_delay_seconds != app->settings.window.hide_delay_seconds ||
         settings.window.hide_fade_seconds != app->settings.window.hide_fade_seconds ||
         settings.window.random_expression_interval_seconds !=

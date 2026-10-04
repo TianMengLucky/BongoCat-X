@@ -1,4 +1,5 @@
 #include "storage_paths.h"
+#include "portable_mode.h"
 #include "runtime.h"
 
 #include "bongo_cat/file.h"
@@ -109,6 +110,13 @@ static bool platform_roots(BongoCatApp *app) {
 bool bongo_cat_storage_paths_prepare(BongoCatApp *app,
     BongoCatError *error) {
     if (!app) return false;
+    /* Portable marker beside the executable; an explicit --storage-root
+       argument (set earlier) always wins over it. */
+    if (!app->storage_root[0] && bongo_cat_portable_mode_active() &&
+        bongo_cat_portable_root(app->storage_root,
+            sizeof(app->storage_root)))
+        SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM,
+            "Portable mode: storage root %s", app->storage_root);
     bool resolved = app->storage_root[0]
         ? isolated_roots(app) : platform_roots(app);
     if (resolved) {

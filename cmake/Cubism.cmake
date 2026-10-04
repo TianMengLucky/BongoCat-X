@@ -46,6 +46,14 @@ set_target_properties(Live2DCubismCore PROPERTIES
   IMPORTED_LOCATION "${CUBISM_CORE_LIBRARY}"
   INTERFACE_INCLUDE_DIRECTORIES "${CUBISM_CORE_PATH}/include")
 
+if(WIN32 AND BONGO_CAT_RUNTIME_CORE)
+  # The Core DLL's x86 import library exports stdcall-decorated names; the
+  # header only declares __stdcall when CSM_CORE_WIN32_DLL is defined, and
+  # without it a 32-bit MSVC link fails with unresolved _csm* symbols. On
+  # x64 the definition is inert (calling conventions collapse there).
+  add_compile_definitions(CSM_CORE_WIN32_DLL=1)
+endif()
+
 if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
   # POSIX runtime-Core builds never link the proprietary Core: a generated
   # shim owns the csm* ABI and forwards every call through dlsym to the
@@ -94,6 +102,11 @@ elseif(APPLE)
 else()
   target_compile_definitions(Framework PUBLIC CSM_TARGET_LINUX_GL)
 endif()
+# The upstream Framework is not warning-clean; keep project /Werror flags
+# from reaching it (release CI builds with warnings-as-errors).
+target_compile_options(Framework PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/w>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-w>)
 target_include_directories(Framework SYSTEM PUBLIC
   "${CUBISM_FRAMEWORK_PATH}/src"
   "${CUBISM_CORE_PATH}/include")

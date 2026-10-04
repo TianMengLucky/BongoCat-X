@@ -164,6 +164,8 @@ typedef struct BongoCatApp {
     float random_expression_interval_seconds;
     uint64_t random_motion_due_ns;
     float random_motion_interval_seconds;
+    uint64_t sequential_model_due_ns;
+    float sequential_model_interval_seconds;
     uint32_t random_behavior_state;
     uint64_t settings_saved_hash, settings_observed_hash;
     uint64_t session_saved_hash, session_observed_hash;
@@ -263,10 +265,20 @@ void bongo_cat_app_restore_behavior_state(BongoCatApp *app,
     const char *model_id);
 BongoCatResult bongo_cat_app_import_model(BongoCatApp *app, const char *source, BongoCatError *error);
 BongoCatResult bongo_cat_app_remove_model(BongoCatApp *app, const char *id, BongoCatError *error);
+/* Copy any missing built-in model (standard/keyboard/gamepad) back into the
+   models root and rescan the catalog. Present models are left untouched. */
+BongoCatResult bongo_cat_app_restore_builtins(BongoCatApp *app,
+    BongoCatError *error);
 /* Import a user-supplied Cubism Core (Windows runtime-Core builds) and hot
    swap the diagnostic stub for the Live2D bridge without a restart. */
 bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
     BongoCatError *error);
+/* Re-run the runtime Core discovery over the live2d drop-in folders and hot
+   swap the backend when a Core turns up. True when Live2D is usable. */
+bool bongo_cat_app_rescan_live2d_core(BongoCatApp *app);
+/* Hot swap the diagnostic stub for the Live2D bridge after a Core has been
+   loaded out of band (e.g. by the background rescan worker). */
+bool bongo_cat_app_activate_live2d_core(BongoCatApp *app, BongoCatError *error);
 void bongo_cat_app_rescan_models(BongoCatApp *app);
 void bongo_cat_app_refresh_installed_models(BongoCatApp *app);
 void bongo_cat_app_refresh_nearby_models(BongoCatApp *app);

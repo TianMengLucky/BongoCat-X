@@ -1,9 +1,9 @@
 #include "bongo_cat/image.h"
+#include "bongo_cat/safe_ffi.h"
 #include "image_internal.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
-#include <stb_image.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,7 +23,9 @@ void bongo_cat_image_free(BongoCatImage *image) {
     if (!image) return;
     if (image->surface) SDL_DestroySurface(image->surface);
     if (image->pixels) {
-        if (image->pixels_stbi) stbi_image_free(image->pixels);
+        if (image->pixels_ffi)
+            bongo_safe_free_pixels(image->pixels,
+                (size_t)image->width * (size_t)image->height * 4);
         else free(image->pixels);
     }
     memset(image, 0, sizeof(*image));
@@ -36,6 +38,35 @@ unsigned int bongo_cat_image_texture(const char *path, int *width, int *height, 
     if (height) *height = image.height;
     bongo_cat_image_free(&image);
     return texture;
+}
+bool bongo_cat_image_opaque_bounds(const char *path,
+    float *min_u, float *min_v, float *max_u, float *max_v) {
+    BongoCatImage image;
+    BongoCatError ignored = {0};
+    if (!min_u || !min_v || !max_u || !max_v ||
+        bongo_cat_image_load(path, &image, &ignored) != BONGO_CAT_OK)
+        return false;
+    int min_x = image.width, min_y = image.height, max_x = -1, max_y = -1;
+    for (int y = 0; y < image.height; ++y) {
+        const unsigned char *row = image.pixels + (size_t)y * image.width * 4;
+        for (int x = 0; x < image.width; ++x) {
+            if (row[(size_t)x * 4 + 3] <= 8) continue;
+            if (x < min_x) min_x = x;
+            if (x > max_x) max_x = x;
+            if (y < min_y) min_y = y;
+            if (y > max_y) max_y = y;
+        }
+    }
+    bool found = max_x >= 0;
+    if (found) {
+        float width = (float)image.width, height = (float)image.height;
+        *min_u = (float)min_x / width;
+        *min_v = (float)min_y / height;
+        *max_u = (float)(max_x + 1) / width;
+        *max_v = (float)(max_y + 1) / height;
+    }
+    bongo_cat_image_free(&image);
+    return found;
 }
 
 unsigned int bongo_cat_image_texture_thumbnail(const char *path, int max_width,

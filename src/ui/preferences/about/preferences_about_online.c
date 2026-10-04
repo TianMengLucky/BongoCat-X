@@ -1,5 +1,4 @@
 #include "preferences_about_online.h"
-#include "preferences_about_svg.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
 #include <stdlib.h>

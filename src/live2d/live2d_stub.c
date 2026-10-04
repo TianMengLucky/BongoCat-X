@@ -112,6 +112,11 @@ bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d,
     return true;
 }
 
+bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *live2d,
+    int *x, int *y, int *width, int *height) {
+    return bongo_cat_live2d_viewport(live2d, x, y, width, height);
+}
+
 void bongo_cat_live2d_resize(BongoCatLive2D *live2d, int width, int height) {
     if (!live2d) return;
     live2d->width = width;
@@ -167,6 +172,13 @@ void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror) {
 void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d,
     const BongoCatLive2DRenderOptions *options) {
     (void)live2d; (void)options;
+}
+void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight) {
+    (void)live2d; (void)tight;
+}
+void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d,
+    const float *rect) {
+    (void)live2d; (void)rect;
 }
 void bongo_cat_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y) {
     (void)live2d; (void)x; (void)y;

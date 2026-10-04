@@ -21,6 +21,12 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
     }
     bongo_cat_preferences_drag_tick(value);
     uint64_t now = SDL_GetTicksNS();
+    /* Repaint the color picker only after the dragged color has settled. */
+    if (value->color_picker_pending_ns &&
+        now - value->color_picker_pending_ns >= 150000000ull) {
+        value->color_picker_pending_ns = 0;
+        value->render_dirty = true;
+    }
     bool raster_due = value->pending_raster_scale > 0.0f &&
         value->raster_retry_ns <= now;
     if (value->render_retry_ns > now ||

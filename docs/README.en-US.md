@@ -71,7 +71,10 @@ This repository is not affiliated with Live2D Inc. or its official projects in a
 ## 🛠️ Build From Source
 
 BongoCat uses CMake and requires a C11 compiler, a C++17 compiler, CMake 3.24
-or newer, and desktop OpenGL development files. SDL3, yyjson, stb, miniaudio,
+or newer, desktop OpenGL development files, and a Rust toolchain (cargo, e.g.
+via rustup): the memory-safety-critical parsers (SHA-256, image decoding, the
+contributor feed, audio decoding) live in the `src/rust/bongo-safe` crate,
+which Corrosion builds at configure time. SDL3, yyjson, stb, miniaudio,
 and Nuklear are downloaded at configure time by default, so the first
 configuration needs network access.
 
@@ -192,7 +195,7 @@ need that.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent`. Set `OFF` only when SDL3, yyjson, stb, miniaudio, and Nuklear are already available to CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent` (including Corrosion and the Rust crate dependencies). Set `OFF` only when SDL3, yyjson, stb, miniaudio, Nuklear, and Corrosion are already available to CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path to the Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Whether a missing SDK fails configuration. Default `OFF`: a missing SDK builds the diagnostic backend without Live2D rendering; set `ON` to require the SDK (release CI uses it). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Treat native compiler warnings as errors. |

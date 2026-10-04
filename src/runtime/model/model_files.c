@@ -262,6 +262,9 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     app->frame_geometry_retry_ns = 0;
     bongo_cat_app_reset_pointer_tracking(app);
     bongo_cat_live2d_set_render_options(app->live2d, &render_options);
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[tight] model-select reapply -> %d",
+        app->settings.window.tight_frame ? 1 : 0);
+    bongo_cat_live2d_set_tight_frame(app->live2d, app->settings.window.tight_frame);
     if (app->loaded_model[0] && app->behavior_catalog_valid) {
         const BongoCatModelEntry *previous_entry = bongo_cat_models_find(
             &app->models, app->loaded_model);
@@ -278,6 +281,20 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         if (optional.message[0])
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", optional.message);
         bongo_cat_overlay_clear(app->overlay);
+    }
+    {
+        /* The tight-window envelope must also cover the static overlay art:
+           the vertex envelope only sees the Cubism pet, and cropping to it
+           slices the desk/keyboard image away. UV bounds (top-left origin)
+           map to canvas NDC with y flipped. */
+        float uv[4] = {0};
+        if (bongo_cat_overlay_tight_uv_bounds(app->overlay, uv)) {
+            float rect[4] = { uv[0] * 2.0f - 1.0f, 1.0f - uv[3] * 2.0f,
+                uv[2] * 2.0f - 1.0f, 1.0f - uv[1] * 2.0f };
+            bongo_cat_live2d_set_tight_overlay_rect(app->live2d, rect);
+        } else {
+            bongo_cat_live2d_set_tight_overlay_rect(app->live2d, NULL);
+        }
     }
     snprintf(app->loaded_model, sizeof(app->loaded_model), "%s", entry->id);
     size_t saved_behaviors = bongo_cat_app_saved_behavior_count(app, entry->id);

@@ -69,8 +69,12 @@
 ## 🛠️ Compilation depuis les sources
 
 BongoCat utilise CMake et nécessite un compilateur C11, un compilateur C++17,
-CMake 3.24 ou une version plus récente, ainsi que les fichiers de développement
-OpenGL pour environnement de bureau. SDL3, yyjson, stb, miniaudio et Nuklear
+CMake 3.24 ou une version plus récente, les fichiers de développement
+OpenGL pour environnement de bureau et la toolchain Rust (cargo, par exemple
+via rustup) : les analyseurs critiques pour la sûreté de la mémoire (SHA-256,
+décodage d'images, le flux des contributeurs, décodage audio) se trouvent dans
+le crate `src/rust/bongo-safe`, que Corrosion construit lors de la configuration.
+SDL3, yyjson, stb, miniaudio et Nuklear
 sont téléchargés par défaut lors de la configuration ; la première configuration
 nécessite donc un accès au réseau.
 
@@ -194,7 +198,7 @@ d'import, lorsque le SDK est absent (la CI de release l'utilise). Laissez-la
 
 | Option | Valeur par défaut | Description |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Télécharge les dépendances tierces aux versions épinglées via `FetchContent` de CMake. Définissez cette option sur `OFF` uniquement si SDL3, yyjson, stb, miniaudio et Nuklear sont déjà accessibles à CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Télécharge les dépendances tierces aux versions épinglées via `FetchContent` de CMake (y compris Corrosion et les dépendances du crate Rust). Définissez cette option sur `OFF` uniquement si SDL3, yyjson, stb, miniaudio, Nuklear et Corrosion sont déjà accessibles à CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Chemin vers le Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Indique si l'absence du SDK fait échouer la configuration. Par défaut `OFF` : sans SDK, on compile le backend de diagnostic sans rendu Live2D ; mettez `ON` pour exiger le SDK (la CI de release l'utilise). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Traite les avertissements du compilateur natif comme des erreurs. |

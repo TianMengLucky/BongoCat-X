@@ -12,7 +12,7 @@
 #define BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS 5.0f
 #define BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS 5.0f
 /* Switching models reloads textures; a much longer default avoids churn. */
-#define BONGO_CAT_DEFAULT_RANDOM_MODEL_MINUTES 15.0f
+#define BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS 600.0f
 #define BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT 6.0f
 #define BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS 0.3f
 #define BONGO_CAT_MAX_HIDE_FADE_SECONDS 3.0f
@@ -36,13 +36,9 @@ typedef enum BongoCatModelMode {
     BONGO_CAT_MODE_KEYBOARD,
     BONGO_CAT_MODE_GAMEPAD
 } BongoCatModelMode;
-typedef enum BongoCatObsBackgroundColor {
-    BONGO_CAT_OBS_BACKGROUND_GREEN,
-    BONGO_CAT_OBS_BACKGROUND_BLUE,
-    BONGO_CAT_OBS_BACKGROUND_RED,
-    BONGO_CAT_OBS_BACKGROUND_MAGENTA,
-    BONGO_CAT_OBS_BACKGROUND_COLOR_COUNT
-} BongoCatObsBackgroundColor;
+/* OBS solid background key color, 0x00RRGGBB, chosen with the preferences
+   color picker (saturation/value square plus hue slider). */
+#define BONGO_CAT_DEFAULT_OBS_BACKGROUND_RGB 0x00ff00u
 
 typedef struct BongoCatModelPreferences {
     bool multiple_pets;
@@ -72,16 +68,19 @@ typedef struct BongoCatWindowPreferences {
      */
     bool capture_only;
     bool obs_background;
+    /* 窗口边框紧贴桌宠可视边缘，减少透明边距。 */
+    bool tight_frame;
     bool random_expression;
     bool random_motion;
-    bool random_model;
+    /* Walks the model catalog in the user's drag order. */
+    bool sequential_model;
     bool rounded_corners;
-    BongoCatObsBackgroundColor obs_background_color;
+    uint32_t obs_background_rgb;
     float hide_delay_seconds;
     float hide_fade_seconds;
     float random_expression_interval_seconds;
     float random_motion_interval_seconds;
-    float random_model_interval_minutes;
+    float sequential_model_interval_seconds;
     float corner_radius_percent;
 } BongoCatWindowPreferences;
 
@@ -165,6 +164,10 @@ typedef struct BongoCatSettings {
     size_t removed_model_count;
     BongoCatRemovedModel hidden_models[BONGO_CAT_MODEL_CAP];
     size_t hidden_model_count;
+    /* Model ids in the user's drag order; unlisted models follow in scan
+       order. Drives the model page layout and sequential model switching. */
+    BongoCatRemovedModel model_order[BONGO_CAT_MODEL_CAP];
+    size_t model_order_count;
     char extensions_json[BONGO_CAT_SETTINGS_EXTENSIONS_CAP];
 } BongoCatSettings;
 
@@ -212,6 +215,12 @@ bool bongo_cat_settings_model_hidden(const BongoCatSettings *settings,
     const char *id);
 bool bongo_cat_settings_set_model_hidden(BongoCatSettings *settings,
     const char *id, bool hidden);
+/* 1-based drag position of a model, or 0 when the model is unlisted. */
+size_t bongo_cat_settings_model_order_index(const BongoCatSettings *settings,
+    const char *id);
+/* Replaces the stored order with the given model ids (up to the cap). */
+bool bongo_cat_settings_model_order_set(BongoCatSettings *settings,
+    const char *const *ids, size_t count);
 bool bongo_cat_settings_restore_model_package(BongoCatSettings *settings,
     const char *package_id);
 bool bongo_cat_settings_random_enabled(const BongoCatSettings *settings,
@@ -232,10 +241,6 @@ bool bongo_cat_language_parse(const char *name, BongoCatLanguage *value);
 bool bongo_cat_language_from_locale(const char *language,
     const char *country, BongoCatLanguage *value);
 const char *bongo_cat_mode_name(BongoCatModelMode value);
-const char *bongo_cat_obs_background_color_name(
-    BongoCatObsBackgroundColor value);
-uint32_t bongo_cat_obs_background_color_rgb(
-    BongoCatObsBackgroundColor value);
 
 #ifdef __cplusplus
 }

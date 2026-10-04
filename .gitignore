@@ -29,6 +29,9 @@
 *.exp
 *.dSYM/
 
+# Rust build artifacts
+**/target/
+
 # Python bytecode from local helper script runs
 __pycache__/
 

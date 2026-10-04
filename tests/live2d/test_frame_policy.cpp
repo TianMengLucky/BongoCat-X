@@ -55,7 +55,9 @@ int main() {
             BongoCatLive2DFrame requested{left * .25f, top * .25f,
                 top * .125f, left * .125f};
             auto allocated = bongo_cat_frame_limit(empty, requested, 2.0, 2.0, 2.0);
-            CHECK(bongo_cat_frame_area(allocated) <= 2.0);
+            /* The remainder-spending step lands exactly on the budget; float
+               edge storage leaves ~1e-6 of slack above it. */
+            CHECK(bongo_cat_frame_area(allocated) <= 2.0 + 1e-4);
             CHECK(allocated.left <= requested.left && allocated.top <= requested.top);
             CHECK(allocated.right <= requested.right && allocated.bottom <= requested.bottom);
             auto again = bongo_cat_frame_limit(allocated, requested, 2.0, 2.0, 2.0);

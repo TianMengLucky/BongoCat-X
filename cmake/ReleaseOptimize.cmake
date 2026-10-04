@@ -29,6 +29,9 @@ endfunction()
 
 if(MSVC)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  # Compile translation units of the same project concurrently; without this
+  # the Visual Studio generator serializes every .c/.cpp inside a target.
+  add_compile_options(/MP)
 endif()
 
 # Keep the Windows loader's control-flow enforcement enabled in release

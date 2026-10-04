@@ -62,9 +62,25 @@ jobs:
             platform: macos-arm64
             cmake_arch: arm64
 
+    env:
+      # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
+      RUSTC_WRAPPER: sccache
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+
+      # The bongo-safe Rust crate is a hard build requirement (cmake/Rust.cmake).
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
 
       - name: Validate tag version
         id: version
@@ -142,7 +158,7 @@ jobs:
 
       - name: Restore compiler cache
         if: steps.skip-check.outputs.skip != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/sccache
@@ -392,13 +408,13 @@ jobs:
       - name: Publish release assets
         if: github.repository == 'TianMengLucky/BongoCat-X' &&
           steps.skip-check.outputs.skip != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: BongoCat v${{ steps.version.outputs.version }}
           body_path: release-notes.md
           generate_release_notes: true
           fail_on_unmatched_files: true
-          allow_updates: true
+          overwrite_files: true
           make_latest: true
           files: release-output/*
 

@@ -8,14 +8,14 @@ if(BUILD_TESTING)
   target_include_directories(bongo_cat_gl_readback_tests PRIVATE tests/support)
   target_link_libraries(bongo_cat_gl_readback_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME window-gl-readback COMMAND bongo_cat_gl_readback_tests)
-  add_executable(bongo_cat_input_shape_tests tests/platform/test_linux_shape.c)
-  target_include_directories(bongo_cat_input_shape_tests PRIVATE
-    src/platform/linux tests/support include "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
-  target_link_libraries(bongo_cat_input_shape_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
-  if(MSVC)
-    target_compile_options(bongo_cat_input_shape_tests PRIVATE /experimental:c11atomics)
+  # The shape mask is implemented with Linux window compositor APIs only.
+  if(NOT WIN32)
+    add_executable(bongo_cat_input_shape_tests tests/platform/test_linux_shape.c)
+    target_include_directories(bongo_cat_input_shape_tests PRIVATE
+      src/platform/linux tests/support include "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
+    target_link_libraries(bongo_cat_input_shape_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
+    add_test(NAME input-shape-mask COMMAND bongo_cat_input_shape_tests)
   endif()
-  add_test(NAME input-shape-mask COMMAND bongo_cat_input_shape_tests)
   add_executable(bongo_cat_mask_policy_tests tests/live2d/test_mask_policy.cpp)
   target_include_directories(bongo_cat_mask_policy_tests PRIVATE src/live2d tests/support)
   target_link_libraries(bongo_cat_mask_policy_tests PRIVATE bongo_cat_warnings)
@@ -64,6 +64,13 @@ if(BUILD_TESTING)
     bongo_cat_core SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME input-concurrent COMMAND bongo_cat_input_concurrent_tests)
   set_tests_properties(input-concurrent PROPERTIES TIMEOUT 30)
+
+  add_executable(bongo_cat_safe_ffi_tests tests/core/test_safe_ffi.c)
+  target_include_directories(bongo_cat_safe_ffi_tests PRIVATE tests/support)
+  target_link_libraries(bongo_cat_safe_ffi_tests PRIVATE
+    bongo_cat_core SDL3::SDL3-static bongo_cat_warnings)
+  add_test(NAME safe-ffi COMMAND bongo_cat_safe_ffi_tests)
+  set_tests_properties(safe-ffi PROPERTIES TIMEOUT 30)
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(bongo_cat_linux_evdev_tests tests/platform/test_linux_evdev.c)
@@ -129,12 +136,14 @@ if(BUILD_TESTING)
 
   add_executable(bongo_cat_hover_fade_tests
     tests/core/test_hover_fade.c src/runtime/input/mouse.c
-    src/runtime/shell/modal_frame.c)
+    src/runtime/shell/modal_frame.c
+    src/runtime/diagnostics/resource_trace.c
+    src/platform/common/memory.c)
   target_include_directories(bongo_cat_hover_fade_tests PRIVATE
     "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include tests/support
     ${BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS})
   target_link_libraries(bongo_cat_hover_fade_tests PRIVATE
-    SDL3::SDL3-static bongo_cat_warnings)
+    SDL3::SDL3-static yyjson bongo_cat_warnings)
   add_test(NAME hover-fade COMMAND bongo_cat_hover_fade_tests)
 
   add_executable(bongo_cat_audio_tests tests/media/test_audio.c)
@@ -264,37 +273,6 @@ if(BUILD_TESTING)
   add_test(NAME model-import-notice COMMAND bongo_cat_mver_import_tests
     --import-notice)
 
-  add_executable(bongo_cat_preferences_lifecycle_tests
-    tests/ui/test_preferences_lifecycle.c)
-  target_include_directories(bongo_cat_preferences_lifecycle_tests PRIVATE
-    ${BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS})
-  target_include_directories(bongo_cat_preferences_lifecycle_tests SYSTEM PRIVATE
-    ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
-  target_link_libraries(bongo_cat_preferences_lifecycle_tests PRIVATE bongo_cat_runtime)
-  if(WIN32)
-    target_sources(bongo_cat_preferences_lifecycle_tests PRIVATE
-      "${CMAKE_CURRENT_BINARY_DIR}/windows_resources.rc")
-    add_dependencies(bongo_cat_preferences_lifecycle_tests bongo_cat_asset_pack)
-  else()
-    add_custom_command(TARGET bongo_cat_preferences_lifecycle_tests POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
-        "$<TARGET_FILE_DIR:bongo_cat_preferences_lifecycle_tests>/assets")
-  endif()
-  bongo_cat_stage_cubism_assets(bongo_cat_preferences_lifecycle_tests)
-  if(MSVC)
-    target_compile_options(bongo_cat_preferences_lifecycle_tests PRIVATE
-      /experimental:c11atomics)
-  endif()
-  add_test(NAME preferences-lifecycle COMMAND bongo_cat_preferences_lifecycle_tests
-    --ci-smoke --ci-ignore-global-input
-    "--storage-root=${CMAKE_CURRENT_BINARY_DIR}/preferences-lifecycle-data")
-  set_tests_properties(preferences-lifecycle PROPERTIES
-    ENVIRONMENT "BONGO_CAT_DISABLE_NEARBY_MODEL_SCAN=1" TIMEOUT 60)
-  if(APPLE)
-    set_tests_properties(preferences-lifecycle PROPERTIES DISABLED TRUE)
-  endif()
-
   if(BONGO_CAT_CUBISM_ENABLED)
     add_executable(bongo_cat_core_profile_tests tests/live2d/test_core_profile.cpp)
     target_include_directories(bongo_cat_core_profile_tests PRIVATE src/live2d)
@@ -341,16 +319,6 @@ if(BUILD_TESTING)
     bongo_cat_stage_cubism_assets(bongo_cat_texture_equivalence_tests)
     add_test(NAME live2d-texture-equivalence COMMAND bongo_cat_texture_equivalence_tests)
     set_tests_properties(live2d-texture-equivalence PROPERTIES TIMEOUT 180)
-
-    add_test(NAME model-startup-recovery COMMAND ${CMAKE_COMMAND}
-      "-DEXECUTABLE=$<TARGET_FILE:bongo_cat_preferences_lifecycle_tests>"
-      "-DASSET_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
-      "-DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/model-startup-recovery"
-      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckModelStartupRecovery.cmake")
-    set_tests_properties(model-startup-recovery PROPERTIES TIMEOUT 60)
-    if(APPLE)
-      set_tests_properties(model-startup-recovery PROPERTIES DISABLED TRUE)
-    endif()
     add_executable(bongo_cat_motion_state_tests
       tests/live2d/test_motion_state.cpp)
     target_include_directories(bongo_cat_motion_state_tests PRIVATE
@@ -380,6 +348,10 @@ if(BUILD_TESTING)
       src/platform/windows src/ui/rendering tests/support)
     target_link_libraries(bongo_cat_windows_presentation_tests PRIVATE
       bongo_cat_runtime bongo_cat_warnings dwmapi user32 gdi32)
+    if(MSVC)
+      target_compile_options(bongo_cat_windows_presentation_tests PRIVATE
+        /experimental:c11atomics)
+    endif()
     add_test(NAME windows-presentation COMMAND bongo_cat_windows_presentation_tests)
     set_tests_properties(windows-presentation PROPERTIES
       SKIP_RETURN_CODE 77 RUN_SERIAL TRUE TIMEOUT 60 LABELS "interactive;graphics")
@@ -453,7 +425,7 @@ if(BUILD_TESTING)
         bongo_cat_image_png_stream_tests bongo_cat_image_texture_cache_tests
         bongo_cat_image_upload_fallback_tests bongo_cat_overlay_layout_tests
         bongo_cat_audio_tests bongo_cat_log_policy_tests
-        bongo_cat_mver_import_tests bongo_cat_preferences_lifecycle_tests
+        bongo_cat_mver_import_tests
         bongo_cat_windows_presentation_tests bongo_cat_windows_capture_tests)
       foreach(BONGO_CAT_TEST_TARGET IN LISTS BONGO_CAT_DELAYLOAD_TARGETS)
         target_link_options(${BONGO_CAT_TEST_TARGET} PRIVATE

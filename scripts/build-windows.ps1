@@ -163,13 +163,21 @@ if ($SkipConfigure) {
             $generator = 'Visual Studio 18 2026'
         }
     }
+    # BONGOCAT_GENERATOR overrides the auto-picked generator (e.g. "Ninja");
+    # a Ninja configure requires cl.exe/link.exe already on PATH, so this is
+    # meant for shells launched from the VS developer prompt.
+    if ($env:BONGOCAT_GENERATOR) { $generator = $env:BONGOCAT_GENERATOR }
     $configureArgs = @(
         '-S', $root, '-B', $BuildDir,
-        '-G', $generator, '-A', $Architecture,
+        '-G', $generator,
         '-DBONGO_CAT_WARNINGS_AS_ERRORS=ON',
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"
     )
+    # -A is a Visual Studio generator concept; Ninja and NMake reject it.
+    if ($generator -like 'Visual Studio *') {
+        $configureArgs += @('-A', $Architecture)
+    }
     # Always pass the value explicitly: release CI restores the licensed SDK
     # and opts in with -RequireCubism, while local diagnostic builds set it
     # off when the SDK is absent.

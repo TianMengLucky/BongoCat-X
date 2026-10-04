@@ -248,7 +248,6 @@ set(BONGO_CAT_UI_PREFERENCES_ABOUT_SOURCES
   src/ui/preferences/about/preferences_about_lifecycle.c
   src/ui/preferences/about/preferences_about_online.c
   src/ui/preferences/about/preferences_about_page.c
-  src/ui/preferences/about/preferences_about_svg.c
   src/ui/preferences/about/preferences_about_text.c)
 
 set(BONGO_CAT_UI_PREFERENCES_SOURCES

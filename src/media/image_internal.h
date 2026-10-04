@@ -3,6 +3,12 @@
 
 #include "bongo_cat/image.h"
 
+#include <stdio.h>
+
+/* Reads the whole stream into an exactly-sized buffer the caller frees
+   with free(); NULL on allocation or read failure. */
+unsigned char *bongo_cat_image_read_stream(FILE *file, size_t *length);
+
 BongoCatResult bongo_cat_image_decode_pixels(const char *path,
     BongoCatImage *image, BongoCatError *error);
 BongoCatResult bongo_cat_image_decode_pixels_responsive(const char *path,

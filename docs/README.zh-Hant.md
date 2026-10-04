@@ -70,7 +70,7 @@
 
 ## 🛠️ 從原始碼建置
 
-BongoCat 使用 CMake，需要 C11 編譯器、C++17 編譯器、CMake 3.24 或更新版本，以及桌面 OpenGL 開發檔案。SDL3、yyjson、stb、miniaudio 和 Nuklear 預設在建置配置時下載，因此首次配置需要網路連線。
+BongoCat 使用 CMake，需要 C11 編譯器、C++17 編譯器、CMake 3.24 或更新版本、桌面 OpenGL 開發檔案，以及 Rust 工具鏈（透過 rustup 安裝 cargo）：記憶體安全關鍵的解析器（SHA-256、圖像解碼、貢獻者資訊流、音訊解碼）位於 `src/rust/bongo-safe` crate 中，由 Corrosion 在配置階段自動建置。SDL3、yyjson、stb、miniaudio 和 Nuklear 預設在建置配置時下載，因此首次配置需要網路連線。
 
 請在專案根目錄（包含 `CMakeLists.txt` 的目錄）執行以下命令。
 
@@ -153,7 +153,7 @@ SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cma
 
 | 選項 | 預設值 | 說明 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下載固定的第三方依賴項。僅在 SDL3、yyjson、stb、miniaudio 和 Nuklear 已可被 CMake 找到時設為 `OFF`。 |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下載固定的第三方依賴項（含 Corrosion 與 Rust crate 依賴）。僅在 SDL3、yyjson、stb、miniaudio、Nuklear 和 Corrosion 已可被 CMake 找到時設為 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路徑。 |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | 缺少 SDK 時是否讓配置失敗。預設 `OFF`：沒有 SDK 時建置不含 Live2D 渲染的診斷後端；設為 `ON` 則要求必須有 SDK（release CI 使用）。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 將原生編譯器警告視為錯誤。 |

@@ -35,6 +35,11 @@ struct BongoCatOverlay {
     bool model_pointer_preferred;
     int reference_width;
     int reference_height;
+    /* Opaque bounding box of the background art, normalized UV with the
+       origin at the top-left. Feeds the tight-window envelope so the crop
+       never slices the static desk art away. */
+    bool tight_uv_valid;
+    float tight_uv[4];
     TextureSlot cache[4];
     GLuint left;
     GLuint right;

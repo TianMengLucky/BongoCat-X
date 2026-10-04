@@ -172,3 +172,33 @@ bool bongo_cat_settings_restore_model_package(BongoCatSettings *config,
     config->removed_model_count = output;
     return changed;
 }
+
+size_t bongo_cat_settings_model_order_index(const BongoCatSettings *settings,
+    const char *id) {
+    if (!settings || !id) return 0;
+    size_t count = settings->model_order_count;
+    if (count > BONGO_CAT_MODEL_CAP) count = BONGO_CAT_MODEL_CAP;
+    for (size_t i = 0; i < count; ++i)
+        if (!strcmp(settings->model_order[i].id, id)) return i + 1;
+    return 0;
+}
+
+bool bongo_cat_settings_model_order_set(BongoCatSettings *settings,
+    const char *const *ids, size_t count) {
+    if (!settings || (count && !ids)) return false;
+    if (count > BONGO_CAT_MODEL_CAP) count = BONGO_CAT_MODEL_CAP;
+    for (size_t i = 0; i < count; ++i)
+        if (!ids[i] || !ids[i][0] || strlen(ids[i]) >= BONGO_CAT_ID_CAP)
+            return false;
+    for (size_t i = 0; i < count; ++i)
+        for (size_t j = i + 1; j < count; ++j)
+            if (!strcmp(ids[i], ids[j])) return false;
+    for (size_t i = count; i < BONGO_CAT_MODEL_CAP; ++i)
+        memset(&settings->model_order[i], 0,
+            sizeof(settings->model_order[i]));
+    for (size_t i = 0; i < count; ++i)
+        snprintf(settings->model_order[i].id,
+            sizeof(settings->model_order[i].id), "%s", ids[i]);
+    settings->model_order_count = count;
+    return true;
+}

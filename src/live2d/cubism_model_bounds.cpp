@@ -120,6 +120,11 @@ static float frame_margin(float overflow, float padding) {
 void NativeModel::prepare_expression_frame() {
     frame_ = BongoCatLive2DFrame{};
     required_frame_ = BongoCatLive2DFrame{};
+    /* A new model starts a fresh observe/shrink/lock tight-frame cycle. */
+    tight_observed_ = false;
+    tight_observe_frames_ = 0;
+    tight_locked_ = false;
+    tight_shrink_due_ns_ = 0;
     /* Authored Mver calibration skips speculative expression preflight.
        Runtime measurement still protects its actual animated geometry while
        the shared content viewport preserves the authored composition. */

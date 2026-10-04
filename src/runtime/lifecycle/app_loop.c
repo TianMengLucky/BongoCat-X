@@ -63,7 +63,11 @@ static bool render(BongoCatApp *app, bool present) {
     bongo_cat_window_clear_background(app);
     int content_x = 0, content_y = 0, content_width = width,
         content_height = height;
-    bool content_viewport = bongo_cat_live2d_viewport(app->live2d,
+    /* Overlays follow the model's own canvas mapping: in tight mode the
+       canvas is a cropped sub-rect of the window, not the letterbox, so the
+       desk/key art must draw through the overlay viewport to stay aligned
+       with the pet. */
+    bool content_viewport = bongo_cat_live2d_overlay_viewport(app->live2d,
         &content_x, &content_y, &content_width, &content_height) &&
         content_width > 0 && content_height > 0;
     if (content_viewport)

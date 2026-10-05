@@ -8,11 +8,16 @@ typedef struct SDL_Window SDL_Window;
 
 /* Resolved render backends. The persisted setting additionally has an
    "auto" value (see BongoCatRenderBackend in config.h) that resolves to
-   OpenGL before a device is created. */
+   OpenGL before a device is created. Vulkan is offered on Windows and
+   64-bit Linux, Metal on macOS; the availability helper decides. */
 typedef enum BongoCatRhiBackend {
     BONGO_CAT_RHI_OPENGL = 0,
-    BONGO_CAT_RHI_VULKAN = 1
+    BONGO_CAT_RHI_VULKAN = 1,
+    BONGO_CAT_RHI_METAL = 2
 } BongoCatRhiBackend;
+
+/* Whether this build/platform can create the backend's device at all. */
+bool bongo_cat_rhi_backend_available(BongoCatRhiBackend backend);
 
 /* Backend-neutral presentation hooks consumed by the platform presenters
    (the Windows layered window reads pixels instead of showing a surface).
@@ -55,6 +60,12 @@ void bongo_cat_rhi_destroy(BongoCatRhi *rhi);
 bool bongo_cat_rhi_is_gl(const BongoCatRhi *rhi);
 /* "OpenGL 3.3 ..." style device description for logs. */
 const char *bongo_cat_rhi_describe(const BongoCatRhi *rhi);
+
+/* The pet process owns a single frame backend. Presenters and readback
+   helpers that predate the RHI consult these hooks so the legacy
+   direct-OpenGL paths stay untouched when OpenGL is selected. */
+const BongoCatRhiPresentOps *bongo_cat_rhi_active_present_ops(void);
+bool bongo_cat_rhi_active_is_gl(void);
 
 /* Frame boundaries. make_current binds the device to the main window
    (OpenGL) or validates the device (Vulkan); detach releases it so other

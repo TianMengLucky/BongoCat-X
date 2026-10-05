@@ -7,6 +7,7 @@
 #include "bongo_cat/mver_pointer.h"
 #include "bongo_cat/mouse.h"
 #include "bongo_cat/platform.h"
+#include "bongo_cat/rhi.h"
 #include "bongo_cat/shortcut.h"
 #include "bongo_cat/sound_shortcut.h"
 
@@ -78,6 +79,11 @@ typedef struct BongoCatApp {
     BongoCatUpdateService *update;
     SDL_Window *window;
     void *gl_context;
+    /* Frame backend of the main window; GL keeps using gl_context above. */
+    BongoCatRhi rhi;
+    /* Set by the preferences combo; the loop rebuilds the render stack
+       (window, backend, overlay, Live2D) at the next frame boundary. */
+    bool render_backend_swap_pending;
     char settings_path[BONGO_CAT_PATH_CAP];
     char session_path[BONGO_CAT_PATH_CAP];
     char config_root[BONGO_CAT_PATH_CAP];

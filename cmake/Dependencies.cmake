@@ -69,12 +69,16 @@ if(BONGO_CAT_FETCH_DEPS)
     URL_HASH SHA256=1a3a79b80fc6f0b0cc155e28b954a598e0ddfa2db64e2afa8466be88c476fa55)
   FetchContent_Declare(nuklear URL https://github.com/Immediate-Mode-UI/Nuklear/archive/8109cfbabe04f8705408c5d8ab1a6cd48649ccda.tar.gz
     URL_HASH SHA256=23e5e1b12e897f1d568eb703aa313b7224c9b75e1118764ceba477d13b8e39f4)
-  FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear)
+  FetchContent_Declare(vulkan_headers URL
+    https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.3.290.tar.gz
+    URL_HASH SHA256=f38a653bf93cab7a2a229a53d2d53b1cba9a2819e4c0a7de13c54085bde9bcf5)
+  FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear vulkan_headers)
   if(WIN32)
     include("${CMAKE_CURRENT_LIST_DIR}/SDLWindowsRuntime.cmake")
     bongo_cat_trim_sdl_windows(SDL3-static "${sdl3_SOURCE_DIR}")
   endif()
   set(BONGO_CAT_STB_INCLUDE_DIR "${stb_SOURCE_DIR}")
+  set(BONGO_CAT_VULKAN_INCLUDE_DIR "${vulkan_headers_SOURCE_DIR}/include")
   set(BONGO_CAT_MINIAUDIO_INCLUDE_DIR "${miniaudio_SOURCE_DIR}")
   set(BONGO_CAT_NUKLEAR_INCLUDE_DIR "${nuklear_SOURCE_DIR}")
   set(BONGO_CAT_MINIAUDIO_TARGET miniaudio)
@@ -96,6 +100,10 @@ else()
     "Install the stb development headers")
   bongo_cat_require_dependency_header(BONGO_CAT_STB_INCLUDE_DIR stb_image_write.h
     "Install the complete stb development headers")
+
+  if(NOT BONGO_CAT_VULKAN_INCLUDE_DIR)
+    find_path(BONGO_CAT_VULKAN_INCLUDE_DIR NAMES vulkan/vulkan.h)
+  endif()
 
   if(NOT BONGO_CAT_NUKLEAR_INCLUDE_DIR)
     find_path(BONGO_CAT_NUKLEAR_INCLUDE_DIR NAMES nuklear.h)

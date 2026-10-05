@@ -33,6 +33,11 @@ bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
             "Cannot import the Cubism Core without an application and file");
         return false;
     }
+    if (!bongo_cat_rhi_is_gl(&app->rhi)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
+            "The Live2D bridge requires the OpenGL render backend");
+        return false;
+    }
     if (!bongo_cat_platform_live2d_core_import_supported()) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "This build cannot import the Cubism Core at runtime");

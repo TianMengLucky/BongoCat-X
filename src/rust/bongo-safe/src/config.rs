@@ -376,7 +376,7 @@ fn language_from_name(value: &str) -> Option<c_int> {
 
 fn render_backend_from_name(value: &str) -> Option<c_int> {
     // Mirrors bongo_cat_render_backend_parse.
-    let names = ["auto", "opengl", "vulkan"];
+    let names = ["auto", "opengl", "vulkan", "metal"];
     names
         .iter()
         .position(|name| *name == value)
@@ -627,7 +627,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
             Some(render_backend) => value.render_backend = render_backend,
             None => {
                 return Err(Failure::format(
-                    "Settings field 'renderBackend' must be auto, opengl, or vulkan".to_string(),
+                    "Settings field 'renderBackend' must be auto, opengl, vulkan, or metal".to_string(),
                 ))
             }
         }

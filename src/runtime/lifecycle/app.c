@@ -3,6 +3,7 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/image.h"
+#include "bongo_cat/log.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -105,11 +106,18 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     if (bongo_cat_window_create(app, error) != BONGO_CAT_OK) return false;
     bongo_cat_startup_stage(app, "window-ready");
     if (bongo_cat_platform_init(&app->platform, app->window, &app->input, error) != BONGO_CAT_OK) return false;
+    app->platform.present_ops = &app->rhi.present;
     bongo_cat_window_apply(app);
     cache_startup_display_fps(app);
     bongo_cat_startup_stage(app, "platform-ready");
-    app->live2d = bongo_cat_live2d_create(app->asset_root, error);
-    if (!app->live2d) return false;
+    if (bongo_cat_rhi_is_gl(&app->rhi)) {
+        app->live2d = bongo_cat_live2d_create(app->asset_root, error);
+        if (!app->live2d) return false;
+    } else {
+        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+            "Live2D rendering is disabled on the %s backend until the "
+            "draw phases port", bongo_cat_rhi_describe(&app->rhi));
+    }
     optional = (BongoCatError){0}; app->overlay = bongo_cat_overlay_create(&optional);
     if (!app->overlay) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
         "Overlay disabled: %s", optional.message);
@@ -117,7 +125,10 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     if (!app->audio) SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "%s", optional.message);
     else bongo_cat_audio_set_enabled(app->audio, true);
     scan_models(app);
-    if (!load_selected_model(app, error)) return false;
+    /* Model loading routes through the Live2D instance; on experimental
+       backends the application runs model-less until the draw phases port. */
+    if (bongo_cat_rhi_is_gl(&app->rhi) && !load_selected_model(app, error))
+        return false;
     bongo_cat_startup_stage(app, "model-ready");
     if (app->smoke_import_path[0]) {
         BongoCatError import_error = {0};

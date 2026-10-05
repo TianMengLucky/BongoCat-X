@@ -178,6 +178,10 @@ target_include_directories(bongo_cat_runtime PRIVATE
   ${BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS})
 target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
   ${BONGO_CAT_STB_INCLUDE_DIR} ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
+if(BONGO_CAT_VULKAN_INCLUDE_DIR)
+  target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
+    ${BONGO_CAT_VULKAN_INCLUDE_DIR})
+endif()
 target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_warnings bongo_cat_archive)
 target_link_libraries(bongo_cat_runtime PUBLIC bongo_cat_core SDL3::SDL3-static OpenGL::GL ${BONGO_CAT_MINIAUDIO_TARGET})
 if(MSVC)

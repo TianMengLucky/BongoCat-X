@@ -1,4 +1,5 @@
 #include "gl_readback.h"
+#include "bongo_cat/rhi.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
 
@@ -6,6 +7,10 @@ bool bongo_cat_gl_read_window(int x, int y, int width, int height,
     bool back_buffer, void *pixels) {
     if (x < 0 || y < 0 || width <= 0 || height <= 0 || !pixels)
         return SDL_SetError("Invalid window readback area");
+    const BongoCatRhiPresentOps *ops = bongo_cat_rhi_active_present_ops();
+    if (ops && ops->read_rgba)
+        return ops->read_rgba(x, y, width, height, back_buffer, pixels,
+            ops->user);
     PFNGLBINDBUFFERPROC bind_buffer =
         (PFNGLBINDBUFFERPROC)SDL_GL_GetProcAddress("glBindBuffer");
     PFNGLBINDFRAMEBUFFERPROC bind_framebuffer =

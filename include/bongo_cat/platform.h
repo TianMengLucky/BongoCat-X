@@ -125,6 +125,10 @@ bool bongo_cat_platform_pointer_local(BongoCatPlatform *platform, double screen_
     double screen_y, float *local_x, float *local_y);
 /* Reports a foreground application's fixed/locked system cursor state. */
 bool bongo_cat_platform_pointer_locked(BongoCatPlatform *platform);
+/* Rebinds platform state (presenter, window styles) to a freshly created
+   main window during the hot render-backend switch. */
+void bongo_cat_platform_window_replaced(BongoCatPlatform *platform,
+    SDL_Window *window);
 bool bongo_cat_platform_relative_pointer(BongoCatPlatform *platform,
     double *x, double *y);
 void bongo_cat_platform_relative_pointer_reset(BongoCatPlatform *platform);

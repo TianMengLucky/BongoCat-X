@@ -101,7 +101,7 @@ const char *bongo_cat_mode_name(BongoCatModelMode value) {
 }
 
 const char *bongo_cat_render_backend_name(BongoCatRenderBackend value) {
-    static const char *names[] = {"auto", "opengl", "vulkan"};
+    static const char *names[] = {"auto", "opengl", "vulkan", "metal"};
     return (unsigned)value < BONGO_CAT_RENDER_BACKEND_COUNT ?
         names[value] : names[BONGO_CAT_RENDER_BACKEND_AUTO];
 }

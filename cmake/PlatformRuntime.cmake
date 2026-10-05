@@ -54,10 +54,14 @@ elseif(APPLE)
     src/platform/macos/macos_preferences.m
     src/platform/macos/macos_input.m
     src/platform/macos/macos_keys.m
-    src/platform/macos/macos_tray.m)
+    src/platform/macos/macos_tray.m
+    src/render/rhi/rhi_metal.m)
+  set_source_files_properties(src/render/rhi/rhi_metal.m PROPERTIES
+    COMPILE_OPTIONS "-fobjc-arc")
   target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE "-framework Cocoa"
-    "-framework ApplicationServices" CURL::libcurl)
+    "-framework ApplicationServices" "-framework Metal"
+    "-framework QuartzCore" CURL::libcurl)
 else()
   find_package(CURL REQUIRED)
   find_package(X11 REQUIRED)

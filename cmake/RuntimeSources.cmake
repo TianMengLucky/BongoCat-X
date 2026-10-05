@@ -11,7 +11,8 @@ set(BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/backend"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/preferences"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/rendering"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/theme")
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/theme"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/render/rhi")
 
 set(BONGO_CAT_MEDIA_SOURCES
   src/media/audio/audio.c
@@ -34,6 +35,10 @@ set(BONGO_CAT_MEDIA_SOURCES
   src/media/stb_image_impl.c)
 
 set(BONGO_CAT_RENDER_SOURCES
+  src/render/rhi/rhi.c
+  src/render/rhi/rhi_gl.c
+  src/render/rhi/rhi_vk.c
+  src/render/rhi/rhi_vk_frame.c
   src/render/gl_api.c
   src/render/overlay.c
   src/render/overlay_assets.c

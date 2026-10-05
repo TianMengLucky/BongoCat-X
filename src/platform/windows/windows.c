@@ -107,6 +107,31 @@ void bongo_cat_platform_configure_preferences_window(SDL_Window *window) {
     }
 }
 
+/* Per-window setup shared by platform init and the hot render-backend
+   switch (see bongo_cat_platform_window_replaced). */
+static void bongo_cat_windows_apply_window_setup(BongoCatPlatform *platform,
+    SDL_Window *window) {
+    HWND hwnd = native_window(platform);
+    SetWindowTextW(hwnd, bongo_cat_windows_instance_title());
+    bongo_cat_windows_borderless_install(hwnd);
+    bool transparent = (SDL_GetWindowFlags(window) &
+        SDL_WINDOW_TRANSPARENT) != 0;
+    /* Mark transparency before any OBS style transaction. Removing
+       WS_EX_TOOLWINDOW may recreate the DWM surface, so the configure path
+       must be able to repair it before the window is first shown. */
+    bongo_cat_windows_capture_mark_transparent(hwnd, transparent);
+    bongo_cat_windows_capture_configure(hwnd);
+    SDL_SetWindowsMessageHook(windows_message_hook, NULL);
+    if (!SDL_SetWindowResizable(window, true)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
+            "Borderless resize is unavailable: %s", SDL_GetError());
+    }
+    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE |
+        SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    bongo_cat_windows_capture_repair_transparency(hwnd);
+    bongo_cat_windows_capture_log(hwnd, "initialized");
+}
+
 BongoCatResult bongo_cat_platform_init(BongoCatPlatform *platform, SDL_Window *window,
     BongoCatInputState *input, BongoCatError *error) {
     if (!platform || !window || !input) return BONGO_CAT_ERROR_ARGUMENT;
@@ -132,26 +157,25 @@ BongoCatResult bongo_cat_platform_init(BongoCatPlatform *platform, SDL_Window *w
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
             "Raw Input is unavailable; the window will continue without global input");
     }
-    HWND hwnd = native_window(platform);
-    SetWindowTextW(hwnd, bongo_cat_windows_instance_title());
-    bongo_cat_windows_borderless_install(hwnd);
-    bool transparent = (SDL_GetWindowFlags(window) &
-        SDL_WINDOW_TRANSPARENT) != 0;
-    /* Mark transparency before any OBS style transaction. Removing
-       WS_EX_TOOLWINDOW may recreate the DWM surface, so the configure path
-       must be able to repair it before the window is first shown. */
-    bongo_cat_windows_capture_mark_transparent(hwnd, transparent);
-    bongo_cat_windows_capture_configure(hwnd);
-    SDL_SetWindowsMessageHook(windows_message_hook, NULL);
-    if (!SDL_SetWindowResizable(window, true)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-            "Borderless resize is unavailable: %s", SDL_GetError());
-    }
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE |
-        SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-    bongo_cat_windows_capture_repair_transparency(hwnd);
-    bongo_cat_windows_capture_log(hwnd, "initialized");
+    bongo_cat_windows_apply_window_setup(platform, window);
     return BONGO_CAT_OK;
+}
+
+void bongo_cat_platform_window_replaced(BongoCatPlatform *platform,
+    SDL_Window *window) {
+    if (!platform || !window || platform->window == window) return;
+    /* The presenter subclasses and styles the old window; release it while
+       the old handle is still resolvable, then rebind to the new window. */
+    bongo_cat_windows_layered_destroy(platform);
+    HWND old = native_window(platform);
+    if (old) bongo_cat_windows_borderless_uninstall(old);
+    platform->window = window;
+    platform->presenter = bongo_cat_windows_layered_create(
+        (SDL_GetWindowFlags(window) & SDL_WINDOW_TRANSPARENT) != 0);
+    if (!platform->presenter)
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+            "Layered presenter is unavailable after the backend switch");
+    bongo_cat_windows_apply_window_setup(platform, window);
 }
 void bongo_cat_platform_shutdown(BongoCatPlatform *platform) {
     if (!platform) return;

@@ -347,3 +347,51 @@ void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
         bongo_cat_app_reset_pointer_tracking(app);
 #endif
 }
+
+/* Render backend row of the general page (kept here like the pointer rows
+   so the page module stays within the source size policy). Switching asks
+   the app loop to hot-rebuild the render stack at the next frame
+   boundary. */
+void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
+    BongoCatApplicationPreferences *options, struct nk_context *context) {
+    const char *items[4];
+    BongoCatRenderBackend values[4];
+    int count = 0, selected = 0;
+    items[count] = tr(app, "pages.preference.general.options.auto", "System");
+    values[count] = BONGO_CAT_RENDER_BACKEND_AUTO;
+    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_AUTO)
+        selected = count;
+    count++;
+    items[count] = "OpenGL";
+    values[count] = BONGO_CAT_RENDER_BACKEND_OPENGL;
+    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_OPENGL)
+        selected = count;
+    count++;
+#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
+    items[count] = "Vulkan";
+    values[count] = BONGO_CAT_RENDER_BACKEND_VULKAN;
+    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_VULKAN)
+        selected = count;
+    count++;
+#endif
+#ifdef __APPLE__
+    items[count] = "Metal";
+    values[count] = BONGO_CAT_RENDER_BACKEND_METAL;
+    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_METAL)
+        selected = count;
+    count++;
+#endif
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
+    int next = bongo_cat_pref_combo(context, "render-backend", tr(app,
+        "pages.preference.general.labels.renderBackend", "Render Backend"),
+        tr(app, "pages.preference.general.hints.renderBackend",
+            "Graphics API for the pet window. Vulkan and Metal are experimental and do not render the Live2D model yet"),
+        items, count, selected);
+    if (values[next] != options->render_backend) {
+        options->render_backend = values[next];
+        app->render_backend_swap_pending = true;
+        bongo_cat_preferences_notice_show(app, tr(app,
+            "pages.preference.general.hints.renderBackendChanged",
+            "Switching the render backend"), false);
+    }
+}

@@ -366,11 +366,16 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
         Sint64 count = SDL_GetNumberProperty(properties, "BongoCat.DiagnosticPresentationCount", 0);
         if (count < 16) {
             SDL_SetNumberProperty(properties, "BongoCat.DiagnosticPresentationCount", count + 1);
+            const BongoCatRhiPresentOps *ops = platform->present_ops;
+            const char *renderer = ops && ops->name ?
+                ops->name(ops->user) :
+                glGetString(GL_RENDERER) ?
+                (const char *)glGetString(GL_RENDERER) : "unknown";
             SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
             "[render] window=%u hdr=%d layered=%d forced=%d failed=%d size=%dx%d gl=%s",
             (unsigned)SDL_GetWindowID(platform->window), hdr, active,
             value && value->forced, value && value->hdr_failed, width, height,
-            glGetString(GL_RENDERER) ? (const char *)glGetString(GL_RENDERER) : "unknown");
+            renderer);
         }
     }
     if (!active) {
@@ -384,7 +389,10 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
             release_readback(value);
         }
         const char *previous = bongo_cat_diagnostics_phase("direct-gl-swap");
-        bool swapped = SDL_GL_SwapWindow(platform->window);
+        const BongoCatRhiPresentOps *ops = platform->present_ops;
+        bool swapped = ops && ops->swap ?
+            ops->swap(platform->window, ops->user) :
+            SDL_GL_SwapWindow(platform->window);
         bongo_cat_diagnostics_phase(previous);
         return swapped;
     }

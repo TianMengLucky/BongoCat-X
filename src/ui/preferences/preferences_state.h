@@ -197,6 +197,9 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
    page module within the source size policy. */
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
+/* Render backend row of the general page (hot-switched via the app loop). */
+void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
+    BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_model_visual_begin(BongoCatPreferences *value,
     const char *model_id);
 void bongo_cat_preferences_model_load_progress(BongoCatPreferences *value,

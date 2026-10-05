@@ -2,49 +2,14 @@
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
 
-static bool set_gl_attributes(int samples) {
-    SDL_GL_ResetAttributes();
-#ifdef __APPLE__
-    const int major = 4, minor = 1, profile = SDL_GL_CONTEXT_PROFILE_CORE;
-#elif defined(BONGO_CAT_HAS_CUBISM)
-    const int major = 3, minor = 3, profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
-#else
-    const int major = 3, minor = 3, profile = SDL_GL_CONTEXT_PROFILE_CORE;
-#endif
-    return SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major) &&
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor) &&
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile) &&
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) &&
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0) &&
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8) &&
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, samples > 0 ? 1 : 0) &&
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, samples);
-}
-
-static bool try_window(BongoCatApp *app, bool transparent, int samples,
-    char *failure, size_t capacity) {
-    if (SDL_getenv("BONGO_CAT_TEST_DISABLE_PREFERENCES_TRANSPARENCY"))
-        transparent = false;
-    if (!set_gl_attributes(samples)) {
-        snprintf(failure, capacity, "OpenGL attributes: %s", SDL_GetError()); return false;
+static BongoCatRhiBackend resolve_rhi_backend(BongoCatRenderBackend setting) {
+    switch (setting) {
+    case BONGO_CAT_RENDER_BACKEND_VULKAN: return BONGO_CAT_RHI_VULKAN;
+    case BONGO_CAT_RENDER_BACKEND_METAL: return BONGO_CAT_RHI_METAL;
+    case BONGO_CAT_RENDER_BACKEND_OPENGL:
+    case BONGO_CAT_RENDER_BACKEND_AUTO:
+    default: return BONGO_CAT_RHI_OPENGL;
     }
-    SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS |
-        SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN;
-    if (transparent) flags |= SDL_WINDOW_TRANSPARENT;
-    app->window = SDL_CreateWindow(BONGO_CAT_PET_WINDOW_TITLE,
-        app->session.window.width,
-        app->session.window.height, flags);
-    if (!app->window) {
-        snprintf(failure, capacity, "Window creation: %s", SDL_GetError()); return false;
-    }
-    app->gl_context = SDL_GL_CreateContext(app->window);
-    if (!app->gl_context || !SDL_GL_MakeCurrent(app->window, app->gl_context)) {
-        snprintf(failure, capacity, "OpenGL context: %s", SDL_GetError());
-        if (app->gl_context) SDL_GL_DestroyContext(app->gl_context);
-        SDL_DestroyWindow(app->window); app->gl_context = NULL; app->window = NULL;
-        return false;
-    }
-    return true;
 }
 
 BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
@@ -62,38 +27,16 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
             "SDL initialization failed: %s", SDL_GetError());
         return BONGO_CAT_ERROR_PLATFORM;
     }
-    /* Keep a lower-cost MSAA path for drivers that cannot provide 4 samples. */
-    const int options[][2] = {{true, 4}, {true, 2}, {true, 0}, {false, 0}};
-    char failure[256] = {0};
-    bool force_fallback = SDL_getenv("BONGO_CAT_TEST_GL_FALLBACK") != NULL;
-    for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i) {
-        if (force_fallback && options[i][1] > 0) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Test requested OpenGL fallback"); continue;
-        }
-        if (try_window(app, options[i][0], options[i][1], failure, sizeof(failure))) {
-            int sample_buffers = 0, sample_count = 0;
-            SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &sample_buffers);
-            SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &sample_count);
-            const GLubyte *vendor = glGetString(GL_VENDOR);
-            const GLubyte *renderer = glGetString(GL_RENDERER);
-            const GLubyte *version = glGetString(GL_VERSION);
-            SDL_Log("[runtime] OpenGL window ready (transparent=%d, MSAA=%d, "
-                "sample_buffers=%d, sample_count=%d)", options[i][0], options[i][1],
-                sample_buffers, sample_count);
-            SDL_Log("[runtime] OpenGL context: vendor=%s renderer=%s version=%s",
-                vendor ? (const char *)vendor : "unknown",
-                renderer ? (const char *)renderer : "unknown",
-                version ? (const char *)version : "unknown");
-            if (!SDL_GL_SetSwapInterval(1)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-                "Vertical sync unavailable: %s", SDL_GetError());
-            return BONGO_CAT_OK;
-        }
-        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "OpenGL attempt %llu failed: %s",
-            (unsigned long long)i + 1ULL, failure);
-    }
-    bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Window and OpenGL initialization failed after compatibility retries: %s", failure);
-    return BONGO_CAT_ERROR_PLATFORM;
+    /* The dispatcher falls back to the OpenGL compatibility ladder when the
+       selected backend is unavailable or fails to initialize. */
+    BongoCatResult result = bongo_cat_rhi_create_window(
+        resolve_rhi_backend(app->settings.app.render_backend),
+        BONGO_CAT_PET_WINDOW_TITLE, app->session.window.width,
+        app->session.window.height, true, &app->window, &app->rhi, error);
+    if (result != BONGO_CAT_OK) return result;
+    app->gl_context = app->rhi.backend == BONGO_CAT_RHI_OPENGL ?
+        app->rhi.context : NULL;
+    return BONGO_CAT_OK;
 }
 
 void bongo_cat_window_apply(BongoCatApp *app) {
@@ -270,14 +213,25 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
     return true;
 }
 
-void bongo_cat_window_destroy(BongoCatApp *app) {
+void bongo_cat_window_close(BongoCatApp *app) {
     bongo_cat_window_resize_end(app);
     bongo_cat_window_drag_end(app);
     if (app->gl_context && SDL_GL_MakeCurrent(app->window, app->gl_context))
         bongo_cat_window_destroy_corner_mask();
+    /* Releases the backend device/surface state before the SDL window and
+       the Vulkan loader go away; the GL context stays runtime-owned. */
+    bongo_cat_rhi_destroy(&app->rhi);
     if (app->gl_context) SDL_GL_DestroyContext(app->gl_context);
+    /* Detach the platform before the SDL window dies: presenters resolve
+       their native handle through it, and the hot render-backend switch
+       closes a window that platform_shutdown would otherwise still see. */
+    app->platform.window = NULL;
     if (app->window) SDL_DestroyWindow(app->window);
     app->gl_context = NULL;
     app->window = NULL;
+}
+
+void bongo_cat_window_destroy(BongoCatApp *app) {
+    bongo_cat_window_close(app);
     SDL_Quit();
 }

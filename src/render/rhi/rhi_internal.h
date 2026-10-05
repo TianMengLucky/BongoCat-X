@@ -30,4 +30,16 @@ void bongo_cat_rhi_vk_clear(BongoCatRhi *rhi, float red, float green,
     float blue, float alpha);
 const char *bongo_cat_rhi_vk_describe(const BongoCatRhi *rhi);
 
+bool bongo_cat_rhi_metal_create_window(const char *title, int width,
+    int height, SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);
+void bongo_cat_rhi_metal_shutdown(BongoCatRhi *rhi);
+bool bongo_cat_rhi_metal_make_current(BongoCatRhi *rhi);
+void bongo_cat_rhi_metal_detach(const BongoCatRhi *rhi);
+void bongo_cat_rhi_metal_prepare_frame(BongoCatRhi *rhi, int width, int height);
+void bongo_cat_rhi_metal_viewport(BongoCatRhi *rhi, int x, int y, int width,
+    int height);
+void bongo_cat_rhi_metal_clear(BongoCatRhi *rhi, float red, float green,
+    float blue, float alpha);
+const char *bongo_cat_rhi_metal_describe(const BongoCatRhi *rhi);
+
 #endif

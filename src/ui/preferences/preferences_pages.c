@@ -448,6 +448,7 @@ static void page_general(BongoCatApp *app, struct nk_context *context) {
             bongo_cat_preferences_notice_show(app, message, true);
         }
     }
+    bongo_cat_preferences_render_backend_row(app, options, context);
     section_gap(context, 7);
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.general.labels.appearanceSettings", "Appearance"),

@@ -144,8 +144,16 @@ bool bongo_cat_platform_set_opacity(BongoCatPlatform *platform, float opacity) {
 float bongo_cat_platform_get_opacity(const BongoCatPlatform *platform) {
     return platform ? platform->window_opacity : 1.0f;
 }
+void bongo_cat_platform_window_replaced(BongoCatPlatform *platform,
+    SDL_Window *window) {
+    if (!platform || !window) return;
+    platform->window = window;
+}
+
 bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int height) {
     if (!platform || !platform->window) return false;
+    const BongoCatRhiPresentOps *ops = platform->present_ops;
+    if (ops && ops->swap) return ops->swap(platform->window, ops->user);
     bongo_cat_linux_shape_capture(platform, width, height);
     if (SDL_GL_SwapWindow(platform->window)) return true;
     bongo_cat_linux_shape_reset(platform);

@@ -12,6 +12,7 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 ### 新增
 
 - **强制接收鼠标输入**（Windows）：「模型设置」新增开关，开启后模型指针不再等待光标锁定检测器判定，直接采信 Raw Input 设备移动量驱动（`settings` 新键 `rendering.forceMouseInput`）。修复部分游戏隐藏并钉住系统光标（每帧回中带抖动、稍大的 ClipCursor 区域、低回报率鼠标等命不中检测阈值）时桌宠无法跟随鼠标移动的问题；锁定检测仍照常运行，选项关闭时行为不变。
+- **渲染后端 RHI 抽象与 Vulkan/Metal 里程碑**：新增渲染硬件接口层（`include/bongo_cat/rhi.h`、`src/render/rhi/`），主窗口的创建、帧原语与呈现钩子统一走后端分发，所选后端不可用或初始化失败时自动回退 OpenGL 兼容阶梯。Windows 与 64 位 Linux 新增 Vulkan 后端（运行时经 SDL 加载系统 loader，构建无需 Vulkan SDK：实例/设备/交换链 + 清屏帧提交 + 为分层呈现提供回读），macOS 新增 Metal 后端（`CAMetalLayer` 清屏帧直显，支持透明窗口）。设置页「应用」新增「渲染后端」切换（auto/OpenGL/Vulkan/Metal，按平台显示），支持**热切换**：下一次帧边界重建窗口、后端、覆盖层与 Live2D，无需重启进程。Live2D 与覆盖层绘制仍运行在 OpenGL 后端（Vulkan/Metal 会话暂以清屏帧呈现，为后续接入 draw 阶段与 Cubism 渲染预留接口）；Vulkan 头文件经 FetchContent 以 header-only 方式引入。
 
 ## [2.0.4] · 2026-10-05
 

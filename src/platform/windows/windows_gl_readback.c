@@ -1,9 +1,13 @@
 #include "windows_gl_readback.h"
+#include "bongo_cat/rhi.h"
 #include <SDL3/SDL_opengl.h>
 
 bool bongo_cat_windows_gl_readback(int width, int height, void *pixels) {
     if (width <= 0 || height <= 0 || !pixels)
         return SDL_SetError("Invalid Windows frame readback dimensions");
+    const BongoCatRhiPresentOps *ops = bongo_cat_rhi_active_present_ops();
+    if (ops && ops->read_bgra)
+        return ops->read_bgra(width, height, pixels, ops->user);
     PFNGLBINDBUFFERPROC bind_buffer =
         (PFNGLBINDBUFFERPROC)SDL_GL_GetProcAddress("glBindBuffer");
     PFNGLBINDFRAMEBUFFERPROC bind_framebuffer =

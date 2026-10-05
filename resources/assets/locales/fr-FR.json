@@ -74,6 +74,7 @@
           "appearanceSettings": "Apparence",
           "themeMode": "Thème",
           "language": "Langue",
+          "renderBackend": "Moteur de rendu",
           "permissionsSettings": "Paramètres des autorisations",
           "inputMonitoringPermission": "Autorisation de surveillance des entrées",
           "administratorPermission": "Administrateur"
@@ -87,6 +88,8 @@
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
           "autostartFailed": "Impossible de modifier le lancement au démarrage",
           "runAsAdmin": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches et certains événements d'entrée système.",
+          "renderBackend": "API graphique de la fenêtre de la mascotte. Vulkan et Metal sont expérimentaux et ne rendent pas encore le modèle Live2D",
+          "renderBackendChanged": "Changement du moteur de rendu",
           "runAsAdminHelp": "En s'exécutant en tant qu'administrateur, l'application peut capturer plus fiablement certaines touches et certains événements d'entrée système, et rester réactive dans les jeux lancés avec des privilèges d'administrateur.\n\nÀ l'activation : l'application demande l'autorisation d'administrateur et redémarre ; chaque lancement suivant (y compris le démarrage automatique) s'exécutera également en tant qu'administrateur. Si le démarrage automatique est activé, Windows affiche une confirmation de contrôle de compte d'utilisateur (UAC) à chaque connexion.\n\nÀ la désactivation : les privilèges normaux sont rétablis à partir du lancement suivant ; l'application en cours d'exécution n'est pas affectée.",
           "runAsAdminFailed": "Impossible de modifier l'option d'exécution en tant qu'administrateur",
           "portableMode": "Stocke les paramètres, les modèles et les données dans le dossier de l'application plutôt que dans le profil système. L'activation copie vos dossiers config, data (y compris le cœur live2d), models et state à côté de l'exécutable (les fichiers déjà présents sont conservés ; les originaux ne sont pas supprimés) et prend effet après un redémarrage. Le réglage est enregistré dans BongoCat.ini à côté du programme.",

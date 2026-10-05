@@ -74,6 +74,7 @@
           "appearanceSettings": "外觀",
           "themeMode": "主題",
           "language": "語言",
+          "renderBackend": "渲染後端",
           "permissionsSettings": "權限設定",
           "inputMonitoringPermission": "輸入監控權限",
           "administratorPermission": "系統管理員身分"
@@ -87,6 +88,8 @@
           "showTrayIcon": "啟用後，在系統托盤中顯示應用程式圖示。",
           "autostartFailed": "無法更新開機啟動設定",
           "runAsAdmin": "以系統管理員身分執行應用程式，可以更穩定地擷取部分系統級按鍵與輸入事件。",
+          "renderBackend": "桌寵視窗使用的圖形 API。Vulkan 與 Metal 為實驗性，尚未渲染 Live2D 模型",
+          "renderBackendChanged": "正在切換渲染後端",
           "runAsAdminHelp": "以系統管理員身分執行後，應用程式可以更穩定地擷取部分系統級按鍵與輸入事件，在以系統管理員權限執行的遊戲中也能正常回應。\n\n開啟後：應用程式會請求系統管理員權限並自動重新啟動；之後每次啟動（包括開機自動啟動）都會以系統管理員權限執行。若同時開啟了開機自動啟動，登入系統時會出現一次使用者帳戶控制（UAC）確認。\n\n關閉後：從下一次啟動起恢復一般權限，目前正在執行的應用程式不受影響。",
           "runAsAdminFailed": "無法變更以系統管理員身分執行的設定",
           "portableMode": "將設定、模型與資料保存在程式所在資料夾而非系統設定目錄。開啟時會把現有的 config、data（含 live2d 核心）、models、state 複製到程式目錄（已有檔案保留、原始檔案不刪除），重新啟動後生效。開關保存在程式目錄的 BongoCat.ini 中，可手動編輯。",

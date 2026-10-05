@@ -43,6 +43,13 @@ void bongo_cat_startup_failure(BongoCatApp *app, const BongoCatError *error);
 void bongo_cat_startup_ci_failure(BongoCatApp *app, const BongoCatError *error);
 void bongo_cat_window_destroy(BongoCatApp *app);
 void bongo_cat_window_apply(BongoCatApp *app);
+/* Tears the frame backend and window down without SDL_Quit; the hot
+   render-backend switch rebuilds from here. */
+void bongo_cat_window_close(BongoCatApp *app);
+/* Rebuilds window + RHI backend + overlay + Live2D at a frame boundary
+   from settings.app.render_backend. Returns false with error on failure. */
+bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app,
+    BongoCatError *error);
 /* 应用"只在录屏软件里显示"设置 (Windows: DWM 隐藏窗口, 桌面不显示但可采集) */
 void bongo_cat_window_apply_capture_only(BongoCatApp *app);
 bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event);

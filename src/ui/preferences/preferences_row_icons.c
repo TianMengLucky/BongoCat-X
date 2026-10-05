@@ -132,6 +132,16 @@ static void ignore_mouse(struct nk_command_buffer *c, struct nk_rect b,
     line(c, b, 1, 17, 17, 1, color);
 }
 
+static void force_mouse_input(struct nk_command_buffer *c, struct nk_rect b,
+    struct nk_color color) {
+    /* Mouse body with an incoming motion arrow: capture raw device input. */
+    nk_stroke_rect(c, nk_rect(b.x + 8, b.y + 2, 9, 15), 4, 1.5f, color);
+    line(c, b, 12, 2, 12, 7, color);
+    line(c, b, 1, 10, 5, 10, color);
+    line(c, b, 3, 8, 5, 10, color);
+    line(c, b, 3, 12, 5, 10, color);
+}
+
 static void texture_resolution(struct nk_command_buffer *c, struct nk_rect b,
     struct nk_color color) {
     nk_stroke_rect(c, nk_rect(b.x + 2, b.y + 2, 14, 14), 2, 1.5f, color);
@@ -259,7 +269,7 @@ bool bongo_cat_pref_row_icon_draw(struct nk_command_buffer *canvas,
     static const Draw draws[] = {multiple_models, pass_through, always_on_top,
         solid_background, window_size, window_corners, opacity,
         random_expression, random_motion, mirror, mouse_mirror, mouse_centered,
-        ignore_mouse, texture_resolution,
+        ignore_mouse, force_mouse_input, texture_resolution,
         max_fps, render_quality, autostart, administrator, language, theme, shortcut_visibility,
         shortcut_preferences, shortcut_menu, hide_fade, gamepad_four_hands,
         vertical_flip, mouse_vertical_flip, keep_in_screen, live2d_core};

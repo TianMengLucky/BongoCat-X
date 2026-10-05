@@ -5,6 +5,7 @@
 #include "preferences_widgets.h"
 #include "ui_icons.h"
 #include "model_import.h"
+#include "runtime.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/platform.h"
 #include "bongo_cat/preferences.h"
@@ -322,4 +323,27 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
     }
     context->style.window.spacing = old_spacing;
     bongo_cat_preferences_model_covers_prune(app);
+}
+
+/* Pointer-input rows of the cat settings page: the ignore-mouse toggle and
+   the Windows force-raw-mouse-input toggle. Drawn from here so the page
+   module stays within the source size policy. */
+void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
+    BongoCatModelPreferences *model, struct nk_context *context) {
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
+    if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
+        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), "",
+        &model->ignore_mouse)) {
+        app->pointer_known = false;
+        app->dirty = true;
+    }
+#ifdef _WIN32
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_FORCE_MOUSE);
+    if (bongo_cat_pref_toggle(context, "force-mouse-input", tr(app,
+        "pages.preference.cat.labels.forceMouseInput", "Force Mouse Input"),
+        tr(app, "pages.preference.cat.hints.forceMouseInput",
+            "Drive the model with raw device motion so it keeps following the mouse when a game hides the cursor"),
+        &model->force_mouse_input))
+        bongo_cat_app_reset_pointer_tracking(app);
+#endif
 }

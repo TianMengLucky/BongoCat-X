@@ -17,8 +17,21 @@ static bool reconcile_button(BongoCatApp *app, bool *current, bool pressed,
 }
 #endif
 
+/* Windows games may hide the cursor while feeding it through Raw Input; the
+   cursor-lock detector cannot always prove takeover from cursor position
+   alone. This setting trusts device motion unconditionally instead. */
+static bool force_mouse_input(const BongoCatApp *app) {
+#ifdef _WIN32
+    return app->settings.model.force_mouse_input;
+#else
+    (void)app;
+    return false;
+#endif
+}
+
 static bool update_pointer_mode(BongoCatApp *app, bool cursor_locked) {
-    bool relative = !app->settings.model.ignore_mouse && cursor_locked;
+    bool relative = !app->settings.model.ignore_mouse &&
+        (cursor_locked || force_mouse_input(app));
     bool changed = relative != app->pointer_relative_active ||
         (relative && cursor_locked != app->pointer_cursor_locked);
     if (changed) {
@@ -43,7 +56,10 @@ void bongo_cat_app_apply_mouse(BongoCatApp *app) {
     float global_x = 0.0f, global_y = 0.0f;
     SDL_MouseButtonFlags buttons = SDL_GetGlobalMouseState(&global_x, &global_y);
     bool button_event_pending = app->mouse_button_event_pending;
-    bool cursor_locked = bongo_cat_platform_pointer_locked(&app->platform);
+    /* The detector still runs while forced: it drains the observation queue
+       and re-anchors the virtual pointer if it proves a real lock. */
+    bool cursor_locked = bongo_cat_platform_pointer_locked(&app->platform) ||
+        force_mouse_input(app);
     bool cursor_lock_changed = cursor_locked != app->pointer_cursor_locked;
     bool button_changed = false;
 #ifdef _WIN32

@@ -55,6 +55,9 @@ typedef struct BongoCatModelPreferences {
     bool mouse_vertical_flip;
     bool mouse_centered;
     bool ignore_mouse;
+    /* Windows only: drive the model from Raw Input device motion without
+       waiting for the cursor-lock detector (games that hide the pointer). */
+    bool force_mouse_input;
     bool gamepad_four_hands;
     bool dynamic_texture_resolution;
     /* Approximate texture-memory budget: 0.1, 1, then 10 to 100 percent. */

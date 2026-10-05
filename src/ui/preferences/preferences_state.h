@@ -192,6 +192,11 @@ void bongo_cat_preferences_live_resize_uninstall(BongoCatPreferences *value);
 void bongo_cat_preferences_record_frame(BongoCatPreferences *value);
 void bongo_cat_preferences_assets_load(BongoCatPreferences *value);
 void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
+/* Pointer-input rows of the cat settings page (ignore-mouse and the Windows
+   force-raw-mouse-input toggle), drawn from preferences_model.c to keep the
+   page module within the source size policy. */
+void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
+    BongoCatModelPreferences *model, struct nk_context *context);
 void bongo_cat_preferences_model_visual_begin(BongoCatPreferences *value,
     const char *model_id);
 void bongo_cat_preferences_model_load_progress(BongoCatPreferences *value,

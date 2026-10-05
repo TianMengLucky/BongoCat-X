@@ -50,6 +50,7 @@ void test_config(void) {
     settings.model.mirror = true;
     settings.model.vertical_flip = true;
     settings.model.mouse_centered = false;
+    settings.model.force_mouse_input = true;
     settings.model.gamepad_four_hands = true;
     settings.model.dynamic_texture_resolution = false;
     settings.window.pass_through = true;
@@ -125,6 +126,7 @@ void test_config(void) {
     CHECK(contains_text(settings_path,
         "\"randomExpressionIntervalSeconds\": 12.0"));
     CHECK(contains_text(settings_path, "\"multiplePets\": true") && !contains_text(settings_path, "inputReleaseDelaySeconds"));
+    CHECK(contains_text(settings_path, "\"forceMouseInput\": true"));
     CHECK(contains_text(settings_path, "\"removedModels\"") &&
         contains_text(settings_path, "\"model~2\""));
     CHECK(contains_text(settings_path, "\"hiddenModels\"") &&
@@ -158,6 +160,7 @@ void test_config(void) {
         loaded_settings.model.multiple_pets);
     CHECK(loaded_settings.model.vertical_flip);
     CHECK(loaded_settings.model.mouse_vertical_flip);
+    CHECK(loaded_settings.model.force_mouse_input);
     CHECK(loaded_settings.window.pass_through &&
         loaded_settings.window.obs_background &&
         loaded_settings.window.random_expression &&

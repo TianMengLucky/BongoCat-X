@@ -41,6 +41,7 @@ struct ModelPreferences {
     mouse_vertical_flip: bool,
     mouse_centered: bool,
     ignore_mouse: bool,
+    force_mouse_input: bool,
     gamepad_four_hands: bool,
     dynamic_texture_resolution: bool,
     render_quality_percent: f32,
@@ -438,6 +439,12 @@ fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outc
         DESCRIPTION,
         "ignorePointerInput",
         &mut value.ignore_mouse,
+    )?;
+    boolean(
+        object,
+        DESCRIPTION,
+        "forceMouseInput",
+        &mut value.force_mouse_input,
     )?;
     boolean(
         object,
@@ -979,6 +986,7 @@ fn write_model(value: &ModelPreferences) -> Value {
         "pointerFlippedVertically": value.mouse_vertical_flip,
         "centerPointerTracking": value.mouse_centered,
         "ignorePointerInput": value.ignore_mouse,
+        "forceMouseInput": value.force_mouse_input,
         "gamepadFourHands": value.gamepad_four_hands,
         "dynamicTextureResolution": value.dynamic_texture_resolution,
         "renderQualityPercent": value.render_quality_percent,

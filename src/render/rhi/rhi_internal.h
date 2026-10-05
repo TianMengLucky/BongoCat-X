@@ -29,6 +29,8 @@ void bongo_cat_rhi_vk_viewport(BongoCatRhi *rhi, int x, int y, int width,
 void bongo_cat_rhi_vk_clear(BongoCatRhi *rhi, float red, float green,
     float blue, float alpha);
 const char *bongo_cat_rhi_vk_describe(const BongoCatRhi *rhi);
+bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info);
 
 bool bongo_cat_rhi_metal_create_window(const char *title, int width,
     int height, SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);
@@ -41,5 +43,7 @@ void bongo_cat_rhi_metal_viewport(BongoCatRhi *rhi, int x, int y, int width,
 void bongo_cat_rhi_metal_clear(BongoCatRhi *rhi, float red, float green,
     float blue, float alpha);
 const char *bongo_cat_rhi_metal_describe(const BongoCatRhi *rhi);
+bool bongo_cat_rhi_metal_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info);
 
 #endif

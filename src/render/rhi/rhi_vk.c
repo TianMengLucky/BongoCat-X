@@ -51,6 +51,7 @@ static bool load_instance_fns(BongoCatRhiVk *vk) {
     BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceSupportKHR);
     BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
     BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceFormatsKHR);
+    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceFormatProperties);
     BONGO_CAT_VK_LOAD(vkCreateDevice);
     BONGO_CAT_VK_LOAD(vkDestroyDevice);
     BONGO_CAT_VK_LOAD(vkDeviceWaitIdle);
@@ -428,7 +429,8 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
         goto failed;
     }
     vk->vkGetDeviceQueue(vk->device, queue_family, 0, &vk->queue);
-    if (!create_render_pass(vk, error) ||
+    if (!bongo_cat_rhi_vk_pick_depth_format(vk) ||
+        !create_render_pass(vk, error) ||
         !create_swapchain(vk, width, height, error)) goto failed;
     VkCommandPoolCreateInfo pool_info = {0};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

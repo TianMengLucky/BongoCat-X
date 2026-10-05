@@ -237,6 +237,15 @@ include(cmake/PlatformRuntime.cmake)
 
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
+if(BONGO_CAT_CUBISM_VULKAN)
+  add_dependencies(bongo_cat bongo_cat_vulkan_shaders)
+  # The renderer loads "FrameworkShaders/<name>.spv" from the working
+  # directory; keep the compiled shaders beside the executable.
+  add_custom_command(TARGET bongo_cat POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${BONGO_CAT_VULKAN_SHADER_OUTPUT}" "$<TARGET_FILE_DIR:bongo_cat>/FrameworkShaders"
+    COMMENT "Copying FrameworkShaders next to the executable" VERBATIM)
+endif()
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
 if(BONGO_CAT_RUNTIME_CORE_MODE AND WIN32)
   # The Core is a user-supplied DLL; route its imports through delay-load so

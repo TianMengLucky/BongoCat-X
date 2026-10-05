@@ -52,6 +52,7 @@ bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app,
                 error->message);
             return false;
         }
+        attach_rhi_info(app);
         if (app->loaded_model[0] &&
             !bongo_cat_app_reload_model_with_error(app, error)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,

@@ -190,3 +190,14 @@ const char *bongo_cat_rhi_metal_describe(const BongoCatRhi *rhi) {
     BongoCatRhiMetal *metal = rhi ? rhi->impl : NULL;
     return metal && metal->describe[0] ? metal->describe : "Metal";
 }
+
+bool bongo_cat_rhi_metal_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info) {
+    BongoCatRhiMetal *metal = rhi ? rhi->impl : NULL;
+    if (!metal || !info || !metal->layer) return false;
+    memset(info, 0, sizeof(*info));
+    info->backend = BONGO_CAT_RHI_METAL;
+    info->metal_device = (__bridge void *)metal->layer.device;
+    info->metal_layer = (__bridge void *)metal->layer;
+    return true;
+}

@@ -107,6 +107,44 @@ const char *bongo_cat_rhi_vk_present_name(void *user) {
     return vk && vk->describe[0] ? vk->describe : "Vulkan";
 }
 
+bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk) {
+    /* The Cubism render passes sample depth as a texture for masking, so a
+       combined depth/stencil layout is preferred when supported. */
+    static const VkFormat candidates[] = {
+        VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,
+        VK_FORMAT_D32_SFLOAT};
+    VkFormatProperties properties;
+    for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+        vk->vkGetPhysicalDeviceFormatProperties(vk->physical, candidates[i],
+            &properties);
+        if (properties.optimalTilingFeatures &
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            vk->depth_format = candidates[i];
+            return true;
+        }
+    }
+    return false;
+}
+
+bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info) {
+    BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    if (!vk || !info || !vk->device) return false;
+    memset(info, 0, sizeof(*info));
+    info->backend = BONGO_CAT_RHI_VULKAN;
+    info->vulkan_device = vk->device;
+    info->vulkan_physical_device = vk->physical;
+    info->vulkan_command_pool = vk->pool;
+    info->vulkan_queue = vk->queue;
+    info->queue_family = vk->queue_family;
+    info->image_count = vk->image_count;
+    info->extent_width = vk->extent.width;
+    info->extent_height = vk->extent.height;
+    info->color_format = (int)vk->format;
+    info->depth_format = (int)vk->depth_format;
+    return true;
+}
+
 bool bongo_cat_rhi_vk_make_current(BongoCatRhi *rhi) {
     (void)rhi;
     return true;

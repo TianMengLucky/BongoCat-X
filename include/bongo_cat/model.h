@@ -2,6 +2,7 @@
 #define BONGO_CAT_MODEL_H
 
 #include "bongo_cat/config.h"
+#include "bongo_cat/rhi.h"
 
 typedef enum BongoCatModelSourceFormat {
     BONGO_CAT_MODEL_SOURCE_UNKNOWN,
@@ -156,6 +157,11 @@ typedef struct BongoCatLive2DTextureOptions {
 
 BongoCatLive2D *bongo_cat_live2d_create(const char *asset_root, BongoCatError *error);
 void bongo_cat_live2d_destroy(BongoCatLive2D *live2d);
+/* Attaches the active frame-backend device handles (rhi.h) so the bridge
+   can drive the Cubism Vulkan/Metal renderers. Call after create and
+   whenever the render backend is hot-swapped; no-op on the stub. */
+void bongo_cat_live2d_set_rhi_info(BongoCatLive2D *live2d,
+    const BongoCatRhiDeviceInfo *info);
 BongoCatResult bongo_cat_live2d_load(BongoCatLive2D *live2d, const char *model_dir,
     const char *setting_file, bool preset,
     const BongoCatLive2DRenderOptions *render_options,

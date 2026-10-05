@@ -15,6 +15,7 @@
 /* Prefixed implementations of the same signatures. */
 BongoCatLive2D * bridge_live2d_create(const char *asset_root, BongoCatError *error);
 void bridge_live2d_destroy(BongoCatLive2D *live2d);
+void bridge_live2d_set_rhi_info(BongoCatLive2D *live2d, const BongoCatRhiDeviceInfo *info);
 BongoCatResult bridge_live2d_load(BongoCatLive2D *live2d, const char *model_dir, const char *setting_file, bool preset, const BongoCatLive2DRenderOptions *render_options, BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error);
 BongoCatResult bridge_live2d_load_ex(BongoCatLive2D *live2d, const char *model_dir, const char *setting_file, bool preset, const BongoCatLive2DRenderOptions *render_options, const BongoCatLive2DTextureOptions *texture_options, BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error);
 bool bridge_live2d_ready(const BongoCatLive2D *live2d);
@@ -59,6 +60,7 @@ int bridge_live2d_expression(const BongoCatLive2D *live2d);
 bool bridge_live2d_visual_state(const BongoCatLive2D *live2d, BongoCatLive2DVisualState *state);
 BongoCatLive2D * stub_live2d_create(const char *asset_root, BongoCatError *error);
 void stub_live2d_destroy(BongoCatLive2D *live2d);
+void stub_live2d_set_rhi_info(BongoCatLive2D *live2d, const BongoCatRhiDeviceInfo *info);
 BongoCatResult stub_live2d_load(BongoCatLive2D *live2d, const char *model_dir, const char *setting_file, bool preset, const BongoCatLive2DRenderOptions *render_options, BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error);
 BongoCatResult stub_live2d_load_ex(BongoCatLive2D *live2d, const char *model_dir, const char *setting_file, bool preset, const BongoCatLive2DRenderOptions *render_options, const BongoCatLive2DTextureOptions *texture_options, BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error);
 bool stub_live2d_ready(const BongoCatLive2D *live2d);
@@ -236,6 +238,13 @@ void bongo_cat_live2d_draw(BongoCatLive2D *live2d) {
     if (!live2d) return;
     if (bridge_instance) bridge_live2d_draw(live2d);
     else stub_live2d_draw(live2d);
+}
+
+void bongo_cat_live2d_set_rhi_info(BongoCatLive2D *live2d,
+    const BongoCatRhiDeviceInfo *info) {
+    if (!live2d) return;
+    if (bridge_instance) bridge_live2d_set_rhi_info(live2d, info);
+    else stub_live2d_set_rhi_info(live2d, info);
 }
 
 void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror) {

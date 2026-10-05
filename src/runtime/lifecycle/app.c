@@ -28,6 +28,14 @@ static void cache_startup_display_fps(BongoCatApp *app) {
             app->startup_display_fps = (int)rounded;
     }
 }
+/* Passes the active backend's device handles to the Live2D bridge so the
+   Cubism Vulkan/Metal renderers can drive it (see docs/live2d-vulkan-metal.md). */
+void attach_rhi_info(BongoCatApp *app) {
+    BongoCatRhiDeviceInfo info;
+    if (app->live2d && bongo_cat_rhi_get_device_info(&app->rhi, &info))
+        bongo_cat_live2d_set_rhi_info(app->live2d, &info);
+}
+
 static bool load_selected_model(BongoCatApp *app, BongoCatError *error) {
     if (!app->models.count && !app->secondary_pet) {
         app->startup_visibility_pending = false;
@@ -113,6 +121,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     if (bongo_cat_rhi_is_gl(&app->rhi)) {
         app->live2d = bongo_cat_live2d_create(app->asset_root, error);
         if (!app->live2d) return false;
+        attach_rhi_info(app);
     } else {
         SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
             "Live2D rendering is disabled on the %s backend until the "

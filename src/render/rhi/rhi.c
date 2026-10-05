@@ -93,6 +93,22 @@ void bongo_cat_rhi_destroy(BongoCatRhi *rhi) {
     memset(rhi, 0, sizeof(*rhi));
 }
 
+bool bongo_cat_rhi_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info) {
+    if (!info) return false;
+    memset(info, 0, sizeof(*info));
+    if (!rhi) return false;
+    switch (rhi->backend) {
+    case BONGO_CAT_RHI_VULKAN:
+        return bongo_cat_rhi_vk_get_device_info(rhi, info);
+    case BONGO_CAT_RHI_METAL:
+        return bongo_cat_rhi_metal_get_device_info(rhi, info);
+    default:
+        info->backend = BONGO_CAT_RHI_OPENGL;
+        return true;
+    }
+}
+
 bool bongo_cat_rhi_is_gl(const BongoCatRhi *rhi) {
     return !rhi || rhi->backend == BONGO_CAT_RHI_OPENGL;
 }

@@ -110,6 +110,11 @@ target_compile_options(Framework PRIVATE
 target_include_directories(Framework SYSTEM PUBLIC
   "${CUBISM_FRAMEWORK_PATH}/src"
   "${CUBISM_CORE_PATH}/include")
+if(BONGO_CAT_VULKAN_INCLUDE_DIR)
+  target_include_directories(Framework SYSTEM PUBLIC
+    ${BONGO_CAT_VULKAN_INCLUDE_DIR})
+endif()
+include(cmake/CubismRenderers.cmake)
 if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
   target_link_libraries(Framework PUBLIC bongo_cat_core_shim glew_s)
 else()

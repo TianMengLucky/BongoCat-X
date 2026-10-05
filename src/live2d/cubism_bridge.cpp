@@ -239,6 +239,12 @@ extern "C" void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *runtime, bool
     if (runtime && runtime->model) runtime->model->set_vertical_flip(flipped);
 }
 
+extern "C" void bongo_cat_live2d_set_rhi_info(BongoCatLive2D *runtime,
+    const BongoCatRhiDeviceInfo *info) {
+    if (!runtime) return;
+    runtime->rhi_info = info ? *info : BongoCatRhiDeviceInfo{};
+}
+
 extern "C" void bongo_cat_live2d_set_mirror(BongoCatLive2D *runtime, bool mirror) {
     if (runtime && runtime->model) runtime->model->set_mirror(mirror); }
 extern "C" void bongo_cat_live2d_set_render_options(BongoCatLive2D *runtime,

@@ -24,6 +24,7 @@ typedef struct BongoCatRhiVk {
     VkQueue queue;
     VkSwapchainKHR swapchain;
     VkFormat format;
+    VkFormat depth_format;
     VkExtent2D extent;
     VkImage *images;
     uint32_t image_count;
@@ -44,6 +45,7 @@ typedef struct BongoCatRhiVk {
     BONGO_CAT_VK_FN(vkGetPhysicalDeviceSurfaceSupportKHR)
     BONGO_CAT_VK_FN(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
     BONGO_CAT_VK_FN(vkGetPhysicalDeviceSurfaceFormatsKHR)
+    BONGO_CAT_VK_FN(vkGetPhysicalDeviceFormatProperties)
     BONGO_CAT_VK_FN(vkCreateDevice)
     BONGO_CAT_VK_FN(vkDestroyDevice)
     BONGO_CAT_VK_FN(vkDeviceWaitIdle)
@@ -75,6 +77,8 @@ typedef struct BongoCatRhiVk {
 #undef BONGO_CAT_VK_FN
 } BongoCatRhiVk;
 
+/* Chooses and records a depth format for the Cubism render passes. */
+bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk);
 /* Destroys views, framebuffers and the swapchain (device idle required). */
 void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk);
 /* Re-creates the swapchain for the requested pixel size. */

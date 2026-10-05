@@ -57,6 +57,29 @@ BongoCatResult bongo_cat_rhi_create_window(BongoCatRhiBackend backend,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);
 void bongo_cat_rhi_destroy(BongoCatRhi *rhi);
 
+/* Device-level handles for the Live2D bridge's Cubism Vulkan/Metal
+   renderers (see docs/live2d-vulkan-metal.md). Filled by the active
+   backend; zero handles for OpenGL. */
+typedef struct BongoCatRhiDeviceInfo {
+    BongoCatRhiBackend backend;
+    /* Vulkan */
+    void *vulkan_device;          /* VkDevice */
+    void *vulkan_physical_device; /* VkPhysicalDevice */
+    void *vulkan_command_pool;    /* VkCommandPool */
+    void *vulkan_queue;           /* VkQueue */
+    uint32_t queue_family;
+    uint32_t image_count;
+    uint32_t extent_width, extent_height;
+    int color_format;             /* VkFormat */
+    int depth_format;             /* VkFormat */
+    /* Metal */
+    void *metal_device;           /* id<MTLDevice> */
+    void *metal_layer;            /* CAMetalLayer * */
+} BongoCatRhiDeviceInfo;
+
+bool bongo_cat_rhi_get_device_info(const BongoCatRhi *rhi,
+    BongoCatRhiDeviceInfo *info);
+
 bool bongo_cat_rhi_is_gl(const BongoCatRhi *rhi);
 /* "OpenGL 3.3 ..." style device description for logs. */
 const char *bongo_cat_rhi_describe(const BongoCatRhi *rhi);

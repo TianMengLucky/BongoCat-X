@@ -222,13 +222,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         model->mouse_centered = !disable_mouse_centered;
         bongo_cat_app_reset_pointer_tracking(app);
     }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
-    if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
-        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), "",
-        &model->ignore_mouse)) {
-        app->pointer_known = false;
-        app->dirty = true;
-    }
+    bongo_cat_preferences_mouse_input_rows(app, model, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MAX_FPS);
     model->max_fps = bongo_cat_pref_fps(context, "max-fps", tr(app,
         "pages.preference.cat.labels.maxFPS", "Max Frame Rate"), model->max_fps,

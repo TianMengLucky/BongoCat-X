@@ -239,10 +239,22 @@ extern "C" void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *runtime, bool
     if (runtime && runtime->model) runtime->model->set_vertical_flip(flipped);
 }
 
-extern "C" void bongo_cat_live2d_set_rhi_info(BongoCatLive2D *runtime,
+BongoCatRhiBackend s_live2d_rhi_backend = BONGO_CAT_RHI_OPENGL;
+
+extern "C" void bridge_live2d_set_rhi_info(BongoCatLive2D *runtime,
     const BongoCatRhiDeviceInfo *info) {
     if (!runtime) return;
     runtime->rhi_info = info ? *info : BongoCatRhiDeviceInfo{};
+    s_live2d_rhi_backend = runtime->rhi_info.backend;
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (runtime->model) runtime->model->set_rhi_info(runtime->rhi_info);
+#endif
+}
+
+/* The generated renderer factory (cmake/CubismRenderers.cmake) routes
+   CubismRenderer::Create through this selector. */
+int bongo_cat_cubism_render_backend() {
+    return s_live2d_rhi_backend == BONGO_CAT_RHI_VULKAN ? 1 : 0;
 }
 
 extern "C" void bongo_cat_live2d_set_mirror(BongoCatLive2D *runtime, bool mirror) {

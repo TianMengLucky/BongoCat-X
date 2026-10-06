@@ -42,6 +42,12 @@ private:
 } // namespace
 
 void NativeModel::draw() {
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (rhi_info().backend == BONGO_CAT_RHI_VULKAN) {
+        draw_vulkan();
+        return;
+    }
+#endif
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
 #ifdef CSM_TARGET_MAC_GL
@@ -403,6 +409,10 @@ void NativeModel::release_render_resources() {
 }
 
 bool NativeModel::create_renderer(BongoCatError *error) {
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (rhi_info().backend == BONGO_CAT_RHI_VULKAN)
+        return create_renderer_vulkan(error);
+#endif
     if (!SDL_GL_GetCurrentContext()) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "Cannot create the Live2D renderer without an OpenGL context");

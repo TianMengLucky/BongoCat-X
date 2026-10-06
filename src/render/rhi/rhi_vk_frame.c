@@ -9,51 +9,88 @@
 bool bongo_cat_rhi_vk_frame_present(void *user) {
     BongoCatRhiVk *vk = user;
     if (!vk || !vk->device) return false;
-    if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE,
-            UINT64_MAX) != VK_SUCCESS) return false;
-    if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS)
-        return false;
     uint32_t index = 0;
-    VkResult acquired = vk->vkAcquireNextImageKHR(vk->device, vk->swapchain,
-        UINT64_MAX, vk->image_available, VK_NULL_HANDLE, &index);
-    if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return false;
-    if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR)
-        return false;
-    VkCommandBufferBeginInfo begin = {0};
-    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
-        return false;
-    VkClearValue clear;
-    clear.color = (VkClearColorValue){{
-        vk->clear[0], vk->clear[1], vk->clear[2], vk->clear[3]}};
-    VkRenderPassBeginInfo pass = {0};
-    pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    pass.renderPass = vk->render_pass;
-    pass.framebuffer = vk->framebuffers[index];
-    pass.renderArea.extent = vk->extent;
-    pass.clearValueCount = 1;
-    pass.pClearValues = &clear;
-    vk->vkCmdBeginRenderPass(vk->command, &pass, VK_SUBPASS_CONTENTS_INLINE);
-    vk->vkCmdEndRenderPass(vk->command);
-    if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
-    VkPipelineStageFlags wait_stage =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    VkSubmitInfo submit = {0};
-    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit.waitSemaphoreCount = 1;
-    submit.pWaitSemaphores = &vk->image_available;
-    submit.pWaitDstStageMask = &wait_stage;
-    submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &vk->command;
-    submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &vk->render_finished;
-    if (vk->vkQueueSubmit(vk->queue, 1, &submit, vk->fence) != VK_SUCCESS)
-        return false;
+    if (vk->hook_draw) {
+        /* Live2D owns the frame content: the Cubism renderer clears the
+           target on its first draw of the frame and submits its own command
+           buffers. Serialize the acquire against the queue with an empty
+           wait submission (the official sample's pattern; the renderer's
+           own submits follow on the same queue). */
+        vk->vkQueueWaitIdle(vk->queue);
+        VkResult acquired = vk->vkAcquireNextImageKHR(vk->device,
+            vk->swapchain, UINT64_MAX, vk->image_available, VK_NULL_HANDLE,
+            &index);
+        if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return false;
+        if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR)
+            return false;
+        vk->acquired_index = index;
+        vk->current_image = vk->images[index];
+        vk->current_view = vk->views[index];
+        VkCommandBuffer wait_buffer = bongo_cat_rhi_vk_begin_commands(user);
+        if (wait_buffer) {
+            VkPipelineStageFlags wait_stage =
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkSubmitInfo wait_submit = {0};
+            wait_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            wait_submit.waitSemaphoreCount = 1;
+            wait_submit.pWaitSemaphores = &vk->image_available;
+            wait_submit.pWaitDstStageMask = &wait_stage;
+            vk->vkQueueSubmit(vk->queue, 1, &wait_submit, VK_NULL_HANDLE);
+            vk->vkQueueWaitIdle(vk->queue);
+            vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &wait_buffer);
+        }
+        if (!vk->hook_draw(vk->hook_user)) return false;
+    } else {
+        if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE,
+                UINT64_MAX) != VK_SUCCESS) return false;
+        if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS)
+            return false;
+        VkResult acquired = vk->vkAcquireNextImageKHR(vk->device,
+            vk->swapchain, UINT64_MAX, vk->image_available, VK_NULL_HANDLE,
+            &index);
+        if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return false;
+        if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR)
+            return false;
+        vk->acquired_index = index;
+        vk->current_image = vk->images[index];
+        vk->current_view = vk->views[index];
+        VkCommandBufferBeginInfo begin = {0};
+        begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
+            return false;
+        VkClearValue clear;
+        clear.color = (VkClearColorValue){{
+            vk->clear[0], vk->clear[1], vk->clear[2], vk->clear[3]}};
+        VkRenderPassBeginInfo pass = {0};
+        pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        pass.renderPass = vk->render_pass;
+        pass.framebuffer = vk->framebuffers[index];
+        pass.renderArea.extent = vk->extent;
+        pass.clearValueCount = 1;
+        pass.pClearValues = &clear;
+        vk->vkCmdBeginRenderPass(vk->command, &pass,
+            VK_SUBPASS_CONTENTS_INLINE);
+        vk->vkCmdEndRenderPass(vk->command);
+        if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
+        VkPipelineStageFlags wait_stage =
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        VkSubmitInfo submit = {0};
+        submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit.waitSemaphoreCount = 1;
+        submit.pWaitSemaphores = &vk->image_available;
+        submit.pWaitDstStageMask = &wait_stage;
+        submit.commandBufferCount = 1;
+        submit.pCommandBuffers = &vk->command;
+        submit.signalSemaphoreCount = 1;
+        submit.pSignalSemaphores = &vk->render_finished;
+        if (vk->vkQueueSubmit(vk->queue, 1, &submit, vk->fence) != VK_SUCCESS)
+            return false;
+    }
     VkPresentInfoKHR present = {0};
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    present.waitSemaphoreCount = 1;
-    present.pWaitSemaphores = &vk->render_finished;
+    present.waitSemaphoreCount = vk->hook_draw ? 0 : 1;
+    present.pWaitSemaphores = vk->hook_draw ? NULL : &vk->render_finished;
     present.swapchainCount = 1;
     present.pSwapchains = &vk->swapchain;
     present.pImageIndices = &index;
@@ -102,6 +139,38 @@ bool bongo_cat_rhi_vk_read_rgba(int x, int y, int width, int height,
     return read_fill(user, width, height, pixels, false);
 }
 
+void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
+    BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    if (!vk || !vk->device) return NULL;
+    VkCommandBufferAllocateInfo info = {0};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    info.commandPool = vk->pool;
+    info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    info.commandBufferCount = 1;
+    VkCommandBuffer command = VK_NULL_HANDLE;
+    if (vk->vkAllocateCommandBuffers(vk->device, &info, &command) !=
+        VK_SUCCESS) return NULL;
+    VkCommandBufferBeginInfo begin = {0};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vk->vkBeginCommandBuffer(command, &begin) != VK_SUCCESS) return NULL;
+    return command;
+}
+
+void bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
+    BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    VkCommandBuffer buffer = (VkCommandBuffer)command;
+    if (!vk || !buffer) return;
+    vk->vkEndCommandBuffer(buffer);
+    VkSubmitInfo submit = {0};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &buffer;
+    vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
+    vk->vkQueueWaitIdle(vk->queue);
+    vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
+}
+
 const char *bongo_cat_rhi_vk_present_name(void *user) {
     BongoCatRhiVk *vk = user;
     return vk && vk->describe[0] ? vk->describe : "Vulkan";
@@ -142,6 +211,10 @@ bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
     info->extent_height = vk->extent.height;
     info->color_format = (int)vk->format;
     info->depth_format = (int)vk->depth_format;
+    info->swapchain_views = (void **)vk->views;
+    info->current_image = vk->current_image;
+    info->current_view = vk->current_view;
+    info->rhi_handle = rhi;
     return true;
 }
 

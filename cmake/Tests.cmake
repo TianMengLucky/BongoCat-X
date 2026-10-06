@@ -4,8 +4,10 @@ if(BUILD_TESTING)
     src/runtime/shell tests/support)
   target_link_libraries(bongo_cat_window_corner_tests PRIVATE bongo_cat_warnings)
   add_test(NAME window-corner-policy COMMAND bongo_cat_window_corner_tests)
-  add_executable(bongo_cat_gl_readback_tests tests/platform/test_gl_readback.c)
-  target_include_directories(bongo_cat_gl_readback_tests PRIVATE tests/support)
+  add_executable(bongo_cat_gl_readback_tests tests/platform/test_gl_readback.c
+    tests/support/rhi_active_ops_stub.c)
+  target_include_directories(bongo_cat_gl_readback_tests PRIVATE
+    tests/support include "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
   target_link_libraries(bongo_cat_gl_readback_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME window-gl-readback COMMAND bongo_cat_gl_readback_tests)
   # The shape mask is implemented with Linux window compositor APIs only.
@@ -356,9 +358,11 @@ if(BUILD_TESTING)
     set_tests_properties(windows-presentation PROPERTIES
       SKIP_RETURN_CODE 77 RUN_SERIAL TRUE TIMEOUT 60 LABELS "interactive;graphics")
     add_executable(bongo_cat_windows_gl_readback_tests
-      tests/platform/test_windows_gl_readback.c)
+      tests/platform/test_windows_gl_readback.c
+      tests/support/rhi_active_ops_stub.c)
     target_include_directories(bongo_cat_windows_gl_readback_tests PRIVATE
-      src/platform/windows tests/support)
+      src/platform/windows tests/support include
+      "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
     target_link_libraries(bongo_cat_windows_gl_readback_tests PRIVATE
       SDL3::SDL3-static bongo_cat_warnings)
     add_test(NAME windows-gl-readback COMMAND bongo_cat_windows_gl_readback_tests)

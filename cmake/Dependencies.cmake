@@ -72,7 +72,19 @@ if(BONGO_CAT_FETCH_DEPS)
   FetchContent_Declare(vulkan_headers URL
     https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.3.290.tar.gz
     URL_HASH SHA256=f38a653bf93cab7a2a229a53d2d53b1cba9a2819e4c0a7de13c54085bde9bcf5)
+  FetchContent_Declare(volk URL
+    https://github.com/zeux/volk/archive/refs/tags/vulkan-sdk-1.3.290.0.tar.gz
+    URL_HASH SHA256=bb6a6d616c0f2bbd5d180da982a6d92a0948581cec937de69f17883980c6ca06)
+  # The Live2D Vulkan renderer and the RHI's Vulkan backend need SDL's
+  # Vulkan window integration (surface creation, loader entry points).
+  set(SDL_VULKAN ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear vulkan_headers)
+  # volk is populated but not added: its own CMake target would require the
+  # Vulkan SDK; cmake/CubismRenderers.cmake compiles volk.c with the shim.
+  FetchContent_GetProperties(volk)
+  if(NOT volk_POPULATED)
+    FetchContent_Populate(volk)
+  endif()
   if(WIN32)
     include("${CMAKE_CURRENT_LIST_DIR}/SDLWindowsRuntime.cmake")
     bongo_cat_trim_sdl_windows(SDL3-static "${sdl3_SOURCE_DIR}")

@@ -27,7 +27,7 @@ static bool load_fn(BongoCatRhiVk *vk, void **slot, const char *name) {
 
 static bool load_global_fns(BongoCatRhiVk *vk, BongoCatError *error) {
     vk->instance_gpa = (PFN_vkGetInstanceProcAddr)
-        SDL_Vulkan_GetVkInstanceProcAddr();
+        SDL_Vulkan_GetVkGetInstanceProcAddr();
     if (!vk->instance_gpa) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "SDL cannot resolve vkGetInstanceProcAddr: %s", SDL_GetError());
@@ -80,6 +80,9 @@ static bool load_instance_fns(BongoCatRhiVk *vk) {
     BONGO_CAT_VK_LOAD(vkCreateSemaphore);
     BONGO_CAT_VK_LOAD(vkDestroySemaphore);
     BONGO_CAT_VK_LOAD(vkAcquireNextImageKHR);
+    BONGO_CAT_VK_LOAD(vkBeginCommandBuffer);
+    BONGO_CAT_VK_LOAD(vkQueueWaitIdle);
+    BONGO_CAT_VK_LOAD(vkFreeCommandBuffers);
     return true;
 }
 
@@ -282,9 +285,16 @@ bool bongo_cat_rhi_vk_recreate_swapchain(BongoCatRhiVk *vk, int width,
 
 bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {
+    /* Initializes the volk table's global loader; the framework's Vulkan
+       renderer sources call vk* through it (VK_NO_PROTOTYPES). */
+    if (volkInitialize() != VK_SUCCESS) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
+            "The Vulkan loader is unavailable");
+        return BONGO_CAT_ERROR_PLATFORM;
+    }
     if (!SDL_Vulkan_LoadLibrary(NULL)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "The Vulkan loader is unavailable: %s", SDL_GetError());
+            "SDL cannot load the Vulkan loader: %s", SDL_GetError());
         return BONGO_CAT_ERROR_PLATFORM;
     }
     /* Swapchain presentation has no window alpha; the window stays opaque
@@ -307,17 +317,12 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     }
     if (!load_global_fns(vk, error)) goto failed;
     unsigned extension_count = 0;
-    if (!SDL_Vulkan_GetInstanceExtensions(&extension_count, NULL)) {
+    /* SDL owns the returned array; the instance creation only borrows it. */
+    const char *const *extensions = SDL_Vulkan_GetInstanceExtensions(
+        &extension_count);
+    if (!extensions || !extension_count) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "SDL cannot list Vulkan instance extensions: %s", SDL_GetError());
-        goto failed;
-    }
-    const char **extensions = malloc(extension_count * sizeof(*extensions));
-    if (!extensions || !SDL_Vulkan_GetInstanceExtensions(&extension_count,
-            extensions)) {
-        free(extensions);
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
-            "Cannot list the Vulkan instance extensions");
         goto failed;
     }
     VkApplicationInfo app = {0};
@@ -334,12 +339,12 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     instance_info.ppEnabledExtensionNames = extensions;
     if (vk->vkCreateInstance(&instance_info, NULL, &vk->instance) !=
         VK_SUCCESS) {
-        free(extensions);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "vkCreateInstance failed");
         goto failed;
     }
-    free(extensions);
+    /* Populate volk's instance-level table for the framework sources. */
+    volkLoadInstance(vk->instance);
     if (!load_instance_fns(vk)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "Required Vulkan entry points are unavailable");

@@ -35,9 +35,15 @@ typedef struct BongoCatRhiVk {
     VkCommandBuffer command;
     VkFence fence;
     VkSemaphore image_available, render_finished;
+    uint32_t acquired_index;
+    VkImage current_image;
+    VkImageView current_view;
+    bool (*hook_draw)(void *hook_user);
+    void *hook_user;
     float clear[4];
     PFN_vkGetInstanceProcAddr instance_gpa;
 #define BONGO_CAT_VK_FN(name) PFN_##name name;
+    BONGO_CAT_VK_FN(vkCreateInstance)
     BONGO_CAT_VK_FN(vkDestroyInstance)
     BONGO_CAT_VK_FN(vkEnumeratePhysicalDevices)
     BONGO_CAT_VK_FN(vkGetPhysicalDeviceProperties)
@@ -74,6 +80,9 @@ typedef struct BongoCatRhiVk {
     BONGO_CAT_VK_FN(vkCreateSemaphore)
     BONGO_CAT_VK_FN(vkDestroySemaphore)
     BONGO_CAT_VK_FN(vkAcquireNextImageKHR)
+    BONGO_CAT_VK_FN(vkBeginCommandBuffer)
+    BONGO_CAT_VK_FN(vkQueueWaitIdle)
+    BONGO_CAT_VK_FN(vkFreeCommandBuffers)
 #undef BONGO_CAT_VK_FN
 } BongoCatRhiVk;
 

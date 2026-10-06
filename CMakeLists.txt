@@ -62,6 +62,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     include(cmake/Cubism.cmake)
     set(BONGO_CAT_LIVE2D_SOURCES
       src/live2d/cubism_bridge.cpp src/live2d/cubism_bridge_load.cpp
+      src/live2d/cubism_model_renderer_vulkan.cpp
       src/live2d/cubism_render_resources.cpp
       src/live2d/cubism_bridge_visual.cpp
       src/live2d/cubism_expression.cpp
@@ -182,6 +183,17 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR)
   target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
     ${BONGO_CAT_VULKAN_INCLUDE_DIR})
 endif()
+if(BONGO_CAT_CUBISM_VULKAN)
+  # The shim must precede Vulkan-Headers so <vulkan/vulkan.h> resolves to
+  # the volk-routing header.
+  target_include_directories(bongo_cat_runtime SYSTEM BEFORE PRIVATE
+    "${BONGO_CAT_VULKAN_SHIM_DIR}")
+  target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
+    "${volk_SOURCE_DIR}"
+    ${BONGO_CAT_VULKAN_INCLUDE_DIR})
+  target_compile_definitions(bongo_cat_runtime PUBLIC
+    BONGO_CAT_HAS_CUBISM_VULKAN=1)
+endif()
 target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_warnings bongo_cat_archive)
 target_link_libraries(bongo_cat_runtime PUBLIC bongo_cat_core SDL3::SDL3-static OpenGL::GL ${BONGO_CAT_MINIAUDIO_TARGET})
 if(MSVC)
@@ -237,7 +249,13 @@ include(cmake/PlatformRuntime.cmake)
 
 add_executable(bongo_cat src/main.c)
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
-if(BONGO_CAT_CUBISM_VULKAN)
+if(NOT APPLE)
+  # The Metal implementation is rhi_metal.m (Apple only); the dispatcher
+  # still references its symbols, so non-Apple builds compile the stubs.
+  target_sources(bongo_cat_runtime PRIVATE
+    src/render/rhi/rhi_metal_stub.c)
+endif()
+if(BONGO_CAT_CUBISM_VULKAN AND BONGO_CAT_GLSLANG_VALIDATOR)
   add_dependencies(bongo_cat bongo_cat_vulkan_shaders)
   # The renderer loads "FrameworkShaders/<name>.spv" from the working
   # directory; keep the compiled shaders beside the executable.

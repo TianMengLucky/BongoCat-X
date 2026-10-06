@@ -1,4 +1,5 @@
 #include "bongo_cat/platform.h"
+#include "bongo_cat/rhi.h"
 #include "macos_internal.h"
 
 #ifdef __APPLE__

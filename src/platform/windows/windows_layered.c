@@ -1,4 +1,5 @@
 #include "windows_layered.h"
+#include "bongo_cat/rhi.h"
 #include "windows_layered_internal.h"
 #include "windows_capture.h"
 #include "windows_gl_readback.h"

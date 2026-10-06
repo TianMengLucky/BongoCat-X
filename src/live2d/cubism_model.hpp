@@ -14,6 +14,9 @@
 #include <CubismModelSettingJson.hpp>
 #include <Motion/ACubismMotion.hpp>
 #include <Math/CubismMatrix44.hpp>
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+#include <Rendering/Vulkan/CubismRenderer_Vulkan.hpp>
+#endif
 #include <Rendering/OpenGL/CubismRenderer_OpenGLES2.hpp>
 #include <SDL3/SDL_opengl.h>
 #include <map>
@@ -76,6 +79,10 @@ public:
     void set_tight_frame(bool tight);
     void set_tight_overlay_rect(const float *rect);
     void set_render_options(const BongoCatLive2DRenderOptions &options);
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    void set_rhi_info(const BongoCatRhiDeviceInfo &info);
+    const BongoCatRhiDeviceInfo &rhi_info() const;
+#endif
     void set_dragging(float x, float y, bool angle_z = false);
     void prepare_viewer_audit();
     bool prepare_cover_capture();
@@ -179,6 +186,13 @@ private:
     const BongoCatImageAlphaMask *texture_alpha(int index) const;
     void release_renderer();
     bool create_renderer(BongoCatError *error);
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    /* Cubism Vulkan renderer paths (see docs/live2d-vulkan-metal.md). */
+    bool create_renderer_vulkan(BongoCatError *error);
+    void bind_textures_vulkan();
+    void draw_vulkan();
+    BongoCatRhiDeviceInfo rhi_info_ = {};
+#endif
     int prepare_mask_layout();
     bool update_mask_buffers();
     void bind_textures();

@@ -109,6 +109,22 @@ bool bongo_cat_rhi_get_device_info(const BongoCatRhi *rhi,
     }
 }
 
+void *bongo_cat_rhi_begin_commands(const BongoCatRhi *rhi) {
+    if (!rhi) return NULL;
+    switch (rhi->backend) {
+    case BONGO_CAT_RHI_VULKAN: return bongo_cat_rhi_vk_begin_commands(rhi);
+    default: return NULL;
+    }
+}
+
+void bongo_cat_rhi_submit_commands(const BongoCatRhi *rhi, void *command) {
+    if (!rhi) return;
+    switch (rhi->backend) {
+    case BONGO_CAT_RHI_VULKAN: bongo_cat_rhi_vk_submit_commands(rhi, command); break;
+    default: break;
+    }
+}
+
 bool bongo_cat_rhi_is_gl(const BongoCatRhi *rhi) {
     return !rhi || rhi->backend == BONGO_CAT_RHI_OPENGL;
 }

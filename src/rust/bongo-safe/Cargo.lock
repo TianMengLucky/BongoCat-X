@@ -49,7 +49,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "base64",
  "image",

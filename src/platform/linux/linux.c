@@ -3,6 +3,7 @@
 #endif
 
 #include "bongo_cat/platform.h"
+#include "bongo_cat/rhi.h"
 #include "bongo_cat/common.h"
 #include "bongo_cat/path.h"
 #include "linux_internal.h"

@@ -31,6 +31,8 @@ void bongo_cat_rhi_vk_clear(BongoCatRhi *rhi, float red, float green,
 const char *bongo_cat_rhi_vk_describe(const BongoCatRhi *rhi);
 bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
     BongoCatRhiDeviceInfo *info);
+void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi);
+void bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command);
 
 bool bongo_cat_rhi_metal_create_window(const char *title, int width,
     int height, SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);

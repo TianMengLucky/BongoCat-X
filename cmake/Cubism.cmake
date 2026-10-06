@@ -114,7 +114,12 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR)
   target_include_directories(Framework SYSTEM PUBLIC
     ${BONGO_CAT_VULKAN_INCLUDE_DIR})
 endif()
-include(cmake/CubismRenderers.cmake)
+option(BONGO_CAT_CUBISM_VULKAN
+  "Build the Cubism Vulkan renderer into the Framework (Cubism 5.1+ SDK)"
+  ON)
+if(BONGO_CAT_CUBISM_VULKAN)
+  include(cmake/CubismRenderers.cmake)
+endif()
 if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
   target_link_libraries(Framework PUBLIC bongo_cat_core_shim glew_s)
 else()

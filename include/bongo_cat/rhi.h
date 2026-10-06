@@ -4,6 +4,10 @@
 #include "bongo_cat/common.h"
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct SDL_Window SDL_Window;
 
 /* Resolved render backends. The persisted setting additionally has an
@@ -38,6 +42,10 @@ typedef struct BongoCatRhiPresentOps {
        (Vulkan has no alpha-capable swapchain on Windows). */
     bool requires_layered;
     void *user;
+    /* Per-frame draw hook (see above); consulted by backends whose present
+       path can hand the acquired frame to the bridge. */
+    bool (*draw_frame)(void *hook_user);
+    void *hook_user;
 } BongoCatRhiPresentOps;
 
 typedef struct BongoCatRhi {
@@ -47,6 +55,11 @@ typedef struct BongoCatRhi {
     void *impl;    /* Backend-private state. */
     BongoCatRhiPresentOps present;
 } BongoCatRhi;
+
+/* One-shot command buffers for bridge-side device work (texture uploads).
+   Returned buffers are submitted with submit_commands on the same queue. */
+void *bongo_cat_rhi_begin_commands(const BongoCatRhi *rhi);
+void bongo_cat_rhi_submit_commands(const BongoCatRhi *rhi, void *command);
 
 /* Creates the native window (and, for OpenGL, the context) for a backend.
    `fallback_ladder` enables the transparent/MSAA retry ladder; it only
@@ -72,9 +85,14 @@ typedef struct BongoCatRhiDeviceInfo {
     uint32_t extent_width, extent_height;
     int color_format;             /* VkFormat */
     int depth_format;             /* VkFormat */
+    void **swapchain_views;       /* VkImageView[image_count], RHI-owned */
+    void *current_image;          /* VkImage of the acquired frame */
+    void *current_view;           /* VkImageView of the acquired frame */
     /* Metal */
     void *metal_device;           /* id<MTLDevice> */
     void *metal_layer;            /* CAMetalLayer * */
+    /* The owning RHI (for bongo_cat_rhi_begin_commands on bridge side). */
+    const void *rhi_handle;
 } BongoCatRhiDeviceInfo;
 
 bool bongo_cat_rhi_get_device_info(const BongoCatRhi *rhi,
@@ -102,5 +120,9 @@ void bongo_cat_rhi_viewport(BongoCatRhi *rhi, int x, int y, int width,
     int height);
 void bongo_cat_rhi_clear(BongoCatRhi *rhi, float red, float green,
     float blue, float alpha);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

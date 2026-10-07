@@ -368,24 +368,30 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
         selected = count;
     count++;
 #if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
-    items[count] = "Vulkan";
-    values[count] = BONGO_CAT_RENDER_BACKEND_VULKAN;
-    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_VULKAN)
-        selected = count;
-    count++;
+    BongoCatRhi vulkan = {.backend = BONGO_CAT_RHI_VULKAN};
+    if (bongo_cat_rhi_backend_available(vulkan.backend) && bongo_cat_rhi_live2d_supported(&vulkan)) {
+        items[count] = "Vulkan";
+        values[count] = BONGO_CAT_RENDER_BACKEND_VULKAN;
+        if (options->render_backend == BONGO_CAT_RENDER_BACKEND_VULKAN)
+            selected = count;
+        count++;
+    }
 #endif
 #ifdef __APPLE__
-    items[count] = "Metal";
-    values[count] = BONGO_CAT_RENDER_BACKEND_METAL;
-    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_METAL)
-        selected = count;
-    count++;
+    BongoCatRhi metal = {.backend = BONGO_CAT_RHI_METAL};
+    if (bongo_cat_rhi_live2d_supported(&metal)) {
+        items[count] = "Metal";
+        values[count] = BONGO_CAT_RENDER_BACKEND_METAL;
+        if (options->render_backend == BONGO_CAT_RENDER_BACKEND_METAL)
+            selected = count;
+        count++;
+    }
 #endif
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
     int next = bongo_cat_pref_combo(context, "render-backend", tr(app,
         "pages.preference.general.labels.renderBackend", "Render Backend"),
         tr(app, "pages.preference.general.hints.renderBackend",
-            "Graphics API for the pet window. Vulkan and Metal are experimental and do not render the Live2D model yet"),
+            "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally; 2D overlays and rounded corners currently require OpenGL"),
         items, count, selected);
     if (values[next] != options->render_backend) {
         options->render_backend = values[next];

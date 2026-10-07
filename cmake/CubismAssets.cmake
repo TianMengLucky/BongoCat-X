@@ -3,13 +3,21 @@ function(bongo_cat_configure_embedded_cubism_assets)
   if(NOT BONGO_CAT_CUBISM_ENABLED)
     return()
   endif()
-  file(GLOB_RECURSE shader_inputs CONFIGURE_DEPENDS
-    "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}/*")
+  file(GLOB_RECURSE shader_inputs CONFIGURE_DEPENDS "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}/*")
+  set(extra COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}" "${BONGO_CAT_ASSET_STAGE}/assets/FrameworkShaders")
+  if(BONGO_CAT_CUBISM_VULKAN)
+    list(APPEND shader_inputs ${BONGO_CAT_VULKAN_SHADER_BINARIES})
+    list(APPEND extra COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${BONGO_CAT_VULKAN_SHADER_OUTPUT}" "${BONGO_CAT_ASSET_STAGE}/assets/FrameworkShaders")
+  endif()
+  if(BONGO_CAT_CUBISM_METAL)
+    list(APPEND shader_inputs ${BONGO_CAT_METAL_SHADER_BINARIES})
+    list(APPEND extra COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${BONGO_CAT_METAL_SHADER_OUTPUT}" "${BONGO_CAT_ASSET_STAGE}/assets/FrameworkMetallibs")
+  endif()
   set(BONGO_CAT_ASSET_INPUTS ${BONGO_CAT_ASSET_INPUTS} ${shader_inputs} PARENT_SCOPE)
-  set(BONGO_CAT_ASSET_EXTRA_COMMANDS
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}"
-      "${BONGO_CAT_ASSET_STAGE}/assets/FrameworkShaders" PARENT_SCOPE)
+  set(BONGO_CAT_ASSET_EXTRA_COMMANDS ${extra} PARENT_SCOPE)
 endfunction()
 
 function(bongo_cat_stage_cubism_assets target)
@@ -18,19 +26,28 @@ function(bongo_cat_stage_cubism_assets target)
   endif()
   get_target_property(is_bundle ${target} MACOSX_BUNDLE)
   if(APPLE AND is_bundle)
-    set(shader_destination
-      "$<TARGET_BUNDLE_CONTENT_DIR:${target}>/Resources/assets/FrameworkShaders")
+    set(destination "$<TARGET_BUNDLE_CONTENT_DIR:${target}>/Resources/assets")
   else()
-    set(shader_destination "$<TARGET_FILE_DIR:${target}>/FrameworkShaders")
+    set(destination "$<TARGET_FILE_DIR:${target}>")
   endif()
-  add_custom_command(TARGET ${target} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}"
-      "${shader_destination}"
-    VERBATIM)
+  add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}" "${destination}/FrameworkShaders" VERBATIM)
+  if(BONGO_CAT_CUBISM_VULKAN)
+    add_dependencies(${target} bongo_cat_vulkan_shaders)
+    add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${BONGO_CAT_VULKAN_SHADER_OUTPUT}" "${destination}/FrameworkShaders" VERBATIM)
+  endif()
+  if(BONGO_CAT_CUBISM_METAL)
+    add_dependencies(${target} bongo_cat_metal_shaders)
+    add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${BONGO_CAT_METAL_SHADER_OUTPUT}" "${destination}/FrameworkMetallibs" VERBATIM)
+  endif()
   if(UNIX AND NOT APPLE AND target STREQUAL "bongo_cat")
-    install(DIRECTORY
-      "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}/"
+    install(DIRECTORY "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}/"
       DESTINATION assets/FrameworkShaders COMPONENT Runtime)
+    if(BONGO_CAT_CUBISM_VULKAN)
+      install(DIRECTORY "${BONGO_CAT_VULKAN_SHADER_OUTPUT}/"
+        DESTINATION assets/FrameworkShaders COMPONENT Runtime)
+    endif()
   endif()
 endfunction()

@@ -125,7 +125,7 @@ bool bongo_cat_mver_shortcuts_load(BongoCatApp *app, const BongoCatModelEntry *m
         bongo_cat_behaviors_load(catalog, model, error) == BONGO_CAT_OK;
     if (ok) bongo_cat_mver_labels_load(path, bongo_cat_mode_name(model->mode), labels);
     BongoCatModelShortcutNode *parsed = NULL;
-    for (size_t i = 0; ok && i < catalog->count; ++i) {
+    for (size_t i = 0; ok && catalog && i < catalog->count; ++i) {
         const BongoCatBehaviorEntry *entry = &catalog->entries[i];
         const char *mode, *field; int index;
         BongoCatModelShortcutNode *node = calloc(1, sizeof(*node));

@@ -23,7 +23,8 @@ bool bongo_cat_rhi_backend_available(BongoCatRhiBackend backend) {
     switch (backend) {
     case BONGO_CAT_RHI_OPENGL: return true;
     case BONGO_CAT_RHI_VULKAN:
-#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
+#if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
+    (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
         return true;
 #else
         return false;
@@ -78,7 +79,10 @@ BongoCatResult bongo_cat_rhi_create_window(BongoCatRhiBackend backend,
         result = bongo_cat_rhi_gl_create_window(title, width, height,
             fallback_ladder, window, rhi, error);
     }
-    if (result == BONGO_CAT_OK) active_rhi = rhi;
+    if (result == BONGO_CAT_OK) {
+        memset(error, 0, sizeof(*error));
+        active_rhi = rhi;
+    }
     return result;
 }
 
@@ -117,11 +121,44 @@ void *bongo_cat_rhi_begin_commands(const BongoCatRhi *rhi) {
     }
 }
 
+bool bongo_cat_rhi_submit_commands_checked(const BongoCatRhi *rhi, void *command) {
+    return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN &&
+        bongo_cat_rhi_vk_submit_commands(rhi, command);
+}
+
 void bongo_cat_rhi_submit_commands(const BongoCatRhi *rhi, void *command) {
-    if (!rhi) return;
+    (void)bongo_cat_rhi_submit_commands_checked(rhi, command);
+}
+
+bool bongo_cat_rhi_get_active_device_info(BongoCatRhiDeviceInfo *info) {
+    return bongo_cat_rhi_get_device_info(active_rhi, info);
+}
+
+bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi) {
+    if (!rhi) return false;
     switch (rhi->backend) {
-    case BONGO_CAT_RHI_VULKAN: bongo_cat_rhi_vk_submit_commands(rhi, command); break;
-    default: break;
+    case BONGO_CAT_RHI_VULKAN: return bongo_cat_rhi_vk_render_frame(rhi);
+    case BONGO_CAT_RHI_METAL: return bongo_cat_rhi_metal_render_frame(rhi);
+    default: return true;
+    }
+}
+
+bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi) {
+    return rhi && (rhi->backend != BONGO_CAT_RHI_VULKAN ||
+        bongo_cat_rhi_vk_wait_idle(rhi));
+}
+
+bool bongo_cat_rhi_live2d_supported(const BongoCatRhi *rhi) {
+    if (!rhi) return false;
+    switch (rhi->backend) {
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    case BONGO_CAT_RHI_VULKAN: return true;
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    case BONGO_CAT_RHI_METAL: return true;
+#endif
+    case BONGO_CAT_RHI_OPENGL: return true;
+    default: return false;
     }
 }
 
@@ -189,4 +226,20 @@ void bongo_cat_rhi_clear(BongoCatRhi *rhi, float red, float green,
         bongo_cat_rhi_metal_clear(rhi, red, green, blue, alpha); break;
     default: bongo_cat_rhi_gl_clear(rhi, red, green, blue, alpha); break;
     }
+}
+
+bool bongo_cat_rhi_get_metal_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiMetalFrameInfo *info) {
+    if (!info) return false;
+    memset(info, 0, sizeof(*info));
+    return rhi && rhi->backend == BONGO_CAT_RHI_METAL &&
+        bongo_cat_rhi_metal_get_frame_info(rhi, info);
+}
+
+bool bongo_cat_rhi_get_vulkan_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiVulkanFrameInfo *info) {
+    if (!info) return false;
+    memset(info, 0, sizeof(*info));
+    return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN &&
+        bongo_cat_rhi_vk_get_frame_info(rhi, info);
 }

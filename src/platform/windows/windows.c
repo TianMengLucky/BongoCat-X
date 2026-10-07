@@ -163,13 +163,14 @@ BongoCatResult bongo_cat_platform_init(BongoCatPlatform *platform, SDL_Window *w
 
 void bongo_cat_platform_window_replaced(BongoCatPlatform *platform,
     SDL_Window *window) {
-    if (!platform || !window || platform->window == window) return;
+    if (!platform || platform->window == window) return;
     /* The presenter subclasses and styles the old window; release it while
        the old handle is still resolvable, then rebind to the new window. */
     bongo_cat_windows_layered_destroy(platform);
     HWND old = native_window(platform);
     if (old) bongo_cat_windows_borderless_uninstall(old);
     platform->window = window;
+    if (!window) return;
     platform->presenter = bongo_cat_windows_layered_create(
         (SDL_GetWindowFlags(window) & SDL_WINDOW_TRANSPARENT) != 0);
     if (!platform->presenter)

@@ -8,8 +8,7 @@
 # the canonical path (virtual destructor). All Vulkan calls go through
 # volk's runtime table (VK_NO_PROTOTYPES), so no Vulkan SDK import library
 # is needed. glslangValidator compiles the renderer's GLSL to
-# FrameworkShaders/*.spv when available; otherwise the .spv files must be
-# supplied manually.
+# FrameworkShaders/*.spv, including blend variants, during SDK builds.
 
 set(BONGO_CAT_CUBISM_VULKAN_DIR
   "${BONGO_CAT_CUBISM_SDK}/Framework/src/Rendering/Vulkan")
@@ -21,8 +20,15 @@ if(NOT EXISTS "${BONGO_CAT_CUBISM_VULKAN_DIR}/CubismRenderer_Vulkan.hpp")
     "with Framework/src/Rendering/Vulkan (found ${BONGO_CAT_CUBISM_SDK})")
 endif()
 if(NOT volk_SOURCE_DIR)
-  message(FATAL_ERROR "BONGO_CAT_CUBISM_VULKAN requires the volk dependency "
-    "(fetched in cmake/Dependencies.cmake)")
+  find_path(volk_SOURCE_DIR NAMES volk.c)
+endif()
+if(NOT EXISTS "${volk_SOURCE_DIR}/volk.c" OR
+    NOT EXISTS "${volk_SOURCE_DIR}/volk.h" OR
+    NOT EXISTS "${BONGO_CAT_VULKAN_INCLUDE_DIR}/vulkan/vulkan.h")
+  message(FATAL_ERROR "BONGO_CAT_CUBISM_VULKAN requires Vulkan-Headers and "
+    "volk.c/volk.h. Enable BONGO_CAT_FETCH_DEPS, supply "
+    "BONGO_CAT_VULKAN_INCLUDE_DIR and volk_SOURCE_DIR, or disable "
+    "BONGO_CAT_CUBISM_VULKAN.")
 endif()
 
 # The compat shim must precede the real Vulkan-Headers so <vulkan/vulkan.h>
@@ -82,6 +88,21 @@ foreach(definition IN ITEMS
   string(SUBSTRING "${FACTORY_TEXT}" "${after}" -1 tail)
   set(FACTORY_TEXT "${head}${tail}")
 endforeach()
+# Dynamic cull state is core in the required Vulkan 1.3 API. Resolving the
+# EXT alias without enabling that extension can return a null function.
+set(cull_lookup [=[vkGetDeviceProcAddr(s_device, "vkCmdSetCullModeEXT")]=])
+string(FIND "${FACTORY_TEXT}" "${cull_lookup}" cull_position)
+if(cull_position EQUAL -1)
+  message(FATAL_ERROR "The Cubism Vulkan cull-state lookup changed; "
+    "update cmake/CubismRenderers.cmake")
+endif()
+string(REPLACE "${cull_lookup}"
+  [=[vkGetDeviceProcAddr(s_device, "vkCmdSetCullMode")]=]
+  FACTORY_TEXT "${FACTORY_TEXT}")
+include(cmake/CubismNativeShaderIO.cmake)
+bongo_cat_vulkan_shader_io(FACTORY_TEXT)
+include(cmake/CubismVulkanSafety.cmake)
+bongo_cat_harden_vulkan_pipelines(FACTORY_TEXT)
 file(WRITE "${BONGO_CAT_FACTORY_VK_OUTPUT}" "${FACTORY_TEXT}")
 # Remove the original from the Framework target (source properties set
 # from a parent scope do not reach files added in a subdirectory; the
@@ -97,60 +118,12 @@ target_sources(Framework PRIVATE
   "${BONGO_CAT_FACTORY_VK_OUTPUT}"
   "${volk_SOURCE_DIR}/volk.c")
 
-# CubismUserModel::CreateRenderer must construct the renderer the Live2D
-# bridge selected (the OpenGL factory stays canonical): route the
-# installation through a bridge-provided creator.
-set(BONGO_CAT_USERMODEL_SOURCE
-  "${BONGO_CAT_CUBISM_SDK}/Framework/src/Model/CubismUserModel.cpp")
-set(BONGO_CAT_USERMODEL_OUTPUT
-  "${CMAKE_BINARY_DIR}/cubism-renderer-vulkan/CubismUserModel_routed.cpp")
-file(READ "${BONGO_CAT_USERMODEL_SOURCE}" USERMODEL_TEXT)
-string(REPLACE "
-" "
-" USERMODEL_TEXT "${USERMODEL_TEXT}")
-set(from_text
-  "_renderer = Rendering::CubismRenderer::Create(width, height);")
-set(to_text
-  "_renderer = bongo_cat_cubism_create_renderer(width, height);")
-string(FIND "${USERMODEL_TEXT}" "${from_text}" position)
-if(position EQUAL -1)
-  message(FATAL_ERROR "The CubismUserModel renderer-installation text "
-    "changed; update cmake/CubismRenderers.cmake")
-endif()
-string(REPLACE "${from_text}" "${to_text}" USERMODEL_TEXT "${USERMODEL_TEXT}")
-file(WRITE "${BONGO_CAT_USERMODEL_OUTPUT}" "${USERMODEL_TEXT}")
-set_source_files_properties("${BONGO_CAT_USERMODEL_SOURCE}" PROPERTIES
-  HEADER_FILE_ONLY ON)
+# CubismUserModel creation is routed in CubismUserModelSafety.cmake, in the
+# same generated copy that applies null checks. Never replace the SDK's
+# original source after the hardened copy has been added to Framework.
 
-# Optional shader compilation: the renderer loads FrameworkShaders/*.spv from
-# the working directory at runtime. Without glslangValidator the build still
-# works; the .spv files must then be supplied another way.
-find_program(BONGO_CAT_GLSLANG_VALIDATOR NAMES glslangValidator glslang)
+include(cmake/CubismNativeShaders.cmake)
 set(BONGO_CAT_VULKAN_SHADER_OUTPUT "${CMAKE_BINARY_DIR}/FrameworkShaders")
-if(BONGO_CAT_GLSLANG_VALIDATOR)
-  file(GLOB BONGO_CAT_VULKAN_SHADER_SOURCES
-    "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src/*.vert"
-    "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src/*.frag")
-  if(NOT BONGO_CAT_VULKAN_SHADER_SOURCES)
-    message(FATAL_ERROR "The Cubism Vulkan shader directory is empty: "
-      "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src")
-  endif()
-  file(MAKE_DIRECTORY "${BONGO_CAT_VULKAN_SHADER_OUTPUT}")
-  foreach(SHADER ${BONGO_CAT_VULKAN_SHADER_SOURCES})
-    # The renderer loads "VertShaderSrc.spv": strip the stage suffix.
-    get_filename_component(SHADER_STEM "${SHADER}" NAME_WE)
-    set(SHADER_OUTPUT "${BONGO_CAT_VULKAN_SHADER_OUTPUT}/${SHADER_STEM}.spv")
-    add_custom_command(OUTPUT "${SHADER_OUTPUT}"
-      COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" -V "${SHADER}"
-        -o "${SHADER_OUTPUT}"
-      DEPENDS "${SHADER}"
-      COMMENT "glslangValidator ${SHADER_STEM}")
-    list(APPEND BONGO_CAT_VULKAN_SHADER_SPVS "${SHADER_OUTPUT}")
-  endforeach()
-  add_custom_target(bongo_cat_vulkan_shaders ALL
-    DEPENDS ${BONGO_CAT_VULKAN_SHADER_SPVS})
-  add_dependencies(Framework bongo_cat_vulkan_shaders)
-else()
-  message(WARNING "glslangValidator not found: the Cubism Vulkan renderer's "
-    "FrameworkShaders/*.spv must be supplied manually next to the executable")
-endif()
+bongo_cat_compile_native_shaders(VULKAN "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src"
+  "${BONGO_CAT_VULKAN_SHADER_OUTPUT}")
+bongo_cat_harden_vulkan_resources(Framework)

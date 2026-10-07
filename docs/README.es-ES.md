@@ -284,9 +284,11 @@ flowchart TB
 
 No. BongoCat procesa las entradas de teclado y ratón localmente para impulsar animaciones y atajos. No registra ni sube pulsaciones de teclas, acciones del ratón ni otros datos de interacción. La configuración también se guarda solo localmente; la aplicación no incluye anuncios, herramientas de análisis ni código de seguimiento de usuarios. Al comprobar actualizaciones solo se solicitan los metadatos públicos de versión; no se envían datos de entrada, configuración ni uso.
 
-### 🖼️ ¿Por qué OpenGL y no Vulkan?
+### 🖼️ ¿Cuál es el estado del soporte de Vulkan / Metal?
 
-No porque Vulkan sea malo, sino porque BongoCat no necesita ese nivel de complejidad. La aplicación renderiza principalmente un modelo Live2D, algunas capas de interfaz y una ventana de escritorio transparente; OpenGL lo cubre con facilidad y se integra de forma natural con SDL3 y el renderizador OpenGL de Cubism. Migrar a Vulkan implicaría mantener más código de renderizado y sincronización en tres plataformas de escritorio, sin un beneficio notable para el usuario. Para la carga de trabajo actual de BongoCat, OpenGL hace que el renderizador sea más ligero, más fácil de depurar y mantener, y sigue ofreciendo el rendimiento necesario.
+Ajustes → Aplicación → Backend de renderizado permite cambiar al instante: OpenGL ↔ Vulkan en Windows / Linux x64 y OpenGL ↔ Metal en macOS. Sistema usa OpenGL por defecto. Se conectaron la carga de texturas nativas, el dibujo de Cubism, la lectura de GPU y la recarga del modelo; se conservan el modelo y los movimientos/expresiones seleccionados. Los errores de inicialización o recarga restauran OpenGL. Vulkan/Metal son experimentales: las capas 2D, las esquinas redondeadas y la actualización dinámica asíncrona de texturas requieren OpenGL. Las texturas nativas aplican límites de calidad/tamaño al cargarse.
+
+Las compilaciones con SDK usan `BONGO_CAT_CUBISM_VULKAN=ON` en Windows / Linux x64 (`glslangValidator` o `glslang`, paquete Linux `glslang-tools`; Vulkan 1.3 al ejecutar) y `BONGO_CAT_CUBISM_METAL=ON` en macOS (herramientas Metal de Xcode). Use `OFF` para desactivar la extensión. Los archivos Metal y `.metallib` se incluyen solo en macOS; Vulkan y `.spv` solo en Windows / Linux x64, con variantes de mezcla. Las compilaciones de diagnóstico sin SDK omiten estos recursos Live2D. GitHub Actions prepara las herramientas y verifica los recursos por plataforma. Se realizaron comprobaciones estáticas; falta validar compilación y GPU. Véase [integración y validación](live2d-vulkan-metal.md).
 
 ## 🙏 Agradecimientos especiales
 > [!TIP]

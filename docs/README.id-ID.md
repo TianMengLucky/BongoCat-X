@@ -390,20 +390,11 @@ pelacakan pengguna. Saat pemeriksaan pembaruan dilakukan, aplikasi hanya meminta
 metadata rilis publik; aplikasi tidak mengirim data input, konfigurasi, atau
 penggunaan.
 
-### 🖼️ Mengapa OpenGL, bukan Vulkan?
+### 🖼️ Bagaimana progres dukungan Vulkan / Metal?
 
-Kami memilih OpenGL bukan karena Vulkan buruk, tetapi karena BongoCat tidak
-memerlukan tingkat kompleksitas tersebut. Aplikasi terutama merender satu model
-Live2D, beberapa lapisan UI, dan sebuah jendela desktop transparan. OpenGL sudah
-menangani kebutuhan tersebut dengan nyaman dan bekerja secara alami dengan SDL3
-serta renderer OpenGL milik Cubism. Beralih ke Vulkan berarti harus memelihara
-lebih banyak kode rendering dan sinkronisasi di tiga platform desktop, tanpa
-peningkatan yang terasa bagi pengguna. Untuk beban kerja BongoCat saat ini, OpenGL
-menjaga renderer tetap lebih kecil, lebih mudah di-debug, dan lebih mudah
-dipelihara sambil tetap memberikan performa yang dibutuhkan.
+Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay 2D, sudut membulat dan pembaruan tekstur dinamis asinkron memerlukan OpenGL. Tekstur native menerapkan batas kualitas/ukuran saat dimuat.
 
-
-
+Build SDK memakai `BONGO_CAT_CUBISM_VULKAN=ON` pada Windows / Linux x64 (`glslangValidator` atau `glslang`, paket Linux `glslang-tools`; Vulkan 1.3 saat dijalankan) dan `BONGO_CAT_CUBISM_METAL=ON` pada macOS (alat Metal Xcode). Pakai `OFF` untuk menonaktifkan ekstensi terkait. Sumber Metal dan `.metallib` hanya masuk macOS; Vulkan dan `.spv` hanya Windows / Linux x64, termasuk variasi blending. Build diagnostik tanpa SDK mengabaikan sumber daya Live2D ini. GitHub Actions menyiapkan alat dan memeriksa sumber daya per platform. Pemeriksaan statis telah dijalankan; build dan GPU belum diverifikasi. Lihat [integrasi dan validasi](live2d-vulkan-metal.md).
 
 ## Status Proyek
 ![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")

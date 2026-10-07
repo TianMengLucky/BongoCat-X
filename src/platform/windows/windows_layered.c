@@ -333,7 +333,9 @@ static bool present_layered(BongoCatPlatform *platform, int width, int height,
     /* Keep WGL presentation alive, including GL_FRONT consumers. Never
        change the original window to WS_EX_NOREDIRECTIONBITMAP. */
     previous = bongo_cat_diagnostics_phase("layered-gl-swap");
-    *swapped = SDL_GL_SwapWindow(platform->window);
+    const BongoCatRhiPresentOps *ops = platform->present_ops;
+    *swapped = ops && ops->swap ? ops->swap(platform->window, ops->user) :
+        SDL_GL_SwapWindow(platform->window);
     bongo_cat_diagnostics_phase(previous);
     if (!*swapped) return false;
     if (SDL_GetHintBoolean("BONGO_CAT_TEST_LAYERED_FAILURE", false))
@@ -356,9 +358,12 @@ static bool present_layered(BongoCatPlatform *platform, int width, int height,
 bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int height) {
     if (!platform || !platform->window) return false;
     BongoCatWindowsLayered *value = platform->presenter;
+    bool required = platform->present_ops && platform->present_ops->requires_layered;
+    if (required && !value) return SDL_SetError("The Vulkan layered presenter is unavailable");
+    if (value && required) value->pixel_hit_test = true;
     bool hdr = bongo_cat_windows_hdr_enabled(platform->window);
     bool active = value && !value->hdr_failed &&
-        (value->pixel_hit_test || value->forced || hdr);
+        (value->pixel_hit_test || value->forced || hdr || required);
     SDL_PropertiesID properties = SDL_GetWindowProperties(platform->window);
     Sint64 state = (hdr ? 1 : 0) | (active ? 2 : 0) |
         (value && value->forced ? 4 : 0) | (value && value->hdr_failed ? 8 : 0);
@@ -413,6 +418,9 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Layered presentation failed; restoring WGL: %s", SDL_GetError());
     value->active = false;
     value->has_frame = false;
+    if (required) {
+        return false;
+    }
     value->hdr_failed = true;
     if (!restore_source(platform))
         return SDL_SetError("Cannot restore WGL window opacity after layered failure");
@@ -420,6 +428,8 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     release_bitmap(value);
     release_readback(value);
     /* The old source is restored even if allocation/upload/input setup fails. */
-    return swapped || SDL_GL_SwapWindow(platform->window);
+    const BongoCatRhiPresentOps *ops = platform->present_ops;
+    return swapped || (ops && ops->swap ? ops->swap(platform->window, ops->user) :
+        SDL_GL_SwapWindow(platform->window));
 }
 #endif

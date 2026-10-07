@@ -53,6 +53,9 @@ jobs:
           CUBISM_GLEW_ARCHIVE_SHA256: ${{ secrets.CUBISM_GLEW_ARCHIVE_SHA256 }}
         run: ./.github/scripts/restore-cubism-sdk.ps1
 
+      - name: Check Metal shader compiler
+        run: xcrun -sdk macosx metal --version
+
       - name: Build both architectures and merge app
         run: bash packaging/mac-app-store/build.sh
 

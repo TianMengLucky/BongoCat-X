@@ -52,6 +52,7 @@ bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app,
     BongoCatError *error);
 /* Hands the active backend's device handles to the Live2D bridge. */
 void attach_rhi_info(BongoCatApp *app);
+bool bongo_cat_app_render_native(BongoCatApp *app, bool present);
 /* 应用"只在录屏软件里显示"设置 (Windows: DWM 隐藏窗口, 桌面不显示但可采集) */
 void bongo_cat_window_apply_capture_only(BongoCatApp *app);
 bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event);

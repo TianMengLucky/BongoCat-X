@@ -6,13 +6,15 @@
 
 #ifndef __APPLE__
 
-bool bongo_cat_rhi_metal_create_window(const char *title, int width,
+BongoCatResult bongo_cat_rhi_metal_create_window(const char *title, int width,
     int height, SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {
     (void)title; (void)width; (void)height; (void)window; (void)rhi;
     bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
         "Metal is not supported on this platform");
     return BONGO_CAT_ERROR_PLATFORM;
 }
+
+bool bongo_cat_rhi_metal_render_frame(BongoCatRhi *rhi) { (void)rhi; return false; }
 
 void bongo_cat_rhi_metal_shutdown(BongoCatRhi *rhi) { (void)rhi; }
 
@@ -45,6 +47,12 @@ const char *bongo_cat_rhi_metal_describe(const BongoCatRhi *rhi) {
 
 bool bongo_cat_rhi_metal_get_device_info(const BongoCatRhi *rhi,
     BongoCatRhiDeviceInfo *info) {
+    (void)rhi; (void)info;
+    return false;
+}
+
+bool bongo_cat_rhi_metal_get_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiMetalFrameInfo *info) {
     (void)rhi; (void)info;
     return false;
 }

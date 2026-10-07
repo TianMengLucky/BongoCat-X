@@ -63,7 +63,7 @@ static void make_room(BongoCatSessionState *session, size_t required) {
 }
 
 void bongo_cat_app_capture_behavior_state(BongoCatApp *app) {
-    if (!app || !app->live2d || !app->loaded_model[0]) return;
+    if (!app || !bongo_cat_live2d_ready(app->live2d) || !app->loaded_model[0]) return;
     int expression = bongo_cat_live2d_expression(app->live2d);
     size_t active = 0;
     for (size_t i = 0; i < app->behaviors.count; ++i)

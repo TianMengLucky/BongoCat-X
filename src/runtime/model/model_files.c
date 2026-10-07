@@ -136,7 +136,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         commit_model(app, entry, false, false);
         return true;
     }
-    bongo_cat_app_capture_behavior_state(app);
+    if (bongo_cat_live2d_ready(app->live2d)) bongo_cat_app_capture_behavior_state(app);
     bongo_cat_app_log_input(app, true);
     bool replacing_model = app->loaded_model[0] != '\0';
     if (replacing_model)
@@ -194,8 +194,9 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     if (app->window) SDL_GetWindowSizeInPixels(app->window, &pixel_width, &pixel_height);
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool restore_context = previous_window != app->window ||
-        previous_context != app->gl_context;
+    bool gl = bongo_cat_rhi_is_gl(&app->rhi);
+    bool restore_context = gl && (previous_window != app->window ||
+        previous_context != app->gl_context);
     if (restore_context && !SDL_GL_MakeCurrent(app->window, app->gl_context)) {
         bongo_cat_error_set(failure, BONGO_CAT_ERROR_PLATFORM,
             "Cannot activate the main OpenGL context: %s", SDL_GetError());
@@ -209,7 +210,8 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     uint64_t load_started_ns = SDL_GetTicksNS();
     bongo_cat_model_memory_begin(previous_model, entry->id,
         texture_options.dynamic_resolution, pixel_width, pixel_height);
-    GLenum initial_gl_error = glGetError();
+    GLenum initial_gl_error = gl ? glGetError() : GL_NO_ERROR;
+    attach_rhi_info(app);
     SDL_Log("[runtime] Model switch transaction: stage=begin previous=%s next=%s "
         "main_window=%p main_context=%p current_window=%p current_context=%p "
         "gl_error=0x%x", previous_model, entry->id, (void *)app->window,
@@ -238,7 +240,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
             "stage=failed previous=%s next=%s elapsed_ms=%.2f gl_error=0x%x "
             "error=%s", previous_model, entry->id,
             (double)(SDL_GetTicksNS() - load_started_ns) / 1000000.0,
-            (unsigned)glGetError(), failure->message);
+            (unsigned)(gl ? glGetError() : GL_NO_ERROR), failure->message);
         if (restore_context && previous_window && previous_context &&
             !SDL_GL_MakeCurrent(previous_window, previous_context))
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -360,7 +362,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         "gl_error=0x%x", previous_model, entry->id,
         (double)(SDL_GetTicksNS() - load_started_ns) / 1000000.0,
         (void *)SDL_GL_GetCurrentWindow(), (void *)SDL_GL_GetCurrentContext(),
-        (unsigned)glGetError());
+        (unsigned)(gl ? glGetError() : GL_NO_ERROR));
     model_runtime_stage(app, "completed", entry);
     model_running_stage(app, entry->id);
     return true;

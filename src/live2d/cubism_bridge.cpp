@@ -14,11 +14,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <new>
+#include <exception>
 
 #ifdef _WIN32
 #include <malloc.h>
 #endif
 using Csm::CubismFramework;
+
+BongoCatRhiBackend s_live2d_rhi_backend = BONGO_CAT_RHI_OPENGL;
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+namespace bongo_cat { void release_metal_device(void *device); }
+#endif
 
 namespace {
 class Allocator final : public Csm::ICubismAllocator {
@@ -79,6 +85,7 @@ void release_file(Csm::csmByte *bytes) { std::free(bytes); }
 bool start_framework(BongoCatError *error) {
     if (runtime_count++) return true;
 #if defined(CSM_TARGET_WIN_GL) || defined(CSM_TARGET_LINUX_GL) || defined(CSM_TARGET_MAC_GL)
+    if (bongo_cat_rhi_active_is_gl()) {
     glewExperimental = GL_TRUE;
     GLenum glew_result = glewInit();
     glGetError();
@@ -97,6 +104,7 @@ bool start_framework(BongoCatError *error) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "Required OpenGL 3.3 functions are unavailable");
         return false;
+    }
     }
 #endif
     framework_option = CubismFramework::Option{};
@@ -131,6 +139,10 @@ static BongoCatLive2D *create_runtime(const char *asset_root,
         stop_framework();
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate Cubism runtime");
     }
+    if (runtime) {
+        bongo_cat_rhi_get_active_device_info(&runtime->rhi_info);
+        s_live2d_rhi_backend = runtime->rhi_info.backend;
+    }
     return runtime;
 }
 
@@ -145,7 +157,16 @@ extern "C" void bongo_cat_live2d_destroy(BongoCatLive2D *runtime) {
     bongo_cat_resource_trace_atlas(0.0);
     /* Retire the renderer before its unused singleton targets, while the
        owning GL context is still available. */
-    if (runtime_count == 1) bongo_cat::release_offscreen_pool();
+    if (runtime_count == 1 && runtime->rhi_info.backend == BONGO_CAT_RHI_OPENGL)
+        bongo_cat::release_offscreen_pool();
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (runtime_count == 1 && runtime->rhi_info.backend == BONGO_CAT_RHI_VULKAN)
+        Csm::Rendering::CubismRenderer_Vulkan::DoStaticRelease();
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    if (runtime_count == 1 && runtime->rhi_info.backend == BONGO_CAT_RHI_METAL)
+        bongo_cat::release_metal_device(runtime->rhi_info.metal_device);
+#endif
     delete runtime;
     stop_framework();
 }
@@ -231,30 +252,32 @@ extern "C" bool bongo_cat_live2d_texture_refresh_busy(const BongoCatLive2D *runt
 extern "C" void bongo_cat_live2d_cancel_texture_refresh(BongoCatLive2D *runtime) {
     if (runtime && runtime->model) runtime->model->cancel_texture_refresh_async();
 }
+extern "C" bool bongo_cat_live2d_draw_checked(BongoCatLive2D *runtime) {
+    if (!runtime || !runtime->model ||
+        !runtime->model->GetRenderer<Csm::Rendering::CubismRenderer>()) return false;
+    try { runtime->model->draw(); return true; }
+    catch (const std::exception &exception) {
+        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Live2D draw failed: %s", exception.what());
+    } catch (...) { SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Live2D draw failed"); }
+    // A failed native draw may leave partially initialized SDK pipeline caches.
+    // Retire them before a retry can bind an incomplete pipeline.
+    if (runtime->rhi_info.backend != BONGO_CAT_RHI_OPENGL)
+        runtime->model->release_render_resources();
+    return false;
+}
 extern "C" void bongo_cat_live2d_draw(BongoCatLive2D *runtime) {
-    if (!runtime) return;
-    if (runtime->model) runtime->model->draw();
+    (void)bongo_cat_live2d_draw_checked(runtime);
 }
 extern "C" void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *runtime, bool flipped) {
     if (runtime && runtime->model) runtime->model->set_vertical_flip(flipped);
 }
-
-BongoCatRhiBackend s_live2d_rhi_backend = BONGO_CAT_RHI_OPENGL;
 
 extern "C" void bridge_live2d_set_rhi_info(BongoCatLive2D *runtime,
     const BongoCatRhiDeviceInfo *info) {
     if (!runtime) return;
     runtime->rhi_info = info ? *info : BongoCatRhiDeviceInfo{};
     s_live2d_rhi_backend = runtime->rhi_info.backend;
-#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (runtime->model) runtime->model->set_rhi_info(runtime->rhi_info);
-#endif
-}
-
-/* The generated renderer factory (cmake/CubismRenderers.cmake) routes
-   CubismRenderer::Create through this selector. */
-int bongo_cat_cubism_render_backend() {
-    return s_live2d_rhi_backend == BONGO_CAT_RHI_VULKAN ? 1 : 0;
 }
 
 extern "C" void bongo_cat_live2d_set_mirror(BongoCatLive2D *runtime, bool mirror) {

@@ -60,6 +60,12 @@ typedef struct BongoCatRhi {
    Returned buffers are submitted with submit_commands on the same queue. */
 void *bongo_cat_rhi_begin_commands(const BongoCatRhi *rhi);
 void bongo_cat_rhi_submit_commands(const BongoCatRhi *rhi, void *command);
+bool bongo_cat_rhi_submit_commands_checked(const BongoCatRhi *rhi, void *command);
+/* Draw/capture the acquired frame before platform presentation. swap then
+   presents that prepared frame; this also supports capture-only rendering. */
+bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi);
+bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi);
+bool bongo_cat_rhi_live2d_supported(const BongoCatRhi *rhi);
 
 /* Creates the native window (and, for OpenGL, the context) for a backend.
    `fallback_ladder` enables the transparent/MSAA retry ladder; it only
@@ -85,7 +91,7 @@ typedef struct BongoCatRhiDeviceInfo {
     uint32_t extent_width, extent_height;
     int color_format;             /* VkFormat */
     int depth_format;             /* VkFormat */
-    void **swapchain_views;       /* VkImageView[image_count], RHI-owned */
+    void **swapchain_views;       /* Legacy borrowed array; use frame API for handles. */
     void *current_image;          /* VkImage of the acquired frame */
     void *current_view;           /* VkImageView of the acquired frame */
     /* Metal */
@@ -97,6 +103,26 @@ typedef struct BongoCatRhiDeviceInfo {
 
 bool bongo_cat_rhi_get_device_info(const BongoCatRhi *rhi,
     BongoCatRhiDeviceInfo *info);
+bool bongo_cat_rhi_get_active_device_info(BongoCatRhiDeviceInfo *info);
+
+typedef struct BongoCatRhiVulkanFrameInfo {
+    uint64_t image, view; /* Full-width VkImage/VkImageView on Win32 as well. */
+} BongoCatRhiVulkanFrameInfo;
+bool bongo_cat_rhi_get_vulkan_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiVulkanFrameInfo *info);
+
+/* Metal handles borrowed only for the duration of present.draw_frame.
+   The callback encodes into this buffer, leaving it uncommitted. The RHI
+   performs readback, commits, waits and presents after the callback returns.
+   Separate from DeviceInfo to preserve that struct's existing ABI. */
+typedef struct BongoCatRhiMetalFrameInfo {
+    void *command_buffer; /* id<MTLCommandBuffer> */
+    void *render_pass;    /* MTLRenderPassDescriptor * */
+    void *color_texture;  /* id<MTLTexture> */
+} BongoCatRhiMetalFrameInfo;
+
+bool bongo_cat_rhi_get_metal_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiMetalFrameInfo *info);
 
 bool bongo_cat_rhi_is_gl(const BongoCatRhi *rhi);
 /* "OpenGL 3.3 ..." style device description for logs. */

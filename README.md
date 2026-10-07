@@ -277,9 +277,11 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 退出程序才会停止监听，隐藏宠物不会停止；不带该变量重新启动即可恢复默认后端。
 鼠标跟随使用未经加速的设备位移，窗口定位、点击穿透和置顶仍取决于 Wayland 合成器。
 
-### 🖼️ 为什么使用 OpenGL 而不是 Vulkan？
+### 🖼️ Vulkan / Metal 支持到哪一步了？
 
-这不是因为 Vulkan 不好，而是 BongoCat 不需要那种程度的复杂性。应用主要渲染一个 Live2D 模型、少量 UI 图层和透明桌面窗口，OpenGL 已能轻松满足需求，并且能自然地与 SDL3 及 Cubism 的 OpenGL 渲染器配合。迁移到 Vulkan 将需要在三个桌面平台维护更多渲染和同步代码，却不会为用户带来明显提升。对于 BongoCat 当前的工作负载，OpenGL 让渲染器更精简、更易调试和维护，同时仍能提供所需性能。
+设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：2D 覆盖层、圆角遮罩和异步动态纹理刷新目前仅在 OpenGL 路径实现；原生路径在加载时应用画质 / 显示尺寸限制。
+
+带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。本轮完成静态检查，尚未构建或进行 GPU 实测，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
 
 ## 🙏 特别感谢
 > [!TIP]

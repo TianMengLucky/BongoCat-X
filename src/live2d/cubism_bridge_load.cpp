@@ -20,6 +20,7 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
     BongoCatLive2DLoadProgress progress, void *userdata,
     BongoCatError *error) {
     if (!runtime) return BONGO_CAT_ERROR_ARGUMENT;
+    const bool gl = runtime->rhi_info.backend == BONGO_CAT_RHI_OPENGL;
     bongo_cat::NativeModel *previous = runtime->model;
     const size_t previous_texture_count = previous ? previous->texture_count() : 0;
     const double previous_atlas_mib = previous ? previous->texture_storage_mib() : 0.0;
@@ -61,6 +62,7 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
                 "Cannot allocate Live2D model");
             return BONGO_CAT_ERROR_MEMORY;
         }
+        model->set_rhi_info(runtime->rhi_info);
         if (render_options) model->set_render_options(*render_options);
         bool dynamic_texture_resolution = texture_options &&
             texture_options->dynamic_resolution;
@@ -74,18 +76,22 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
                until the new atlas is ready defeats the memory-saving goal and
                can create an 800 MB or larger switch-time peak. The model
                object remains available for rollback if loading fails. */
-            if (!SDL_GL_GetCurrentContext()) {
+            if (gl && !SDL_GL_GetCurrentContext()) {
                 bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
                     "Cannot replace a Live2D model without an OpenGL context");
                 delete model;
                 return error ? error->code : BONGO_CAT_ERROR_PLATFORM;
             }
-            glFinish();
+            if (gl) glFinish();
+            else bongo_cat_rhi_wait_idle(
+                static_cast<const BongoCatRhi *>(runtime->rhi_info.rhi_handle));
             previous_resources_released = true;
             previous->release_render_resources();
             bongo_cat_resource_trace_atlas(0.0);
-            unsigned released_targets = bongo_cat::release_offscreen_pool();
-            glFinish();
+            unsigned released_targets = gl ? bongo_cat::release_offscreen_pool() : 0;
+            if (gl) glFinish();
+            else bongo_cat_rhi_wait_idle(
+                static_cast<const BongoCatRhi *>(runtime->rhi_info.rhi_handle));
             bongo_cat_model_memory_log("previous-gpu-released",
                 "texture_refs=%zu remaining_refs=%zu offscreen_targets=%u "
                 "atlas_before_est_mib=%.1f live_atlas_est_mib=%.1f",
@@ -125,7 +131,7 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
             restore_previous();
             return result;
         }
-        GLenum ready_error = glGetError();
+        GLenum ready_error = gl ? glGetError() : GL_NO_ERROR;
         bongo_cat_resource_trace_atlas(model->texture_storage_mib());
         bongo_cat_model_memory_log("replacement-ready",
             "textures=%zu live_atlas_est_mib=%.1f previous_atlas_est_mib=%.1f",
@@ -147,11 +153,11 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
             previous_resources_released = false;
             // Submit any queued work so driver-side releases can finish even
             // when this switch is followed by no draws or buffer swaps.
-            glFlush();
+            if (gl) glFlush();
         }
         SDL_Log("[runtime] Live2D resource handoff: stage=previous-released "
             "texture_refs=%zu", released_textures);
-        GLenum retired_error = glGetError();
+        GLenum retired_error = gl ? glGetError() : GL_NO_ERROR;
         bongo_cat_model_memory_log("previous-model-deleted", "textures=%zu",
             model->texture_count());
         SDL_Log("[runtime] Live2D resource handoff: stage=complete "

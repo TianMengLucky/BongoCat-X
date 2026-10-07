@@ -1,4 +1,9 @@
 if(BUILD_TESTING)
+  add_executable(bongo_cat_rhi_pixel_tests tests/platform/test_rhi_pixels.c)
+  target_include_directories(bongo_cat_rhi_pixel_tests PRIVATE
+    src/render/rhi tests/support)
+  target_link_libraries(bongo_cat_rhi_pixel_tests PRIVATE bongo_cat_warnings)
+  add_test(NAME rhi-pixel-layout COMMAND bongo_cat_rhi_pixel_tests)
   add_executable(bongo_cat_window_corner_tests tests/platform/test_window_corners.c)
   target_include_directories(bongo_cat_window_corner_tests PRIVATE
     src/runtime/shell tests/support)

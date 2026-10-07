@@ -118,26 +118,29 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_window_apply(app);
     cache_startup_display_fps(app);
     bongo_cat_startup_stage(app, "platform-ready");
-    if (bongo_cat_rhi_is_gl(&app->rhi)) {
+    if (bongo_cat_rhi_live2d_supported(&app->rhi)) {
         app->live2d = bongo_cat_live2d_create(app->asset_root, error);
         if (!app->live2d) return false;
         attach_rhi_info(app);
     } else {
         SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
-            "Live2D rendering is disabled on the %s backend until the "
-            "draw phases port", bongo_cat_rhi_describe(&app->rhi));
+            "No Live2D renderer compiled for %s", bongo_cat_rhi_describe(&app->rhi));
     }
-    optional = (BongoCatError){0}; app->overlay = bongo_cat_overlay_create(&optional);
+    optional = (BongoCatError){0};
+    if (bongo_cat_rhi_is_gl(&app->rhi)) app->overlay = bongo_cat_overlay_create(&optional);
     if (!app->overlay) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
         "Overlay disabled: %s", optional.message);
     optional = (BongoCatError){0}; app->audio = bongo_cat_audio_create(&optional);
     if (!app->audio) SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "%s", optional.message);
     else bongo_cat_audio_set_enabled(app->audio, true);
     scan_models(app);
-    /* Model loading routes through the Live2D instance; on experimental
-       backends the application runs model-less until the draw phases port. */
-    if (bongo_cat_rhi_is_gl(&app->rhi) && !load_selected_model(app, error))
-        return false;
+    /* Attach the selected device before any textures or renderer are created. */
+    if (app->live2d && !load_selected_model(app, error)) {
+        if (bongo_cat_rhi_is_gl(&app->rhi)) return false;
+        app->settings.app.render_backend = BONGO_CAT_RENDER_BACKEND_OPENGL;
+        if (!bongo_cat_app_rebuild_render_backend(app, error) || !load_selected_model(app, error))
+            return false;
+    }
     bongo_cat_startup_stage(app, "model-ready");
     if (app->smoke_import_path[0]) {
         BongoCatError import_error = {0};

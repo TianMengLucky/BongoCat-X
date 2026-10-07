@@ -60,7 +60,7 @@ static bool try_window(const char *title, int width, int height,
     return true;
 }
 
-bool bongo_cat_rhi_gl_create_window(const char *title, int width, int height,
+BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int height,
     bool fallback_ladder, SDL_Window **window, BongoCatRhi *rhi,
     BongoCatError *error) {
     (void)fallback_ladder; /* OpenGL always uses the compatibility ladder. */
@@ -96,6 +96,10 @@ bool bongo_cat_rhi_gl_create_window(const char *title, int width, int height,
                 "Vertical sync unavailable: %s", SDL_GetError());
             BongoCatRhiGl *impl = calloc(1, sizeof(*impl));
             if (!impl) {
+                SDL_GL_DestroyContext(rhi->context);
+                rhi->context = NULL;
+                SDL_DestroyWindow(*window);
+                *window = NULL;
                 bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
                     "Cannot allocate the OpenGL RHI state");
                 bongo_cat_rhi_gl_shutdown(rhi);

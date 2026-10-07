@@ -10,12 +10,13 @@
 static bool swap_live2d_backend(BongoCatApp *app, BongoCatError *error) {
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    if (app->window && !SDL_GL_MakeCurrent(app->window, app->gl_context))
+    if (app->window && !bongo_cat_rhi_make_current(&app->rhi))
         SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
             "Cannot bind the pet window context for the Live2D swap: %s",
             SDL_GetError());
     bongo_cat_live2d_destroy(app->live2d);
     app->live2d = bongo_cat_live2d_create(app->asset_root, error);
+    attach_rhi_info(app);
     bool reloaded = app->live2d && (!app->loaded_model[0] ||
         bongo_cat_app_reload_model_with_error(app, error));
     if (previous_window && previous_context &&
@@ -33,9 +34,9 @@ bool bongo_cat_app_import_live2d_core(BongoCatApp *app, const char *path,
             "Cannot import the Cubism Core without an application and file");
         return false;
     }
-    if (!bongo_cat_rhi_is_gl(&app->rhi)) {
+    if (!bongo_cat_rhi_live2d_supported(&app->rhi)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "The Live2D bridge requires the OpenGL render backend");
+            "This build has no Live2D renderer for the selected backend");
         return false;
     }
     if (!bongo_cat_platform_live2d_core_import_supported()) {

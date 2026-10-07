@@ -263,9 +263,11 @@ flowchart TB
 
 아니요. BongoCat은 애니메이션 구동과 단축키를 위해 키보드 및 마우스 입력을 로컬에서 처리합니다. 키 입력, 마우스 동작 또는 기타 상호 작용 데이터를 기록하거나 업로드하지 않습니다. 구성도 로컬에만 저장되며, 애플리케이션에는 광고, 분석 도구 또는 사용자 추적 코드가 포함되어 있지 않습니다. 업데이트 확인을 수행할 때는 공개 버전 메타데이터만 요청하며, 입력, 구성 또는 사용 데이터를 전송하지 않습니다.
 
-### 🖼️ OpenGL을 사용하는 이유는 무엇인가요? Vulkan은 왜 사용하지 않나요?
+### 🖼️ Vulkan / Metal 지원은 어디까지 진행되었나요?
 
-Vulkan이 나쁘기 때문이 아니라, BongoCat이 그 정도의 복잡성을 필요로 하지 않기 때문입니다. 애플리케이션은 주로 하나의 Live2D 모델, 소량의 UI 레이어 및 투명 데스크톱 창을 렌더링하며, OpenGL은 이를 쉽게 충족할 수 있고 SDL3 및 Cubism의 OpenGL 렌더러와 자연스럽게 통합됩니다. Vulkan으로 마이그레이션하려면 세 가지 데스크톱 플랫폼에서 더 많은 렌더링 및 동기화 코드를 유지 관리해야 하지만, 사용자에게 눈에 띄는 개선은 없을 것입니다. BongoCat의 현재 워크로드에서 OpenGL은 렌더러를 더 간결하고 디버깅 및 유지 관리하기 쉽게 유지하면서도 필요한 성능을 제공합니다.
+설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 2D 오버레이, 둥근 모서리와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다.
+
+SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용합니다(`glslangValidator` 또는 `glslang`, Linux 패키지 `glslang-tools`; 실행 시 Vulkan 1.3 필요). macOS는 `BONGO_CAT_CUBISM_METAL=ON`과 Xcode Metal 도구를 사용합니다. `OFF`로 해당 확장을 제외할 수 있습니다. Metal 소스와 `.metallib`는 macOS에만, Vulkan 소스와 `.spv`는 Windows / Linux x64에만 혼합 모드 변형과 함께 포함됩니다. SDK 없는 진단 빌드는 이 Live2D 리소스를 제외합니다. GitHub Actions는 플랫폼별 도구를 준비하고 리소스를 확인합니다. 정적 검사를 수행했지만 빌드와 GPU 동작은 아직 검증하지 않았습니다. [통합 현황과 검증](live2d-vulkan-metal.md)을 참조하세요.
 
 ## 🙏 특별 감사
 > [!TIP]

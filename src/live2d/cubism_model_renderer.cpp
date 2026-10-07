@@ -12,8 +12,14 @@
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <Rendering/OpenGL/CubismOffscreenManager_OpenGLES2.hpp>
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+#include <Rendering/Vulkan/CubismDeviceInfo_Vulkan.hpp>
+#endif
 
 namespace bongo_cat {
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+void release_metal_device(void *device);
+#endif
 
 namespace {
 class DrawFrame final {
@@ -47,6 +53,9 @@ void NativeModel::draw() {
         draw_vulkan();
         return;
     }
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    if (rhi_info().backend == BONGO_CAT_RHI_METAL) { draw_metal(); return; }
 #endif
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
@@ -388,9 +397,21 @@ void NativeModel::draw() {
 }
 
 void NativeModel::release_renderer() {
+#if defined(BONGO_CAT_HAS_CUBISM_VULKAN) || defined(BONGO_CAT_HAS_CUBISM_METAL)
+    // A retired model may be deleted after its replacement has created caches.
+    const bool had_renderer = GetRenderer<Csm::Rendering::CubismRenderer>() != nullptr;
+#endif
     DeleteRenderer();
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_VULKAN && rhi_info_.vulkan_device)
+        Csm::Rendering::CubismDeviceInfo_Vulkan::ReleaseDeviceInfo((VkDevice)rhi_info_.vulkan_device);
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_METAL && rhi_info_.metal_device)
+        release_metal_device(rhi_info_.metal_device);
+#endif
 #ifdef CSM_TARGET_MAC_GL
-    core_buffers_.release();
+    if (rhi_info_.backend == BONGO_CAT_RHI_OPENGL) core_buffers_.release();
 #endif
     renderer_width_ = 0;
     renderer_height_ = 0;
@@ -404,14 +425,19 @@ void NativeModel::release_renderer() {
 }
 
 void NativeModel::release_render_resources() {
-    release_textures();
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        bongo_cat_rhi_wait_idle(static_cast<const BongoCatRhi *>(rhi_info_.rhi_handle));
     release_renderer();
+    release_textures();
 }
 
 bool NativeModel::create_renderer(BongoCatError *error) {
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (rhi_info().backend == BONGO_CAT_RHI_VULKAN)
         return create_renderer_vulkan(error);
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    if (rhi_info().backend == BONGO_CAT_RHI_METAL) return create_renderer_metal(error);
 #endif
     if (!SDL_GL_GetCurrentContext()) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,

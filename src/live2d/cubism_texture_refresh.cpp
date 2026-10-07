@@ -90,6 +90,8 @@ bool NativeModel::try_reuse_texture_quality(float quality_percent) {
 }
 
 double NativeModel::texture_storage_mib() const {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return (double)native_texture_bytes_ / (1024.0 * 1024.0);
     double result = 0.0;
     for (size_t i = 0; i < textures_.size(); ++i) {
         const auto &texture = textures_[i];

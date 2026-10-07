@@ -1,142 +1,124 @@
-/* Vulkan RHI backend: frame submission and present ops (see rhi_vk.c for
-   device and swapchain lifetime). Frames carry the recorded clear color
-   until the draw phases port to the RHI; the tail of the file provides
-   the stub symbols for platforms without the backend. */
+/* Vulkan frame drawing, readback and presentation. The RHI acquires an
+   image, calls the Cubism hook, then hands real pixels to the presenter. */
 #include "rhi_vk_internal.h"
 
-#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
+#if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
+    (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
 
-bool bongo_cat_rhi_vk_frame_present(void *user) {
-    BongoCatRhiVk *vk = user;
-    if (!vk || !vk->device) return false;
+/* Clear is also used to release an acquired image after a failed draw hook. */
+static bool clear_frame(BongoCatRhiVk *vk, uint32_t index) {
+    if (vk->vkResetCommandBuffer(vk->command, 0) != VK_SUCCESS) return false;
+    VkCommandBufferBeginInfo begin = {0};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
+        return false;
+    VkClearValue clear;
+    clear.color = (VkClearColorValue){{
+        vk->clear[0] * vk->clear[3], vk->clear[1] * vk->clear[3],
+        vk->clear[2] * vk->clear[3], vk->clear[3]}};
+    VkRenderPassBeginInfo pass = {0};
+    pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    pass.renderPass = vk->render_pass;
+    pass.framebuffer = vk->framebuffers[index];
+    pass.renderArea.extent = vk->extent;
+    pass.clearValueCount = 1;
+    pass.pClearValues = &clear;
+    vk->vkCmdBeginRenderPass(vk->command, &pass, VK_SUBPASS_CONTENTS_INLINE);
+    vk->vkCmdEndRenderPass(vk->command);
+    if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
+    VkSubmitInfo submit = {0};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &vk->command;
+    return vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE) == VK_SUCCESS;
+}
+
+bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
+    BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    if (!vk || !vk->device || !vk->swapchain) return false;
+    if (vk->frame_ready && !bongo_cat_rhi_vk_frame_present(rhi->window, vk))
+        return false;
+    vk->pixels_valid = false;
+    /* Single frame in flight for this milestone. The acquire fence is waited
+       on the CPU before any draw, and all rendering completes before present.
+       No binary present semaphore is reused while the presentation engine
+       might still own it. A future asynchronous path needs per-image signals. */
+    if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
+        vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS) return false;
     uint32_t index = 0;
-    if (vk->hook_draw) {
-        /* Live2D owns the frame content: the Cubism renderer clears the
-           target on its first draw of the frame and submits its own command
-           buffers. Serialize the acquire against the queue with an empty
-           wait submission (the official sample's pattern; the renderer's
-           own submits follow on the same queue). */
-        vk->vkQueueWaitIdle(vk->queue);
-        VkResult acquired = vk->vkAcquireNextImageKHR(vk->device,
-            vk->swapchain, UINT64_MAX, vk->image_available, VK_NULL_HANDLE,
-            &index);
-        if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return false;
-        if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR)
-            return false;
-        vk->acquired_index = index;
-        vk->current_image = vk->images[index];
-        vk->current_view = vk->views[index];
-        VkCommandBuffer wait_buffer = bongo_cat_rhi_vk_begin_commands(user);
-        if (wait_buffer) {
-            VkPipelineStageFlags wait_stage =
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkSubmitInfo wait_submit = {0};
-            wait_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            wait_submit.waitSemaphoreCount = 1;
-            wait_submit.pWaitSemaphores = &vk->image_available;
-            wait_submit.pWaitDstStageMask = &wait_stage;
-            vk->vkQueueSubmit(vk->queue, 1, &wait_submit, VK_NULL_HANDLE);
-            vk->vkQueueWaitIdle(vk->queue);
-            vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &wait_buffer);
-        }
-        if (!vk->hook_draw(vk->hook_user)) return false;
-    } else {
-        if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE,
-                UINT64_MAX) != VK_SUCCESS) return false;
-        if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS)
-            return false;
-        VkResult acquired = vk->vkAcquireNextImageKHR(vk->device,
-            vk->swapchain, UINT64_MAX, vk->image_available, VK_NULL_HANDLE,
-            &index);
-        if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return false;
-        if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR)
-            return false;
-        vk->acquired_index = index;
-        vk->current_image = vk->images[index];
-        vk->current_view = vk->views[index];
-        VkCommandBufferBeginInfo begin = {0};
-        begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
-            return false;
-        VkClearValue clear;
-        clear.color = (VkClearColorValue){{
-            vk->clear[0], vk->clear[1], vk->clear[2], vk->clear[3]}};
-        VkRenderPassBeginInfo pass = {0};
-        pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        pass.renderPass = vk->render_pass;
-        pass.framebuffer = vk->framebuffers[index];
-        pass.renderArea.extent = vk->extent;
-        pass.clearValueCount = 1;
-        pass.pClearValues = &clear;
-        vk->vkCmdBeginRenderPass(vk->command, &pass,
-            VK_SUBPASS_CONTENTS_INLINE);
-        vk->vkCmdEndRenderPass(vk->command);
-        if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
-        VkPipelineStageFlags wait_stage =
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        VkSubmitInfo submit = {0};
-        submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submit.waitSemaphoreCount = 1;
-        submit.pWaitSemaphores = &vk->image_available;
-        submit.pWaitDstStageMask = &wait_stage;
-        submit.commandBufferCount = 1;
-        submit.pCommandBuffers = &vk->command;
-        submit.signalSemaphoreCount = 1;
-        submit.pSignalSemaphores = &vk->render_finished;
-        if (vk->vkQueueSubmit(vk->queue, 1, &submit, vk->fence) != VK_SUCCESS)
-            return false;
-    }
-    VkPresentInfoKHR present = {0};
-    present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    present.waitSemaphoreCount = vk->hook_draw ? 0 : 1;
-    present.pWaitSemaphores = vk->hook_draw ? NULL : &vk->render_finished;
-    present.swapchainCount = 1;
-    present.pSwapchains = &vk->swapchain;
-    present.pImageIndices = &index;
-    VkResult presented = vk->vkQueuePresentKHR(vk->queue, &present);
-    if (presented == VK_ERROR_OUT_OF_DATE_KHR) {
+    VkResult acquired = vk->vkAcquireNextImageKHR(vk->device, vk->swapchain,
+        UINT64_MAX, VK_NULL_HANDLE, vk->fence, &index);
+    if (acquired == VK_ERROR_OUT_OF_DATE_KHR) {
         bongo_cat_rhi_vk_recreate_swapchain(vk, (int)vk->extent.width,
             (int)vk->extent.height);
         return false;
     }
-    return presented == VK_SUCCESS || presented == VK_SUBOPTIMAL_KHR;
-}
-
-static bool read_fill(void *user, int width, int height, void *pixels,
-    bool bottom_up) {
-    BongoCatRhiVk *vk = user;
-    if (!vk || width <= 0 || height <= 0 || !pixels) return false;
-    /* Premultiplied BGRA synthesized from the recorded clear color: until
-       the draw phases port, that color is the complete frame content, so a
-       device roundtrip would return the same bytes. */
-    uint8_t b = (uint8_t)(vk->clear[2] * 255.0f * vk->clear[3]);
-    uint8_t g = (uint8_t)(vk->clear[1] * 255.0f * vk->clear[3]);
-    uint8_t r = (uint8_t)(vk->clear[0] * 255.0f * vk->clear[3]);
-    uint8_t a = (uint8_t)(vk->clear[3] * 255.0f);
-    uint8_t *rows = pixels;
-    for (int y = 0; y < height; ++y) {
-        uint8_t *row = rows + (size_t)(bottom_up ? height - 1 - y : y) *
-            (size_t)width * 4;
-        for (int x = 0; x < width; ++x) {
-            row[x * 4 + 0] = b;
-            row[x * 4 + 1] = g;
-            row[x * 4 + 2] = r;
-            row[x * 4 + 3] = a;
-        }
+    if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR) return false;
+    if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE, UINT64_MAX) !=
+        VK_SUCCESS) return false;
+    vk->acquired_index = index;
+    vk->current_image = vk->images[index];
+    vk->current_view = vk->views[index];
+    const BongoCatRhiPresentOps *ops = &vk->owner->present;
+    if (!clear_frame(vk, index) || vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS)
+        return false;
+    bool drawn = !ops->draw_frame || ops->draw_frame(ops->hook_user);
+    if (!drawn) {
+        /* A failed callback may already have submitted work. Retire it before
+           resetting our command buffer and clearing the acquired image. */
+        if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
+            !clear_frame(vk, index)) return false;
+    }
+    if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS) return false;
+    vk->frame_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    vk->frame_ready = true;
+    if (!bongo_cat_rhi_vk_capture_frame(vk) || !drawn) {
+        (void)bongo_cat_rhi_vk_frame_present(rhi->window, vk);
+        return false;
     }
     return true;
 }
 
-bool bongo_cat_rhi_vk_read_bgra(int width, int height, void *pixels,
-    void *user) {
-    return read_fill(user, width, height, pixels, true);
-}
-
-bool bongo_cat_rhi_vk_read_rgba(int x, int y, int width, int height,
-    bool back_buffer, void *pixels, void *user) {
-    (void)x; (void)y; (void)back_buffer;
-    return read_fill(user, width, height, pixels, false);
+bool bongo_cat_rhi_vk_frame_present(SDL_Window *window, void *user) {
+    BongoCatRhiVk *vk = user;
+    if (!vk || !vk->owner) return false;
+    if (!vk->frame_ready &&
+        !bongo_cat_rhi_vk_render_frame((BongoCatRhi *)vk->owner)) return false;
+    if (vk->frame_layout != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+        VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
+        if (!command) return false;
+        VkImageMemoryBarrier barrier = {0};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.oldLayout = vk->frame_layout;
+        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = vk->current_image;
+        barrier.subresourceRange = (VkImageSubresourceRange){VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+        if (!bongo_cat_rhi_vk_submit_commands(vk->owner, command)) return false;
+        vk->frame_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+    uint32_t index = vk->acquired_index;
+    VkPresentInfoKHR present = {0};
+    present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present.swapchainCount = 1;
+    present.pSwapchains = &vk->swapchain;
+    present.pImageIndices = &index;
+    VkResult presented = vk->vkQueuePresentKHR(vk->queue, &present);
+    vk->current_image = VK_NULL_HANDLE;
+    vk->current_view = VK_NULL_HANDLE;
+    vk->frame_ready = false;
+    if (presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR) {
+        bongo_cat_rhi_vk_recreate_swapchain(vk, (int)vk->extent.width,
+            (int)vk->extent.height);
+        return false;
+    }
+    (void)window;
+    return presented == VK_SUCCESS;
 }
 
 void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
@@ -153,22 +135,38 @@ void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
     VkCommandBufferBeginInfo begin = {0};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    if (vk->vkBeginCommandBuffer(command, &begin) != VK_SUCCESS) return NULL;
+    if (vk->vkBeginCommandBuffer(command, &begin) != VK_SUCCESS) {
+        vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &command);
+        return NULL;
+    }
     return command;
 }
 
-void bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
+bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     VkCommandBuffer buffer = (VkCommandBuffer)command;
-    if (!vk || !buffer) return;
-    vk->vkEndCommandBuffer(buffer);
+    if (!vk || !buffer) return false;
+    if (vk->vkEndCommandBuffer(buffer) != VK_SUCCESS) {
+        vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
+        SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Cannot end Vulkan upload commands");
+        return false;
+    }
     VkSubmitInfo submit = {0};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &buffer;
-    vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
-    vk->vkQueueWaitIdle(vk->queue);
+    VkResult submitted = vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
+    VkResult waited = submitted == VK_SUCCESS ? vk->vkQueueWaitIdle(vk->queue) :
+        submitted;
+    if (waited != VK_SUCCESS)
+        SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Vulkan upload failed: %d", (int)waited);
     vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
+    return waited == VK_SUCCESS;
+}
+
+bool bongo_cat_rhi_vk_wait_idle(const BongoCatRhi *rhi) {
+    const BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    return vk && vk->device && vk->vkDeviceWaitIdle(vk->device) == VK_SUCCESS;
 }
 
 const char *bongo_cat_rhi_vk_present_name(void *user) {
@@ -177,11 +175,10 @@ const char *bongo_cat_rhi_vk_present_name(void *user) {
 }
 
 bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk) {
-    /* The Cubism render passes sample depth as a texture for masking, so a
-       combined depth/stencil layout is preferred when supported. */
+    /* The SDK uses depth-only views/barriers; avoid combined formats that
+       require separateDepthStencilLayouts for depth-only transitions. */
     static const VkFormat candidates[] = {
-        VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT};
+        VK_FORMAT_D32_SFLOAT, VK_FORMAT_D16_UNORM};
     VkFormatProperties properties;
     for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
         vk->vkGetPhysicalDeviceFormatProperties(vk->physical, candidates[i],
@@ -212,15 +209,24 @@ bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
     info->color_format = (int)vk->format;
     info->depth_format = (int)vk->depth_format;
     info->swapchain_views = (void **)vk->views;
-    info->current_image = vk->current_image;
-    info->current_view = vk->current_view;
+    info->current_image = (void *)(uintptr_t)vk->current_image;
+    info->current_view = (void *)(uintptr_t)vk->current_view;
     info->rhi_handle = rhi;
     return true;
 }
 
-bool bongo_cat_rhi_vk_make_current(BongoCatRhi *rhi) {
-    (void)rhi;
+bool bongo_cat_rhi_vk_get_frame_info(const BongoCatRhi *rhi,
+    BongoCatRhiVulkanFrameInfo *info) {
+    const BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    if (!vk || !vk->current_image || !info) return false;
+    info->image = (uint64_t)vk->current_image;
+    info->view = (uint64_t)vk->current_view;
     return true;
+}
+
+bool bongo_cat_rhi_vk_make_current(BongoCatRhi *rhi) {
+    const BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    return vk && vk->device;
 }
 
 void bongo_cat_rhi_vk_detach(const BongoCatRhi *rhi) { (void)rhi; }
@@ -228,14 +234,14 @@ void bongo_cat_rhi_vk_detach(const BongoCatRhi *rhi) { (void)rhi; }
 void bongo_cat_rhi_vk_prepare_frame(BongoCatRhi *rhi, int width, int height) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     if (!vk || !vk->device) return;
-    if (vk->extent.width != (uint32_t)width ||
+    if (!vk->swapchain || vk->extent.width != (uint32_t)width ||
         vk->extent.height != (uint32_t)height)
         bongo_cat_rhi_vk_recreate_swapchain(vk, width, height);
 }
 
 void bongo_cat_rhi_vk_viewport(BongoCatRhi *rhi, int x, int y, int width,
     int height) {
-    /* Recorded with the draw commands once the draw phases port. */
+    /* Cubism records the full drawable viewport in its draw commands. */
     (void)rhi; (void)x; (void)y; (void)width; (void)height;
 }
 
@@ -257,18 +263,12 @@ const char *bongo_cat_rhi_vk_describe(const BongoCatRhi *rhi) {
 void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     if (!vk) return;
-    if (vk->device) vk->vkDeviceWaitIdle(vk->device);
+    if (vk->device && vk->vkDeviceWaitIdle) vk->vkDeviceWaitIdle(vk->device);
     bongo_cat_rhi_vk_destroy_swapchain_objects(vk);
-    if (vk->render_finished && vk->vkDestroySemaphore)
-        vk->vkDestroySemaphore(vk->device, vk->render_finished, NULL);
-    if (vk->image_available && vk->vkDestroySemaphore)
-        vk->vkDestroySemaphore(vk->device, vk->image_available, NULL);
     if (vk->fence && vk->vkDestroyFence)
         vk->vkDestroyFence(vk->device, vk->fence, NULL);
     if (vk->pool && vk->vkDestroyCommandPool)
         vk->vkDestroyCommandPool(vk->device, vk->pool, NULL);
-    if (vk->render_pass && vk->vkDestroyRenderPass)
-        vk->vkDestroyRenderPass(vk->device, vk->render_pass, NULL);
     if (vk->device && vk->vkDestroyDevice)
         vk->vkDestroyDevice(vk->device, NULL);
     if (vk->surface && vk->instance)
@@ -278,46 +278,6 @@ void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi) {
     free(vk);
     rhi->impl = NULL;
     SDL_Vulkan_UnloadLibrary();
-}
-
-#else
-
-/* Unreachable through the availability gate; keeps the symbols so the
-   dispatcher links on every platform. */
-bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
-    SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {
-    (void)title; (void)width; (void)height; (void)window; (void)rhi;
-    bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-        "Vulkan is not supported on this platform");
-    return BONGO_CAT_ERROR_PLATFORM;
-}
-
-void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi) { (void)rhi; }
-
-bool bongo_cat_rhi_vk_make_current(BongoCatRhi *rhi) {
-    (void)rhi;
-    return false;
-}
-
-void bongo_cat_rhi_vk_detach(const BongoCatRhi *rhi) { (void)rhi; }
-
-void bongo_cat_rhi_vk_prepare_frame(BongoCatRhi *rhi, int width, int height) {
-    (void)rhi; (void)width; (void)height;
-}
-
-void bongo_cat_rhi_vk_viewport(BongoCatRhi *rhi, int x, int y, int width,
-    int height) {
-    (void)rhi; (void)x; (void)y; (void)width; (void)height;
-}
-
-void bongo_cat_rhi_vk_clear(BongoCatRhi *rhi, float red, float green,
-    float blue, float alpha) {
-    (void)rhi; (void)red; (void)green; (void)blue; (void)alpha;
-}
-
-const char *bongo_cat_rhi_vk_describe(const BongoCatRhi *rhi) {
-    (void)rhi;
-    return "Vulkan";
 }
 
 #endif

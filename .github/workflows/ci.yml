@@ -94,6 +94,9 @@ jobs:
       - name: Check source file size policy
         run: cmake -DROOT="$GITHUB_WORKSPACE" -P cmake/CheckLines.cmake
 
+      - name: Check native renderer integration and platform source policy
+        run: cmake -P cmake/CheckNativeRenderIntegration.cmake
+
       - name: Check Windows icon dimensions and image data
         run: python3 scripts/check-windows-icon.py
 

@@ -37,8 +37,6 @@ set(BONGO_CAT_MEDIA_SOURCES
 set(BONGO_CAT_RENDER_SOURCES
   src/render/rhi/rhi.c
   src/render/rhi/rhi_gl.c
-  src/render/rhi/rhi_vk.c
-  src/render/rhi/rhi_vk_frame.c
   src/render/gl_api.c
   src/render/overlay.c
   src/render/overlay_assets.c
@@ -46,6 +44,17 @@ set(BONGO_CAT_RENDER_SOURCES
   src/render/overlay_draw.c
   src/render/mver_pointer_overlay.c
   src/render/mver_pointer_overlay_draw.c)
+
+if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
+    (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+     CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")))
+  list(APPEND BONGO_CAT_RENDER_SOURCES
+    src/render/rhi/rhi_vk.c src/render/rhi/rhi_vk_swapchain.c
+    src/render/rhi/rhi_vk_readback.c
+    src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c)
+else()
+  list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
+endif()
 
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/lifecycle/app.c
@@ -64,6 +73,7 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/lifecycle/startup_arguments.c
   src/runtime/lifecycle/portable_mode.c
   src/runtime/lifecycle/render_backend.c
+  src/runtime/lifecycle/render_native.c
   src/runtime/lifecycle/system_language.c
   src/runtime/lifecycle/storage_paths.c)
 

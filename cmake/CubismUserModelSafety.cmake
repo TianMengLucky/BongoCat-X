@@ -69,6 +69,31 @@ function(bongo_cat_patch_cubism_renderer_creation variable)
   set(${variable} "${source}" PARENT_SCOPE)
 endfunction()
 
+# Apply routing after the safety patch, so the same generated translation
+# unit keeps the null guard and reaches the bridge's selected renderer.
+function(bongo_cat_route_cubism_renderer variable)
+  set(source "${${variable}}")
+  set(anchor [=[#include "CubismUserModel.hpp"]=])
+  set(creator [=[_renderer = Rendering::CubismRenderer::Create(width, height);]=])
+  string(FIND "${source}" "${anchor}" include_position)
+  string(FIND "${source}" "${creator}" creator_position)
+  if(include_position EQUAL -1 OR creator_position EQUAL -1)
+    message(FATAL_ERROR "Cubism user-model renderer routing patch mismatch")
+  endif()
+  set(declaration [=[
+namespace bongo_cat {
+Live2D::Cubism::Framework::Rendering::CubismRenderer *
+bongo_cat_cubism_create_renderer(Live2D::Cubism::Framework::csmUint32 width,
+    Live2D::Cubism::Framework::csmUint32 height);
+}
+]=])
+  string(REPLACE "${anchor}" "${anchor}\n${declaration}" source "${source}")
+  string(REPLACE "${creator}"
+    "_renderer = ::bongo_cat::bongo_cat_cubism_create_renderer(width, height);"
+    source "${source}")
+  set(${variable} "${source}" PARENT_SCOPE)
+endfunction()
+
 function(bongo_cat_harden_cubism_user_model target)
   set(model_dir "${CUBISM_FRAMEWORK_PATH}/src/Model")
   set(source_path "${model_dir}/CubismUserModel.cpp")
@@ -99,6 +124,9 @@ function(bongo_cat_harden_cubism_user_model target)
   endif()
 
   bongo_cat_patch_cubism_renderer_creation(source)
+  if(BONGO_CAT_CUBISM_VULKAN OR BONGO_CAT_CUBISM_METAL)
+    bongo_cat_route_cubism_renderer(source)
+  endif()
 
   file(MAKE_DIRECTORY "${output_dir}")
   file(WRITE "${output_source}" "${source}")

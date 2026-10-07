@@ -9,7 +9,7 @@
 #define SNAPSHOT_IDLE_NS 180000000ull
 
 void bongo_cat_window_snapshot_begin(BongoCatApp *app) {
-    if (!app) return;
+    if (!app || !bongo_cat_rhi_is_gl(&app->rhi)) return;
     app->snapshot_deadline_ns = SDL_GetTicksNS() + SNAPSHOT_IDLE_NS;
     if (app->window_snapshot || app->snapshot_blocked) return;
 #ifdef _WIN32

@@ -184,12 +184,13 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
         }
     }
 frame_anchor_only:
-    (void)0;
-    int nx = 0, ny = 0, nw = 0, nh = 0;
-    if (anchor_ready && pw > 0 && ph > 0 &&
-        bongo_cat_live2d_viewport(app->live2d, &nx, &ny, &nw, &nh)) {
-        app->model_pointer_anchor_x = (float)((nx + anchor_x * nw) / pw);
-        app->model_pointer_anchor_y = (float)(1.0 - (ny + anchor_y * nh) / ph);
-        app->model_pointer_anchor_ready = true;
+    {
+        int nx = 0, ny = 0, nw = 0, nh = 0;
+        if (anchor_ready && pw > 0 && ph > 0 &&
+            bongo_cat_live2d_viewport(app->live2d, &nx, &ny, &nw, &nh)) {
+            app->model_pointer_anchor_x = (float)((nx + anchor_x * nw) / pw);
+            app->model_pointer_anchor_y = (float)(1.0 - (ny + anchor_y * nh) / ph);
+            app->model_pointer_anchor_ready = true;
+        }
     }
 }

@@ -9,11 +9,13 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 ## [未发布]
 
+- **Live2D 原生后端接通与热切换**：设置 → 应用支持 Windows / Linux x64 的 OpenGL ↔ Vulkan 和 macOS 的 OpenGL ↔ Metal 即时切换；重建窗口、设备和模型，保留已选动作 / 表情，初始化或模型重载失败时恢复 OpenGL。补齐 Rust 图像解码、预乘纹理上传、SDK 工厂路由、帧绘制、真实 GPU 像素回读与封面 / 点击命中路径；修复旧 GL 上下文恢复和 Windows 分层呈现误用 GL 交换函数的问题。Vulkan/Metal 仍为实验性，2D 覆盖层、圆角和异步动态纹理刷新尚待迁移，本轮仅静态验证，详见 [进度与验证清单](docs/live2d-vulkan-metal.md)。
+- **平台裁剪与构建资源**：Metal 实现 / `.metallib` 仅编入 macOS，Vulkan 实现 / `.spv` 仅编入 Windows / Linux x64；其他目标使用轻量接口桩，macOS 不拉取 Vulkan 头文件和 volk。SDK 构建按平台启用对应后端，编译基础与全部混合模式着色器，并纳入嵌入资源 / Linux 安装包；加载不依赖工作目录。发布工作流准备编译工具、选择后端并检查资源，CI 增加平台裁剪和资源加载补丁检查。
+- **资源与静态分析清理**：统一后端结果类型，修复 Vulkan 格式 / 交换链生命周期和初始化失败泄漏，Metal 使用 ARC 状态对象；共享像素转换，保留旧 ABI 并新增完整 Vulkan / Metal 帧句柄接口。修复导入摘要边界、空配置目录检查和默认字段初始化，清理重复生成路径；新增像素布局回归测试。
+
 ### 新增
 
 - **强制接收鼠标输入**（Windows）：「模型设置」新增开关，开启后模型指针不再等待光标锁定检测器判定，直接采信 Raw Input 设备移动量驱动（`settings` 新键 `rendering.forceMouseInput`）。修复部分游戏隐藏并钉住系统光标（每帧回中带抖动、稍大的 ClipCursor 区域、低回报率鼠标等命不中检测阈值）时桌宠无法跟随鼠标移动的问题；锁定检测仍照常运行，选项关闭时行为不变。
-- **Live2D 多后端渲染地基**：探测 Cubism 5.1+ SDK 自带的 Vulkan/Metal 渲染器（`cmake/CubismRenderers.cmake`），可选并入 Framework 构建；Vulkan 着色器经 glslangValidator 编译并随程序分发；RHI 新增设备描述符 API、Vulkan 深度格式选择；Live2D ABI 新增 `bongo_cat_live2d_set_rhi_info` 传递后端设备句柄。集成步骤与已验证的渲染器 API 见 `docs/live2d-vulkan-metal.md`；桥接的 Vulkan 绘制路径为下一步。
-- **渲染后端 RHI 抽象与 Vulkan/Metal 里程碑**：新增渲染硬件接口层（`include/bongo_cat/rhi.h`、`src/render/rhi/`），主窗口的创建、帧原语与呈现钩子统一走后端分发，所选后端不可用或初始化失败时自动回退 OpenGL 兼容阶梯。Windows 与 64 位 Linux 新增 Vulkan 后端（运行时经 SDL 加载系统 loader，构建无需 Vulkan SDK：实例/设备/交换链 + 清屏帧提交 + 为分层呈现提供回读），macOS 新增 Metal 后端（`CAMetalLayer` 清屏帧直显，支持透明窗口）。设置页「应用」新增「渲染后端」切换（auto/OpenGL/Vulkan/Metal，按平台显示），支持**热切换**：下一次帧边界重建窗口、后端、覆盖层与 Live2D，无需重启进程。Live2D 与覆盖层绘制仍运行在 OpenGL 后端（Vulkan/Metal 会话暂以清屏帧呈现，为后续接入 draw 阶段与 Cubism 渲染预留接口）；Vulkan 头文件经 FetchContent 以 header-only 方式引入。
 
 ## [2.0.4] · 2026-10-05
 

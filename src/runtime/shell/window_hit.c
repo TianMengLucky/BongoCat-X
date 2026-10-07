@@ -26,8 +26,8 @@ static bool visible_at_pointer(BongoCatApp *app, float x, float y, bool pending_
         pixel_x, pixel_y, &presented_alpha)) return presented_alpha > 8;
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool switch_context = previous_window != app->window ||
-        previous_context != app->gl_context;
+    bool switch_context = bongo_cat_rhi_is_gl(&app->rhi) &&
+        (previous_window != app->window || previous_context != app->gl_context);
     if (switch_context && !SDL_GL_MakeCurrent(app->window, app->gl_context)) return true;
     GLubyte pixel[4] = {0};
     /* Before swap, only GL_BACK describes the frame about to be displayed.

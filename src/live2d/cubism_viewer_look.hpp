@@ -17,7 +17,7 @@ private:
     enum class Axis { X, Y, Z };
     struct Parameter {
         Csm::csmInt32 index;
-        Axis axis;
+        Axis axis = Axis::X;
         Csm::csmFloat32 weight;
     };
 

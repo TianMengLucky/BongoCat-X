@@ -1,297 +1,25 @@
-/* Vulkan RHI backend: device and swapchain lifetime (see rhi_vk_frame.c
-   for frame submission and the unavailable-platform stubs). Loads the
-   system loader through SDL at runtime so the build needs no Vulkan SDK. */
+/* Vulkan RHI backend: device and swapchain lifetime (see rhi_vk_loader.c
+   for entry-point resolution, rhi_vk_swapchain.c for surface lifetime and
+   rhi_vk_frame.c for frame submission). */
 #include "rhi_vk_internal.h"
 
-#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
+#if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
+    (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
 
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Instance-level entry points come from vkGetInstanceProcAddr; device-level
-   calls use the same dispatch for simplicity, the frame rate is modest. */
-static bool load_fn(BongoCatRhiVk *vk, void **slot, const char *name) {
-    *slot = (void *)vk->instance_gpa(vk->instance, name);
-    if (!*slot) {
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO,
-            "[render] Vulkan entry point %s is unavailable", name);
-        return false;
-    }
-    return true;
-}
-
-#define BONGO_CAT_VK_LOAD(name) \
-    do { \
-        if (!load_fn(vk, (void **)&vk->name, #name)) return false; \
-    } while (0)
-
-static bool load_global_fns(BongoCatRhiVk *vk, BongoCatError *error) {
-    vk->instance_gpa = (PFN_vkGetInstanceProcAddr)
-        SDL_Vulkan_GetVkGetInstanceProcAddr();
-    if (!vk->instance_gpa) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "SDL cannot resolve vkGetInstanceProcAddr: %s", SDL_GetError());
-        return false;
-    }
-    vk->vkCreateInstance = (PFN_vkCreateInstance)vk->instance_gpa(
-        VK_NULL_HANDLE, "vkCreateInstance");
-    if (!vk->vkCreateInstance) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "The Vulkan loader does not provide vkCreateInstance");
-        return false;
-    }
-    return true;
-}
-
-static bool load_instance_fns(BongoCatRhiVk *vk) {
-    BONGO_CAT_VK_LOAD(vkDestroyInstance);
-    BONGO_CAT_VK_LOAD(vkEnumeratePhysicalDevices);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceProperties);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceQueueFamilyProperties);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceSupportKHR);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceSurfaceFormatsKHR);
-    BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceFormatProperties);
-    BONGO_CAT_VK_LOAD(vkCreateDevice);
-    BONGO_CAT_VK_LOAD(vkDestroyDevice);
-    BONGO_CAT_VK_LOAD(vkDeviceWaitIdle);
-    BONGO_CAT_VK_LOAD(vkGetDeviceQueue);
-    BONGO_CAT_VK_LOAD(vkCreateSwapchainKHR);
-    BONGO_CAT_VK_LOAD(vkDestroySwapchainKHR);
-    BONGO_CAT_VK_LOAD(vkGetSwapchainImagesKHR);
-    BONGO_CAT_VK_LOAD(vkCreateImageView);
-    BONGO_CAT_VK_LOAD(vkDestroyImageView);
-    BONGO_CAT_VK_LOAD(vkCreateRenderPass);
-    BONGO_CAT_VK_LOAD(vkDestroyRenderPass);
-    BONGO_CAT_VK_LOAD(vkCreateFramebuffer);
-    BONGO_CAT_VK_LOAD(vkDestroyFramebuffer);
-    BONGO_CAT_VK_LOAD(vkCreateCommandPool);
-    BONGO_CAT_VK_LOAD(vkDestroyCommandPool);
-    BONGO_CAT_VK_LOAD(vkAllocateCommandBuffers);
-    BONGO_CAT_VK_LOAD(vkCmdBeginRenderPass);
-    BONGO_CAT_VK_LOAD(vkCmdEndRenderPass);
-    BONGO_CAT_VK_LOAD(vkEndCommandBuffer);
-    BONGO_CAT_VK_LOAD(vkQueueSubmit);
-    BONGO_CAT_VK_LOAD(vkQueuePresentKHR);
-    BONGO_CAT_VK_LOAD(vkWaitForFences);
-    BONGO_CAT_VK_LOAD(vkResetFences);
-    BONGO_CAT_VK_LOAD(vkCreateFence);
-    BONGO_CAT_VK_LOAD(vkDestroyFence);
-    BONGO_CAT_VK_LOAD(vkCreateSemaphore);
-    BONGO_CAT_VK_LOAD(vkDestroySemaphore);
-    BONGO_CAT_VK_LOAD(vkAcquireNextImageKHR);
-    BONGO_CAT_VK_LOAD(vkBeginCommandBuffer);
-    BONGO_CAT_VK_LOAD(vkQueueWaitIdle);
-    BONGO_CAT_VK_LOAD(vkFreeCommandBuffers);
-    return true;
-}
-
-void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
-    if (vk->framebuffers) {
-        for (uint32_t i = 0; i < vk->image_count; ++i)
-            if (vk->framebuffers[i])
-                vk->vkDestroyFramebuffer(vk->device, vk->framebuffers[i], NULL);
-        free(vk->framebuffers);
-        vk->framebuffers = NULL;
-    }
-    if (vk->views) {
-        for (uint32_t i = 0; i < vk->image_count; ++i)
-            if (vk->views[i])
-                vk->vkDestroyImageView(vk->device, vk->views[i], NULL);
-        free(vk->views);
-        vk->views = NULL;
-    }
-    if (vk->images) {
-        free(vk->images);
-        vk->images = NULL;
-    }
-    if (vk->swapchain) {
-        vk->vkDestroySwapchainKHR(vk->device, vk->swapchain, NULL);
-        vk->swapchain = VK_NULL_HANDLE;
-    }
-    vk->image_count = 0;
-}
-
-static bool create_swapchain(BongoCatRhiVk *vk, int width, int height,
-    BongoCatError *error) {
-    VkSurfaceCapabilitiesKHR caps;
-    if (vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical,
-            vk->surface, &caps) != VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed");
-        return false;
-    }
-    uint32_t format_count = 0;
-    if (vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical, vk->surface,
-            &format_count, NULL) != VK_SUCCESS || !format_count) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "The Vulkan surface exposes no formats");
-        return false;
-    }
-    VkSurfaceFormatKHR *formats = malloc(format_count * sizeof(*formats));
-    if (!formats) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
-            "Cannot list the Vulkan surface formats");
-        return false;
-    }
-    if (vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical, vk->surface,
-            &format_count, formats) != VK_SUCCESS) {
-        free(formats);
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkGetPhysicalDeviceSurfaceFormatsKHR failed");
-        return false;
-    }
-    VkFormat chosen = formats[0].format;
-    VkColorSpaceKHR color_space = formats[0].colorSpace;
-    for (uint32_t i = 0; i < format_count; ++i) {
-        if ((formats[i].format == VK_FORMAT_B8G8R8A8_UNORM ||
-                formats[i].format == VK_FORMAT_R8G8B8A8_UNORM) &&
-            formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            chosen = formats[i].format;
-            color_space = formats[i].colorSpace;
-            break;
-        }
-    }
-    free(formats);
-    uint32_t image_count = caps.minImageCount + 1;
-    if (caps.maxImageCount && image_count > caps.maxImageCount)
-        image_count = caps.maxImageCount;
-    VkExtent2D extent = caps.currentExtent;
-    if (extent.width == UINT32_MAX) {
-        extent.width = (uint32_t)width;
-        extent.height = (uint32_t)height;
-    }
-    if (!extent.width || !extent.height) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "The Vulkan surface has a zero-sized extent");
-        return false;
-    }
-    VkSwapchainCreateInfoKHR info = {0};
-    info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    info.surface = vk->surface;
-    info.minImageCount = image_count;
-    info.imageFormat = chosen;
-    info.imageColorSpace = color_space;
-    info.imageExtent = extent;
-    info.imageArrayLayers = 1;
-    info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.preTransform = caps.currentTransform;
-    info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    info.clipped = VK_TRUE;
-    if (vk->vkCreateSwapchainKHR(vk->device, &info, NULL, &vk->swapchain) !=
-        VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkCreateSwapchainKHR failed");
-        return false;
-    }
-    vk->format = chosen;
-    vk->extent = extent;
-    if (vk->vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
-            &vk->image_count, NULL) != VK_SUCCESS || !vk->image_count) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkGetSwapchainImagesKHR failed");
-        return false;
-    }
-    vk->images = malloc(vk->image_count * sizeof(*vk->images));
-    vk->views = calloc(vk->image_count, sizeof(*vk->views));
-    vk->framebuffers = calloc(vk->image_count, sizeof(*vk->framebuffers));
-    if (!vk->images || !vk->views || !vk->framebuffers ||
-        vk->vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
-            &vk->image_count, vk->images) != VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
-            "Cannot query the Vulkan swapchain images");
-        return false;
-    }
-    for (uint32_t i = 0; i < vk->image_count; ++i) {
-        VkImageViewCreateInfo view = {0};
-        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view.image = vk->images[i];
-        view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view.format = vk->format;
-        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view.subresourceRange.levelCount = 1;
-        view.subresourceRange.layerCount = 1;
-        if (vk->vkCreateImageView(vk->device, &view, NULL, &vk->views[i]) !=
-            VK_SUCCESS) {
-            bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-                "vkCreateImageView failed");
-            return false;
-        }
-        VkFramebufferCreateInfo fb = {0};
-        fb.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        fb.renderPass = vk->render_pass;
-        fb.attachmentCount = 1;
-        fb.pAttachments = &vk->views[i];
-        fb.width = vk->extent.width;
-        fb.height = vk->extent.height;
-        fb.layers = 1;
-        if (vk->vkCreateFramebuffer(vk->device, &fb, NULL,
-                &vk->framebuffers[i]) != VK_SUCCESS) {
-            bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-                "vkCreateFramebuffer failed");
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool create_render_pass(BongoCatRhiVk *vk, BongoCatError *error) {
-    VkAttachmentDescription attachment = {0};
-    attachment.format = vk->format;
-    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    VkAttachmentReference reference = {0,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-    VkSubpassDescription subpass = {0};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &reference;
-    VkSubpassDependency dependency = {0};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    VkRenderPassCreateInfo info = {0};
-    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    info.attachmentCount = 1;
-    info.pAttachments = &attachment;
-    info.subpassCount = 1;
-    info.pSubpasses = &subpass;
-    info.dependencyCount = 1;
-    info.pDependencies = &dependency;
-    if (vk->vkCreateRenderPass(vk->device, &info, NULL, &vk->render_pass) !=
-        VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkCreateRenderPass failed");
-        return false;
-    }
-    return true;
-}
-
-bool bongo_cat_rhi_vk_recreate_swapchain(BongoCatRhiVk *vk, int width,
-    int height) {
-    vk->vkDeviceWaitIdle(vk->device);
-    bongo_cat_rhi_vk_destroy_swapchain_objects(vk);
-    BongoCatError error = {0};
-    return create_swapchain(vk, width, height, &error);
-}
-
-bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
+BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {
     /* Initializes the volk table's global loader; the framework's Vulkan
        renderer sources call vk* through it (VK_NO_PROTOTYPES). */
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (volkInitialize() != VK_SUCCESS) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "The Vulkan loader is unavailable");
         return BONGO_CAT_ERROR_PLATFORM;
     }
+#endif
     if (!SDL_Vulkan_LoadLibrary(NULL)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "SDL cannot load the Vulkan loader: %s", SDL_GetError());
@@ -301,6 +29,9 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
        and Windows composes the frame through the layered presenter. */
     SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_BORDERLESS |
         SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN;
+#ifndef _WIN32
+    flags |= SDL_WINDOW_TRANSPARENT;
+#endif
     *window = SDL_CreateWindow(title, width, height, flags);
     if (!*window) {
         SDL_Vulkan_UnloadLibrary();
@@ -310,12 +41,16 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     }
     BongoCatRhiVk *vk = calloc(1, sizeof(*vk));
     if (!vk) {
+        SDL_DestroyWindow(*window);
+        *window = NULL;
         SDL_Vulkan_UnloadLibrary();
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
             "Cannot allocate the Vulkan RHI state");
         return BONGO_CAT_ERROR_MEMORY;
     }
-    if (!load_global_fns(vk, error)) goto failed;
+    /* Shutdown must see partially initialized handles on every error path. */
+    rhi->impl = vk;
+    if (!bongo_cat_rhi_vk_load_global_fns(vk, error)) goto failed;
     unsigned extension_count = 0;
     /* SDL owns the returned array; the instance creation only borrows it. */
     const char *const *extensions = SDL_Vulkan_GetInstanceExtensions(
@@ -331,7 +66,11 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     app.pEngineName = "BongoCat";
     app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    app.apiVersion = VK_API_VERSION_1_3;
+#else
     app.apiVersion = VK_API_VERSION_1_0;
+#endif
     VkInstanceCreateInfo instance_info = {0};
     instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instance_info.pApplicationInfo = &app;
@@ -344,8 +83,10 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
         goto failed;
     }
     /* Populate volk's instance-level table for the framework sources. */
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     volkLoadInstance(vk->instance);
-    if (!load_instance_fns(vk)) {
+#endif
+    if (!bongo_cat_rhi_vk_load_instance_fns(vk)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "Required Vulkan entry points are unavailable");
         goto failed;
@@ -379,6 +120,9 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     VkPhysicalDevice chosen = VK_NULL_HANDLE;
     uint32_t queue_family = UINT32_MAX;
     for (uint32_t i = 0; i < device_count && !chosen; ++i) {
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+        if (!bongo_cat_rhi_vk_cubism_features(vk, devices[i], NULL)) continue;
+#endif
         uint32_t family_count = 0;
         vk->vkGetPhysicalDeviceQueueFamilyProperties(devices[i],
             &family_count, NULL);
@@ -409,7 +153,7 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     free(devices);
     if (!chosen) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "No Vulkan device supports graphics and presentation");
+            "No compatible Vulkan device supports graphics and presentation");
         goto failed;
     }
     vk->physical = chosen;
@@ -420,9 +164,16 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     queue_info.queueFamilyIndex = queue_family;
     queue_info.queueCount = 1;
     queue_info.pQueuePriorities = &priority;
-    const char *device_extensions[] = {"VK_KHR_swapchain"};
+    const char *device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    VkPhysicalDeviceVulkan13Features cubism_features = {0};
+    bongo_cat_rhi_vk_cubism_features(vk, chosen, &cubism_features);
+#endif
     VkDeviceCreateInfo device_info = {0};
     device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    device_info.pNext = &cubism_features;
+#endif
     device_info.queueCreateInfoCount = 1;
     device_info.pQueueCreateInfos = &queue_info;
     device_info.enabledExtensionCount = 1;
@@ -433,13 +184,16 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
             "vkCreateDevice failed");
         goto failed;
     }
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    volkLoadDevice(vk->device);
+#endif
     vk->vkGetDeviceQueue(vk->device, queue_family, 0, &vk->queue);
     if (!bongo_cat_rhi_vk_pick_depth_format(vk) ||
-        !create_render_pass(vk, error) ||
-        !create_swapchain(vk, width, height, error)) goto failed;
+        !bongo_cat_rhi_vk_create_swapchain(vk, width, height, error)) goto failed;
     VkCommandPoolCreateInfo pool_info = {0};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool_info.queueFamilyIndex = queue_family;
+    pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     if (vk->vkCreateCommandPool(vk->device, &pool_info, NULL, &vk->pool) !=
         VK_SUCCESS) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
@@ -459,21 +213,11 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     }
     VkFenceCreateInfo fence_info = {0};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
     if (vk->vkCreateFence(vk->device, &fence_info, NULL, &vk->fence) !=
         VK_SUCCESS) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "vkCreateFence failed");
-        goto failed;
-    }
-    VkSemaphoreCreateInfo semaphore_info = {0};
-    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    if (vk->vkCreateSemaphore(vk->device, &semaphore_info, NULL,
-            &vk->image_available) != VK_SUCCESS ||
-        vk->vkCreateSemaphore(vk->device, &semaphore_info, NULL,
-            &vk->render_finished) != VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkCreateSemaphore failed");
         goto failed;
     }
     SDL_LogInfo(SDL_LOG_CATEGORY_VIDEO, "[render] %s ready", vk->describe);
@@ -492,6 +236,7 @@ bool bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     rhi->present.requires_layered = false;
 #endif
     rhi->present.user = vk;
+    vk->owner = rhi;
     return BONGO_CAT_OK;
 
 failed:
@@ -502,7 +247,8 @@ failed:
         SDL_DestroyWindow(*window);
         *window = NULL;
     }
-    return BONGO_CAT_ERROR_PLATFORM;
+    return error && error->code != BONGO_CAT_OK ? error->code :
+        BONGO_CAT_ERROR_PLATFORM;
 }
 
 #endif

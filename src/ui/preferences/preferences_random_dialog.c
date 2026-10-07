@@ -125,7 +125,7 @@ static void model_order_move(BongoCatApp *app, size_t source, size_t target) {
             &app->models.entries[target],
             (source - target) * sizeof(entry));
     app->models.entries[target] = entry;
-    const char *ids[BONGO_CAT_MODEL_CAP];
+    const char *ids[BONGO_CAT_MODEL_CAP] = {0};
     size_t count = app->models.count;
     if (count > BONGO_CAT_MODEL_CAP) count = BONGO_CAT_MODEL_CAP;
     for (size_t i = 0; i < count; ++i) ids[i] = app->models.entries[i].id;

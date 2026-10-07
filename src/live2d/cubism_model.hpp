@@ -54,7 +54,8 @@ public:
         BongoCatLive2DLoadProgress progress, void *userdata,
         int display_width = 0, int display_height = 0,
         float render_quality_percent = 100.0f);
-    size_t texture_count() const { return textures_.size(); }
+    size_t texture_count() const { return rhi_info_.backend == BONGO_CAT_RHI_OPENGL
+        ? textures_.size() : native_alpha_.size(); }
     double texture_storage_mib() const;
     float render_quality_percent() const { return render_quality_percent_; }
     bool try_reuse_texture_quality(float quality_percent);
@@ -79,10 +80,8 @@ public:
     void set_tight_frame(bool tight);
     void set_tight_overlay_rect(const float *rect);
     void set_render_options(const BongoCatLive2DRenderOptions &options);
-#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     void set_rhi_info(const BongoCatRhiDeviceInfo &info);
     const BongoCatRhiDeviceInfo &rhi_info() const;
-#endif
     void set_dragging(float x, float y, bool angle_z = false);
     void prepare_viewer_audit();
     bool prepare_cover_capture();
@@ -136,7 +135,7 @@ private:
         float max_y = 0.0f;
         bool valid = false;
     };
-    struct DrawableBounds { ModelBounds bounds; float area; };
+    struct DrawableBounds { ModelBounds bounds; float area = 0.0f; };
     struct FrameDrawable {
         std::vector<unsigned short> vertices;
         ModelBounds bounds;
@@ -189,10 +188,28 @@ private:
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     /* Cubism Vulkan renderer paths (see docs/live2d-vulkan-metal.md). */
     bool create_renderer_vulkan(BongoCatError *error);
-    void bind_textures_vulkan();
+    bool upload_texture_vulkan(int index, const std::vector<unsigned char> &pixels,
+        int width, int height, BongoCatError *error);
+    void release_textures_vulkan();
+    std::vector<Csm::CubismImageVulkan> vulkan_textures_;
     void draw_vulkan();
-    BongoCatRhiDeviceInfo rhi_info_ = {};
 #endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    bool create_renderer_metal(BongoCatError *error);
+    bool upload_texture_metal(int index, const std::vector<unsigned char> &pixels,
+        int width, int height, BongoCatError *error);
+    void release_textures_metal();
+    void draw_metal();
+    void *metal_textures_ = nullptr;
+#endif
+    bool load_textures_native(BongoCatError *error,
+        BongoCatLive2DLoadProgress progress, void *userdata, int display_width, int display_height);
+    void native_projection(Csm::CubismMatrix44 &projection);
+    void native_visual_state(const Csm::CubismMatrix44 &projection);
+    BongoCatRhiDeviceInfo rhi_info_ = {};
+    std::vector<BongoCatImageAlphaMask> native_alpha_;
+    size_t native_texture_bytes_ = 0;
+
     int prepare_mask_layout();
     bool update_mask_buffers();
     void bind_textures();

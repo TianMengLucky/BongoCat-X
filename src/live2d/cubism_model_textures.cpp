@@ -21,8 +21,8 @@ namespace bongo_cat {
 static std::vector<std::weak_ptr<ModelTexture>> live_textures;
 
 struct TextureHashJob {
-    const char *path;
-    char *digest;
+    const char *path = nullptr;
+    char *digest = nullptr;
     BongoCatResult result = BONGO_CAT_ERROR_IO;
 };
 
@@ -189,11 +189,22 @@ void NativeModel::bind_textures() {
 void NativeModel::release_textures() {
     cancel_texture_refresh();
     textures_.clear();
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    release_textures_vulkan();
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_METAL
+    release_textures_metal();
+#endif
+    native_alpha_.clear();
+    native_texture_bytes_ = 0;
     triangle_alpha_.clear();
     frame_drawables_.clear();
 }
 
 const BongoCatImageAlphaMask *NativeModel::texture_alpha(int index) const {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return index >= 0 && (size_t)index < native_alpha_.size() ?
+            &native_alpha_[(size_t)index] : nullptr;
     return index >= 0 && (size_t)index < textures_.size() && textures_[(size_t)index]
         ? &textures_[(size_t)index]->alpha : nullptr;
 }
@@ -203,6 +214,8 @@ bool NativeModel::load_textures(BongoCatError *error,
     int display_width, int display_height, float render_quality_percent) {
     if (!texture_quality_valid(render_quality_percent)) render_quality_percent = 100.0f;
     render_quality_percent_ = render_quality_percent;
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return load_textures_native(error, progress, userdata, display_width, display_height);
     release_textures();
     int count = setting_->GetTextureCount();
     textures_.assign((size_t)count, nullptr);

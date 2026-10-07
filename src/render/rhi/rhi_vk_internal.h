@@ -8,7 +8,8 @@
 
 #include "rhi_internal.h"
 
-#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
+#if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
+    (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -34,12 +35,17 @@ typedef struct BongoCatRhiVk {
     VkCommandPool pool;
     VkCommandBuffer command;
     VkFence fence;
-    VkSemaphore image_available, render_finished;
+    bool frame_ready;
+    VkImageLayout frame_layout;
+    VkBuffer readback_buffer;
+    VkDeviceMemory readback_memory;
+    VkDeviceSize readback_size;
+    uint8_t *pixels;
+    bool pixels_valid;
+    const BongoCatRhi *owner;
     uint32_t acquired_index;
     VkImage current_image;
     VkImageView current_view;
-    bool (*hook_draw)(void *hook_user);
-    void *hook_user;
     float clear[4];
     PFN_vkGetInstanceProcAddr instance_gpa;
 #define BONGO_CAT_VK_FN(name) PFN_##name name;
@@ -77,24 +83,46 @@ typedef struct BongoCatRhiVk {
     BONGO_CAT_VK_FN(vkResetFences)
     BONGO_CAT_VK_FN(vkCreateFence)
     BONGO_CAT_VK_FN(vkDestroyFence)
-    BONGO_CAT_VK_FN(vkCreateSemaphore)
-    BONGO_CAT_VK_FN(vkDestroySemaphore)
     BONGO_CAT_VK_FN(vkAcquireNextImageKHR)
     BONGO_CAT_VK_FN(vkBeginCommandBuffer)
     BONGO_CAT_VK_FN(vkQueueWaitIdle)
     BONGO_CAT_VK_FN(vkFreeCommandBuffers)
+    BONGO_CAT_VK_FN(vkResetCommandBuffer)
+    BONGO_CAT_VK_FN(vkCreateBuffer)
+    BONGO_CAT_VK_FN(vkDestroyBuffer)
+    BONGO_CAT_VK_FN(vkGetBufferMemoryRequirements)
+    BONGO_CAT_VK_FN(vkAllocateMemory)
+    BONGO_CAT_VK_FN(vkFreeMemory)
+    BONGO_CAT_VK_FN(vkBindBufferMemory)
+    BONGO_CAT_VK_FN(vkMapMemory)
+    BONGO_CAT_VK_FN(vkUnmapMemory)
+    BONGO_CAT_VK_FN(vkGetPhysicalDeviceMemoryProperties)
+    BONGO_CAT_VK_FN(vkCmdPipelineBarrier)
+    BONGO_CAT_VK_FN(vkCmdCopyImageToBuffer)
 #undef BONGO_CAT_VK_FN
 } BongoCatRhiVk;
 
+bool bongo_cat_rhi_vk_load_global_fns(BongoCatRhiVk *vk,
+    BongoCatError *error);
+bool bongo_cat_rhi_vk_load_instance_fns(BongoCatRhiVk *vk);
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+bool bongo_cat_rhi_vk_cubism_features(BongoCatRhiVk *vk,
+    VkPhysicalDevice device, VkPhysicalDeviceVulkan13Features *enabled);
+#endif
+
+void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk);
 /* Chooses and records a depth format for the Cubism render passes. */
 bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk);
 /* Destroys views, framebuffers and the swapchain (device idle required). */
 void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk);
 /* Re-creates the swapchain for the requested pixel size. */
+bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
+    BongoCatError *error);
 bool bongo_cat_rhi_vk_recreate_swapchain(BongoCatRhiVk *vk, int width,
     int height);
-/* Presents one cleared frame; also the backend's swap present op. */
-bool bongo_cat_rhi_vk_frame_present(void *user);
+/* Presents the prepared acquired frame; also the swap present op. */
+bool bongo_cat_rhi_vk_frame_present(SDL_Window *window, void *user);
 /* Premultiplied-BGRA / RGBA window readback helpers for present ops. */
 bool bongo_cat_rhi_vk_read_bgra(int width, int height, void *pixels,
     void *user);

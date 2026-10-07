@@ -54,8 +54,8 @@ void NativeModel::prepare_frame_bounds() {
     frame_drawables_.clear();
     if (!_model) return;
     std::vector<AlphaCoverage> coverage;
-    coverage.reserve(textures_.size());
-    for (size_t i = 0; i < textures_.size(); ++i)
+    coverage.reserve(texture_count());
+    for (size_t i = 0; i < texture_count(); ++i)
         coverage.emplace_back(texture_alpha((int)i));
     frame_drawables_.resize((size_t)_model->GetDrawableCount());
     for (int i = 0; i < _model->GetDrawableCount(); ++i) {

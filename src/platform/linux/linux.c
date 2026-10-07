@@ -147,16 +147,19 @@ float bongo_cat_platform_get_opacity(const BongoCatPlatform *platform) {
 }
 void bongo_cat_platform_window_replaced(BongoCatPlatform *platform,
     SDL_Window *window) {
-    if (!platform || !window) return;
+    if (!platform || platform->window == window) return;
+    bongo_cat_linux_shape_destroy(platform);
     platform->window = window;
+    if (window) bongo_cat_linux_shape_init(platform);
 }
 
 bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int height) {
     if (!platform || !platform->window) return false;
     const BongoCatRhiPresentOps *ops = platform->present_ops;
-    if (ops && ops->swap) return ops->swap(platform->window, ops->user);
     bongo_cat_linux_shape_capture(platform, width, height);
-    if (SDL_GL_SwapWindow(platform->window)) return true;
+    bool swapped = ops && ops->swap ? ops->swap(platform->window, ops->user) :
+        SDL_GL_SwapWindow(platform->window);
+    if (swapped) return true;
     bongo_cat_linux_shape_reset(platform);
     return false;
 }

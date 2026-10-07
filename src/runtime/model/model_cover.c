@@ -3,6 +3,7 @@
 #include "preferences_model_cover.h"
 #include "runtime.h"
 #include "bongo_cat/file.h"
+#include "../../platform/common/gl_readback.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
@@ -55,13 +56,10 @@ static unsigned char *read_cover_pixels(const char *path, int width,
             bytes, path);
         return NULL;
     }
-    while (glGetError() != GL_NO_ERROR) {}
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
+    if (!bongo_cat_gl_read_window(0, 0, width, height, true, pixels)) {
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-            "Model cover framebuffer readback failed: path=%s gl_error=0x%x",
-            path, error);
+            "Model cover framebuffer readback failed: path=%s error=%s",
+            path, SDL_GetError());
         free(pixels);
         return NULL;
     }

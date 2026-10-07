@@ -6,10 +6,9 @@ void bongo_cat_window_clear_background(BongoCatApp *app) {
     BongoCatWindowPreferences *window = &app->settings.window;
     uint32_t rgb = window->obs_background_rgb;
     float alpha = window->obs_background ? 1.0f : 0.0f;
-    glClearColor(window->obs_background ? ((rgb >> 16) & 255) / 255.0f : 0.0f,
+    bongo_cat_rhi_clear(&app->rhi, window->obs_background ? ((rgb >> 16) & 255) / 255.0f : 0.0f,
         window->obs_background ? ((rgb >> 8) & 255) / 255.0f : 0.0f,
         window->obs_background ? (rgb & 255) / 255.0f : 0.0f, alpha);
-    glClear(GL_COLOR_BUFFER_BIT);
     static int last_enabled = -1;
     static uint32_t last_color;
     if (last_enabled != (window->obs_background ? 1 : 0) ||

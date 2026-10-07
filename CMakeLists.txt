@@ -62,7 +62,8 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     include(cmake/Cubism.cmake)
     set(BONGO_CAT_LIVE2D_SOURCES
       src/live2d/cubism_bridge.cpp src/live2d/cubism_bridge_load.cpp
-      src/live2d/cubism_model_renderer_vulkan.cpp
+      src/live2d/cubism_native_textures.cpp
+      src/live2d/cubism_renderer_factory.cpp
       src/live2d/cubism_render_resources.cpp
       src/live2d/cubism_bridge_visual.cpp
       src/live2d/cubism_expression.cpp
@@ -85,6 +86,14 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       src/live2d/cubism_model_frame.cpp
       src/live2d/cubism_model_viewport.cpp
       src/live2d/cubism_model_validate.cpp)
+    if(BONGO_CAT_CUBISM_VULKAN)
+      list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/cubism_model_renderer_vulkan.cpp)
+    endif()
+    if(BONGO_CAT_CUBISM_METAL)
+      list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/cubism_model_renderer_metal.mm)
+      set_source_files_properties(src/live2d/cubism_model_renderer_metal.mm
+        PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    endif()
     set(BONGO_CAT_CUBISM_ENABLED ON)
   endif()
   if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_RUNTIME_CORE)
@@ -96,7 +105,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       set_frame viewport overlay_viewport resize reshape
       try_reuse_texture_quality
       texture_refresh_pending texture_refresh_due texture_refresh_busy
-      cancel_texture_refresh refresh_textures update draw set_mirror
+      cancel_texture_refresh refresh_textures update draw draw_checked set_mirror
       set_vertical_flip set_render_options set_tight_frame
       set_tight_overlay_rect set_dragging
       set_centered_dragging prepare_viewer_audit prepare_cover_capture
@@ -182,8 +191,12 @@ target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
 if(BONGO_CAT_VULKAN_INCLUDE_DIR)
   target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
     ${BONGO_CAT_VULKAN_INCLUDE_DIR})
+  target_compile_definitions(bongo_cat_runtime PRIVATE BONGO_CAT_HAS_VULKAN_RHI=1)
 endif()
-if(BONGO_CAT_CUBISM_VULKAN)
+if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_CUBISM_METAL)
+  target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_CUBISM_METAL=1)
+endif()
+if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_CUBISM_VULKAN)
   # The shim must precede Vulkan-Headers so <vulkan/vulkan.h> resolves to
   # the volk-routing header.
   target_include_directories(bongo_cat_runtime SYSTEM BEFORE PRIVATE
@@ -254,15 +267,6 @@ if(NOT APPLE)
   # still references its symbols, so non-Apple builds compile the stubs.
   target_sources(bongo_cat_runtime PRIVATE
     src/render/rhi/rhi_metal_stub.c)
-endif()
-if(BONGO_CAT_CUBISM_VULKAN AND BONGO_CAT_GLSLANG_VALIDATOR)
-  add_dependencies(bongo_cat bongo_cat_vulkan_shaders)
-  # The renderer loads "FrameworkShaders/<name>.spv" from the working
-  # directory; keep the compiled shaders beside the executable.
-  add_custom_command(TARGET bongo_cat POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${BONGO_CAT_VULKAN_SHADER_OUTPUT}" "$<TARGET_FILE_DIR:bongo_cat>/FrameworkShaders"
-    COMMENT "Copying FrameworkShaders next to the executable" VERBATIM)
 endif()
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
 if(BONGO_CAT_RUNTIME_CORE_MODE AND WIN32)

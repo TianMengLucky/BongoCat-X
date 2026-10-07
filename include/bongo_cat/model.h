@@ -220,6 +220,7 @@ bool bongo_cat_live2d_refresh_textures(BongoCatLive2D *live2d,
     bool active, bool allow_start);
 bool bongo_cat_live2d_update(BongoCatLive2D *live2d, float delta_seconds);
 void bongo_cat_live2d_draw(BongoCatLive2D *live2d);
+bool bongo_cat_live2d_draw_checked(BongoCatLive2D *live2d);
 void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d,

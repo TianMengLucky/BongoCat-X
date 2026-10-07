@@ -1,3 +1,26 @@
+set(BONGO_CAT_CUBISM_VULKAN_DEFAULT OFF)
+if(WIN32 OR (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+    CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$"))
+  set(BONGO_CAT_CUBISM_VULKAN_DEFAULT ON)
+endif()
+option(BONGO_CAT_CUBISM_VULKAN
+  "Build the Cubism Vulkan renderer into the Framework (Cubism 5.1+ SDK)"
+  ${BONGO_CAT_CUBISM_VULKAN_DEFAULT})
+if(BONGO_CAT_CUBISM_VULKAN AND NOT BONGO_CAT_CUBISM_VULKAN_DEFAULT)
+  message(FATAL_ERROR "The Cubism Vulkan RHI supports Windows and x86_64 Linux; "
+    "configure this platform with -DBONGO_CAT_CUBISM_VULKAN=OFF")
+endif()
+
+option(BONGO_CAT_CUBISM_METAL "Build the Cubism Metal renderer" ${APPLE})
+if(BONGO_CAT_CUBISM_METAL AND NOT APPLE)
+  message(FATAL_ERROR "The Metal renderer requires macOS")
+endif()
+if(BONGO_CAT_CUBISM_METAL)
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD 17)
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+endif()
+
 set(CUBISM_CORE_PATH "${BONGO_CAT_CUBISM_SDK}/Core")
 set(CUBISM_FRAMEWORK_PATH "${BONGO_CAT_CUBISM_SDK}/Framework")
 set(CUBISM_GLEW_PATH "${BONGO_CAT_CUBISM_SDK}/Samples/OpenGL/thirdParty/glew")
@@ -114,11 +137,11 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR)
   target_include_directories(Framework SYSTEM PUBLIC
     ${BONGO_CAT_VULKAN_INCLUDE_DIR})
 endif()
-option(BONGO_CAT_CUBISM_VULKAN
-  "Build the Cubism Vulkan renderer into the Framework (Cubism 5.1+ SDK)"
-  ON)
 if(BONGO_CAT_CUBISM_VULKAN)
   include(cmake/CubismRenderers.cmake)
+endif()
+if(BONGO_CAT_CUBISM_METAL)
+  include(cmake/CubismMetal.cmake)
 endif()
 if(BONGO_CAT_RUNTIME_CORE AND NOT WIN32)
   target_link_libraries(Framework PUBLIC bongo_cat_core_shim glew_s)

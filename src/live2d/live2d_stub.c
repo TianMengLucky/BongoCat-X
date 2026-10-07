@@ -161,6 +161,9 @@ bool bongo_cat_live2d_texture_refresh_busy(const BongoCatLive2D *live2d) {
 void bongo_cat_live2d_cancel_texture_refresh(BongoCatLive2D *live2d) {
     (void)live2d;
 }
+bool bongo_cat_live2d_draw_checked(BongoCatLive2D *live2d) {
+    (void)live2d; return false;
+}
 void bongo_cat_live2d_draw(BongoCatLive2D *live2d) { (void)live2d; }
 void stub_live2d_set_rhi_info(BongoCatLive2D *live2d,
     const BongoCatRhiDeviceInfo *info) {

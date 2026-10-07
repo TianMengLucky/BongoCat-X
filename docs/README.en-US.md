@@ -404,17 +404,11 @@ without the variable to return to the default backend. Evdev mouse following
 uses unaccelerated device motion; Wayland placement, click-through, and
 always-on-top support still depend on the compositor.
 
-### 🖼️ Why OpenGL instead of Vulkan?
+### 🖼️ What is the Vulkan / Metal support status?
 
-We chose OpenGL not because Vulkan is bad, but because BongoCat does not need
-that level of complexity. The app mainly renders one Live2D model, a few UI
-layers, and a transparent desktop window. OpenGL already handles that
-comfortably, and it works naturally with SDL3 and Cubism's OpenGL renderer.
-Moving to Vulkan would mean maintaining much more rendering and synchronization
-code across three desktop platforms, without a noticeable improvement for
-users. For BongoCat's current workload, OpenGL keeps the renderer smaller,
-easier to debug, and easier to maintain while still delivering the performance
-we need.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: 2D overlays, rounded-corner masks and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded.
+
+SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Static checks were run; builds and GPU behavior remain unverified. See [integration status and validation](live2d-vulkan-metal.md).
 
 ## 🙏 Special Thanks
 > [!TIP]

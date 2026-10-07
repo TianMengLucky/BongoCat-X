@@ -29,56 +29,13 @@ static void update_model(BongoCatApp *app, uint64_t now) {
     if (!app->smoke_freeze_model) bongo_cat_app_step_live2d(app, elapsed);
 }
 
-/* Experimental Vulkan/Metal milestone: the draw phases have not ported to
-   the RHI yet, so the frame submits the backend clear color while Live2D
-   and the overlays stay on the OpenGL backend. */
-static bool render_cleared(BongoCatApp *app) {
-    uint64_t now = SDL_GetTicksNS();
-    if (app->render_retry_ns > now) return false;
-    if (!bongo_cat_rhi_make_current(&app->rhi)) {
-        app->render_retry_ns = now + 1000000000ull;
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO,
-            "Render device could not be activated: %s", SDL_GetError());
-        return false;
-    }
-    app->render_retry_ns = 0;
-    bongo_cat_window_apply_pending_resize(app);
-    int width, height;
-    SDL_GetWindowSizeInPixels(app->window, &width, &height);
-    bongo_cat_rhi_prepare_frame(&app->rhi, width, height);
-    bongo_cat_rhi_viewport(&app->rhi, 0, 0, width, height);
-    bongo_cat_rhi_clear(&app->rhi, 0.0f, 0.0f, 0.0f, 0.0f);
-    bool reveal_startup = app->startup_visibility_pending &&
-        app->session.window.visible;
-    bool pre_presented = reveal_startup &&
-        bongo_cat_platform_present(&app->platform, width, height);
-    if (reveal_startup)
-        bongo_cat_platform_set_visible(&app->platform, true);
-    bool presented = pre_presented ||
-        bongo_cat_platform_present(&app->platform, width, height);
-    if (!presented) {
-        if (reveal_startup) bongo_cat_platform_set_visible(&app->platform, false);
-        app->dirty = true;
-        app->render_retry_ns = SDL_GetTicksNS() + 1000000000ull;
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO,
-            "Main frame presentation failed: %s", SDL_GetError());
-        return false;
-    }
-    if (reveal_startup) app->startup_visibility_pending = false;
-    app->input_diagnostics.presented_frames++;
-    bongo_cat_startup_ready(app);
-    app->dirty = false;
-    return true;
-}
-
 static bool render(BongoCatApp *app, bool present) {
     if (present && app->window_snapshot) {
         bongo_cat_window_snapshot_present(app);
         return app->window_snapshot != NULL;
     }
     if (!bongo_cat_rhi_is_gl(&app->rhi)) {
-        /* No model cover capture on experimental backends: no model. */
-        return present ? render_cleared(app) : false;
+        return bongo_cat_app_render_native(app, present);
     }
     uint64_t now = SDL_GetTicksNS();
     if (app->render_retry_ns > now) return false;

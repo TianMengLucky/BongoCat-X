@@ -31,6 +31,8 @@ void bongo_cat_app_shutdown(BongoCatApp *app, const char *stage,
     bongo_cat_tray_destroy(app->tray);
     bongo_cat_gamepads_set_enabled(app, false);
     bongo_cat_audio_destroy(app->audio);
+    if (app->gl_context) SDL_GL_MakeCurrent(app->window, app->gl_context);
+    bongo_cat_rhi_wait_idle(&app->rhi);
     bongo_cat_overlay_destroy(app->overlay);
     bongo_cat_live2d_destroy(app->live2d);
     bongo_cat_resource_trace_shutdown();

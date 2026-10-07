@@ -57,3 +57,19 @@ if(NOT already_safe STREQUAL expected_safe)
 endif()
 
 message(STATUS "Cubism user-model safety patch policy passed")
+
+# Routing must preserve the null guard rather than generating an unsafe
+# second copy, and the call must reference the bridge's own namespace.
+set(routed "#include \"CubismUserModel.hpp\"\n${official_unsafe}")
+bongo_cat_patch_cubism_renderer_creation(routed)
+bongo_cat_route_cubism_renderer(routed)
+foreach(required IN ITEMS
+    "namespace bongo_cat {"
+    "_renderer = ::bongo_cat::bongo_cat_cubism_create_renderer(width, height);"
+    "if (_renderer)")
+  string(FIND "${routed}" "${required}" position)
+  if(position EQUAL -1)
+    message(FATAL_ERROR "Cubism renderer routing test failed: ${required}")
+  endif()
+endforeach()
+message(STATUS "Cubism renderer routing preserves safety checks")

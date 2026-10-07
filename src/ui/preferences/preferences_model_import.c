@@ -47,9 +47,9 @@ void bongo_cat_preferences_import_merge(BongoCatImportSummary *summary,
        across queued jobs; repeated imports must not inflate the total. */
     for (size_t i = 0; i < job->package_id_count; ++i) {
         size_t index = 0;
-        while (index < summary->count &&
+        while (index < BONGO_CAT_MODEL_CAP && index < summary->count &&
             strcmp(summary->ids[index], job->package_ids[i])) index++;
-        if (index == BONGO_CAT_MODEL_CAP) continue;
+        if (index >= BONGO_CAT_MODEL_CAP) continue;
         if (index == summary->count) {
             SDL_utf8strlcpy(summary->ids[index], job->package_ids[i],
                 BONGO_CAT_ID_CAP);

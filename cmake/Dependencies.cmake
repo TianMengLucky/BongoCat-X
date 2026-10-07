@@ -13,6 +13,12 @@ function(bongo_cat_require_dependency_header variable header guidance)
   endif()
 endfunction()
 
+set(BONGO_CAT_PLATFORM_VULKAN OFF)
+if(WIN32 OR (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+    CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$"))
+  set(BONGO_CAT_PLATFORM_VULKAN ON)
+endif()
+
 if(BONGO_CAT_FETCH_DEPS)
   set(SDL_SHARED OFF CACHE BOOL "" FORCE)
   set(SDL_STATIC ON CACHE BOOL "" FORCE)
@@ -22,12 +28,11 @@ if(BONGO_CAT_FETCH_DEPS)
   set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
   set(SDL_RENDER OFF CACHE BOOL "" FORCE)
   set(SDL_GPU OFF CACHE BOOL "" FORCE)
-  # bongo_cat creates desktop OpenGL contexts and does not use SDL's alternate
-  # graphics or software video backends. Keep the platform video driver and
-  # dummy fallback enabled for diagnostics, while omitting unused APIs.
+  # Keep SDL's window integration for all supported graphics backends;
+  # rendering itself stays in the RHI, not SDL_Renderer or SDL_GPU.
   set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
-  set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
-  set(SDL_METAL OFF CACHE BOOL "" FORCE)
+  set(SDL_VULKAN ${BONGO_CAT_PLATFORM_VULKAN} CACHE BOOL "" FORCE)
+  set(SDL_METAL ${APPLE} CACHE BOOL "" FORCE)
   set(SDL_OFFSCREEN OFF CACHE BOOL "" FORCE)
   set(SDL_VIRTUAL_JOYSTICK OFF CACHE BOOL "" FORCE)
   set(SDL_CAMERA OFF CACHE BOOL "" FORCE)
@@ -75,22 +80,22 @@ if(BONGO_CAT_FETCH_DEPS)
   FetchContent_Declare(volk URL
     https://github.com/zeux/volk/archive/refs/tags/vulkan-sdk-1.3.290.0.tar.gz
     URL_HASH SHA256=bb6a6d616c0f2bbd5d180da982a6d92a0948581cec937de69f17883980c6ca06)
-  # The Live2D Vulkan renderer and the RHI's Vulkan backend need SDL's
-  # Vulkan window integration (surface creation, loader entry points).
-  set(SDL_VULKAN ON CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear vulkan_headers)
-  # volk is populated but not added: its own CMake target would require the
-  # Vulkan SDK; cmake/CubismRenderers.cmake compiles volk.c with the shim.
-  FetchContent_GetProperties(volk)
-  if(NOT volk_POPULATED)
-    FetchContent_Populate(volk)
+  FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear)
+  if(BONGO_CAT_PLATFORM_VULKAN)
+    FetchContent_MakeAvailable(vulkan_headers)
+    # volk is populated but not added: its own CMake target would require the
+    # Vulkan SDK; cmake/CubismRenderers.cmake compiles volk.c with the shim.
+    FetchContent_GetProperties(volk)
+    if(NOT volk_POPULATED)
+      FetchContent_Populate(volk)
+    endif()
+    set(BONGO_CAT_VULKAN_INCLUDE_DIR "${vulkan_headers_SOURCE_DIR}/include")
   endif()
   if(WIN32)
     include("${CMAKE_CURRENT_LIST_DIR}/SDLWindowsRuntime.cmake")
     bongo_cat_trim_sdl_windows(SDL3-static "${sdl3_SOURCE_DIR}")
   endif()
   set(BONGO_CAT_STB_INCLUDE_DIR "${stb_SOURCE_DIR}")
-  set(BONGO_CAT_VULKAN_INCLUDE_DIR "${vulkan_headers_SOURCE_DIR}/include")
   set(BONGO_CAT_MINIAUDIO_INCLUDE_DIR "${miniaudio_SOURCE_DIR}")
   set(BONGO_CAT_NUKLEAR_INCLUDE_DIR "${nuklear_SOURCE_DIR}")
   set(BONGO_CAT_MINIAUDIO_TARGET miniaudio)
@@ -113,7 +118,7 @@ else()
   bongo_cat_require_dependency_header(BONGO_CAT_STB_INCLUDE_DIR stb_image_write.h
     "Install the complete stb development headers")
 
-  if(NOT BONGO_CAT_VULKAN_INCLUDE_DIR)
+  if(BONGO_CAT_PLATFORM_VULKAN AND NOT BONGO_CAT_VULKAN_INCLUDE_DIR)
     find_path(BONGO_CAT_VULKAN_INCLUDE_DIR NAMES vulkan/vulkan.h)
   endif()
 

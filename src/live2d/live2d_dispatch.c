@@ -35,6 +35,7 @@ void bridge_live2d_cancel_texture_refresh(BongoCatLive2D *live2d);
 bool bridge_live2d_refresh_textures(BongoCatLive2D *live2d, bool active, bool allow_start);
 bool bridge_live2d_update(BongoCatLive2D *live2d, float delta_seconds);
 void bridge_live2d_draw(BongoCatLive2D *live2d);
+bool bridge_live2d_draw_checked(BongoCatLive2D *live2d);
 void bridge_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void bridge_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void bridge_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
@@ -80,6 +81,7 @@ void stub_live2d_cancel_texture_refresh(BongoCatLive2D *live2d);
 bool stub_live2d_refresh_textures(BongoCatLive2D *live2d, bool active, bool allow_start);
 bool stub_live2d_update(BongoCatLive2D *live2d, float delta_seconds);
 void stub_live2d_draw(BongoCatLive2D *live2d);
+bool stub_live2d_draw_checked(BongoCatLive2D *live2d);
 void stub_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror);
 void stub_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped);
 void stub_live2d_set_render_options(BongoCatLive2D *live2d, const BongoCatLive2DRenderOptions *options);
@@ -385,3 +387,8 @@ bool bongo_cat_live2d_visual_state(const BongoCatLive2D *live2d, BongoCatLive2DV
     return stub_live2d_visual_state(live2d, state);
 }
 
+
+bool bongo_cat_live2d_draw_checked(BongoCatLive2D *live2d) {
+    if (!live2d) return false;
+    return bridge_instance ? bridge_live2d_draw_checked(live2d) : stub_live2d_draw_checked(live2d);
+}

@@ -29,11 +29,17 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
     }
     /* The dispatcher falls back to the OpenGL compatibility ladder when the
        selected backend is unavailable or fails to initialize. */
+    BongoCatRhi choice = {0};
+    choice.backend = resolve_rhi_backend(app->settings.app.render_backend);
+    if (!bongo_cat_rhi_live2d_supported(&choice)) choice.backend = BONGO_CAT_RHI_OPENGL;
     BongoCatResult result = bongo_cat_rhi_create_window(
-        resolve_rhi_backend(app->settings.app.render_backend),
+        choice.backend,
         BONGO_CAT_PET_WINDOW_TITLE, app->session.window.width,
         app->session.window.height, true, &app->window, &app->rhi, error);
     if (result != BONGO_CAT_OK) return result;
+    if (app->settings.app.render_backend != BONGO_CAT_RENDER_BACKEND_AUTO &&
+        app->rhi.backend == BONGO_CAT_RHI_OPENGL)
+        app->settings.app.render_backend = BONGO_CAT_RENDER_BACKEND_OPENGL;
     app->gl_context = app->rhi.backend == BONGO_CAT_RHI_OPENGL ?
         app->rhi.context : NULL;
     return BONGO_CAT_OK;
@@ -220,6 +226,7 @@ void bongo_cat_window_close(BongoCatApp *app) {
         bongo_cat_window_destroy_corner_mask();
     /* Releases the backend device/surface state before the SDL window and
        the Vulkan loader go away; the GL context stays runtime-owned. */
+    bongo_cat_platform_window_replaced(&app->platform, NULL);
     bongo_cat_rhi_destroy(&app->rhi);
     if (app->gl_context) SDL_GL_DestroyContext(app->gl_context);
     /* Detach the platform before the SDL window dies: presenters resolve

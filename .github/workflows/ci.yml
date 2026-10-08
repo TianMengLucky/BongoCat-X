@@ -1,8 +1,17 @@
 name: BongoCat CI
 
 on:
+  # Checks run on development pushes and on every pull request (including the
+  # PRs that merge into the protected X branch). Pushes to X itself are not
+  # checked here: its commits arrive through reviewed pull requests and its
+  # multi-platform builds are owned by the release workflow.
   push:
-    branches: ["X", "dev"]
+    branches: ["dev"]
+    # Documentation-only pushes cannot affect the checks below.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
   pull_request:
   workflow_dispatch:
 
@@ -18,18 +27,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  version-check:
-    name: quality / tag-version
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Validate tag matches project version
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: pwsh
-        run: ./.github/scripts/check-tag-version.ps1 -Tag $env:GITHUB_REF_NAME
-
+  # The tag/version check lives in release.yml, which is the only workflow a
+  # tag push triggers; keeping a second copy here would spin a runner for a
+  # job that can never satisfy its condition.
   publishing-policy:
     name: security / publishing-policy
     runs-on: ubuntu-24.04
@@ -55,6 +55,13 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal --no-self-update
           rustup default stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
 
       # Keep the sccache install consistent with the build job (the official
       # static binary) instead of relying on apt packaging.
@@ -219,6 +226,13 @@ jobs:
           rustup toolchain install stable --profile minimal --no-self-update
           rustup default stable
 
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          restore-keys: cargo-registry-${{ runner.os }}-
+
       # Keep the sccache install consistent with the build job (the official
       # static binary) instead of relying on apt packaging.
       - name: Install sccache
@@ -299,143 +313,3 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  build:
-    name: build / ${{ matrix.platform }}
-    # Heavy multi-platform compilation and artifact uploads only run when the
-    # main branch is merged into X (a push that advances X), or on a manual
-    # dispatch from X. Ordinary pushes run checks only.
-    if: >-
-      github.repository == 'TianMengLucky/BongoCat-X' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/X'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            platform: windows-x64
-            cmake_arch: x64
-          - os: windows-2022
-            platform: windows-x86
-            cmake_arch: Win32
-          - os: ubuntu-24.04
-            platform: linux-x64
-            cmake_arch: ''
-          - os: macos-15-intel
-            platform: macos-x64
-            cmake_arch: x86_64
-          - os: macos-15
-            platform: macos-arm64
-            cmake_arch: arm64
-    runs-on: ${{ matrix.os }}
-    env:
-      # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
-      RUSTC_WRAPPER: sccache
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Set up Rust toolchain
-        run: |
-          rustup toolchain install stable --profile minimal --no-self-update
-          rustup default stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v5
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
-          restore-keys: cargo-registry-${{ runner.os }}-
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev libx11-dev \
-            libxi-dev libxfixes-dev libcurl4-openssl-dev libfontconfig1-dev
-
-      # Keep the Linux sccache install consistent with release.yml (the
-      # official static binary) instead of relying on apt packaging.
-      - name: Install sccache (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          curl -fsSL -o /tmp/sccache.tar.gz \
-            https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-unknown-linux-musl.tar.gz
-          tar -xzf /tmp/sccache.tar.gz -C /tmp
-          sudo install /tmp/sccache-v0.9.1-x86_64-unknown-linux-musl/sccache \
-            /usr/local/bin/sccache
-          sccache --version
-
-      - name: Install macOS dependencies
-        if: runner.os == 'macOS'
-        run: brew install sccache
-
-      - name: Install Windows dependencies
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: choco install sccache -y --no-progress
-
-      - name: Restore compiler cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/sccache
-            ~/Library/Caches/Mozilla.sccache
-            ~/AppData/Local/Mozilla/sccache/cache
-          key: sccache-${{ matrix.platform }}-${{ github.sha }}
-          restore-keys: sccache-${{ matrix.platform }}-
-
-      - name: Configure Unix release
-        if: runner.os != 'Windows'
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTING=OFF \
-            -DBONGO_CAT_REQUIRE_CUBISM=OFF \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
-            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
-
-      - name: Register GCC diagnostics
-        if: runner.os == 'Linux'
-        run: echo "::add-matcher::$GITHUB_WORKSPACE/.github/gcc-problem-matcher.json"
-
-      - name: Build Windows release
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          & ./scripts/build-windows.ps1 `
-            -SkipTests `
-            -BuildDir build `
-            -Configuration Release `
-            -Architecture '${{ matrix.cmake_arch }}' `
-            -Jobs 2 `
-            -Target ALL_BUILD
-
-      - name: Build Unix release
-        if: runner.os != 'Windows'
-        run: bash .github/scripts/build-unix.sh cmake --build build --parallel 2
-
-      # Diagnostic-backend binaries only: the Cubism SDK is proprietary and is
-      # never built or distributed from CI (see README for local SDK builds).
-      - name: Upload Windows build artifact
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v7
-        with:
-          name: bongocat-test-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/Release/BongoCat.exe
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload Unix build artifact
-        if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v7
-        with:
-          name: bongocat-test-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/BongoCat
-          if-no-files-found: error
-          retention-days: 14

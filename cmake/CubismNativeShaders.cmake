@@ -4,19 +4,6 @@ function(bongo_cat_compile_native_shaders backend input output)
   if(backend STREQUAL "VULKAN")
     find_program(BONGO_CAT_GLSLANG_VALIDATOR NAMES glslangValidator glslang
       HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VK_SDK_PATH}/Bin" REQUIRED)
-    # --preamble-text only exists in newer glslang releases; Ubuntu 22.04's
-    # glslang-tools 11.8 rejects it. When unavailable, the include directive is
-    # injected into a generated intermediate source instead (see below).
-    execute_process(
-      COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" --help
-      OUTPUT_VARIABLE _bongo_glslang_help
-      ERROR_VARIABLE _bongo_glslang_help
-      RESULT_VARIABLE _bongo_glslang_help_rc)
-    if(_bongo_glslang_help_rc EQUAL 0 AND _bongo_glslang_help MATCHES "preamble-text")
-      set(_bongo_glslang_preamble_flag TRUE)
-    else()
-      set(_bongo_glslang_preamble_flag FALSE)
-    endif()
     file(GLOB inputs "${input}/*.vert" "${input}/*.frag")
     file(GLOB includes "${input}/*.glsl")
     set(extension spv)
@@ -39,23 +26,31 @@ function(bongo_cat_compile_native_shaders backend input output)
     unset(_bongo_preamble_dep)
     set(_bongo_compile_src "${shader}")
     if(backend STREQUAL "VULKAN")
-      if(_bongo_glslang_preamble_flag)
-        list(APPEND _bongo_shader_preamble_args
-          "--preamble-text" "#extension GL_GOOGLE_include_directive : enable")
-      else()
-        # Insert the directive immediately after #version (it is illegal
-        # before it), matching --preamble-text, into a generated source so
-        # older glslang builds compile the same shader unchanged.
+      file(READ "${shader}" _bongo_shader_text)
+      if(NOT _bongo_shader_text MATCHES "GL_GOOGLE_include_directive")
+        # The SDK shaders normally enable #include themselves; if one does
+        # not, inject the directive after #version (it is illegal before it)
+        # into a generated source and add the original directory to the
+        # include path so its relative #include lookups still resolve.
         get_filename_component(_bongo_shader_name "${shader}" NAME)
         set(_bongo_preamble_src
           "${CMAKE_BINARY_DIR}/native-shader-intermediates/preamble-${_bongo_shader_name}")
-        file(READ "${shader}" _bongo_shader_text)
-        if(_bongo_shader_text MATCHES "^[ \t]*#version[^\n]*\n")
-          set(_bongo_preambled
-            "${CMAKE_MATCH_0}#extension GL_GOOGLE_include_directive : enable\n")
-          string(REGEX REPLACE "^[ \t]*#version[^\n]*\n" ""
-            _bongo_shader_rest "${_bongo_shader_text}")
-          string(APPEND _bongo_preambled "${_bongo_shader_rest}")
+        string(FIND "${_bongo_shader_text}" "#version" _bongo_version_pos)
+        if(_bongo_version_pos GREATER -1)
+          string(FIND "${_bongo_shader_text}" "\n" _bongo_version_eol
+            "${_bongo_version_pos}")
+        else()
+          set(_bongo_version_eol -1)
+        endif()
+        if(_bongo_version_pos GREATER -1 AND _bongo_version_eol GREATER -1)
+          math(EXPR _bongo_version_end "${_bongo_version_eol} + 1")
+          string(SUBSTRING "${_bongo_shader_text}" 0 "${_bongo_version_end}"
+            _bongo_preambled)
+          string(SUBSTRING "${_bongo_shader_text}" "${_bongo_version_end}" -1
+            _bongo_shader_rest)
+          string(APPEND _bongo_preambled
+            "#extension GL_GOOGLE_include_directive : enable\n"
+            "${_bongo_shader_rest}")
         else()
           set(_bongo_preambled
             "#extension GL_GOOGLE_include_directive : enable\n${_bongo_shader_text}")
@@ -63,6 +58,7 @@ function(bongo_cat_compile_native_shaders backend input output)
         file(WRITE "${_bongo_preamble_src}" "${_bongo_preambled}")
         set(_bongo_compile_src "${_bongo_preamble_src}")
         set(_bongo_preamble_dep "${_bongo_preamble_src}")
+        list(APPEND _bongo_shader_preamble_args "-I${input}")
       endif()
     endif()
     set(variants "base")

@@ -58,6 +58,7 @@ static bool behavior_references(const char *root, BongoJsonValue *refs,
     if (motions && !bongo_json_is_obj(motions)) return false;
     size_t group_index, group_count; BongoJsonValue *key, *group;
     bongo_json_obj_foreach(motions, group_index, group_count, key, group) {
+        (void)key;
         if (!bongo_json_is_arr(group)) return false;
         bongo_json_arr_foreach(group, index, count, item) {
             const char *file = bongo_json_get_str(bongo_json_obj_get(item, "File"));

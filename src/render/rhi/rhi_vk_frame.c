@@ -1,6 +1,7 @@
 /* Vulkan frame drawing, readback and presentation. The RHI acquires an
    image, calls the Cubism hook, then hands real pixels to the presenter. */
 #include "rhi_vk_internal.h"
+#include <stdlib.h>
 
 #if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
     (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))

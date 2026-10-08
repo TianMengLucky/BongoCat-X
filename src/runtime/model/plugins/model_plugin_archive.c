@@ -4,6 +4,9 @@
 #include "model_import_archive.h"
 #include <SDL3/SDL.h>
 #include <string.h>
+#ifndef _WIN32
+#include <strings.h>
+#endif
 
 typedef struct PluginArchive {
     char plugin[BONGO_CAT_PATH_CAP];

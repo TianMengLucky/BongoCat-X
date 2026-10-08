@@ -1,6 +1,7 @@
 /* Capture before presentation, while the application owns the acquired image. */
 #include "rhi_vk_internal.h"
 #include "rhi_pixels.h"
+#include <stdlib.h>
 
 #if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
     (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))

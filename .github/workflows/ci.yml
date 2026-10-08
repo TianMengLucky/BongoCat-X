@@ -185,6 +185,7 @@ jobs:
           until cmake -S . -B build-clang-tidy -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DBONGO_CAT_PCH=OFF \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=OFF \

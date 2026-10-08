@@ -201,7 +201,7 @@ if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
   set(BONGO_CAT_PCH OFF)
 endif()
 if(BONGO_CAT_PCH)
-  target_precompile_headers(bongo_cat_core PRIVATE "bongo_cat/json_dom.h")
+  target_precompile_headers(bongo_cat_core PRIVATE <bongo_cat/json_dom.h>)
   target_precompile_headers(bongo_cat_runtime PRIVATE
     <SDL3/SDL.h>
     <SDL3/SDL_opengl.h>)

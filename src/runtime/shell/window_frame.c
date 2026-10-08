@@ -24,8 +24,8 @@ void bongo_cat_window_store_content_origin(BongoCatApp *app) {
 /* Transparent pixels still cost compositor/readback bandwidth. At most double
    the content area, with a 4 MP target and an 8192-pixel dimension ceiling.
    These constrain automatic growth, not a user's explicitly chosen size. */
-static BongoCatLive2DFrame limit_frame(BongoCatApp *app,
-    BongoCatLive2DFrame current, BongoCatLive2DFrame required,
+static BongoCatModelRuntimeFrame limit_frame(BongoCatApp *app,
+    BongoCatModelRuntimeFrame current, BongoCatModelRuntimeFrame required,
     int content_width, int content_height) {
     int w = 0, h = 0, pw = 0, ph = 0;
     if (content_width <= 0 || content_height <= 0 ||
@@ -42,33 +42,50 @@ static BongoCatLive2DFrame limit_frame(BongoCatApp *app,
 
 void bongo_cat_window_limit_initial_frame(BongoCatApp *app,
     int content_width, int content_height) {
-    BongoCatLive2DFrame requested_frame = {0}, empty = {0};
+    BongoCatModelRuntimeFrame requested_frame = {0}, empty = {0};
     if (!app || !app->window ||
-        !bongo_cat_live2d_frame(app->live2d, &requested_frame))
+        !bongo_cat_model_runtime_frame(app->model_runtime, &requested_frame))
         return;
-    BongoCatLive2DFrame limited = limit_frame(app, empty, requested_frame,
+    BongoCatModelRuntimeFrame limited = limit_frame(app, empty, requested_frame,
         content_width, content_height);
-    bongo_cat_live2d_set_frame(app->live2d, &limited);
+    bongo_cat_model_runtime_set_frame(app->model_runtime, &limited);
 }
 
 /* Preserve the content origin near a screen edge. If there is insufficient
    space on that side, the shared viewport fits the complete retained envelope
    instead of moving the pet on every new extreme. */
-static BongoCatLive2DFrame limit_display(BongoCatApp *app,
-    BongoCatLive2DFrame current, BongoCatLive2DFrame required,
+static BongoCatModelRuntimeFrame limit_display(BongoCatApp *app,
+    BongoCatModelRuntimeFrame current, BongoCatModelRuntimeFrame required,
     int x, int y, int cw, int ch) {
-    (void)app; (void)current; (void)x; (void)y; (void)cw; (void)ch;
+    SDL_Rect bounds;
+    SDL_DisplayID display = SDL_GetDisplayForWindow(app->window);
+    if (!display || cw <= 0 || ch <= 0 ||
+        !SDL_GetDisplayUsableBounds(display, &bounds)) return required;
+    double w = cw * (1.0 + current.left + current.right);
+    double h = ch * (1.0 + current.top + current.bottom);
+    required.left = (float)fmin(required.left,
+        current.left + fmax(0.0, ((double)x - bounds.x) / cw));
+    required.right = (float)fmin(required.right,
+        current.right + fmax(0.0, ((double)bounds.x + bounds.w - x - w) / cw));
+    bool flip = app->settings.model.vertical_flip;
+    float *top = flip ? &required.bottom : &required.top;
+    float *bottom = flip ? &required.top : &required.bottom;
+    float old_top = flip ? current.bottom : current.top;
+    float old_bottom = flip ? current.top : current.bottom;
+    *top = (float)fmin(*top, old_top + fmax(0.0, ((double)y - bounds.y) / ch));
+    *bottom = (float)fmin(*bottom,
+        old_bottom + fmax(0.0, ((double)bounds.y + bounds.h - y - h) / ch));
     return required;
 }
 
 void bongo_cat_window_update_model_frame(BongoCatApp *app) {
-    BongoCatLive2DFrame previous, required;
+    BongoCatModelRuntimeFrame previous, required;
     if (!app || !app->window || !app->loaded_model[0] ||
-        !bongo_cat_live2d_frame(app->live2d, &previous)) return;
+        !bongo_cat_model_runtime_frame(app->model_runtime, &previous)) return;
     /* Capture the old viewport before measurement activates fallback fitting. */
     int vx = 0, vy = 0, vw = 0, vh = 0;
-    bongo_cat_live2d_viewport(app->live2d, &vx, &vy, &vw, &vh);
-    if (!bongo_cat_live2d_measure_frame(app->live2d, &required)) return;
+    bongo_cat_model_runtime_viewport(app->model_runtime, &vx, &vy, &vw, &vh);
+    if (!bongo_cat_model_runtime_measure_frame(app->model_runtime, &required)) return;
     /* Ordinary frames require no native geometry/display queries. */
     if (bongo_cat_frame_equal(previous, required)) return;
     uint64_t now = SDL_GetTicksNS();
@@ -91,7 +108,7 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
     bongo_cat_window_content_size(app, w, h, &cw, &ch);
     if (may_resize && cw > 0 && ch > 0 &&
         !bongo_cat_frame_equal(previous, required)) {
-        BongoCatLive2DFrame next;
+        BongoCatModelRuntimeFrame next;
         if (app->settings.window.tight_frame) {
             /* Tight mode supplies a per-tick interpolation frame; the coarse
                1/8 budget grid would quantize each small animation step back
@@ -143,7 +160,7 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
             }
             if (next_x >= INT_MIN && next_x <= INT_MAX &&
                 next_y >= INT_MIN && next_y <= INT_MAX) {
-                bongo_cat_live2d_set_frame(app->live2d, &next);
+                bongo_cat_model_runtime_set_frame(app->model_runtime, &next);
                 bool applied = bongo_cat_window_apply_geometry(app, (int)next_x, (int)next_y,
                     app->session.window.scale_percent, next_w, next_h);
                 /* SDL size requests can be asynchronous on macOS/X11. Resolve
@@ -168,7 +185,7 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app) {
                         "%dx%d@(%d,%d) applied=%d",
                         next_w, next_h, (int)next_x, (int)next_y,
                         actual_w, actual_h, x, y, applied);
-                    bongo_cat_live2d_set_frame(app->live2d, &previous);
+                    bongo_cat_model_runtime_set_frame(app->model_runtime, &previous);
                     int actual_x = x, actual_y = y;
                     SDL_GetWindowPosition(app->window, &actual_x, &actual_y);
                     if (actual_w != w || actual_h != h || actual_x != x || actual_y != y) {
@@ -187,7 +204,7 @@ frame_anchor_only:
     {
         int nx = 0, ny = 0, nw = 0, nh = 0;
         if (anchor_ready && pw > 0 && ph > 0 &&
-            bongo_cat_live2d_viewport(app->live2d, &nx, &ny, &nw, &nh)) {
+            bongo_cat_model_runtime_viewport(app->model_runtime, &nx, &ny, &nw, &nh)) {
             app->model_pointer_anchor_x = (float)((nx + anchor_x * nw) / pw);
             app->model_pointer_anchor_y = (float)(1.0 - (ny + anchor_y * nh) / ph);
             app->model_pointer_anchor_ready = true;

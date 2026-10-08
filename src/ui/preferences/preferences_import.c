@@ -136,6 +136,7 @@ static void SDLCALL import_callback(void *userdata, const char *const *files,
     SDL_Event event = {0};
     bool pushed = false;
     SDL_LockMutex(dialog->mutex);
+    if (job) job->plugin_import = dialog->plugin_import;
     event.type = dialog->event_type;
     event.user.windowID = dialog->window_id;
     event.user.code = BONGO_CAT_IMPORT_EVENT_CODE;
@@ -150,8 +151,8 @@ static void SDLCALL import_callback(void *userdata, const char *const *files,
     bongo_cat_preferences_import_dialog_release(dialog);
 }
 
-bool bongo_cat_preferences_import_open(BongoCatImportDialog *dialog,
-    SDL_Window *window) {
+static bool open_picker(BongoCatImportDialog *dialog,
+    SDL_Window *window, bool plugin) {
     if (!dialog || !window) return false;
     SDL_LockMutex(dialog->mutex);
     if (!dialog->active || dialog->open) {
@@ -159,16 +160,29 @@ bool bongo_cat_preferences_import_open(BongoCatImportDialog *dialog,
         return false;
     }
     dialog->open = true;
+    dialog->plugin_import = plugin;
     dialog->window_id = SDL_GetWindowID(window);
     ++dialog->references;
     SDL_UnlockMutex(dialog->mutex);
+    if (plugin) {
+        static const SDL_DialogFileFilter filters[] = {{"Renderer plugin", "zip;dll;so;dylib"}};
+        SDL_ShowOpenFileDialog(import_callback, dialog, window, filters, 1, NULL, false);
+    } else {
 #ifdef _WIN32
     bongo_cat_windows_show_open_folder_dialog(import_callback, dialog, window,
         NULL, true);
 #else
     SDL_ShowOpenFolderDialog(import_callback, dialog, window, NULL, true);
 #endif
+    }
     return true;
+}
+
+bool bongo_cat_preferences_import_open(BongoCatImportDialog *dialog, SDL_Window *window) {
+    return open_picker(dialog, window, false);
+}
+bool bongo_cat_preferences_import_plugin_open(BongoCatImportDialog *dialog, SDL_Window *window) {
+    return open_picker(dialog, window, true);
 }
 
 static void start_pending_jobs(BongoCatImportDialog *dialog, BongoCatApp *app) {
@@ -245,6 +259,11 @@ bool bongo_cat_preferences_import_event(BongoCatImportDialog *dialog,
         dialog->open = false;
         bool accept = dialog->active && owner != NULL;
         SDL_UnlockMutex(dialog->mutex);
+        if (job && job->plugin_import) {
+            if (accept && app && job->count) bongo_cat_preferences_plugin_import(app, job->paths[0]);
+            bongo_cat_preferences_import_job_free(job);
+            return true;
+        }
         if (!accept || !app || !job || !start_job(dialog, app,
             event->user.windowID, job))
             bongo_cat_preferences_import_job_free(job);

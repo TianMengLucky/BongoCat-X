@@ -103,6 +103,7 @@ include(cmake/CubismNativeShaderIO.cmake)
 bongo_cat_vulkan_shader_io(FACTORY_TEXT)
 include(cmake/CubismVulkanSafety.cmake)
 bongo_cat_harden_vulkan_pipelines(FACTORY_TEXT)
+bongo_cat_vulkan_depth_aspects(FACTORY_TEXT)
 file(WRITE "${BONGO_CAT_FACTORY_VK_OUTPUT}" "${FACTORY_TEXT}")
 # Remove the original from the Framework target (source properties set
 # from a parent scope do not reach files added in a subdirectory; the
@@ -127,3 +128,4 @@ set(BONGO_CAT_VULKAN_SHADER_OUTPUT "${CMAKE_BINARY_DIR}/FrameworkShaders")
 bongo_cat_compile_native_shaders(VULKAN "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src"
   "${BONGO_CAT_VULKAN_SHADER_OUTPUT}")
 bongo_cat_harden_vulkan_resources(Framework)
+bongo_cat_harden_vulkan_render_targets(Framework)

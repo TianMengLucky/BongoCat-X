@@ -34,7 +34,7 @@ void bongo_cat_app_shutdown(BongoCatApp *app, const char *stage,
     if (app->gl_context) SDL_GL_MakeCurrent(app->window, app->gl_context);
     bongo_cat_rhi_wait_idle(&app->rhi);
     bongo_cat_overlay_destroy(app->overlay);
-    bongo_cat_live2d_destroy(app->live2d);
+    bongo_cat_model_runtime_destroy(app->model_runtime);
     bongo_cat_resource_trace_shutdown();
     bongo_cat_behaviors_clear(&app->behaviors);
     bongo_cat_app_model_shortcuts_clear(app);

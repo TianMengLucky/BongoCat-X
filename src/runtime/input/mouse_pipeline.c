@@ -9,7 +9,7 @@ static bool reconcile_button(BongoCatApp *app, bool *current, bool pressed,
     const char *parameter) {
     if (*current == pressed) return false;
     *current = pressed;
-    bongo_cat_live2d_set_parameter(app->live2d, parameter,
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, parameter,
         pressed ? 1.0f : 0.0f);
     if (!pressed) bongo_cat_window_mark_hit_dirty(app);
     app->dirty = true;

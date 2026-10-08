@@ -32,7 +32,7 @@ void bongo_cat_window_menu_preview_init(BongoCatWindowMenuPreview *state,
     *state = (BongoCatWindowMenuPreview){.app = app,
         .scale = app ? app->session.window.scale_percent : 100.0f,
         .opacity = app ? app->session.window.opacity_percent : 100.0f,
-        .expression = app ? bongo_cat_live2d_expression(app->live2d) : -1,
+        .expression = app ? bongo_cat_model_runtime_expression(app->model_runtime) : -1,
         .last = BONGO_CAT_MENU_NONE, .applied = BONGO_CAT_MENU_NONE};
     bongo_cat_modal_frame_init(&state->modal_frame, app);
 }
@@ -76,8 +76,8 @@ void bongo_cat_window_menu_preview(void *userdata, BongoCatMenuAction action) {
     } else {
         bongo_cat_window_snapshot_end(app);
         if (next_group == 5 &&
-            bongo_cat_live2d_expression(app->live2d) != state->expression)
-            bongo_cat_live2d_set_expression(app->live2d, state->expression);
+            bongo_cat_model_runtime_expression(app->model_runtime) != state->expression)
+            bongo_cat_model_runtime_set_expression(app->model_runtime, state->expression);
         if (!bongo_cat_window_behavior_preview(app, action)) {
             bongo_cat_app_render_now(app);
             return;
@@ -104,7 +104,7 @@ void bongo_cat_window_menu_restore(void *userdata, BongoCatMenuAction selected) 
         selected < BONGO_CAT_MENU_MOTION_FIRST + BONGO_CAT_BEHAVIOR_LIMIT;
     bool committed_motion = keep_motion &&
         bongo_cat_window_behavior_commit_preview(app, selected);
-    if (!committed_motion && bongo_cat_live2d_restore_motion_preview(app->live2d)) {
+    if (!committed_motion && bongo_cat_model_runtime_restore_motion_preview(app->model_runtime)) {
         state->applied = BONGO_CAT_MENU_NONE;
         changed = true;
     }
@@ -139,8 +139,8 @@ void bongo_cat_window_menu_restore(void *userdata, BongoCatMenuAction selected) 
         changed = true;
     }
     if (!keep_expression &&
-        bongo_cat_live2d_expression(app->live2d) != state->expression &&
-        bongo_cat_live2d_set_expression(app->live2d, state->expression)) {
+        bongo_cat_model_runtime_expression(app->model_runtime) != state->expression &&
+        bongo_cat_model_runtime_set_expression(app->model_runtime, state->expression)) {
         bongo_cat_app_step_live2d(app, 1.0f / 60.0f);
         changed = true;
     }

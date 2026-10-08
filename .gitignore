@@ -62,6 +62,7 @@ Desktop.ini
 
 /docs/*
 !/docs/
+!/docs/model-plugins.md
 !/docs/README.en-US.md
 !/docs/README.zh-Hant.md
 !/docs/README.fr-FR.md
@@ -92,3 +93,6 @@ Desktop.ini
 /n
 /.zcode/
 /.zcodeignore
+
+# Locally installed agent skills (kept out of version control)
+/.trae/skills/

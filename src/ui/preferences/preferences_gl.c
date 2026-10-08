@@ -4,6 +4,11 @@
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
 
+void bongo_cat_preferences_gl_restore_main(BongoCatPreferences *value) {
+    SDL_GL_MakeCurrent(value->app->gl_context ? value->app->window : NULL,
+        value->app->gl_context);
+}
+
 static bool fail(BongoCatPreferences *value, const char *message) {
     char detail[256];
     snprintf(detail, sizeof(detail), "%s",
@@ -13,18 +18,18 @@ static bool fail(BongoCatPreferences *value, const char *message) {
         "main_window=%p settings_window=%p main_context=%p",
         detail, (void *)value->app->window, (void *)value->window,
         (void *)value->app->gl_context);
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     SDL_SetError("%s", detail);
     return false;
 }
 
 bool bongo_cat_preferences_gl_create(BongoCatPreferences *value) {
-    if (!value || !value->app || !value->window || !value->app->window ||
-        !value->app->gl_context)
+    if (!value || !value->app || !value->window || !value->app->window)
         return false;
-    if (!SDL_GL_MakeCurrent(value->app->window, value->app->gl_context))
+    bool share = value->app->gl_context != NULL;
+    if (share && !SDL_GL_MakeCurrent(value->app->window, value->app->gl_context))
         return fail(value, SDL_GetError());
-    if (!SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1))
+    if (!SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, share ? 1 : 0))
         return fail(value, SDL_GetError());
     SDL_GLContext context = SDL_GL_CreateContext(value->window);
     char creation_error[256] = {0};
@@ -49,10 +54,10 @@ bool bongo_cat_preferences_gl_create(BongoCatPreferences *value) {
     const GLubyte *vendor = glGetString(GL_VENDOR);
     const GLubyte *renderer = glGetString(GL_RENDERER);
     const GLubyte *version = glGetString(GL_VERSION);
-    SDL_Log("[runtime] Preferences OpenGL context: shared=1 dedicated=1 "
+    SDL_Log("[runtime] Preferences OpenGL context: shared=%d dedicated=1 "
         "main_window=%p settings_window=%p main_context=%p settings_context=%p "
         "vendor=%s renderer=%s version=%s",
-        (void *)value->app->window, (void *)value->window,
+        share, (void *)value->app->window, (void *)value->window,
         (void *)value->app->gl_context, (void *)value->gl_context,
         vendor ? (const char *)vendor : "unknown",
         renderer ? (const char *)renderer : "unknown",
@@ -68,7 +73,7 @@ bool bongo_cat_preferences_gl_destroy(BongoCatPreferences *value) {
         (void *)value->gl_context, (void *)SDL_GL_GetCurrentWindow(),
         (void *)SDL_GL_GetCurrentContext());
     if (SDL_GL_GetCurrentContext() == value->gl_context)
-        SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+        bongo_cat_preferences_gl_restore_main(value);
     bool destroyed = !value->owns_gl_context || SDL_GL_DestroyContext(value->gl_context);
     value->gl_context = NULL;
     value->owns_gl_context = false;

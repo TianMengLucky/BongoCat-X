@@ -2,6 +2,7 @@
 #define BONGO_CAT_OVERLAY_H
 
 #include "bongo_cat/model.h"
+#include "bongo_cat/rhi.h"
 
 typedef struct BongoCatOverlay BongoCatOverlay;
 
@@ -21,8 +22,8 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error);
 void bongo_cat_overlay_destroy(BongoCatOverlay *overlay);
 void bongo_cat_overlay_clear(BongoCatOverlay *overlay);
 BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *overlay,
-    const char *model_directory, bool model_pointer_preferred,
-    const BongoCatLive2DRenderOptions *render_options, BongoCatError *error);
+    const char *model_directory, bool model_pointer_preferred, bool model_rendering,
+    const BongoCatModelRuntimeRenderOptions *render_options, BongoCatError *error);
 int bongo_cat_overlay_key(BongoCatOverlay *overlay, const char *name, bool pressed);
 bool bongo_cat_overlay_effect(BongoCatOverlay *overlay, const char *path);
 bool bongo_cat_overlay_hand_active(const BongoCatOverlay *overlay, bool right);
@@ -35,6 +36,9 @@ void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *overlay, bool flipped)
    origin at the top-left. False when no art is loaded or it is empty. */
 bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *overlay,
     float out[4]);
+bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *overlay,
+    BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
+    bool mirror, bool flip, bool opaque, uint32_t rgb);
 void bongo_cat_overlay_draw_background(BongoCatOverlay *overlay, bool mirror);
 void bongo_cat_overlay_draw_pointer_before_keys(BongoCatOverlay *overlay);
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *overlay, bool mirror);

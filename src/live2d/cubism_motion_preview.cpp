@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 
 #include <Motion/CubismMotionManager.hpp>

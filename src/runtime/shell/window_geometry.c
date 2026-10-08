@@ -14,9 +14,9 @@ static int round_dimension(double value) {
     return (int)(value + 0.5);
 }
 
-static BongoCatLive2DFrame model_frame(BongoCatApp *app) {
-    BongoCatLive2DFrame frame = {0};
-    if (app && app->live2d) bongo_cat_live2d_frame(app->live2d, &frame);
+static BongoCatModelRuntimeFrame model_frame(BongoCatApp *app) {
+    BongoCatModelRuntimeFrame frame = {0};
+    if (app && app->model_runtime) bongo_cat_model_runtime_frame(app->model_runtime, &frame);
     /* Negative margins are the tight mode's crop and must survive: clamping
        them to zero made every content/window derivation shrink the window a
        little on every tight toggle. */
@@ -31,7 +31,7 @@ bool bongo_cat_window_frame_size(BongoCatApp *app,
     int *left, int *top) {
     if (content_width <= 0 || content_height <= 0 || !width || !height)
         return false;
-    BongoCatLive2DFrame frame = model_frame(app);
+    BongoCatModelRuntimeFrame frame = model_frame(app);
     double frame_width = content_width *
         (1.0 + frame.left + frame.right);
     double frame_height = content_height *
@@ -52,7 +52,7 @@ bool bongo_cat_window_content_size(BongoCatApp *app,
     int width, int height, int *content_width, int *content_height) {
     if (width <= 0 || height <= 0 || !content_width || !content_height)
         return false;
-    BongoCatLive2DFrame frame = model_frame(app);
+    BongoCatModelRuntimeFrame frame = model_frame(app);
     double horizontal = 1.0 + frame.left + frame.right;
     double vertical = 1.0 + frame.top + frame.bottom;
     if (!isfinite(horizontal) || !isfinite(vertical) ||

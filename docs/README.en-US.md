@@ -59,7 +59,7 @@
 
   **Enable Live2D rendering (either way works):**
 
-  1. **In-app import (recommended)**: open *Settings → Models* and click *Import Live2D Core*, then pick a `Live2DCubismCore.dll` or the official Cubism SDK zip. Takes effect immediately, no restart needed.
+  1. **In-app import (recommended)**: open *Settings → Plugins* and click *Import Live2D Core*, then pick a `Live2DCubismCore.dll` or the official Cubism SDK zip. Takes effect immediately, no restart needed.
   2. **Drop into the live2d folder**: download **Cubism SDK for Native** from the [official download page](https://www.live2d.com/en/sdk/download/native/) (accept Live2D's license), then put the zip or the extracted `Live2DCubismCore.dll` into the `live2d` folder next to the app or inside the data directory and restart the app.
 
   For full SDK import steps when building from source, see the "Live2D / Cubism SDK" section below.
@@ -74,7 +74,7 @@ BongoCat uses CMake and requires a C11 compiler, a C++17 compiler, CMake 3.24
 or newer, desktop OpenGL development files, and a Rust toolchain (cargo, e.g.
 via rustup): the memory-safety-critical parsers (SHA-256, image decoding, the
 contributor feed, audio decoding) live in the `src/rust/bongo-safe` crate,
-which Corrosion builds at configure time. SDL3, yyjson, stb, miniaudio,
+which Corrosion builds at configure time. SDL3, stb, miniaudio,
 and Nuklear are downloaded at configure time by default, so the first
 configuration needs network access.
 
@@ -137,16 +137,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK (Optional — builds without it too)
 
-The Live2D Cubism SDK is proprietary software and is **not** distributed with
-this repository. The SDK is now **optional**: the default build
-(`BONGO_CAT_REQUIRE_CUBISM=OFF`) configures and compiles fine without it and
-produces a diagnostic backend without Live2D rendering. Because the Live2D
-renderer must be compiled into the binary, dropping the SDK in at runtime
-cannot give that build Live2D — only a build made with the SDK responds to
-the runtime drop-in. The diagnostic backend exists for startup and platform
-diagnostics only.
-To build with Live2D rendering support, download and import the SDK
-manually:
+The proprietary Cubism SDK remains optional. Without it, the host and Inox2D plugin still build. A compatible Live2D plugin plus user-supplied Cubism Core enables Live2D at runtime without rebuilding the host. SDK builds produce the separate C++ plugin.
 
 1. Open the [Cubism SDK download page](https://www.live2d.com/en/sdk/download/native/),
    accept the Live2D Proprietary Software License Agreement, and download
@@ -187,7 +178,7 @@ need that.
 > app checks the `live2d` folder — drop `Live2DCubismCore.dll` or the official
 > SDK zip into it (next to the application or inside the data directory) and
 > it is picked up automatically after a restart; you can also click "Import
-> Live2D Core" under Settings → Models to activate it immediately. When no
+> Live2D Core" under Settings → Plugins to activate it immediately. When no
 > Core is found the app falls back to the diagnostic backend and shows a hint
 > in the settings window.
 
@@ -195,13 +186,13 @@ need that.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent` (including Corrosion and the Rust crate dependencies). Set `OFF` only when SDL3, yyjson, stb, miniaudio, Nuklear, and Corrosion are already available to CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Download the pinned third-party dependencies with CMake `FetchContent` (including Corrosion and the Rust crate dependencies). Set `OFF` only when SDL3, stb, miniaudio, Nuklear, and Corrosion are already available to CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path to the Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Whether a missing SDK fails configuration. Default `OFF`: a missing SDK builds the diagnostic backend without Live2D rendering; set `ON` to require the SDK (release CI uses it). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Treat native compiler warnings as errors. |
 
 For an offline build with `BONGO_CAT_FETCH_DEPS=OFF`, provide CMake package
-configurations for SDL3 (including `SDL3-static`) and yyjson, plus the include
+configurations for SDL3 (including `SDL3-static`) , plus the include
 directories for stb, Nuklear, and miniaudio when they are not discoverable:
 
 ```bash
@@ -406,9 +397,9 @@ always-on-top support still depend on the compositor.
 
 ### 🖼️ What is the Vulkan / Metal support status?
 
-Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: 2D overlays, rounded-corner masks and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays, rounded-corner masks and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded. Native backends cache static desk backgrounds and include them in the tight-frame bounds.
 
-SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Static checks were run; builds and GPU behavior remain unverified. See [integration status and validation](live2d-vulkan-metal.md).
+SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Windows builds and GPU regression tests pass. Metal Rust APIs pass cross-target type checking; macOS GPU validation is pending. See [integration status and validation](live2d-vulkan-metal.md).
 
 ## 🙏 Special Thanks
 > [!TIP]
@@ -428,3 +419,11 @@ Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)\
 Made with ❤️ & ⌨️
 
 </div>
+
+### Dynamic renderer plugins
+
+Preferences → Plugins manages local renderer installation, activation and removal. Switch to another renderer before changing an active plugin. Live2D uses a C++ plugin; Inochi2D uses the Rust Inox2D plugin with OpenGL, Vulkan (Windows/Linux) and Metal (macOS), without wgpu. Import identifies model contents first (`.model3.json`, `.inp`, `.inx`). All JSON parsing and serialization is performed in Rust.
+
+Windows portable releases are ZIP archives. Keep the extracted `plugins` directory beside the executable. See [Dynamic renderer plugins](model-plugins.md) for packaging, offline dependency paths, plugin ABI, parameter bindings and Inox2D compatibility limits.
+
+Each `dev` push that changes code, assets or build configuration publishes a GitHub nightly prerelease. Documentation-only pushes are skipped; there is no scheduled trigger. All platforms build the pushed commit. Nightlies do not replace the latest stable release.

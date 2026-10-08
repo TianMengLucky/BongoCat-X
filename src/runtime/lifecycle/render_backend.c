@@ -1,6 +1,7 @@
 /* Rebuild the pet render stack at a frame boundary; settings, input and
    tray remain alive. A native model/device failure retries with OpenGL. */
 #include "runtime.h"
+#include "preferences_notice.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -10,7 +11,7 @@
 static void release_stack(BongoCatApp *app) {
     if (app->gl_context) SDL_GL_MakeCurrent(app->window, app->gl_context);
     bongo_cat_rhi_wait_idle(&app->rhi);
-    bongo_cat_live2d_destroy(app->live2d); app->live2d = NULL;
+    bongo_cat_model_runtime_destroy(app->model_runtime); app->model_runtime = NULL;
     bongo_cat_overlay_destroy(app->overlay); app->overlay = NULL;
     bongo_cat_window_close(app);
 }
@@ -24,15 +25,10 @@ static bool create_stack(BongoCatApp *app, const char *model, BongoCatError *err
     app->render_retry_ns = 0;
     app->dirty = true;
     bongo_cat_window_apply(app);
-    if (!bongo_cat_rhi_live2d_supported(&app->rhi)) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "This build has no Live2D renderer for the selected graphics API");
-        return false;
-    }
-    app->live2d = bongo_cat_live2d_create(app->asset_root, error);
-    if (!app->live2d) return false;
+    app->model_runtime = bongo_cat_model_runtime_create(app->asset_root, error);
+    if (!app->model_runtime) return false;
     attach_rhi_info(app);
-    if (bongo_cat_rhi_is_gl(&app->rhi)) {
+    {
         BongoCatError optional = {0};
         app->overlay = bongo_cat_overlay_create(&optional);
         if (!app->overlay) SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE, "%s", optional.message);
@@ -41,15 +37,17 @@ static bool create_stack(BongoCatApp *app, const char *model, BongoCatError *err
     app->loaded_model[0] = '\0';
     return !model[0] || bongo_cat_app_select_model_with_error(app, model, error);
 }
-bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app, BongoCatError *error) {
+bool bongo_cat_app_rebuild_render_backend_for_model(BongoCatApp *app,
+    const char *target_model, BongoCatError *error) {
     if (!app || !error) return false;
-    SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
-    SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool restore = previous_window && previous_context && previous_window != app->window;
+    bool preferences_visible = bongo_cat_preferences_visible(app->preferences);
+    /* Clear textures and destroy the shared UI context while its device is alive.
+       A rebuilt GL context has a new object namespace, even on the same GPU. */
+    bongo_cat_preferences_release_render_context(app->preferences);
     bool native_failed = app->window && !bongo_cat_rhi_is_gl(&app->rhi) &&
         SDL_GetNumberProperty(SDL_GetWindowProperties(app->window), "BongoCat.NativeFailures", 0) >= 3;
     char model[BONGO_CAT_ID_CAP];
-    SDL_strlcpy(model, app->loaded_model, sizeof(model));
+    SDL_strlcpy(model, target_model ? target_model : app->loaded_model, sizeof(model));
     bongo_cat_app_capture_behavior_state(app);
     bongo_cat_window_snapshot_end(app);
     release_stack(app);
@@ -69,9 +67,10 @@ bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app, BongoCatError *error
             "pages.preference.general.hints.renderBackendFallback",
             "The selected renderer failed; restored OpenGL"), true);
     }
-    if (restore) SDL_GL_MakeCurrent(previous_window, previous_context);
+
     if (!ready) app->running = false;
     else {
+        if (preferences_visible) bongo_cat_preferences_show(app->preferences);
         memset(error, 0, sizeof(*error));
         app->last_frame_ns = SDL_GetTicksNS();
         bongo_cat_app_reset_pointer_tracking(app);
@@ -80,4 +79,8 @@ bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app, BongoCatError *error
         SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[render] switched to %s", bongo_cat_rhi_describe(&app->rhi));
     }
     return ready;
+}
+
+bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app, BongoCatError *error) {
+    return bongo_cat_app_rebuild_render_backend_for_model(app, NULL, error);
 }

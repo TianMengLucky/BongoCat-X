@@ -54,13 +54,13 @@ static void optional_mode_inputs(const char *temporary) {
         char report_path[BONGO_CAT_PATH_CAP];
         CHECK(child(report_path, sizeof(report_path), adapter,
             ".bongo-cat-import-report.json", false));
-        yyjson_doc *report = bongo_cat_json_read_file(report_path, 0, NULL);
-        yyjson_val *assets = yyjson_obj_get(yyjson_doc_get_root(report), "assets");
-        CHECK(report && yyjson_is_obj(assets));
-        CHECK(!yyjson_obj_get(assets, "hand") &&
-            !yyjson_obj_get(assets, "lefthand") &&
-            !yyjson_obj_get(assets, "sounds"));
-        yyjson_doc_free(report);
+        BongoJsonDoc *report = bongo_cat_json_read_file(report_path, 0, NULL);
+        BongoJsonValue *assets = bongo_json_obj_get(bongo_json_doc_get_root(report), "assets");
+        CHECK(report && bongo_json_is_obj(assets));
+        CHECK(!bongo_json_obj_get(assets, "hand") &&
+            !bongo_json_obj_get(assets, "lefthand") &&
+            !bongo_json_obj_get(assets, "sounds"));
+        bongo_json_doc_free(report);
         size_t length = 0;
         char *original = SDL_LoadFile(path, &length);
         CHECK(original && length == strlen(config) && memcmp(original, config, length) == 0);
@@ -115,12 +115,12 @@ static void empty_optional_bindings(const char *temporary) {
         CHECK(child(adapter, sizeof(adapter), root, "adapter", false));
         CHECK(bongo_cat_import_prepare_adapter(&discovery->candidates[0], adapter, &error));
         CHECK(child(path, sizeof(path), adapter, BONGO_CAT_MODEL_ADAPTER_FILE, false));
-        yyjson_doc *document = bongo_cat_json_read_file(path, 0, NULL);
-        yyjson_val *bindings = yyjson_obj_get(yyjson_doc_get_root(document), "bindings");
-        CHECK(document && yyjson_arr_size(bindings) == 4);
-        CHECK(yyjson_get_int(yyjson_obj_get(yyjson_arr_get(bindings, 0), "index")) == 2);
-        CHECK(yyjson_get_int(yyjson_obj_get(yyjson_arr_get(bindings, 1), "index")) == 2);
-        yyjson_doc_free(document);
+        BongoJsonDoc *document = bongo_cat_json_read_file(path, 0, NULL);
+        BongoJsonValue *bindings = bongo_json_obj_get(bongo_json_doc_get_root(document), "bindings");
+        CHECK(document && bongo_json_arr_size(bindings) == 4);
+        CHECK(bongo_json_get_int(bongo_json_obj_get(bongo_json_arr_get(bindings, 0), "index")) == 2);
+        CHECK(bongo_json_get_int(bongo_json_obj_get(bongo_json_arr_get(bindings, 1), "index")) == 2);
+        bongo_json_doc_free(document);
         CHECK(child(path, sizeof(path), adapter, "resources/left-keys/KeyA.png", false));
         CHECK(bongo_cat_path_is_file(path));
         CHECK(child(path, sizeof(path), root, "img/standard/hand/0.png", false));

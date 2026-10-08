@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 typedef BongoCatMverKeyNames KeyNames;
 
@@ -54,26 +54,26 @@ static bool copy_standard_pointer_assets(const BongoCatImportCandidate *candidat
     return true;
 }
 
-static void count_modifiers(yyjson_val *matrix, size_t counts[3]) {
-    size_t row_index, row_count; yyjson_val *row;
-    yyjson_arr_foreach(matrix, row_index, row_count, row) {
-        size_t key_index, key_count; yyjson_val *key;
-        yyjson_arr_foreach(row, key_index, key_count, key) {
-            int index = (yyjson_is_int(key) || yyjson_is_uint(key))
-                ? bongo_cat_mver_modifier_index((int)yyjson_get_int(key)) : -1;
+static void count_modifiers(BongoJsonValue *matrix, size_t counts[3]) {
+    size_t row_index, row_count; BongoJsonValue *row;
+    bongo_json_arr_foreach(matrix, row_index, row_count, row) {
+        size_t key_index, key_count; BongoJsonValue *key;
+        bongo_json_arr_foreach(row, key_index, key_count, key) {
+            int index = (bongo_json_is_int(key) || bongo_json_is_uint(key))
+                ? bongo_cat_mver_modifier_index((int)bongo_json_get_int(key)) : -1;
             if (index >= 0) counts[index]++;
         }
     }
 }
 
-static bool keyboard_index(yyjson_val *matrix, int code, size_t *result) {
-    if (!yyjson_is_arr(matrix)) return false;
-    size_t row_index, row_count; yyjson_val *row;
-    yyjson_arr_foreach(matrix, row_index, row_count, row) {
-        size_t key_index, key_count; yyjson_val *key;
-        yyjson_arr_foreach(row, key_index, key_count, key) {
-            if ((yyjson_is_int(key) || yyjson_is_uint(key)) &&
-                yyjson_get_int(key) == code) {
+static bool keyboard_index(BongoJsonValue *matrix, int code, size_t *result) {
+    if (!bongo_json_is_arr(matrix)) return false;
+    size_t row_index, row_count; BongoJsonValue *row;
+    bongo_json_arr_foreach(matrix, row_index, row_count, row) {
+        size_t key_index, key_count; BongoJsonValue *key;
+        bongo_json_arr_foreach(row, key_index, key_count, key) {
+            if ((bongo_json_is_int(key) || bongo_json_is_uint(key)) &&
+                bongo_json_get_int(key) == code) {
                 *result = row_index;
                 return true;
             }
@@ -82,13 +82,13 @@ static bool keyboard_index(yyjson_val *matrix, int code, size_t *result) {
     return false;
 }
 
-static bool process_matrix(const BongoCatImportCandidate *candidate, yyjson_val *matrix,
-    yyjson_val *before, yyjson_val *after, yyjson_val *keyboard_matrix,
+static bool process_matrix(const BongoCatImportCandidate *candidate, BongoJsonValue *matrix,
+    BongoJsonValue *before, BongoJsonValue *after, BongoJsonValue *keyboard_matrix,
     const char *hand_name, const char *key_group, const char *target,
     BongoCatError *error) {
-    if (!matrix || yyjson_is_null(matrix)) return true;
-    if (!yyjson_is_arr(matrix)) return false;
-    if (!yyjson_arr_size(matrix)) return true;
+    if (!matrix || bongo_json_is_null(matrix)) return true;
+    if (!bongo_json_is_arr(matrix)) return false;
+    if (!bongo_json_arr_size(matrix)) return true;
     char resources[BONGO_CAT_PATH_CAP], output_dir[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(resources, sizeof(resources), target, "resources") ||
         !bongo_cat_path_join(output_dir, sizeof(output_dir), resources, key_group) ||
@@ -98,28 +98,28 @@ static bool process_matrix(const BongoCatImportCandidate *candidate, yyjson_val 
     memcpy(modifier_total, modifier_seen, sizeof(modifier_total));
     count_modifiers(matrix, modifier_total);
     count_modifiers(after, modifier_total);
-    size_t index, count; yyjson_val *keys;
-    yyjson_arr_foreach(matrix, index, count, keys) {
+    size_t index, count; BongoJsonValue *keys;
+    bongo_json_arr_foreach(matrix, index, count, keys) {
         char hand[BONGO_CAT_PATH_CAP], filename[32];
         snprintf(filename, sizeof(filename), "%zu.png", index);
         if (!asset_file(candidate, hand_name, filename, hand, sizeof(hand)) ||
             !bongo_cat_image_info(hand, NULL, NULL)) {
-            size_t missing_index, missing_count; yyjson_val *missing;
-            yyjson_arr_foreach(keys, missing_index, missing_count, missing) {
-                int modifier = (yyjson_is_int(missing) || yyjson_is_uint(missing))
-                    ? bongo_cat_mver_modifier_index((int)yyjson_get_int(missing)) : -1;
+            size_t missing_index, missing_count; BongoJsonValue *missing;
+            bongo_json_arr_foreach(keys, missing_index, missing_count, missing) {
+                int modifier = (bongo_json_is_int(missing) || bongo_json_is_uint(missing))
+                    ? bongo_cat_mver_modifier_index((int)bongo_json_get_int(missing)) : -1;
                 if (modifier >= 0) modifier_seen[modifier]++;
             }
             continue;
         }
-        size_t key_index, key_count; yyjson_val *key;
-        yyjson_arr_foreach(keys, key_index, key_count, key) {
-            if (!yyjson_is_int(key) && !yyjson_is_uint(key)) {
+        size_t key_index, key_count; BongoJsonValue *key;
+        bongo_json_arr_foreach(keys, key_index, key_count, key) {
+            if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) {
                 bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
                     "Mver input row %zu contains a non-integer key", index);
                 return false;
             }
-            int code = (int)yyjson_get_int(key);
+            int code = (int)bongo_json_get_int(key);
             char keyboard[BONGO_CAT_PATH_CAP];
             size_t keyboard_row;
             const char *keyboard_path = NULL;
@@ -150,34 +150,34 @@ bool bongo_cat_import_mver_assets(const BongoCatImportCandidate *candidate,
     if (candidate->format != BONGO_CAT_IMPORT_MVER &&
         candidate->format != BONGO_CAT_IMPORT_MVER_PATCH) return true;
     FILE *file = bongo_cat_file_open(candidate->config, "rb");
-    yyjson_doc *document = file ? yyjson_read_fp(file,
-        YYJSON_READ_JSON5 | YYJSON_READ_ALLOW_INVALID_UNICODE, NULL, NULL) : NULL;
+    BongoJsonDoc *document = file ? bongo_json_read_fp(file,
+        BONGO_JSON_READ_JSON5 | BONGO_JSON_READ_ALLOW_INVALID_UNICODE, NULL, NULL) : NULL;
     if (file) fclose(file);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *mode = yyjson_is_obj(root)
-        ? yyjson_obj_get(root, bongo_cat_mode_name(candidate->mode)) : NULL;
-    if (!yyjson_is_obj(mode)) {
-        yyjson_doc_free(document);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *mode = bongo_json_is_obj(root)
+        ? bongo_json_obj_get(root, bongo_cat_mode_name(candidate->mode)) : NULL;
+    if (!bongo_json_is_obj(mode)) {
+        bongo_json_doc_free(document);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
             "Cannot parse Mver input configuration: %s", candidate->config);
         return false;
     }
     bool ok = false;
-    yyjson_val *keyboard = yyjson_obj_get(mode, "keyboard");
+    BongoJsonValue *keyboard = bongo_json_obj_get(mode, "keyboard");
     if (candidate->mode == BONGO_CAT_MODE_STANDARD) {
-        yyjson_val *hand = yyjson_obj_get(mode, "hand");
+        BongoJsonValue *hand = bongo_json_obj_get(mode, "hand");
         ok = process_matrix(candidate, hand, NULL, NULL,
             keyboard, "hand", "left-keys", target, error);
         if (ok) ok = copy_standard_pointer_assets(candidate, target);
     } else {
-        yyjson_val *left_keys = yyjson_obj_get(mode, "lefthand");
-        yyjson_val *right_keys = yyjson_obj_get(mode, "righthand");
+        BongoJsonValue *left_keys = bongo_json_obj_get(mode, "lefthand");
+        BongoJsonValue *right_keys = bongo_json_obj_get(mode, "righthand");
         ok = process_matrix(candidate, left_keys, NULL, right_keys, keyboard,
             "lefthand", "left-keys", target, error) &&
             process_matrix(candidate, right_keys, left_keys, NULL, keyboard,
                 "righthand", "right-keys", target, error);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!ok && error && !error->message[0]) bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
         "Cannot convert Mver input configuration: %s", candidate->config);
     return ok;

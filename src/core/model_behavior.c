@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 bool bongo_cat_behaviors_reserve(BongoCatBehaviorCatalog *catalog, size_t capacity,
     BongoCatError *error) {
@@ -92,17 +92,17 @@ static bool add_behavior(BongoCatBehaviorCatalog *catalog, const BongoCatModelEn
 }
 
 static bool read_motions(BongoCatBehaviorCatalog *catalog, const BongoCatModelEntry *model,
-    yyjson_val *motions, BongoCatError *error) {
-    if (!yyjson_is_obj(motions)) return true;
+    BongoJsonValue *motions, BongoCatError *error) {
+    if (!bongo_json_is_obj(motions)) return true;
     size_t group_index, group_count;
-    yyjson_val *group_key, *items;
-    yyjson_obj_foreach(motions, group_index, group_count, group_key, items) {
-        if (!yyjson_is_arr(items)) continue;
-        const char *group = yyjson_get_str(group_key);
-        size_t index, count; yyjson_val *item;
-        yyjson_arr_foreach(items, index, count, item) {
-            const char *sound = yyjson_get_str(yyjson_obj_get(item, "Sound"));
-            const char *name = yyjson_get_str(yyjson_obj_get(item, "Name"));
+    BongoJsonValue *group_key, *items;
+    bongo_json_obj_foreach(motions, group_index, group_count, group_key, items) {
+        if (!bongo_json_is_arr(items)) continue;
+        const char *group = bongo_json_get_str(group_key);
+        size_t index, count; BongoJsonValue *item;
+        bongo_json_arr_foreach(items, index, count, item) {
+            const char *sound = bongo_json_get_str(bongo_json_obj_get(item, "Sound"));
+            const char *name = bongo_json_get_str(bongo_json_obj_get(item, "Name"));
             char label[BONGO_CAT_ID_CAP];
             if (name && name[0]) snprintf(label, sizeof(label), "%s", name);
             else snprintf(label, sizeof(label), "%s %zu", group, index + 1);
@@ -114,11 +114,11 @@ static bool read_motions(BongoCatBehaviorCatalog *catalog, const BongoCatModelEn
 }
 
 static bool read_expressions(BongoCatBehaviorCatalog *catalog,
-    const BongoCatModelEntry *model, yyjson_val *expressions, BongoCatError *error) {
-    if (!yyjson_is_arr(expressions)) return true;
-    size_t index, count; yyjson_val *item;
-    yyjson_arr_foreach(expressions, index, count, item) {
-        const char *name = yyjson_get_str(yyjson_obj_get(item, "Name"));
+    const BongoCatModelEntry *model, BongoJsonValue *expressions, BongoCatError *error) {
+    if (!bongo_json_is_arr(expressions)) return true;
+    size_t index, count; BongoJsonValue *item;
+    bongo_json_arr_foreach(expressions, index, count, item) {
+        const char *name = bongo_json_get_str(bongo_json_obj_get(item, "Name"));
         char label[BONGO_CAT_ID_CAP];
         snprintf(label, sizeof(label), "%s", name ? name : "Expression");
         if (!add_behavior(catalog, model, BONGO_CAT_BEHAVIOR_EXPRESSION, NULL,
@@ -132,13 +132,13 @@ static bool read_adapter_assets(BongoCatBehaviorCatalog *catalog,
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_model_adapter_metadata_path(model->adapter_directory,
         path, sizeof(path))) return false;
-    yyjson_doc *document = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonDoc *document = bongo_cat_json_read_file(path, 0, NULL);
     if (!document) return true;
-    yyjson_val *items = yyjson_obj_get(yyjson_doc_get_root(document), "bindings");
-    size_t index, count; yyjson_val *item;
+    BongoJsonValue *items = bongo_json_obj_get(bongo_json_doc_get_root(document), "bindings");
+    size_t index, count; BongoJsonValue *item;
     int sound_index = 0, effect_index = 0; bool ok = true;
-    yyjson_arr_foreach(items, index, count, item) {
-        const char *kind = yyjson_get_str(yyjson_obj_get(item, "kind"));
+    bongo_json_arr_foreach(items, index, count, item) {
+        const char *kind = bongo_json_get_str(bongo_json_obj_get(item, "kind"));
         bool effect = kind && (strcmp(kind, "effect") == 0 ||
             strcmp(kind, "effect-clear") == 0);
         bool sound = kind && (strcmp(kind, "sound") == 0 ||
@@ -157,8 +157,8 @@ static bool read_adapter_assets(BongoCatBehaviorCatalog *catalog,
             catalog->entries[catalog->count - 1].sound_clear = sound;
             continue;
         }
-        const char *asset = yyjson_get_str(yyjson_obj_get(item, effect ? "effect" : "sound"));
-        const char *configured_label = yyjson_get_str(yyjson_obj_get(item, "label"));
+        const char *asset = bongo_json_get_str(bongo_json_obj_get(item, effect ? "effect" : "sound"));
+        const char *configured_label = bongo_json_get_str(bongo_json_obj_get(item, "label"));
         char label[BONGO_CAT_ID_CAP];
         int current = effect ? effect_index++ : sound_index++;
         if (configured_label) snprintf(label, sizeof(label), "%s", configured_label);
@@ -168,34 +168,37 @@ static bool read_adapter_assets(BongoCatBehaviorCatalog *catalog,
             BONGO_CAT_BEHAVIOR_SOUND, NULL, current, label, asset,
             model->adapter_directory, error)) { ok = false; break; }
         BongoCatBehaviorEntry *entry = &catalog->entries[catalog->count - 1];
-        bool momentary = yyjson_get_bool(yyjson_obj_get(item, "momentary"));
+        bool momentary = bongo_json_get_bool(bongo_json_obj_get(item, "momentary"));
         entry->momentary = effect && momentary;
-        yyjson_val *overlap = yyjson_obj_get(item, "overlap");
-        entry->sound_overlap = sound && (overlap ? yyjson_get_bool(overlap) : true);
+        BongoJsonValue *overlap = bongo_json_obj_get(item, "overlap");
+        entry->sound_overlap = sound && (overlap ? bongo_json_get_bool(overlap) : true);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return ok;
 }
 
 BongoCatResult bongo_cat_behaviors_load(BongoCatBehaviorCatalog *catalog,
     const BongoCatModelEntry *model, BongoCatError *error) {
+    if (model && bongo_cat_model_engine(model) == BONGO_CAT_MODEL_ENGINE_INOX2D) {
+        bongo_cat_behaviors_clear(catalog); return BONGO_CAT_OK;
+    }
     if (!catalog || !model) return BONGO_CAT_ERROR_ARGUMENT;
     BongoCatBehaviorCatalog loaded = {0};
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), model->directory, model->setting_file))
         return BONGO_CAT_ERROR_FORMAT;
-    yyjson_doc *document = bongo_cat_model_json_read(path, NULL);
+    BongoJsonDoc *document = bongo_cat_model_json_read(path, NULL);
     if (!document) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT, "Cannot read model setting: %s",
             path);
         return BONGO_CAT_ERROR_FORMAT;
     }
-    yyjson_val *references = yyjson_obj_get(yyjson_doc_get_root(document), "FileReferences");
+    BongoJsonValue *references = bongo_json_obj_get(bongo_json_doc_get_root(document), "FileReferences");
     BongoCatError failure = {0};
-    bool ok = read_motions(&loaded, model, yyjson_obj_get(references, "Motions"), &failure) &&
-        read_expressions(&loaded, model, yyjson_obj_get(references, "Expressions"), &failure) &&
+    bool ok = read_motions(&loaded, model, bongo_json_obj_get(references, "Motions"), &failure) &&
+        read_expressions(&loaded, model, bongo_json_obj_get(references, "Expressions"), &failure) &&
         read_adapter_assets(&loaded, model, &failure);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!ok) {
         bongo_cat_behaviors_clear(&loaded);
         if (!failure.message[0]) bongo_cat_error_set(&failure, BONGO_CAT_ERROR_FORMAT,

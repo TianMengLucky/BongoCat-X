@@ -1,15 +1,10 @@
-BongoCat diagnostic build
+BongoCat host without a bundled Live2D renderer
 
-This package was built without the Live2D Cubism SDK, so it contains no
-Live2D renderer: Live2D rendering, animation, pointer tracking,
-imported-model rendering, and cover generation are disabled. Nothing
-dropped into the live2d folder later can change that, because the missing
-renderer can only be restored by compiling the app with the SDK. This
-package is only for startup and platform diagnostics.
+This host was built without the Cubism SDK. Live2D becomes available after
+installing a compatible Live2D renderer plugin and supplying Cubism Core
+through the existing live2d import. Inochi2D is supported by the separately
+built Inox2D plugin and does not require Cubism Core.
 
-To get Live2D, use a build produced with the Cubism SDK (for example the
-official release). Its binary checks the live2d folder on every startup
-and activates Live2D as soon as the Cubism Core library or the official
-SDK zip is found there.
-
-Do not distribute this package to end users or submit it to an app store.
+Manage renderer plugins on the Plugins page in preferences. Model content
+selects the renderer automatically. Missing plugins are reported during
+model import/load; the bundled Live2D preview uses a diagnostic fallback.

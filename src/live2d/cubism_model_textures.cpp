@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "cubism_model_texture.hpp"
 #include "cubism_texture_resolution.hpp"
@@ -164,7 +165,7 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
 }
 
 struct TextureProgressContext {
-    BongoCatLive2DLoadProgress callback;
+    BongoCatModelRuntimeLoadProgress callback;
     void *userdata;
     float start;
     float span;
@@ -210,7 +211,7 @@ const BongoCatImageAlphaMask *NativeModel::texture_alpha(int index) const {
 }
 
 bool NativeModel::load_textures(BongoCatError *error,
-    BongoCatLive2DLoadProgress progress, void *userdata,
+    BongoCatModelRuntimeLoadProgress progress, void *userdata,
     int display_width, int display_height, float render_quality_percent) {
     if (!texture_quality_valid(render_quality_percent)) render_quality_percent = 100.0f;
     render_quality_percent_ = render_quality_percent;

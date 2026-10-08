@@ -175,7 +175,7 @@ void bongo_cat_window_apply_pending_resize(BongoCatApp *app) {
         app->resize_pending = false;
         app->resize_render_target_pending = true;
         /* Keep the normalized gaze anchor stable throughout the gesture. */
-        bongo_cat_live2d_reshape(app->live2d,
+        bongo_cat_model_runtime_reshape(app->model_runtime,
             app->resize_pixel_width, app->resize_pixel_height);
         return;
     }
@@ -184,7 +184,7 @@ void bongo_cat_window_apply_pending_resize(BongoCatApp *app) {
     if (!app->resize_render_target_pending)
         app->model_pointer_anchor_ready = false;
     app->resize_render_target_pending = false;
-    bongo_cat_live2d_resize(app->live2d,
+    bongo_cat_model_runtime_resize(app->model_runtime,
         app->resize_pixel_width, app->resize_pixel_height);
     bongo_cat_window_mark_hit_dirty(app);
 }

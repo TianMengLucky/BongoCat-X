@@ -55,14 +55,15 @@ static void root_style_restore(struct nk_context *context,
 static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     float width, float height, bool dark) {
     static const char *page_ids[] = {
-        "page-settings", "page-model", "page-shortcuts", "page-about"};
+        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-about"};
     static const int menu_icons[] = {
         BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
-        BONGO_CAT_UI_ICON_KEYBOARD, BONGO_CAT_UI_ICON_HEART};
+        BONGO_CAT_UI_ICON_KEYBOARD, BONGO_CAT_UI_ICON_WAND, BONGO_CAT_UI_ICON_HEART};
     const char *menus[] = {
         tr(value, "pages.preference.cat.title", "Preferences"),
         tr(value, "pages.preference.model.title", "Model"),
         tr(value, "pages.preference.shortcut.title", "Shortcuts"),
+        tr(value, "pages.preference.plugins.title", "Plugins"),
         tr(value, "native.support.title", "Support the Developer")};
     bool modal = bongo_cat_preferences_remove_dialog_active(value->app) ||
         bongo_cat_preferences_behavior_dialog_active(value) ||
@@ -91,7 +92,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bool about_badge = update_snapshot.status == BONGO_CAT_UPDATE_AVAILABLE ||
         (update_snapshot.status == BONGO_CAT_UPDATE_ERROR &&
             update_snapshot.release.version[0]);
-    bongo_cat_ui_tabs(context, menus, menu_icons, 4, &value->page,
+    bongo_cat_ui_tabs(context, menus, menu_icons, 5, &value->page,
         !modal, dark, interior_height, about_badge,
         draw_icon, value);
     if (!value->page_seen) {
@@ -132,7 +133,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.group_padding = nk_vec2(24,
         16 + 6.0f * (1.0f - page_progress));
     context->style.window.spacing = nk_vec2(10, 10);
-    int scroll_page = NK_CLAMP(0, value->page, 3);
+    int scroll_page = NK_CLAMP(0, value->page, 4);
     bool scroll_animating = fabsf(value->scroll_current[scroll_page] - value->scroll_target[scroll_page]) > .5f;
     struct nk_style_scrollbar saved_scrollv = context->style.scrollv;
     struct nk_rect scrollbar_hit = nk_rect(body_bounds.x + body_bounds.w - 14, body_bounds.y, 14, body_bounds.h);

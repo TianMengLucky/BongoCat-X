@@ -10,7 +10,7 @@
 #include "bongo_cat/path.h"
 
 #include <SDL3/SDL.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static bool overlay_input_self_test(void);
 static bool overlay_chrome_self_test(void);
@@ -57,17 +57,17 @@ bool test_mver_pointer_adapter(const char *adapter, bool expected_enabled) {
             "resources/mver-pointer/tablet.png") && bongo_cat_path_is_file(path) &&
         bongo_cat_path_join(path, sizeof(path), adapter,
             ".bongo-cat-adapter.json");
-    yyjson_doc *metadata = files ? bongo_cat_json_read_file(path, 0, NULL) : NULL;
-    yyjson_val *pointer = metadata ? yyjson_obj_get(
-        yyjson_doc_get_root(metadata), "standardPointer") : NULL;
-    bool valid = yyjson_is_obj(pointer) &&
-        yyjson_get_bool(yyjson_obj_get(pointer, "enabled")) == expected_enabled &&
-        !yyjson_get_bool(yyjson_obj_get(pointer, "mouse")) &&
-        yyjson_get_num(yyjson_obj_get(pointer, "offsetY")) == -65.0 &&
-        yyjson_get_num(yyjson_obj_get(pointer, "handOffsetX")) == 4.0 &&
-        yyjson_get_int(yyjson_obj_get(pointer, "lineBlue")) == 3;
-    yyjson_doc_free(metadata);
-    BongoCatLive2DRenderOptions render = {0};
+    BongoJsonDoc *metadata = files ? bongo_cat_json_read_file(path, 0, NULL) : NULL;
+    BongoJsonValue *pointer = metadata ? bongo_json_obj_get(
+        bongo_json_doc_get_root(metadata), "standardPointer") : NULL;
+    bool valid = bongo_json_is_obj(pointer) &&
+        bongo_json_get_bool(bongo_json_obj_get(pointer, "enabled")) == expected_enabled &&
+        !bongo_json_get_bool(bongo_json_obj_get(pointer, "mouse")) &&
+        bongo_json_get_num(bongo_json_obj_get(pointer, "offsetY")) == -65.0 &&
+        bongo_json_get_num(bongo_json_obj_get(pointer, "handOffsetX")) == 4.0 &&
+        bongo_json_get_int(bongo_json_obj_get(pointer, "lineBlue")) == 3;
+    bongo_json_doc_free(metadata);
+    BongoCatModelRuntimeRenderOptions render = {0};
     return valid && bongo_cat_import_render_options(adapter, &render) &&
         !render.auto_frame &&
         render.pointer_left_handed && render.mouse_force_move &&

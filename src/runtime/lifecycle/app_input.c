@@ -8,7 +8,7 @@
 
 static float input_parameter(BongoCatApp *app, const char *id) {
     BongoCatParameterRange range;
-    return bongo_cat_live2d_parameter(app->live2d, id, &range) ? range.value : -1.0f;
+    return bongo_cat_model_runtime_parameter(app->model_runtime, id, &range) ? range.value : -1.0f;
 }
 
 void bongo_cat_app_log_input(BongoCatApp *app, bool flush) {
@@ -61,7 +61,7 @@ void bongo_cat_app_log_input(BongoCatApp *app, bool flush) {
         (unsigned long long)app->input_diagnostics.replays,
         (unsigned long long)app->input_diagnostics.replay_blocked_keys,
         (unsigned long long)app->input_diagnostics.visual_actions,
-        app->live2d != NULL, app->session.window.visible, app->window_minimized,
+        app->model_runtime != NULL, app->session.window.visible, app->window_minimized,
         app->dirty, position_known, x, y, display_known, (unsigned)display,
         display && display == SDL_GetPrimaryDisplay(),
         bounds.x, bounds.y, bounds.w, bounds.h);
@@ -86,7 +86,7 @@ void bongo_cat_app_log_input(BongoCatApp *app, bool flush) {
             app->input_diagnostics.last_gamepad[0] ? app->input_diagnostics.last_gamepad : "none",
             app->input_diagnostics.last_gamepad_value, app->active_input_count,
             app->input_diagnostics.last_visual_action[0] ? app->input_diagnostics.last_visual_action : "none",
-            bongo_cat_live2d_expression(app->live2d), overlay.directory,
+            bongo_cat_model_runtime_expression(app->model_runtime), overlay.directory,
             model && !strcmp(model->adapter_directory, overlay.directory),
             overlay.last_path[0] ? overlay.last_path : "none",
             overlay.effect_path[0] ? overlay.effect_path : "none",

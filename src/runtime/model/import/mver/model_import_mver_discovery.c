@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static bool child_path(char *output, size_t capacity, const char *root,
     const char *first, const char *second) {
@@ -63,21 +63,21 @@ static bool find_package(const char *source, char *package, size_t capacity,
     return false;
 }
 
-static bool optional_matrix(yyjson_val *mode, const char *name) {
-    yyjson_val *value = yyjson_obj_get(mode, name);
-    return !value || yyjson_is_null(value) || yyjson_is_arr(value);
+static bool optional_matrix(BongoJsonValue *mode, const char *name) {
+    BongoJsonValue *value = bongo_json_obj_get(mode, name);
+    return !value || bongo_json_is_null(value) || bongo_json_is_arr(value);
 }
 
-static bool mode_config_valid(yyjson_val *mode, BongoCatModelMode value) {
-    if (!yyjson_is_obj(mode)) return false;
+static bool mode_config_valid(BongoJsonValue *mode, BongoCatModelMode value) {
+    if (!bongo_json_is_obj(mode)) return false;
     if (value == BONGO_CAT_MODE_STANDARD)
         return optional_matrix(mode, "hand");
     return optional_matrix(mode, "lefthand") && optional_matrix(mode, "righthand");
 }
 
-static bool mode_uses_live2d(yyjson_val *mode) {
-    yyjson_val *enabled = yyjson_obj_get(mode, "l2d");
-    return !yyjson_is_bool(enabled) || yyjson_get_bool(enabled);
+static bool mode_uses_live2d(BongoJsonValue *mode) {
+    BongoJsonValue *enabled = bongo_json_obj_get(mode, "l2d");
+    return !bongo_json_is_bool(enabled) || bongo_json_get_bool(enabled);
 }
 
 static bool model_at(const char *directory, char *setting, size_t capacity) {
@@ -105,13 +105,13 @@ static bool find_mode_model(const char *mode_root, char *directory,
 }
 
 static bool add_mode(BongoCatImportDiscovery *discovery, const char *source,
-    const char *config, const char *image_root, yyjson_val *root,
+    const char *config, const char *image_root, BongoJsonValue *root,
     BongoCatModelMode mode, BongoCatError *error) {
     const char *name = bongo_cat_mode_name(mode);
     char mode_root[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(mode_root, sizeof(mode_root), image_root, name)) return false;
-    yyjson_val *mode_config = yyjson_obj_get(root, name);
-    if (!bongo_cat_path_is_dir(mode_root) || !yyjson_is_obj(mode_config)) return true;
+    BongoJsonValue *mode_config = bongo_json_obj_get(root, name);
+    if (!bongo_cat_path_is_dir(mode_root) || !bongo_json_is_obj(mode_config)) return true;
     /* Mver distributions bundle fallback Live2D files for modes that are
        configured to use static sprites. They are runtime templates, not
        authored model variants, so they must not become import candidates. */
@@ -134,10 +134,10 @@ static bool add_mode(BongoCatImportDiscovery *discovery, const char *source,
     snprintf(candidate->config, sizeof(candidate->config), "%s", config);
     candidate->mode = mode;
     candidate->format = BONGO_CAT_IMPORT_MVER;
-    yyjson_val *input_mode = yyjson_obj_get(mode_config, "input_mode");
+    BongoJsonValue *input_mode = bongo_json_obj_get(mode_config, "input_mode");
     candidate->gamepad_buttons = mode == BONGO_CAT_MODE_GAMEPAD &&
-        ((!yyjson_is_int(input_mode) && !yyjson_is_uint(input_mode)) ||
-        yyjson_get_int(input_mode) != 0);
+        ((!bongo_json_is_int(input_mode) && !bongo_json_is_uint(input_mode)) ||
+        bongo_json_get_int(input_mode) != 0);
     discovery->count++;
     return true;
 }
@@ -146,12 +146,12 @@ static int discover_package(const char *package, const char *config,
     const char *image_root, BongoCatImportDiscovery *discovery,
     BongoCatError *error) {
     FILE *file = bongo_cat_file_open(config, "rb");
-    yyjson_doc *document = file ? yyjson_read_fp(file,
-        YYJSON_READ_JSON5 | YYJSON_READ_ALLOW_INVALID_UNICODE, NULL, NULL) : NULL;
+    BongoJsonDoc *document = file ? bongo_json_read_fp(file,
+        BONGO_JSON_READ_JSON5 | BONGO_JSON_READ_ALLOW_INVALID_UNICODE, NULL, NULL) : NULL;
     if (file) fclose(file);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    if (!yyjson_is_obj(root)) {
-        yyjson_doc_free(document);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    if (!bongo_json_is_obj(root)) {
+        bongo_json_doc_free(document);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
             "Cannot parse Mver configuration: %s", config);
         return -1;
@@ -162,7 +162,7 @@ static int discover_package(const char *package, const char *config,
             BONGO_CAT_MODE_KEYBOARD, error) &&
         add_mode(discovery, package, config, image_root, root,
             BONGO_CAT_MODE_GAMEPAD, error);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!ok) return -1;
     if (!discovery->count) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,

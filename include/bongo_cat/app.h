@@ -66,10 +66,10 @@ typedef struct BongoCatApp {
     char behavior_cache_digest[65];
     bool behavior_cache_valid;
     bool behavior_catalog_valid;
-    BongoCatLive2DRenderOptions model_render_options;
+    BongoCatModelRuntimeRenderOptions model_render_options;
     BongoCatI18n *i18n;
     BongoCatPlatform platform;
-    BongoCatLive2D *live2d;
+    BongoCatModelRuntime *model_runtime;
     BongoCatAudio *audio;
     BongoCatTray *tray;
     BongoCatOverlay *overlay;

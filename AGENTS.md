@@ -6,12 +6,12 @@ the conflict instead of silently working around it.
 
 ## Project Overview
 
-BongoCat is a cross-platform (Windows / macOS / Linux) Live2D desktop pet
+BongoCat is a cross-platform (Windows / macOS / Linux) Live2D / Inochi2D desktop pet
 written in C11 with a C++17 Live2D bridge. It uses SDL3, OpenGL, Nuklear,
-yyjson (non-config JSON), and the Live2D Cubism SDK for Native. Build system is CMake (>= 3.24).
+Rust JSON libraries, and optional dynamically loaded model renderers. Build system is CMake (>= 3.24).
 A Rust toolchain (cargo) is a build requirement: the memory-safety-critical
 parsers (SHA-256, image decoding, the contributor feed, audio decoding,
-Live2D expression files) live in the `bongo-safe` crate under `src/rust/`,
+all JSON, INP/INX containers, Live2D expression files) live in the `bongo-safe` crate under `src/rust/`,
 built via Corrosion.
 
 Key directories:
@@ -19,7 +19,9 @@ Key directories:
 - `src/core/` — C11 core: config I/O, model catalog, i18n, paths, input state.
 - `src/live2d/` — Live2D bridge. C++17 (`cubism_*.cpp`) when built with the
   Cubism SDK; `live2d_stub.c` is the diagnostic fallback used without it.
-  Both implement the same C ABI declared in `include/bongo_cat/model.h`.
+  The host dispatches through the versioned ABI in `include/bongo_cat/model_plugin.h`.
+- `src/rust/bongo-inox2d/` — Inox2D Rust plugin: upstream OpenGL, ash Vulkan,
+  metal Metal; Naga translates shared WGSL to SPIR-V/MSL.
 - `src/rust/bongo-safe/` — Rust crate behind `include/bongo_cat/safe_ffi.h`;
   every untrusted byte stream is parsed here, not in C — including the
   settings/session configuration JSON (`config.rs`).
@@ -35,13 +37,15 @@ Key directories:
 
 The Cubism SDK is proprietary and is **not** committed here — it is
 gitignored. The SDK is optional at build time: `BONGO_CAT_REQUIRE_CUBISM`
-now defaults to `OFF`, so CMake configures and builds fine without it and
-produces the diagnostic backend (no Live2D rendering). Because the Live2D
-renderer must be compiled into the binary, that backend can never gain
-Live2D from a runtime drop-in — only builds made with the SDK at
-`vendor/CubismSdkForNative` respond to the Core/SDK zip drop-in in a
-`live2d` folder (see README for the exact import steps, including the
-separate GLEW import). Set `BONGO_CAT_REQUIRE_CUBISM=ON` to fail
+defaults to `OFF`. Without the SDK the host and Inox2D plugin still build;
+Live2D falls back to diagnostic rendering until a compatible C++ plugin is
+installed and user-supplied Core is available. With the SDK, CMake builds
+`bongo_live2d` as a separate shared library. The host never links Framework.
+The plugin never links or embeds Cubism Core; the host loads user-supplied Core
+externally. Static Core linking is unsupported, and packages must contain no SDK.
+Plugins are managed on the preferences Plugins page, in `<data>/plugins`;
+bundled plugins live beside the executable or in macOS `Contents/PlugIns`.
+Set `BONGO_CAT_REQUIRE_CUBISM=ON` to fail
 configuration with import instructions when the SDK is missing (the
 release CI does). Never add SDK sources/binaries to the repository or to
 release artifacts of jobs that are not guarded for it
@@ -73,7 +77,7 @@ Notes:
   import instructions).
 - The local Windows test build directory convention is `build-tests/`
   (`build*/` is gitignored).
-- Dependencies (SDL3, yyjson, stb, miniaudio, Nuklear, Corrosion and the
+- Dependencies (SDL3, stb, miniaudio, Nuklear, Corrosion and the
   Rust crate dependencies) are fetched by CMake `FetchContent`; do not vendor
   them. `cargo test --manifest-path src/rust/bongo-safe/Cargo.toml` runs the
   crate's unit tests.
@@ -92,6 +96,10 @@ Notes:
   changes; `/W4` (MSVC) and `-Wall -Wextra` (GCC/Clang) are the baseline.
 
 ## Conventions
+
+- **Reuse dependencies:** When an existing library or dependency meets the
+  need, use it directly instead of reimplementing its functionality. Keep
+  custom code to necessary integration and narrowly scoped upstream fixes.
 
 - **C11, no extensions** for C sources; C++17 only under `src/live2d/`.
   Cubism types stay behind opaque C handles.
@@ -147,6 +155,8 @@ Notes:
   not run builds on your own initiative** — build only when the user
   explicitly asks for it. Verify C/C++ changes by review unless asked to
   build, and say plainly what was and was not verified.
+- **Avoid routine test reruns:** review small UI edits directly; run targeted tests
+  only when behavior changes, a failure needs diagnosis, or the user requests them.
 - **Push only when explicitly asked** — commits stay local otherwise.
 - Do not leave scratch files in the repo root; use a gitignored `build*/`
   directory and delete them when done.

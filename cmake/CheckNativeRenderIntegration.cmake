@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
 set(root "${CMAKE_CURRENT_LIST_DIR}/..")
 include("${CMAKE_CURRENT_LIST_DIR}/CubismNativeShaderIO.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CubismVulkanSafety.cmake")
+set(depth "view(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)")
+bongo_cat_vulkan_depth_aspects(depth)
+if(depth MATCHES "STENCIL" OR NOT depth MATCHES "DEPTH_BIT")
+  message(FATAL_ERROR "Depth-only Vulkan targets must not request stencil")
+endif()
 set(vulkan [=[
     std::ifstream file(filename.GetRawString(), std::ios::ate | std::ios::binary);
     csmInt32 fileSize = 0;

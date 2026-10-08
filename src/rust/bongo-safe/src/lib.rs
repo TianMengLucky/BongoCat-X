@@ -15,6 +15,9 @@ mod audio;
 mod config;
 mod expression;
 mod image;
+pub mod inochi;
+mod json_dom;
+mod mver_json;
 mod sha256;
 mod unique;
 

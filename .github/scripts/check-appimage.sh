@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Usage: check-appimage.sh APPIMAGE [--diagnostic]
 # The build that produced the AppImage knows its shape: runtime-Core/full
-# builds must embed the Framework shaders, diagnostic builds must not.
+# builds include the Live2D plugin, whose shaders are embedded.
 appimage=$(realpath "${1:?Usage: check-appimage.sh APPIMAGE [--diagnostic]}")
 shift || true
 expect_live2d=1
@@ -24,10 +24,11 @@ required=(AppRun bongocat.desktop bongocat.png usr/bin/BongoCat
   usr/bin/assets/models/standard/demomodel.moc3
   usr/bin/assets/models/standard/demomodel.1024/texture_00.png)
 if [[ $expect_live2d == 1 ]]; then
-  required+=(usr/bin/assets/FrameworkShaders/VertShaderSrc.vert
-    usr/bin/assets/FrameworkShaders/FragShaderSrc.frag
-    usr/bin/assets/FrameworkShaders/VertShaderSrcBlend.vert
-    usr/bin/assets/FrameworkShaders/FragShaderSrcBlend.frag)
+  required+=(usr/bin/plugins/libbongo_live2d.so)
+fi
+# Default builds include Inox2D; check its redistribution terms when present.
+if [[ -e "$root/usr/bin/plugins/libbongo_inox2d.so" ]]; then
+  required+=(usr/bin/plugins/libbongo_inox2d.so usr/bin/licenses/Inox2D-LICENSE)
 fi
 for file in "${required[@]}"; do
   test -s "$root/$file" || { echo "Missing AppImage resource: $file" >&2; exit 1; }

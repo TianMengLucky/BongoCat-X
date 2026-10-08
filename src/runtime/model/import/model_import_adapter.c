@@ -97,7 +97,8 @@ bool bongo_cat_import_prepare_adapter(const BongoCatImportCandidate *candidate,
     if (!candidate || !target || (!bongo_cat_path_is_dir(target) &&
         !bongo_cat_path_create_directory(target))) return false;
     return copy_preview(candidate, target, error) &&
-        bongo_cat_import_mver_assets(candidate, target, error) &&
+        (candidate->format == BONGO_CAT_IMPORT_INOCHI2D ||
+            bongo_cat_import_mver_assets(candidate, target, error)) &&
         bongo_cat_import_adapter_metadata(candidate, target, error) &&
         bongo_cat_import_write_report(candidate, target, error) &&
         write_mode(target, candidate->mode, error);

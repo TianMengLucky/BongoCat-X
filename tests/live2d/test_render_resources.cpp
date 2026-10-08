@@ -115,12 +115,12 @@ int main() {
     CHECK(context != nullptr);
     if (context) {
         BongoCatError error{};
-        BongoCatLive2D *runtime = bongo_cat_live2d_create("", &error);
+        BongoCatModelRuntime *runtime = bongo_cat_model_runtime_create("", &error);
         CHECK(runtime != nullptr);
         if (runtime) {
             target_bindings();
             offscreen_pool();
-            bongo_cat_live2d_destroy(runtime);
+            bongo_cat_model_runtime_destroy(runtime);
         }
         SDL_GL_DestroyContext(context);
     }

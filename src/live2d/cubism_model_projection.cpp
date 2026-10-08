@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 
 #include <algorithm>
@@ -137,7 +138,7 @@ void NativeModel::set_tight_overlay_rect(const float *rect) {
         tight_overlay_rect_[1], tight_overlay_rect_[3]);
 }
 
-void NativeModel::set_render_options(const BongoCatLive2DRenderOptions &options) {
+void NativeModel::set_render_options(const BongoCatModelRuntimeRenderOptions &options) {
     render_options_ = options;
 }
 

@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 #include <stb_image_write.h>
 
 static void write_canvas_bytes(void *context, void *data, int size) {
@@ -132,26 +132,26 @@ void test_tauri_portable(void) {
     CHECK(child(package, sizeof(package), models_root, receipt.ids[0], false));
     CHECK(child(path, sizeof(path), package, "config.json", false) &&
         bongo_cat_path_is_file(path));
-    yyjson_doc *normalized = bongo_cat_json_read_file(path, 0, NULL);
-    yyjson_val *normalized_root = normalized
-        ? yyjson_doc_get_root(normalized) : NULL;
-    yyjson_val *normalized_mode = yyjson_obj_get(normalized_root, "keyboard");
-    yyjson_val *normalized_left = yyjson_obj_get(normalized_mode, "lefthand");
-    yyjson_val *window_size = yyjson_obj_get(
-        yyjson_obj_get(normalized_root, "decoration"), "window_size");
-    yyjson_val *l2d_correct = yyjson_obj_get(
-        yyjson_obj_get(normalized_root, "decoration"), "l2d_correct");
+    BongoJsonDoc *normalized = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *normalized_root = normalized
+        ? bongo_json_doc_get_root(normalized) : NULL;
+    BongoJsonValue *normalized_mode = bongo_json_obj_get(normalized_root, "keyboard");
+    BongoJsonValue *normalized_left = bongo_json_obj_get(normalized_mode, "lefthand");
+    BongoJsonValue *window_size = bongo_json_obj_get(
+        bongo_json_obj_get(normalized_root, "decoration"), "window_size");
+    BongoJsonValue *l2d_correct = bongo_json_obj_get(
+        bongo_json_obj_get(normalized_root, "decoration"), "l2d_correct");
     int expected_width = 0, expected_height = 0;
     CHECK(bongo_cat_image_info(tray, &expected_width, &expected_height));
-    CHECK(yyjson_get_int(yyjson_obj_get(normalized_root, "mode")) == 2 &&
-        yyjson_is_arr(normalized_left) &&
-        yyjson_is_arr(yyjson_obj_get(normalized_mode, "righthand")) &&
-        yyjson_get_int(yyjson_arr_get(yyjson_arr_get(normalized_left, 0), 0)) ==
+    CHECK(bongo_json_get_int(bongo_json_obj_get(normalized_root, "mode")) == 2 &&
+        bongo_json_is_arr(normalized_left) &&
+        bongo_json_is_arr(bongo_json_obj_get(normalized_mode, "righthand")) &&
+        bongo_json_get_int(bongo_json_arr_get(bongo_json_arr_get(normalized_left, 0), 0)) ==
             24 &&
-        yyjson_get_int(yyjson_arr_get(window_size, 0)) == expected_width &&
-        yyjson_get_int(yyjson_arr_get(window_size, 1)) == expected_height &&
-        yyjson_is_num(l2d_correct) && yyjson_get_num(l2d_correct) == 2.0);
-    yyjson_doc_free(normalized);
+        bongo_json_get_int(bongo_json_arr_get(window_size, 0)) == expected_width &&
+        bongo_json_get_int(bongo_json_arr_get(window_size, 1)) == expected_height &&
+        bongo_json_is_num(l2d_correct) && bongo_json_get_num(l2d_correct) == 2.0);
+    bongo_json_doc_free(normalized);
     CHECK(child(path, sizeof(path), package,
         "img/keyboard/cat_model/cat.model3.json", false) &&
         bongo_cat_path_is_file(path));
@@ -210,18 +210,18 @@ void test_tauri_portable(void) {
     check_portable_images(portable_root, standard_runtime,
         sizeof(standard_runtime) / sizeof(standard_runtime[0]));
     CHECK(child(path, sizeof(path), portable_root, "config.json", false));
-    yyjson_doc *standard_config = bongo_cat_json_read_file(path, 0, NULL);
-    yyjson_val *standard_root = standard_config
-        ? yyjson_doc_get_root(standard_config) : NULL;
-    yyjson_val *standard_decoration = yyjson_obj_get(standard_root,
+    BongoJsonDoc *standard_config = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *standard_root = standard_config
+        ? bongo_json_doc_get_root(standard_config) : NULL;
+    BongoJsonValue *standard_decoration = bongo_json_obj_get(standard_root,
         "decoration");
-    yyjson_val *standard_l2d_correct = yyjson_obj_get(standard_decoration,
+    BongoJsonValue *standard_l2d_correct = bongo_json_obj_get(standard_decoration,
         "l2d_correct");
-    CHECK(yyjson_get_int(yyjson_obj_get(standard_root, "mode")) == 1 &&
-        yyjson_is_arr(yyjson_obj_get(yyjson_obj_get(standard_root,
-            "standard"), "hand")) && yyjson_is_num(standard_l2d_correct) &&
-        yyjson_get_num(standard_l2d_correct) == 2.0);
-    yyjson_doc_free(standard_config);
+    CHECK(bongo_json_get_int(bongo_json_obj_get(standard_root, "mode")) == 1 &&
+        bongo_json_is_arr(bongo_json_obj_get(bongo_json_obj_get(standard_root,
+            "standard"), "hand")) && bongo_json_is_num(standard_l2d_correct) &&
+        bongo_json_get_num(standard_l2d_correct) == 2.0);
+    bongo_json_doc_free(standard_config);
     CHECK(child(path, sizeof(path), portable_root, "img/standard/bg.png",
         false) && !bongo_cat_path_is_file(path));
     char adapter_root[BONGO_CAT_PATH_CAP];
@@ -231,13 +231,13 @@ void test_tauri_portable(void) {
     CHECK(bongo_cat_import_prepare_adapter(&installed, adapter_root, &error));
     CHECK(child(path, sizeof(path), adapter_root,
         BONGO_CAT_MODEL_ADAPTER_FILE, false));
-    yyjson_doc *adapter = bongo_cat_json_read_file(path, 0, NULL);
-    yyjson_val *pointer = adapter ? yyjson_obj_get(
-        yyjson_doc_get_root(adapter), "standardPointer") : NULL;
-    CHECK(yyjson_is_obj(pointer) &&
-        !yyjson_get_bool(yyjson_obj_get(pointer, "enabled")));
-    yyjson_doc_free(adapter);
-    BongoCatLive2DRenderOptions render = {0};
+    BongoJsonDoc *adapter = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *pointer = adapter ? bongo_json_obj_get(
+        bongo_json_doc_get_root(adapter), "standardPointer") : NULL;
+    CHECK(bongo_json_is_obj(pointer) &&
+        !bongo_json_get_bool(bongo_json_obj_get(pointer, "enabled")));
+    bongo_json_doc_free(adapter);
+    BongoCatModelRuntimeRenderOptions render = {0};
     CHECK(bongo_cat_import_render_options(adapter_root, &render) &&
         render.mver_projection && render.auto_frame);
     CHECK(child(path, sizeof(path), adapter_root,

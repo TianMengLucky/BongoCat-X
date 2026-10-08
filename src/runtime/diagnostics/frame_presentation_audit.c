@@ -95,7 +95,7 @@ void bongo_cat_frame_presentation_prepare(BongoCatApp *app,
     SDL_Log("Pre-presentation framebuffer: size=%dx%d visible=%d "
         "rgba_hash=0x%016llx", width, height, visible,
         (unsigned long long)audit.rendered_hash);
-    log_gl_presentation_state(app);
+    if (bongo_cat_rhi_is_gl(&app->rhi)) log_gl_presentation_state(app);
 }
 
 static void log_post_present_buffer(const char *name, GLenum buffer) {
@@ -158,7 +158,7 @@ void bongo_cat_frame_presented_audit(BongoCatApp *app) {
     bool proxy_visible = proxy && IsWindow(proxy) && IsWindowVisible(proxy);
     SDL_Log("Windows presented path: source=%p proxy=%p proxy_visible=%d",
         (void *)source, (void *)proxy, proxy_visible);
-    if (!proxy_visible) {
+    if (!proxy_visible && bongo_cat_rhi_is_gl(&app->rhi)) {
         log_post_present_buffer("front", GL_FRONT);
         log_post_present_buffer("back", GL_BACK);
     } else {
@@ -172,7 +172,9 @@ void bongo_cat_frame_presented_audit(BongoCatApp *app) {
         bongo_cat_windows_diagnostics_probe_capture(proxy, "layered-proxy");
     }
 #else
-    log_post_present_buffer("front", GL_FRONT);
-    log_post_present_buffer("back", GL_BACK);
+    if (bongo_cat_rhi_is_gl(&app->rhi)) {
+        log_post_present_buffer("front", GL_FRONT);
+        log_post_present_buffer("back", GL_BACK);
+    }
 #endif
 }

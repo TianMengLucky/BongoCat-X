@@ -6,67 +6,42 @@
 #include <SDL3/SDL_log.h>
 #include <stdlib.h>
 
-struct BongoCatLive2D {
+struct BongoCatModelRuntime {
     int width;
     int height;
     bool loaded;
 };
 
-static BongoCatLive2D *create_runtime(const char *asset_root,
+static BongoCatModelRuntime *create_runtime(const char *asset_root,
     BongoCatError *error) {
-    static bool warning_logged;
     (void)asset_root;
-    if (!warning_logged) {
-        warning_logged = true;
-#if defined(BONGO_CAT_HAS_CUBISM)
-        /* Runtime-Core build: the renderer is compiled in and activates as
-           soon as the user drops the Core library (or the official SDK zip,
-           whose Core is extracted on the spot) into a live2d folder — next
-           to the application or in the data directory — or imports it in the
-           settings window. */
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-            "Cubism Core not found at startup: Live2D stays disabled until "
-            "Live2DCubismCore.dll or the official SDK zip is dropped into a "
-            "live2d folder (next to the application or inside the data "
-            "directory) and the app is restarted, or imported in the "
-            "settings window");
-#else
-        /* Diagnostic build: the Cubism SDK was absent during compilation, so
-           no renderer exists and no runtime folder can restore Live2D. */
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-            "Cubism SDK was absent at build time: diagnostic backend "
-            "active; Live2D rendering will stay disabled and no runtime "
-            "drop-in can enable it in this build (rebuild with the SDK, or "
-            "use a build shipped with Live2D support)");
-#endif
-    }
-    BongoCatLive2D *value = calloc(1, sizeof(*value));
+    BongoCatModelRuntime *value = calloc(1, sizeof(*value));
     if (!value) bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate Live2D runtime");
     return value;
 }
 
-BongoCatLive2D *bongo_cat_live2d_create(const char *asset_root,
+BongoCatModelRuntime *bongo_cat_model_runtime_create(const char *asset_root,
     BongoCatError *error) {
     return create_runtime(asset_root, error);
 }
 
-void bongo_cat_live2d_destroy(BongoCatLive2D *live2d) { free(live2d); }
+void bongo_cat_model_runtime_destroy(BongoCatModelRuntime *live2d) { free(live2d); }
 
-BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *live2d,
+BongoCatResult bongo_cat_model_runtime_load_ex(BongoCatModelRuntime *live2d,
     const char *model_dir,
     const char *setting_file, bool preset,
-    const BongoCatLive2DRenderOptions *render_options,
-    const BongoCatLive2DTextureOptions *texture_options,
-    BongoCatLive2DLoadProgress progress, void *userdata,
+    const BongoCatModelRuntimeRenderOptions *render_options,
+    const BongoCatModelRuntimeTextureOptions *texture_options,
+    BongoCatModelRuntimeLoadProgress progress, void *userdata,
     BongoCatError *error) {
     (void)preset; (void)render_options; (void)texture_options;
     if (!live2d || !model_dir || !setting_file) return BONGO_CAT_ERROR_ARGUMENT;
     if (progress) progress(userdata, 0.1f);
     char path[BONGO_CAT_PATH_CAP];
-    yyjson_doc *document = bongo_cat_path_join(path, sizeof(path), model_dir,
+    BongoJsonDoc *document = bongo_cat_path_join(path, sizeof(path), model_dir,
         setting_file) ? bongo_cat_model_json_read(path, NULL) : NULL;
     bool valid = bongo_cat_import_manifest_document_valid(model_dir, document, true);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!valid) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
             "Model manifest or required assets are invalid: %s", setting_file);
@@ -77,32 +52,32 @@ BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *live2d,
     return BONGO_CAT_OK;
 }
 
-BongoCatResult bongo_cat_live2d_load(BongoCatLive2D *live2d, const char *model_dir,
+BongoCatResult bongo_cat_model_runtime_load(BongoCatModelRuntime *live2d, const char *model_dir,
     const char *setting_file, bool preset,
-    const BongoCatLive2DRenderOptions *render_options,
-    BongoCatLive2DLoadProgress progress, void *userdata,
+    const BongoCatModelRuntimeRenderOptions *render_options,
+    BongoCatModelRuntimeLoadProgress progress, void *userdata,
     BongoCatError *error) {
-    return bongo_cat_live2d_load_ex(live2d, model_dir, setting_file, preset,
+    return bongo_cat_model_runtime_load_ex(live2d, model_dir, setting_file, preset,
         render_options, NULL, progress, userdata, error);
 }
 
-bool bongo_cat_live2d_ready(const BongoCatLive2D *live2d) {
+bool bongo_cat_model_runtime_ready(const BongoCatModelRuntime *live2d) {
     return live2d && live2d->loaded;
 }
 
-bool bongo_cat_live2d_canvas_size(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_canvas_size(const BongoCatModelRuntime *live2d,
     int *width, int *height) {
     (void)live2d; (void)width; (void)height; return false;
 }
 
-bool bongo_cat_live2d_frame(const BongoCatLive2D *live2d,
-    BongoCatLive2DFrame *frame) {
+bool bongo_cat_model_runtime_frame(const BongoCatModelRuntime *live2d,
+    BongoCatModelRuntimeFrame *frame) {
     if (!live2d || !frame) return false;
-    *frame = (BongoCatLive2DFrame){0};
+    *frame = (BongoCatModelRuntimeFrame){0};
     return true;
 }
 
-bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_viewport(const BongoCatModelRuntime *live2d,
     int *x, int *y, int *width, int *height) {
     if (!live2d || !x || !y || !width || !height) return false;
     *x = 0;
@@ -112,139 +87,139 @@ bool bongo_cat_live2d_viewport(const BongoCatLive2D *live2d,
     return true;
 }
 
-bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_overlay_viewport(const BongoCatModelRuntime *live2d,
     int *x, int *y, int *width, int *height) {
-    return bongo_cat_live2d_viewport(live2d, x, y, width, height);
+    return bongo_cat_model_runtime_viewport(live2d, x, y, width, height);
 }
 
-void bongo_cat_live2d_resize(BongoCatLive2D *live2d, int width, int height) {
+void bongo_cat_model_runtime_resize(BongoCatModelRuntime *live2d, int width, int height) {
     if (!live2d) return;
     live2d->width = width;
     live2d->height = height;
 }
-void bongo_cat_live2d_reshape(BongoCatLive2D *live2d, int width, int height) {
-    bongo_cat_live2d_resize(live2d, width, height);
+void bongo_cat_model_runtime_reshape(BongoCatModelRuntime *live2d, int width, int height) {
+    bongo_cat_model_runtime_resize(live2d, width, height);
 }
 
-bool bongo_cat_live2d_update(BongoCatLive2D *live2d, float delta_seconds) {
+bool bongo_cat_model_runtime_update(BongoCatModelRuntime *live2d, float delta_seconds) {
     (void)live2d; (void)delta_seconds; return false;
 }
-bool bongo_cat_live2d_texture_refresh_pending(const BongoCatLive2D *live2d, bool active) {
+bool bongo_cat_model_runtime_texture_refresh_pending(const BongoCatModelRuntime *live2d, bool active) {
     (void)live2d; (void)active; return false;
 }
-bool bongo_cat_live2d_texture_refresh_due(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_texture_refresh_due(const BongoCatModelRuntime *live2d,
     bool active, bool allow_start) {
     (void)live2d; (void)active; (void)allow_start; return false;
 }
-bool bongo_cat_live2d_try_reuse_texture_quality(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_try_reuse_texture_quality(BongoCatModelRuntime *live2d,
     float quality_percent) {
     (void)live2d; (void)quality_percent; return false;
 }
 
-bool bongo_cat_live2d_measure_frame(BongoCatLive2D *live2d,
-    BongoCatLive2DFrame *required) {
+bool bongo_cat_model_runtime_measure_frame(BongoCatModelRuntime *live2d,
+    BongoCatModelRuntimeFrame *required) {
     (void)live2d; (void)required;
     return false;
 }
 
-void bongo_cat_live2d_set_frame(BongoCatLive2D *live2d,
-    const BongoCatLive2DFrame *frame) {
+void bongo_cat_model_runtime_set_frame(BongoCatModelRuntime *live2d,
+    const BongoCatModelRuntimeFrame *frame) {
     (void)live2d; (void)frame;
 }
-bool bongo_cat_live2d_refresh_textures(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_refresh_textures(BongoCatModelRuntime *live2d,
     bool active, bool allow_start) {
     (void)live2d; (void)active; (void)allow_start; return false;
 }
-bool bongo_cat_live2d_texture_refresh_busy(const BongoCatLive2D *live2d) {
+bool bongo_cat_model_runtime_texture_refresh_busy(const BongoCatModelRuntime *live2d) {
     (void)live2d; return false;
 }
-void bongo_cat_live2d_cancel_texture_refresh(BongoCatLive2D *live2d) {
+void bongo_cat_model_runtime_cancel_texture_refresh(BongoCatModelRuntime *live2d) {
     (void)live2d;
 }
-bool bongo_cat_live2d_draw_checked(BongoCatLive2D *live2d) {
+bool bongo_cat_model_runtime_draw_checked(BongoCatModelRuntime *live2d) {
     (void)live2d; return false;
 }
-void bongo_cat_live2d_draw(BongoCatLive2D *live2d) { (void)live2d; }
-void stub_live2d_set_rhi_info(BongoCatLive2D *live2d,
+void bongo_cat_model_runtime_draw(BongoCatModelRuntime *live2d) { (void)live2d; }
+void stub_model_runtime_set_rhi_info(BongoCatModelRuntime *live2d,
     const BongoCatRhiDeviceInfo *info) {
     (void)live2d; (void)info;
 }
-void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *live2d, bool flipped) {
+void bongo_cat_model_runtime_set_vertical_flip(BongoCatModelRuntime *live2d, bool flipped) {
     (void)live2d; (void)flipped;
 }
 
-void bongo_cat_live2d_set_mirror(BongoCatLive2D *live2d, bool mirror) {
+void bongo_cat_model_runtime_set_mirror(BongoCatModelRuntime *live2d, bool mirror) {
     (void)live2d; (void)mirror;
 }
-void bongo_cat_live2d_set_render_options(BongoCatLive2D *live2d,
-    const BongoCatLive2DRenderOptions *options) {
+void bongo_cat_model_runtime_set_render_options(BongoCatModelRuntime *live2d,
+    const BongoCatModelRuntimeRenderOptions *options) {
     (void)live2d; (void)options;
 }
-void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *live2d, bool tight) {
+void bongo_cat_model_runtime_set_tight_frame(BongoCatModelRuntime *live2d, bool tight) {
     (void)live2d; (void)tight;
 }
-void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *live2d,
+void bongo_cat_model_runtime_set_tight_overlay_rect(BongoCatModelRuntime *live2d,
     const float *rect) {
     (void)live2d; (void)rect;
 }
-void bongo_cat_live2d_set_dragging(BongoCatLive2D *live2d, float x, float y) {
+void bongo_cat_model_runtime_set_dragging(BongoCatModelRuntime *live2d, float x, float y) {
     (void)live2d; (void)x; (void)y;
 }
-void bongo_cat_live2d_set_centered_dragging(BongoCatLive2D *live2d,
+void bongo_cat_model_runtime_set_centered_dragging(BongoCatModelRuntime *live2d,
     float x, float y) { (void)live2d; (void)x; (void)y; }
-void bongo_cat_live2d_prepare_viewer_audit(BongoCatLive2D *live2d) { (void)live2d; }
-bool bongo_cat_live2d_prepare_cover_capture(BongoCatLive2D *live2d) {
+void bongo_cat_model_runtime_prepare_viewer_audit(BongoCatModelRuntime *live2d) { (void)live2d; }
+bool bongo_cat_model_runtime_prepare_cover_capture(BongoCatModelRuntime *live2d) {
     return live2d && live2d->loaded;
 }
-bool bongo_cat_live2d_set_parameter(BongoCatLive2D *live2d, const char *id, float value) {
+bool bongo_cat_model_runtime_set_parameter(BongoCatModelRuntime *live2d, const char *id, float value) {
     (void)live2d; (void)id; (void)value; return false;
 }
-bool bongo_cat_live2d_parameter(BongoCatLive2D *value, const char *id, BongoCatParameterRange *range) {
+bool bongo_cat_model_runtime_parameter(BongoCatModelRuntime *value, const char *id, BongoCatParameterRange *range) {
     (void)value; (void)id; (void)range; return false;
 }
-bool bongo_cat_live2d_start_motion(BongoCatLive2D *value, const char *group, int index) {
+bool bongo_cat_model_runtime_start_motion(BongoCatModelRuntime *value, const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_restore_motion_state(BongoCatLive2D *value,
+bool bongo_cat_model_runtime_restore_motion_state(BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_preview_motion(BongoCatLive2D *value,
+bool bongo_cat_model_runtime_preview_motion(BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_restore_motion_preview(BongoCatLive2D *value) {
+bool bongo_cat_model_runtime_restore_motion_preview(BongoCatModelRuntime *value) {
     (void)value; return false;
 }
-bool bongo_cat_live2d_commit_motion_preview(BongoCatLive2D *value,
+bool bongo_cat_model_runtime_commit_motion_preview(BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_motion_selected(const BongoCatLive2D *value,
+bool bongo_cat_model_runtime_motion_selected(const BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_motion_persistent(const BongoCatLive2D *value,
+bool bongo_cat_model_runtime_motion_persistent(const BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return false;
 }
-bool bongo_cat_live2d_motion_visible(const BongoCatLive2D *value,
+bool bongo_cat_model_runtime_motion_visible(const BongoCatModelRuntime *value,
     const char *group, int index) {
     (void)value; (void)group; (void)index; return true;
 }
-bool bongo_cat_live2d_motion_same_toggle(const BongoCatLive2D *value,
+bool bongo_cat_model_runtime_motion_same_toggle(const BongoCatModelRuntime *value,
     const char *left_group, int left_index,
     const char *right_group, int right_index) {
     (void)value; (void)left_group; (void)left_index;
     (void)right_group; (void)right_index; return false;
 }
-bool bongo_cat_live2d_set_expression(BongoCatLive2D *value, int index) {
+bool bongo_cat_model_runtime_set_expression(BongoCatModelRuntime *value, int index) {
     (void)value; (void)index; return false;
 }
-int bongo_cat_live2d_expression(const BongoCatLive2D *value) {
+int bongo_cat_model_runtime_expression(const BongoCatModelRuntime *value) {
     (void)value; return -1;
 }
-bool bongo_cat_live2d_visual_state(const BongoCatLive2D *value,
-    BongoCatLive2DVisualState *state) {
+bool bongo_cat_model_runtime_visual_state(const BongoCatModelRuntime *value,
+    BongoCatModelRuntimeVisualState *state) {
     (void)value; (void)state; return false;
 }

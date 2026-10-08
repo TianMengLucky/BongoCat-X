@@ -11,6 +11,7 @@ typedef struct BongoCatPreferences BongoCatPreferences;
 BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app);
 void bongo_cat_preferences_destroy(BongoCatPreferences *preferences);
 void bongo_cat_preferences_show(BongoCatPreferences *preferences);
+void bongo_cat_preferences_release_render_context(BongoCatPreferences *preferences);
 void bongo_cat_preferences_close(BongoCatPreferences *preferences);
 bool bongo_cat_preferences_visible(const BongoCatPreferences *preferences);
 bool bongo_cat_preferences_needs_frame(BongoCatPreferences *preferences);

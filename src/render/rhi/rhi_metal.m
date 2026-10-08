@@ -12,6 +12,7 @@
 #include <SDL3/SDL_metal.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Objective-C ownership belongs to ARC-managed ivars, not calloc'ed C
@@ -30,6 +31,8 @@
     id<MTLTexture> frame_texture;
     id<MTLBuffer> readback;
     id<MTLTexture> depth_texture;
+    id<MTLTexture> background_texture;
+    uint64_t background_revision;
     NSUInteger stride;
     int frame_width, frame_height;
     bool has_frame;
@@ -46,6 +49,39 @@ static BongoCatRhiMetal *state(const BongoCatRhi *rhi) {
 static const char *present_name(void *user) {
     BongoCatRhiMetal *metal = (__bridge BongoCatRhiMetal *)user;
     return metal ? metal->describe : "Metal";
+}
+
+bool bongo_cat_rhi_metal_set_background(BongoCatRhi *rhi, const void *pixels,
+    int width, int height, int pitch, uint64_t revision) {
+    BongoCatRhiMetal *metal = state(rhi);
+    if (!metal || !metal->layer) return false;
+    if (!pixels) { metal->background_texture = nil; return true; }
+    if (width <= 0 || height <= 0 || width > INT_MAX / 4 || pitch < width * 4 ||
+        (uint64_t)width * height > SIZE_MAX / 4) return false;
+    if (metal->background_texture && metal->background_revision == revision &&
+        metal->background_texture.width == (NSUInteger)width &&
+        metal->background_texture.height == (NSUInteger)height) return true;
+    size_t stride = (size_t)width * 4;
+    uint8_t *bgra = malloc(stride * height);
+    if (!bgra) return false;
+    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+        const uint8_t *source = (const uint8_t *)pixels + (size_t)y * pitch + x * 4;
+        uint8_t *dest = bgra + (size_t)y * stride + x * 4;
+        dest[0] = source[2]; dest[1] = source[1];
+        dest[2] = source[0]; dest[3] = source[3];
+    }
+    MTLTextureDescriptor *description = [MTLTextureDescriptor
+        texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+        width:(NSUInteger)width height:(NSUInteger)height mipmapped:NO];
+    description.storageMode = MTLStorageModeShared;
+    id<MTLTexture> texture = [metal->layer.device newTextureWithDescriptor:description];
+    if (texture) [texture replaceRegion:MTLRegionMake2D(0, 0, width, height)
+        mipmapLevel:0 withBytes:bgra bytesPerRow:stride];
+    free(bgra);
+    if (!texture) return false;
+    metal->background_texture = texture;
+    metal->background_revision = revision;
+    return true;
 }
 
 static bool frame_present(SDL_Window *window, void *user);
@@ -98,6 +134,16 @@ bool bongo_cat_rhi_metal_render_frame(BongoCatRhi *rhi) {
             [buffer renderCommandEncoderWithDescriptor:pass];
         if (!encoder) return false;
         [encoder endEncoding];
+        if (metal->background_texture && metal->background_texture.width == width &&
+            metal->background_texture.height == height) {
+            id<MTLBlitCommandEncoder> background = [buffer blitCommandEncoder];
+            if (!background) return false;
+            [background copyFromTexture:metal->background_texture sourceSlice:0
+                sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
+                sourceSize:MTLSizeMake(width, height, 1) toTexture:drawable.texture
+                destinationSlice:0 destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+            [background endEncoding];
+        }
         pass.colorAttachments[0].loadAction = MTLLoadActionLoad;
         pass.depthAttachment.loadAction = MTLLoadActionLoad;
         metal->frame_buffer = buffer;

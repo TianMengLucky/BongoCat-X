@@ -9,10 +9,11 @@ option(BONGO_CAT_REQUIRE_CUBISM
   "Require the Cubism SDK; set ON to fail the configure step when it is \
 missing, leave OFF (default) to build the diagnostic backend instead" OFF)
 option(BONGO_CAT_RUNTIME_CORE
-  "Keep the Cubism Core out of the executable and load it at runtime \
-(user-supplied Core library, an SDK zip dropped by the user, or the \
-settings-window import); OFF links Core statically into a self-contained \
-full build" ON)
+  "Load user-supplied Cubism Core externally; static Core linking is unsupported" ON)
+if(NOT BONGO_CAT_RUNTIME_CORE)
+  message(FATAL_ERROR "BONGO_CAT_RUNTIME_CORE=OFF is unsupported: renderer plugins "
+    "must not embed Cubism Core. Supply Core separately at runtime.")
+endif()
 option(BONGO_CAT_WARNINGS_AS_ERRORS "Treat native source warnings as errors" OFF)
 option(BONGO_CAT_STATIC_ANALYZER "Run GCC's static analyzer on project C sources" OFF)
 set(BONGO_CAT_CUBISM_SDK "${CMAKE_CURRENT_SOURCE_DIR}/vendor/CubismSdkForNative"
@@ -49,7 +50,9 @@ include(cmake/Dependencies.cmake)
 include(cmake/AudioDecoder.cmake)
 include(cmake/Rust.cmake)
 find_package(OpenGL REQUIRED)
-set(BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
+set(BONGO_CAT_LIVE2D_SOURCES "")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(BONGO_CAT_RUNTIME_CORE_MODE ON)
 set(BONGO_CAT_CUBISM_ENABLED OFF)
 set(CUBISM_CORE_HEADER "${BONGO_CAT_CUBISM_SDK}/Core/include/Live2DCubismCore.h")
 if(EXISTS "${CUBISM_CORE_HEADER}")
@@ -96,41 +99,6 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     endif()
     set(BONGO_CAT_CUBISM_ENABLED ON)
   endif()
-  if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_RUNTIME_CORE)
-    # The executable ships without the Core; the dispatch layer routes the
-    # Live2D ABI to the bridge once the runtime loader finds the user's Core
-    # library, and to the stub until then.
-    set(BONGO_CAT_LIVE2D_ABI
-      create destroy load load_ex ready canvas_size frame measure_frame
-      set_frame viewport overlay_viewport resize reshape
-      try_reuse_texture_quality
-      texture_refresh_pending texture_refresh_due texture_refresh_busy
-      cancel_texture_refresh refresh_textures update draw draw_checked set_mirror
-      set_vertical_flip set_render_options set_tight_frame
-      set_tight_overlay_rect set_dragging
-      set_centered_dragging prepare_viewer_audit prepare_cover_capture
-      set_parameter parameter start_motion restore_motion_state
-      preview_motion restore_motion_preview commit_motion_preview
-      motion_selected motion_persistent motion_visible motion_same_toggle
-      set_expression expression visual_state)
-    set(BONGO_CAT_BRIDGE_DEFS "")
-    set(BONGO_CAT_STUB_DEFS "")
-    foreach(NAME IN LISTS BONGO_CAT_LIVE2D_ABI)
-      list(APPEND BONGO_CAT_BRIDGE_DEFS
-        "bongo_cat_live2d_${NAME}=bridge_live2d_${NAME}")
-      list(APPEND BONGO_CAT_STUB_DEFS
-        "bongo_cat_live2d_${NAME}=stub_live2d_${NAME}")
-    endforeach()
-    set_source_files_properties(${BONGO_CAT_LIVE2D_SOURCES} PROPERTIES
-      COMPILE_DEFINITIONS "${BONGO_CAT_BRIDGE_DEFS}")
-    # The dispatch layer falls back to the stub until the user's Core library
-    # is available, so the stub must ship alongside the bridge.
-    list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_stub.c)
-    set_source_files_properties(src/live2d/live2d_stub.c PROPERTIES
-      COMPILE_DEFINITIONS "${BONGO_CAT_STUB_DEFS}")
-    list(APPEND BONGO_CAT_LIVE2D_SOURCES src/live2d/live2d_dispatch.c)
-    set(BONGO_CAT_RUNTIME_CORE_MODE ON)
-  endif()
 elseif(BONGO_CAT_REQUIRE_CUBISM)
   message(FATAL_ERROR
     "Cubism SDK for Native not found at ${BONGO_CAT_CUBISM_SDK}.\n"
@@ -152,15 +120,16 @@ else()
   message(WARNING
     "Cubism SDK missing and BONGO_CAT_REQUIRE_CUBISM=OFF; building the diagnostic backend "
     "without Live2D model rendering.\n"
-    "A diagnostic build can never render Live2D: rebuild with the SDK in place "
+    "Live2D requires a compatible plugin built with the SDK "
     "(-DBONGO_CAT_REQUIRE_CUBISM=ON) to produce a binary that loads the Core "
     "at runtime.")
 endif()
+include(cmake/ModelPlugins.cmake)
 add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
   src/core/config_file.c
   src/core/error.c
-  src/core/file.c src/core/i18n.c
+  src/core/file.c src/core/i18n.c src/core/json_dom_io.c
   src/core/input_state.c src/core/mver_pointer.c
   src/core/mouse_tracking.c src/core/sha256.c src/core/utf8.c
   src/core/model_catalog.c
@@ -171,8 +140,7 @@ add_library(bongo_cat_core STATIC
 target_include_directories(bongo_cat_core PUBLIC "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include)
 # The Rust crate's CMake target name uses underscores (Corrosion normalizes
 # the crate name's dashes for library targets).
-target_link_libraries(bongo_cat_core PUBLIC yyjson bongo_safe PRIVATE bongo_cat_warnings)
-include(cmake/CubismAssets.cmake)
+target_link_libraries(bongo_cat_core PUBLIC bongo_safe PRIVATE bongo_cat_warnings)
 if(WIN32)
   target_sources(bongo_cat_core PRIVATE
     src/platform/windows/windows_utf8.c)
@@ -182,7 +150,7 @@ endif()
 
 include(cmake/RuntimeSources.cmake)
 add_library(bongo_cat_runtime STATIC
-  ${BONGO_CAT_RUNTIME_SOURCES} ${BONGO_CAT_LIVE2D_SOURCES})
+  ${BONGO_CAT_RUNTIME_SOURCES} ${BONGO_CAT_MODEL_HOST_SOURCES})
 target_include_directories(bongo_cat_runtime PUBLIC "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include)
 target_include_directories(bongo_cat_runtime PRIVATE
   ${BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS})
@@ -193,19 +161,17 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR)
     ${BONGO_CAT_VULKAN_INCLUDE_DIR})
   target_compile_definitions(bongo_cat_runtime PRIVATE BONGO_CAT_HAS_VULKAN_RHI=1)
 endif()
-if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_CUBISM_METAL)
+if(APPLE)
   target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_CUBISM_METAL=1)
 endif()
-if(BONGO_CAT_CUBISM_ENABLED AND BONGO_CAT_CUBISM_VULKAN)
-  # The shim must precede Vulkan-Headers so <vulkan/vulkan.h> resolves to
-  # the volk-routing header.
-  target_include_directories(bongo_cat_runtime SYSTEM BEFORE PRIVATE
-    "${BONGO_CAT_VULKAN_SHIM_DIR}")
-  target_include_directories(bongo_cat_runtime SYSTEM PRIVATE
-    "${volk_SOURCE_DIR}"
-    ${BONGO_CAT_VULKAN_INCLUDE_DIR})
-  target_compile_definitions(bongo_cat_runtime PUBLIC
-    BONGO_CAT_HAS_CUBISM_VULKAN=1)
+if(BONGO_CAT_PLATFORM_VULKAN AND BONGO_CAT_VULKAN_INCLUDE_DIR AND volk_SOURCE_DIR)
+  add_library(bongo_cat_host_volk STATIC "${volk_SOURCE_DIR}/volk.c")
+  target_include_directories(bongo_cat_host_volk SYSTEM PUBLIC
+    "${volk_SOURCE_DIR}" "${BONGO_CAT_VULKAN_INCLUDE_DIR}")
+  target_link_libraries(bongo_cat_host_volk PRIVATE ${CMAKE_DL_LIBS})
+  target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_host_volk)
+  target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_CUBISM_VULKAN=1)
+  target_compile_definitions(bongo_cat_runtime PRIVATE VK_NO_PROTOTYPES=1)
 endif()
 target_link_libraries(bongo_cat_runtime PRIVATE bongo_cat_warnings bongo_cat_archive)
 target_link_libraries(bongo_cat_runtime PUBLIC bongo_cat_core SDL3::SDL3-static OpenGL::GL ${BONGO_CAT_MINIAUDIO_TARGET})
@@ -216,10 +182,7 @@ else()
   set_source_files_properties(src/media/stb_image_impl.c src/media/image_resize.c src/ui/backend/nuklear_impl.c
     PROPERTIES COMPILE_OPTIONS "-w")
 endif()
-if(BONGO_CAT_CUBISM_ENABLED)
-  target_link_libraries(bongo_cat_runtime PUBLIC Framework)
-  target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_CUBISM=1)
-endif()
+target_compile_definitions(bongo_cat_runtime PUBLIC BONGO_CAT_HAS_MODEL_PLUGINS=1)
 if(BONGO_CAT_RUNTIME_CORE_MODE)
   target_compile_definitions(bongo_cat_runtime PUBLIC
     BONGO_CAT_LIVE2D_CORE_RUNTIME=1)
@@ -238,7 +201,7 @@ if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
   set(BONGO_CAT_PCH OFF)
 endif()
 if(BONGO_CAT_PCH)
-  target_precompile_headers(bongo_cat_core PRIVATE <yyjson.h>)
+  target_precompile_headers(bongo_cat_core PRIVATE "bongo_cat/json_dom.h")
   target_precompile_headers(bongo_cat_runtime PRIVATE
     <SDL3/SDL.h>
     <SDL3/SDL_opengl.h>)
@@ -269,13 +232,6 @@ if(NOT APPLE)
     src/render/rhi/rhi_metal_stub.c)
 endif()
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
-if(BONGO_CAT_RUNTIME_CORE_MODE AND WIN32)
-  # The Core is a user-supplied DLL; route its imports through delay-load so
-  # the executable itself never embeds (or requires) the binary. POSIX builds
-  # reach the Core through the generated dlopen shim instead.
-  target_link_options(bongo_cat PRIVATE "/DELAYLOAD:Live2DCubismCore.dll")
-  target_link_libraries(bongo_cat PRIVATE delayimp)
-endif()
 bongo_cat_enable_release_ipo(Framework bongo_cat_core bongo_cat_runtime bongo_cat)
 
 include(cmake/ValidationTools.cmake)
@@ -301,7 +257,7 @@ if(MSVC)
   endforeach()
 endif()
 
-bongo_cat_stage_cubism_assets(bongo_cat)
+bongo_cat_stage_model_plugins(bongo_cat)
 
 if(APPLE)
   # The linker signs the executable on its own before the bundle's resources are

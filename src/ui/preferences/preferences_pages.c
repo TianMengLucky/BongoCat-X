@@ -116,7 +116,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.tightFrame", "Tight Frame"), tr(app,
         "pages.preference.cat.hints.tightFrame", "Shrink the window to fit the visible pet edges"), &window->tight_frame)) {
         SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[tight] toggle -> %d", window->tight_frame ? 1 : 0);
-        bongo_cat_live2d_set_tight_frame(app->live2d, window->tight_frame);
+        bongo_cat_model_runtime_set_tight_frame(app->model_runtime, window->tight_frame);
         app->frame_geometry_retry_ns = 0;
         app->dirty = true;
     }
@@ -246,7 +246,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         quality_settle_deadline_ns = 0;
         BongoCatError reload_error = {0};
         bool reloaded = !app->loaded_model[0] ||
-            bongo_cat_live2d_try_reuse_texture_quality(app->live2d,
+            bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
                 model->render_quality_percent) ||
             bongo_cat_app_reload_model_with_error(app, &reload_error);
         if (!reloaded) {

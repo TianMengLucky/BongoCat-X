@@ -3,11 +3,15 @@
 #include "bongo_cat/path.h"
 
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_surface.h>
 #include <stdio.h>
 #include <string.h>
 
 void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
-    if (value->background) glDeleteTextures(1, &value->background);
+    bongo_cat_image_free(&value->native_background);
+    if (value->native_canvas) SDL_DestroySurface(value->native_canvas);
+    value->native_canvas = NULL;
+    if (!value->native && value->background) glDeleteTextures(1, &value->background);
     if (value->composite) glDeleteTextures(1, &value->composite);
     value->background = 0;
     value->composite = 0;
@@ -32,8 +36,8 @@ void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
 }
 
 BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
-    const char *directory, bool model_pointer_preferred,
-    const BongoCatLive2DRenderOptions *render_options, BongoCatError *error) {
+    const char *directory, bool model_pointer_preferred, bool model_rendering,
+    const BongoCatModelRuntimeRenderOptions *render_options, BongoCatError *error) {
     if (!value || !directory) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_ARGUMENT,
             "Missing model overlay state or directory");
@@ -46,28 +50,29 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
     /* Without the licensed Cubism runtime there is no model renderer.  Use the
        model's composed preview so the desktop pet remains visually complete;
        Cubism builds keep the background-only layer behind the animated model. */
-#ifdef BONGO_CAT_HAS_CUBISM
     if (!bongo_cat_path_join(path, sizeof(path), directory,
-        "resources/background.png")) {
+        model_rendering ? "resources/background.png" : "resources/cover.png")) {
         bongo_cat_error_set(failure, BONGO_CAT_ERROR_IO, "Model overlay path is too long");
         return BONGO_CAT_ERROR_IO;
     }
-#else
-    if (!bongo_cat_path_join(path, sizeof(path), directory,
-        "resources/cover.png")) {
-        bongo_cat_error_set(failure, BONGO_CAT_ERROR_IO, "Model overlay path is too long");
-        return BONGO_CAT_ERROR_IO;
-    }
-#endif
     bongo_cat_overlay_clear_textures(value);
     bongo_cat_mver_pointer_overlay_clear(value->mver_pointer);
     GLuint background = 0;
     int background_width = 0, background_height = 0;
     BongoCatError background_error = {0};
-    if (bongo_cat_path_is_file(path)) background = bongo_cat_image_texture(path,
-        &background_width, &background_height, &background_error);
+    if (bongo_cat_path_is_file(path)) {
+        if (value->native) {
+            if (bongo_cat_image_load(path, &value->native_background,
+                &background_error) == BONGO_CAT_OK) {
+                background = 1;
+                background_width = value->native_background.width;
+                background_height = value->native_background.height;
+            }
+        } else background = bongo_cat_image_texture(path,
+            &background_width, &background_height, &background_error);
+    }
     BongoCatError pointer_error = {0};
-    if (!model_pointer_preferred &&
+    if (!value->native && !model_pointer_preferred &&
         !bongo_cat_mver_pointer_overlay_load(value->mver_pointer, directory,
             &pointer_error)) {
         if (background) glDeleteTextures(1, &background);
@@ -83,7 +88,7 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
     value->background = background;
     /* SFML sprites use original pixels at the top-left of the configured view.
        Their image size is not necessarily the size of that view. */
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     if (render_options && render_options->mver_projection) {
         value->reference_width = render_options->reference_width;
         value->reference_height = render_options->reference_height;
@@ -106,9 +111,9 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
     (void)render_options;
 #endif
     value->model_pointer_preferred = model_pointer_preferred;
-    value->composed_cover = false;
-    value->clean_paws = false;
-#ifndef BONGO_CAT_HAS_CUBISM
+    value->composed_cover = !model_rendering;
+    value->clean_paws = !model_rendering;
+#ifndef BONGO_CAT_HAS_MODEL_PLUGINS
     value->composed_cover = true;
     value->clean_paws = true;
 #endif
@@ -129,8 +134,9 @@ bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *value,
     return true;
 }
 
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
 GLuint bongo_cat_overlay_cached_texture(BongoCatOverlay *value, const char *path) {
+    if (value->native) return 1;
     value->clock++;
     TextureSlot *oldest = NULL;
     for (size_t i = 0; i < 4; ++i) {

@@ -12,6 +12,9 @@
 
 uint32_t bongo_cat_import_candidate_capabilities(
     const BongoCatImportCandidate *candidate) {
+    if (candidate->format == BONGO_CAT_IMPORT_INOCHI2D)
+        return BONGO_CAT_MODEL_CAPABILITY_INOCHI2D | BONGO_CAT_MODEL_CAPABILITY_PREVIEW |
+            BONGO_CAT_MODEL_CAPABILITY_RUNTIME_ADAPTER | BONGO_CAT_MODEL_CAPABILITY_KEYBOARD_INPUT;
     uint32_t result = BONGO_CAT_MODEL_CAPABILITY_LIVE2D |
         BONGO_CAT_MODEL_CAPABILITY_PREVIEW |
         BONGO_CAT_MODEL_CAPABILITY_RUNTIME_ADAPTER |
@@ -266,7 +269,8 @@ void bongo_cat_import_describe_nearby_entry(BongoCatModelEntry *entry,
     snprintf(entry->storage_directory, sizeof(entry->storage_directory), "%s", source);
     snprintf(entry->setting_file, sizeof(entry->setting_file), "%s", candidate->setting);
     entry->mode = candidate->mode;
-    entry->source_format = candidate->format == BONGO_CAT_IMPORT_TAURI
+    entry->source_format = candidate->format == BONGO_CAT_IMPORT_INOCHI2D
+        ? BONGO_CAT_MODEL_SOURCE_INOCHI2D : candidate->format == BONGO_CAT_IMPORT_TAURI
         ? BONGO_CAT_MODEL_SOURCE_TAURI :
         candidate->format == BONGO_CAT_IMPORT_MVER_PATCH
         ? BONGO_CAT_MODEL_SOURCE_MVER_PATCH : BONGO_CAT_MODEL_SOURCE_MVER;

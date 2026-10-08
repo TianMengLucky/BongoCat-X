@@ -43,7 +43,7 @@ static bool matches(const BongoCatPreferences *value,
     const BongoCatBehaviorEntry *entry, int tab) {
     if (tab == 0) return entry->kind == BONGO_CAT_BEHAVIOR_MOTION &&
         (!bongo_cat_preferences_behavior_model_loaded(value) ||
-        bongo_cat_live2d_motion_visible(value->app->live2d,
+        bongo_cat_model_runtime_motion_visible(value->app->model_runtime,
             entry->group, entry->index));
     if (tab == 1) return entry->kind == BONGO_CAT_BEHAVIOR_EXPRESSION;
     return entry->kind == BONGO_CAT_BEHAVIOR_SOUND && (entry->sound[0] || entry->sound_clear);

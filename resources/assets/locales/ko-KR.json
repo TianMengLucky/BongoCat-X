@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "플러그인",
+        "description": "렌더링 플러그인을 설치하고 필요한 엔진을 활성화하세요. 모델 형식에 따라 렌더러를 자동으로 선택합니다.",
+        "status": "상태",
+        "active": "사용 중",
+        "installed": "설치됨",
+        "missing": "설치되지 않음",
+        "enabled": "활성화",
+        "activeHint": "선택한 모델을 클릭하여 해제한 후 플러그인을 비활성화, 교체 또는 제거하세요.",
+        "remove": "플러그인 제거",
+        "install": "로컬 플러그인 설치",
+        "saved": "플러그인 설정이 업데이트되었습니다",
+        "failed": "플러그인을 업데이트할 수 없습니다",
+        "live2dMissing": "플러그인 페이지에서 Live2D 렌더러를 설치하고 활성화한 다음 Cubism Core를 가져오세요.",
+        "disabled": "비활성화됨",
+        "liveDescription": "Live2D에는 Cubism Core가 필요합니다. 없으면 ZIP과 함께 가져올 수 있습니다.",
+        "inoxDescription": "INP / INX 형식의 Inochi2D 모델을 지원합니다.",
+        "openFolder": "폴더 열기",
+        "drop": "클릭하거나 플러그인 ZIP을 드롭하세요",
+        "dropHint": "ZIP 또는 라이브러리. Core가 없으면 패키지에서 자동으로 가져옵니다."
+      },
       "title": "환경 설정",
       "cat": {
         "title": "환경 설정",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Cubism Core 라이브러리 또는 공식 Cubism SDK zip을 선택하면 다시 시작하지 않고 Live2D 렌더링을 사용할 수 있습니다",
     "live2dCoreImportButton": "파일 선택",
     "live2dCoreImportSuccess": "Live2D Cubism Core를 가져왔습니다. Live2D 렌더링이 활성화되었습니다",
-    "live2dCoreImportFailed": "Live2D Cubism Core 가져오기 실패",
+    "live2dCoreImportFailed": "Live2D Cubism Core 가져오기 실패",
     "live2dCoreRescanFound": "Live2D Core가 감지되어 로드되었습니다",
     "live2dCoreRescanMissing": "live2d 폴더에서 Live2D Core를 찾지 못했습니다",
     "live2dCoreScanning": "live2d 폴더에서 Cubism Core를 검색하는 중...",

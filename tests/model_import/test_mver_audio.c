@@ -10,14 +10,14 @@
 #include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static void sound_chord(const char *text, const char *expected) {
-    yyjson_doc *doc = yyjson_read(text, strlen(text), 0);
+    BongoJsonDoc *doc = bongo_json_read(text, strlen(text), 0);
     char value[BONGO_CAT_SHORTCUT_CAP];
-    bool ok = bongo_cat_mver_sound_chord(yyjson_doc_get_root(doc), value, sizeof(value));
+    bool ok = bongo_cat_mver_sound_chord(bongo_json_doc_get_root(doc), value, sizeof(value));
     CHECK(expected ? ok && strcmp(value, expected) == 0 : !ok);
-    yyjson_doc_free(doc);
+    bongo_json_doc_free(doc);
 }
 
 void test_mver_audio(void) {
@@ -62,12 +62,12 @@ void test_mver_audio(void) {
         BongoCatError error = {0};
         CHECK(bongo_cat_import_adapter_metadata(&candidate, adapter, &error));
         CHECK(bongo_cat_model_adapter_metadata_path(adapter, path, sizeof(path)));
-        yyjson_doc *metadata = bongo_cat_json_read_file(path, 0, NULL);
-        yyjson_val *items = yyjson_obj_get(yyjson_doc_get_root(metadata), "bindings");
-        size_t item_index, item_count; yyjson_val *item;
-        yyjson_arr_foreach(items, item_index, item_count, item)
-            CHECK(!yyjson_obj_get(item, "shortcut"));
-        yyjson_doc_free(metadata);
+        BongoJsonDoc *metadata = bongo_cat_json_read_file(path, 0, NULL);
+        BongoJsonValue *items = bongo_json_obj_get(bongo_json_doc_get_root(metadata), "bindings");
+        size_t item_index, item_count; BongoJsonValue *item;
+        bongo_json_arr_foreach(items, item_index, item_count, item)
+            CHECK(!bongo_json_obj_get(item, "shortcut"));
+        bongo_json_doc_free(metadata);
         CHECK(bongo_cat_behaviors_load(catalog, model, &error) == BONGO_CAT_OK);
         CHECK(catalog->count == 2); /* Missing 1.flac skipped; clear always imported. */
         CHECK(catalog->entries[0].sound[0] && !catalog->entries[0].momentary);

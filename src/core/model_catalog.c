@@ -155,3 +155,9 @@ const char *bongo_cat_model_name(const BongoCatSettings *settings,
     const char *custom = bongo_cat_settings_model_label(settings, entry->id);
     return custom && custom[0] ? custom : bongo_cat_model_default_name(entry);
 }
+
+BongoCatModelEngine bongo_cat_model_engine(const BongoCatModelEntry *entry) {
+    return entry && ((entry->capabilities & BONGO_CAT_MODEL_CAPABILITY_INOCHI2D) ||
+        entry->source_format == BONGO_CAT_MODEL_SOURCE_INOCHI2D)
+        ? BONGO_CAT_MODEL_ENGINE_INOX2D : BONGO_CAT_MODEL_ENGINE_LIVE2D;
+}

@@ -36,17 +36,14 @@ set(CPACK_INSTALL_CMAKE_PROJECTS
   "${CMAKE_BINARY_DIR};${PROJECT_NAME};Runtime;/")
 
 if(WIN32)
-  set(BONGO_CAT_PORTABLE_EXECUTABLE
-    "${CMAKE_BINARY_DIR}/dist/${BONGO_CAT_PACKAGE_NAME}-portable.exe")
-  add_custom_command(OUTPUT "${BONGO_CAT_PORTABLE_EXECUTABLE}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:bongo_cat>"
-      "${BONGO_CAT_PORTABLE_EXECUTABLE}"
-    DEPENDS bongo_cat
-    COMMENT "Building the BongoCat Windows portable executable"
-    VERBATIM)
+  # CPack's install manifest includes optional plugins and their licenses.
   add_custom_target(package-portable
-    DEPENDS "${BONGO_CAT_PORTABLE_EXECUTABLE}")
+    COMMAND ${CMAKE_CPACK_COMMAND} --config "${CMAKE_BINARY_DIR}/CPackConfig.cmake"
+      -C "$<CONFIG>" -G ZIP
+      -D "CPACK_PACKAGE_FILE_NAME=${BONGO_CAT_PACKAGE_NAME}-portable"
+    DEPENDS bongo_cat
+    COMMENT "Building the BongoCat Windows portable archive with renderer plugins"
+    VERBATIM)
 endif()
 
 include(CPack)

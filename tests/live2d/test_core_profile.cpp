@@ -118,9 +118,9 @@ int main() {
         CHECK(outer.vao == 0 && outer.buffers[0] == 0);
         CHECK(glGetError() == GL_NO_ERROR);
     }
-    BongoCatLive2D runtime{};
-    bongo_cat_live2d_draw(&runtime);
-    CHECK(!bongo_cat_live2d_update(&runtime, 1.0f / 60.0f));
+    BongoCatModelRuntime runtime{};
+    bongo_cat_model_runtime_draw(&runtime);
+    CHECK(!bongo_cat_model_runtime_update(&runtime, 1.0f / 60.0f));
     glDeleteVertexArrays(1, &host_vao);
     glDeleteBuffers(2, host_buffers);
     glDeleteProgram(program);

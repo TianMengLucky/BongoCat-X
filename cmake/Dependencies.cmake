@@ -42,13 +42,6 @@ if(BONGO_CAT_FETCH_DEPS)
   set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
   # Keep dialogs enabled: the settings window opens native file and
   # folder pickers for model imports and the Live2D Core import.
-  set(YYJSON_DISABLE_INCR_READER ON CACHE BOOL "" FORCE)
-  set(YYJSON_DISABLE_UTILS ON CACHE BOOL "" FORCE)
-  set(YYJSON_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(YYJSON_BUILD_FUZZER OFF CACHE BOOL "" FORCE)
-  set(YYJSON_BUILD_MISC OFF CACHE BOOL "" FORCE)
-  set(YYJSON_BUILD_DOC OFF CACHE BOOL "" FORCE)
-  set(YYJSON_INSTALL OFF CACHE BOOL "" FORCE)
   set(MINIAUDIO_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(MINIAUDIO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(MINIAUDIO_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
@@ -66,8 +59,6 @@ if(BONGO_CAT_FETCH_DEPS)
   set(MINIAUDIO_NO_GENERATION ON CACHE BOOL "" FORCE)
   FetchContent_Declare(SDL3 URL https://github.com/libsdl-org/SDL/archive/402fc52af4e731184ad6a704068b5ccd27d8f1b8.tar.gz
     URL_HASH SHA256=e413151af71c23d316b6076a96a999342142afa792394eaf8a542a03503fc491)
-  FetchContent_Declare(yyjson URL https://github.com/ibireme/yyjson/archive/ac8f6074e1fbc43ec496aa1404b460d08b55d7a5.tar.gz
-    URL_HASH SHA256=bfc16e407ddb303c98e333920d5e01386afa42a15e0a750251342e04b074e736)
   FetchContent_Declare(stb URL https://github.com/nothings/stb/archive/31c1ad37456438565541f4919958214b6e762fb4.tar.gz
     URL_HASH SHA256=e4e3bba9c572a4a4148373a914d88ea0f0d11de8cc2c66739926e7eca0223319)
   FetchContent_Declare(miniaudio URL https://github.com/mackron/miniaudio/archive/9634bedb5b5a2ca38c1ee7108a9358a4e233f14d.tar.gz
@@ -80,7 +71,7 @@ if(BONGO_CAT_FETCH_DEPS)
   FetchContent_Declare(volk URL
     https://github.com/zeux/volk/archive/refs/tags/vulkan-sdk-1.3.290.0.tar.gz
     URL_HASH SHA256=bb6a6d616c0f2bbd5d180da982a6d92a0948581cec937de69f17883980c6ca06)
-  FetchContent_MakeAvailable(SDL3 yyjson stb miniaudio nuklear)
+  FetchContent_MakeAvailable(SDL3 stb miniaudio nuklear)
   if(BONGO_CAT_PLATFORM_VULKAN)
     FetchContent_MakeAvailable(vulkan_headers)
     # volk is populated but not added: its own CMake target would require the
@@ -101,15 +92,6 @@ if(BONGO_CAT_FETCH_DEPS)
   set(BONGO_CAT_MINIAUDIO_TARGET miniaudio)
 else()
   find_package(SDL3 CONFIG REQUIRED COMPONENTS SDL3-static)
-  find_package(yyjson CONFIG REQUIRED)
-
-  if(NOT TARGET yyjson AND TARGET yyjson::yyjson)
-    add_library(yyjson ALIAS yyjson::yyjson)
-  elseif(NOT TARGET yyjson)
-    message(FATAL_ERROR
-      "The yyjson package was found but provides neither yyjson nor yyjson::yyjson")
-  endif()
-
   if(NOT BONGO_CAT_STB_INCLUDE_DIR)
     find_path(BONGO_CAT_STB_INCLUDE_DIR NAMES stb_image.h PATH_SUFFIXES stb)
   endif()

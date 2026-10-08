@@ -1,6 +1,8 @@
 #include "runtime.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/log.h"
+#include "../../platform/common/gl_readback.h"
 
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
@@ -40,9 +42,10 @@ static void log_first_frame(BongoCatApp *app, int width, int height) {
             "First-frame diagnostic allocation failed for %zu bytes", bytes);
         return;
     }
-    GLenum before = glGetError();
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    GLenum after = glGetError();
+    bool gl = bongo_cat_rhi_is_gl(&app->rhi);
+    GLenum before = gl ? glGetError() : GL_NO_ERROR;
+    bool read = bongo_cat_gl_read_window(0, 0, width, height, true, pixels);
+    GLenum after = read ? GL_NO_ERROR : GL_INVALID_OPERATION;
     unsigned long long alpha = 0, opaque = 0, rgb_colored = 0;
     unsigned long long visible_colored = 0, black = 0;
     unsigned long long red = 0, green = 0, blue = 0, alpha_sum = 0;
@@ -58,9 +61,11 @@ static void log_first_frame(BongoCatApp *app, int width, int height) {
     }
     unsigned long long total = (unsigned long long)width * height;
     int sample_buffers = 0, sample_count = 0;
-    SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &sample_buffers);
-    SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &sample_count);
-    SDL_Log("First-frame pixels: size=%dx%d total=%llu alpha=%llu opaque=%llu "
+    if (gl) {
+        SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &sample_buffers);
+        SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &sample_count);
+    }
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "First-frame pixels: size=%dx%d total=%llu alpha=%llu opaque=%llu "
         "rgb_colored=%llu visible_colored=%llu black_with_alpha=%llu "
         "transparent=%llu "
         "avg_rgba=%.1f,%.1f,%.1f,%.1f gl_error_before=0x%x gl_error_after=0x%x "
@@ -69,19 +74,19 @@ static void log_first_frame(BongoCatApp *app, int width, int height) {
         total - alpha, (double)red / total, (double)green / total,
         (double)blue / total, (double)alpha_sum / total, before, after,
         sample_buffers, sample_count);
-    SDL_Log("First-frame ratios: alpha=%.2f%% rgb_colored=%.2f%% "
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "First-frame ratios: alpha=%.2f%% rgb_colored=%.2f%% "
         "visible_colored=%.2f%% black_with_alpha=%.2f%%",
         100.0 * alpha / total, 100.0 * rgb_colored / total,
         100.0 * visible_colored / total, 100.0 * black / total);
     if (after != GL_NO_ERROR) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-        "First-frame diagnosis: OpenGL framebuffer readback failed (0x%x)", after);
+        "First-frame diagnosis: framebuffer readback failed (0x%x)", after);
     else if (!rgb_colored && !alpha) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
         "First-frame diagnosis: framebuffer is blank and fully transparent");
     else if (!rgb_colored) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
         "First-frame diagnosis: framebuffer contains only black pixels");
     else if (!visible_colored) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
         "First-frame diagnosis: framebuffer has RGB content but no visible color alpha");
-    else SDL_Log("First-frame diagnosis: OpenGL framebuffer contains visible content");
+    else SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "First-frame diagnosis: framebuffer contains visible content");
     bongo_cat_frame_presentation_prepare(app, pixels, width, height,
         after == GL_NO_ERROR && visible_colored > 0);
     if (app->smoke) {
@@ -121,7 +126,7 @@ static void record_frame(BongoCatApp *app, const unsigned char *pixels,
         "model_state_consistent,selection_serial,window_config_visible,"
         "window_os_visible\n", file);
     FrameStats stats = frame_stats(pixels, width, height, pitch);
-    bool model_consistent = bongo_cat_live2d_ready(app->live2d) &&
+    bool model_consistent = bongo_cat_model_runtime_ready(app->model_runtime) &&
         app->loaded_model[0] &&
         strcmp(app->loaded_model, app->session.active_model_id) == 0;
     bool os_visible = (SDL_GetWindowFlags(app->window) & SDL_WINDOW_HIDDEN) == 0;
@@ -145,7 +150,9 @@ void bongo_cat_frame_audit(BongoCatApp *app, int width, int height) {
     size_t pitch = (size_t)width * 4, bytes = pitch * (size_t)height;
     unsigned char *pixels = malloc(bytes);
     if (!pixels) return;
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    if (!bongo_cat_gl_read_window(0, 0, width, height, true, pixels)) {
+        free(pixels); return;
+    }
     record_frame(app, pixels, width, height, pitch);
     uint64_t now = SDL_GetTicksNS();
     if (app->frame_audit_bmp_ns && now >= app->frame_audit_bmp_ns &&

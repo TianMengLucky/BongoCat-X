@@ -40,7 +40,6 @@ if(WIN32)
   set(BONGO_CAT_ASSET_PACK "${CMAKE_CURRENT_BINARY_DIR}/bongocat-assets.pak")
   file(GLOB_RECURSE BONGO_CAT_ASSET_INPUTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/assets/*")
-  bongo_cat_configure_embedded_cubism_assets()
   add_custom_command(OUTPUT "${BONGO_CAT_ASSET_PACK}"
     COMMAND ${CMAKE_COMMAND} -E rm -rf "${BONGO_CAT_ASSET_STAGE}"
     COMMAND ${CMAKE_COMMAND} -E make_directory
@@ -51,7 +50,6 @@ if(WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy
       "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
       "${BONGO_CAT_ASSET_STAGE}/assets/LICENSE"
-    ${BONGO_CAT_ASSET_EXTRA_COMMANDS}
     COMMAND "$<TARGET_FILE:bongo_cat_asset_packer>"
       "${BONGO_CAT_ASSET_STAGE}/assets" "${BONGO_CAT_ASSET_PACK}"
     DEPENDS ${BONGO_CAT_ASSET_INPUTS} "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"

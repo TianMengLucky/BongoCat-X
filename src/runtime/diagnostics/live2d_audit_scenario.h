@@ -3,9 +3,9 @@
 
 #include "runtime.h"
 
-void bongo_cat_live2d_audit_input(BongoCatApp *app, BongoCatInputKind kind,
+void bongo_cat_model_runtime_audit_input(BongoCatApp *app, BongoCatInputKind kind,
     const char *name, float value);
-bool bongo_cat_live2d_audit_motion(BongoCatApp *app, const char *scenario);
-bool bongo_cat_live2d_audit_parameter_override(const char *scenario);
+bool bongo_cat_model_runtime_audit_motion(BongoCatApp *app, const char *scenario);
+bool bongo_cat_model_runtime_audit_parameter_override(const char *scenario);
 
 #endif

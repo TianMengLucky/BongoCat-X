@@ -208,7 +208,7 @@ static void reload_secondary_settings(BongoCatApp *app) {
         BongoCatError reload_error = {0};
         bool reused = settings.model.dynamic_texture_resolution ==
             previous_settings.model.dynamic_texture_resolution &&
-            bongo_cat_live2d_try_reuse_texture_quality(app->live2d,
+            bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
                 settings.model.render_quality_percent);
         if (!reused && !bongo_cat_app_reload_model_with_error(app, &reload_error)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,

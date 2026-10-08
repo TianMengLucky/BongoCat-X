@@ -26,8 +26,8 @@ static bool hit(struct nk_context *context, struct nk_rect bounds, bool enabled)
 static bool candidate(BongoCatApp *app, const BongoCatBehaviorEntry *entry,
     BongoCatBehaviorKind kind) {
     return entry->kind == kind && (kind != BONGO_CAT_BEHAVIOR_MOTION ||
-        !app->live2d ||
-        bongo_cat_live2d_motion_visible(app->live2d, entry->group, entry->index));
+        !app->model_runtime ||
+        bongo_cat_model_runtime_motion_visible(app->model_runtime, entry->group, entry->index));
 }
 
 static size_t candidate_count(BongoCatApp *app, BongoCatBehaviorKind kind) {

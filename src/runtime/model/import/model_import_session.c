@@ -4,6 +4,7 @@
 #include "model_import_session_internal.h"
 #include "model_storage.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/log.h"
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,6 +118,9 @@ static BongoCatResult session_install_unlocked(
         (unsigned long long)(receipt ? receipt->count : 0),
         (unsigned long long)(receipt ? receipt->installed_count : 0),
         (SDL_GetTicksNS() - started) / 1000000.0, source_directory);
+    if (result != BONGO_CAT_OK) SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+        "Model import failed: path=%s error=%s", source_directory,
+        error && error->message[0] ? error->message : "unknown error");
     free(discovery);
     free(metadata);
     return result;

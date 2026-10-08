@@ -48,7 +48,7 @@ function(bongo_cat_compile_native_shaders backend input output)
       set(binary "${output}/${name}.${extension}")
       if(backend STREQUAL "VULKAN")
         add_custom_command(OUTPUT "${binary}"
-          COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" -V ${defines} "${shader}" -o "${binary}"
+          COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" -V "--preamble-text" "#extension GL_GOOGLE_include_directive : enable" ${defines} "${shader}" -o "${binary}"
           DEPENDS "${shader}" ${includes} VERBATIM)
       else()
         set(air "${CMAKE_BINARY_DIR}/native-shader-intermediates/${name}.air")

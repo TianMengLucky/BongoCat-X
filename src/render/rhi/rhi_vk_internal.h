@@ -13,7 +13,11 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+#include <volk.h>
+#else
 #include <vulkan/vulkan.h>
+#endif
 
 typedef struct BongoCatRhiVk {
     char describe[160];
@@ -47,6 +51,10 @@ typedef struct BongoCatRhiVk {
     VkImage current_image;
     VkImageView current_view;
     float clear[4];
+    VkImage background;
+    VkDeviceMemory background_memory;
+    uint64_t background_revision;
+    bool background_ready;
     PFN_vkGetInstanceProcAddr instance_gpa;
 #define BONGO_CAT_VK_FN(name) PFN_##name name;
     BONGO_CAT_VK_FN(vkCreateInstance)
@@ -99,6 +107,12 @@ typedef struct BongoCatRhiVk {
     BONGO_CAT_VK_FN(vkGetPhysicalDeviceMemoryProperties)
     BONGO_CAT_VK_FN(vkCmdPipelineBarrier)
     BONGO_CAT_VK_FN(vkCmdCopyImageToBuffer)
+    BONGO_CAT_VK_FN(vkCreateImage)
+    BONGO_CAT_VK_FN(vkDestroyImage)
+    BONGO_CAT_VK_FN(vkGetImageMemoryRequirements)
+    BONGO_CAT_VK_FN(vkBindImageMemory)
+    BONGO_CAT_VK_FN(vkCmdCopyBufferToImage)
+    BONGO_CAT_VK_FN(vkCmdCopyImage)
 #undef BONGO_CAT_VK_FN
 } BongoCatRhiVk;
 
@@ -110,6 +124,8 @@ bool bongo_cat_rhi_vk_cubism_features(BongoCatRhiVk *vk,
     VkPhysicalDevice device, VkPhysicalDeviceVulkan13Features *enabled);
 #endif
 
+void bongo_cat_rhi_vk_release_background(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_draw_background(BongoCatRhiVk *vk);
 void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk);
 /* Chooses and records a depth format for the Cubism render passes. */

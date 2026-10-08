@@ -1,4 +1,4 @@
-name: Release BongoCat
+name: Release and Nightly BongoCat
 
 # Runtime-Core release build: CI downloads the Cubism SDK straight from the
 # official site to compile the Cubism Framework and bridge, but the Core
@@ -9,31 +9,63 @@ name: Release BongoCat
 
 on:
   push:
+    branches:
+      - dev
     tags:
       - "v*"
+    # Documentation-only pushes do not produce development builds.
+    # GitHub does not apply path filters to tag pushes.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
 
 env:
   CUBISM_SDK_VERSION: "5-r.5"
   GLEW_VERSION: "2.2.0"
+  SOURCE_REF: ${{ github.sha }}
 
 permissions:
   contents: read
 
 concurrency:
-  group: bongocat-release-${{ github.ref }}
+  group: bongocat-release-${{ github.ref_type == 'tag' && github.ref || 'nightly-dev' }}
   cancel-in-progress: false
 
 jobs:
   version-check:
-    name: quality / tag-version
+    name: quality / release-source
     runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.source.outputs.version }}
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.source.outputs.tag }}
+      prerelease: ${{ steps.source.outputs.prerelease }}
     steps:
-      - name: Checkout source
+      - name: Checkout release source
         uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SOURCE_REF }}
 
       - name: Validate tag matches project version
+        if: github.ref_type == 'tag'
         shell: pwsh
         run: ./.github/scripts/check-tag-version.ps1 -Tag $env:GITHUB_REF_NAME
+
+      - name: Resolve immutable build source and release tag
+        id: source
+        shell: pwsh
+        run: |
+          $version = (& ./packaging/get-project-version.ps1).AppVersion
+          $sha = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source commit' }
+          $nightly = $env:GITHUB_REF_TYPE -ne 'tag'
+          $tag = if ($nightly) {
+            "nightly-dev-$([DateTime]::UtcNow.ToString('yyyyMMdd'))-$env:GITHUB_RUN_ID"
+          } else { $env:GITHUB_REF_NAME }
+          @("version=$version", "sha=$sha", "tag=$tag",
+            "prerelease=$($nightly.ToString().ToLowerInvariant())") |
+            Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8
 
   build:
     name: build / ${{ matrix.platform }}
@@ -75,9 +107,12 @@ jobs:
     env:
       # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
       RUSTC_WRAPPER: sccache
+      RELEASE_TAG: ${{ needs.version-check.outputs.tag }}
     steps:
-      - name: Checkout source
+      - name: Checkout resolved release source
         uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.version-check.outputs.sha }}
 
       # Per-platform resume: when a previous run of this tag already
       # published this platform's assets, skip the build entirely so one
@@ -90,10 +125,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Continue'
-          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $version = '${{ needs.version-check.outputs.version }}'
           $prefix = "BongoCat-X-$version-${{ matrix.platform }}"
           $assets = @()
-          $releaseJson = gh release view "$env:GITHUB_REF_NAME" --json assets --repo "$env:GITHUB_REPOSITORY" 2>$null
+          $releaseJson = gh release view "$env:RELEASE_TAG" --json assets --repo "$env:GITHUB_REPOSITORY" 2>$null
           if ($LASTEXITCODE -eq 0 -and $releaseJson) {
             $release = $releaseJson | ConvertFrom-Json
             if ($release.assets) {
@@ -124,18 +159,18 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cargo/registry
-          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/bongo-safe/Cargo.lock') }}
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/**/Cargo.lock') }}
           restore-keys: cargo-registry-${{ runner.os }}-
 
-      - name: Validate tag version
+      - name: Set validated package version
         id: version
         if: steps.skip-check.outputs.skip != 'true'
         shell: pwsh
         run: |
           $projectVersion = & ./packaging/get-project-version.ps1
           $version = $projectVersion.AppVersion
-          if ($env:GITHUB_REF_NAME -ne "v$version") {
-            throw "Tag $env:GITHUB_REF_NAME does not match project version $version"
+          if ($version -ne '${{ needs.version-check.outputs.version }}') {
+            throw "Resolved source project version changed: $version"
           }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT `
             -Append -Encoding utf8
@@ -328,7 +363,7 @@ jobs:
             throw 'Windows installer packaging failed'
           }
 
-          $portable = "build-release/dist/$name-portable.exe"
+          $portable = "build-release/dist/$name-portable.zip"
           $portableChecksum = "$portable.sha256"
           $setup = "build-release/dist/$name-setup.exe"
           $setupChecksum = "$setup.sha256"
@@ -389,6 +424,7 @@ jobs:
             Platform = '${{ matrix.platform }}'
             SkipSmoke = '${{ matrix.platform }}'.StartsWith('macos-')
             ExpectLive2D = $true
+            ExpectInox2D = $true
           }
           & ./.github/scripts/check-unix-package.ps1 @packageCheckArgs
           $checksum = "$($archive.FullName).sha256"
@@ -446,21 +482,30 @@ jobs:
         shell: bash
         run: |
           python3 .github/scripts/extract-changelog.py \
-            --tag "$GITHUB_REF_NAME" \
+            --tag "$RELEASE_TAG" \
+            --artifact-version '${{ needs.version-check.outputs.version }}' \
             --repository "$GITHUB_REPOSITORY" \
             --output release-notes.md
+          if [ '${{ needs.version-check.outputs.prerelease }}' = 'true' ]; then
+            python3 .github/scripts/nightly-notes.py \
+              --notes release-notes.md --sha '${{ needs.version-check.outputs.sha }}' \
+              --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID"
+          fi
 
       - name: Publish release assets
         if: github.repository == 'TianMengLucky/BongoCat-X' &&
           steps.skip-check.outputs.skip != 'true'
         uses: softprops/action-gh-release@v3
         with:
-          name: BongoCat v${{ steps.version.outputs.version }}
+          name: ${{ needs.version-check.outputs.prerelease == 'true' && format('BongoCat dev Nightly {0}', needs.version-check.outputs.tag) || format('BongoCat v{0}', steps.version.outputs.version) }}
+          tag_name: ${{ needs.version-check.outputs.tag }}
+          target_commitish: ${{ needs.version-check.outputs.sha }}
+          prerelease: ${{ needs.version-check.outputs.prerelease == 'true' }}
           body_path: release-notes.md
           generate_release_notes: true
           fail_on_unmatched_files: true
           overwrite_files: true
-          make_latest: true
+          make_latest: ${{ needs.version-check.outputs.prerelease == 'true' && 'false' || 'true' }}
           files: release-output/*
 
   virus-total:

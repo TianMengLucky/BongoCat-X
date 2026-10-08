@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 int failures;
 int test_preferences_text(void); int test_mver_nearby_identity(void);
 int test_mver_nearby_refresh(void);
@@ -23,14 +23,14 @@ int test_model_import_identity(void);
 int test_slim_package(void);
 int test_preferences_import(void);
 static bool chord(const char *json, bool gamepad, const char *expected) {
-    yyjson_doc *document = yyjson_read(json, strlen(json), 0);
+    BongoJsonDoc *document = bongo_json_read(json, strlen(json), 0);
     BongoCatImportCandidate candidate = {0};
     candidate.gamepad_buttons = gamepad;
     char output[BONGO_CAT_SHORTCUT_CAP];
     bool ok = document && bongo_cat_mver_chord(&candidate,
-        yyjson_doc_get_root(document), output, sizeof(output));
+        bongo_json_doc_get_root(document), output, sizeof(output));
     bool matches = ok && expected && strcmp(output, expected) == 0;
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return expected ? matches : !ok;
 }
 
@@ -152,6 +152,14 @@ static void behavior_labels_add_font_glyphs(void) {
     CHECK(preferences != NULL);
     if (preferences) {
         preferences->app = app;
+        app->preferences = preferences;
+        BongoCatModelEntry *model = &app->models.entries[0];
+        snprintf(model->id, sizeof(model->id), "standard");
+        snprintf(model->directory, sizeof(model->directory),
+            "%s/resources/assets/models/standard", BONGO_CAT_NATIVE_SOURCE_DIR);
+        snprintf(model->setting_file, sizeof(model->setting_file), "cat.model3.json");
+        snprintf(app->loaded_model, sizeof(app->loaded_model), "%s", model->id);
+        app->models.count = 1;
         preferences->ui_initialized = true;
         preferences->glyph_ranges[0] = 0x20;
         preferences->glyph_ranges[1] = 0x7e;
@@ -164,6 +172,9 @@ static void behavior_labels_add_font_glyphs(void) {
         preferences->font_reload_pending = false;
         bongo_cat_preferences_behavior_dialog_open(preferences);
         CHECK(!preferences->font_reload_pending);
+        bongo_cat_behaviors_clear(preferences->behavior_catalog);
+        free(preferences->behavior_catalog);
+        preferences->behavior_catalog = NULL;
         CHECK(bongo_cat_behaviors_reserve(&app->behaviors, 600, NULL));
         app->behaviors.count = 600;
         for (size_t i = 0; i < app->behaviors.count; ++i) {
@@ -198,7 +209,7 @@ static void font_reload_defers_during_frame(void) {
 }
 
 static void model_change_reloads_glyphs_before_drawing(void) {
-    for (int page = 0; page < 4; ++page) {
+    for (int page = 0; page < 5; ++page) {
         BongoCatPreferences value = {0};
         value.page = page;
         value.ui_initialized = true;

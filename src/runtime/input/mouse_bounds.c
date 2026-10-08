@@ -9,7 +9,7 @@
 #endif
 
 static bool mver_pointer_bounds(const BongoCatApp *app, SDL_Rect *bounds) {
-    const BongoCatLive2DRenderOptions *options = &app->model_render_options;
+    const BongoCatModelRuntimeRenderOptions *options = &app->model_render_options;
     if (!options->mver_projection || !bounds) return false;
     if (options->custom_pointer_bounds) {
         *bounds = (SDL_Rect){options->pointer_left, options->pointer_top,
@@ -55,8 +55,8 @@ static bool model_pointer_center(BongoCatApp *app, double *x, double *y) {
         !SDL_GetWindowSize(app->window, &width, &height) ||
         width <= 0 || height <= 0) return false;
     if (!app->model_pointer_anchor_ready) {
-        BongoCatLive2DVisualState state = {0};
-        if (bongo_cat_live2d_visual_state(app->live2d, &state) && state.visible) {
+        BongoCatModelRuntimeVisualState state = {0};
+        if (bongo_cat_model_runtime_visual_state(app->model_runtime, &state) && state.visible) {
             float center_x = (state.visible_min_x + state.visible_max_x) * 0.5f;
             float center_y = (state.visible_min_y + state.visible_max_y) * 0.5f;
             if (isfinite(center_x) && isfinite(center_y)) {

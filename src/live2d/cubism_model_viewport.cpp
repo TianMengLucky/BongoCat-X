@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "model_frame_policy.h"
 
@@ -46,13 +47,13 @@ void NativeModel::update_viewport() {
     frame_fit_scale_ = v.scale;
 }
 
-void NativeModel::set_frame(const BongoCatLive2DFrame &frame) {
+void NativeModel::set_frame(const BongoCatModelRuntimeFrame &frame) {
     if (!bongo_cat_frame_valid(frame)) return;
     frame_ = frame;
     update_viewport();
 }
 
-bool NativeModel::frame(BongoCatLive2DFrame *frame) const {
+bool NativeModel::frame(BongoCatModelRuntimeFrame *frame) const {
     if (!_model || !frame) return false;
     *frame = frame_;
     return true;
@@ -127,14 +128,14 @@ void NativeModel::record_visible_state(Csm::CubismMatrix44 &projection) const {
     visual_state_.visible = true;
 }
 
-bool NativeModel::visual_state(BongoCatLive2DVisualState *state) const {
+bool NativeModel::visual_state(BongoCatModelRuntimeVisualState *state) const {
     if (!state || !visual_state_ready_) return false;
     if (!visual_state_cached_) {
         // Bounds are used by pointer anchoring and visual audits, not drawing.
         // Avoid traversing every triangle on every animated frame.
         bool mver_projection = visual_state_.mver_projection;
         float fit_scale = visual_state_.fit_scale;
-        visual_state_ = BongoCatLive2DVisualState{};
+        visual_state_ = BongoCatModelRuntimeVisualState{};
         visual_state_.fit_scale = fit_scale;
         visual_state_.fitted = fit_scale < 0.9999f;
         visual_state_.mver_projection = mver_projection;

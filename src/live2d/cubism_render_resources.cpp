@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_render_resources.hpp"
 #include "bongo_cat/model_memory.h"
 

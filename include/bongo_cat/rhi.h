@@ -64,6 +64,9 @@ bool bongo_cat_rhi_submit_commands_checked(const BongoCatRhi *rhi, void *command
 /* Draw/capture the acquired frame before platform presentation. swap then
    presents that prepared frame; this also supports capture-only rendering. */
 bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi);
+/* Cached premultiplied RGBA canvas, top-down. NULL removes the background. */
+bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
+    int width, int height, int pitch, uint64_t revision);
 bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi);
 bool bongo_cat_rhi_live2d_supported(const BongoCatRhi *rhi);
 
@@ -82,6 +85,7 @@ void bongo_cat_rhi_destroy(BongoCatRhi *rhi);
 typedef struct BongoCatRhiDeviceInfo {
     BongoCatRhiBackend backend;
     /* Vulkan */
+    void *vulkan_instance;        /* VkInstance */
     void *vulkan_device;          /* VkDevice */
     void *vulkan_physical_device; /* VkPhysicalDevice */
     void *vulkan_command_pool;    /* VkCommandPool */

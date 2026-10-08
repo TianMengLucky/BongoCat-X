@@ -51,8 +51,19 @@ bool bongo_cat_path_copy_file(const char *source, const char *target) {
 bool bongo_cat_path_rename(const char *source, const char *target) {
     wchar_t *wide_source = bongo_cat_windows_wide(source);
     wchar_t *wide_target = bongo_cat_windows_wide(target);
-    bool ok = wide_source && wide_target && MoveFileExW(wide_source, wide_target,
-        MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    bool ok = false;
+    if (wide_source && wide_target) {
+        /* Indexers can briefly hold newly written model/cache directories.
+           Retry only transient sharing/access errors, with a bounded delay. */
+        for (unsigned attempt = 0; attempt < 6; ++attempt) {
+            ok = MoveFileExW(wide_source, wide_target,
+                MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+            DWORD code = ok ? ERROR_SUCCESS : GetLastError();
+            if (ok || attempt == 5 || (code != ERROR_SHARING_VIOLATION &&
+                code != ERROR_ACCESS_DENIED)) break;
+            Sleep(10u << attempt);
+        }
+    }
     free(wide_source); free(wide_target); return ok;
 }
 

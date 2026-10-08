@@ -2,7 +2,7 @@
 #include "model_import_path.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/json.h"
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 #include <stdio.h>
 #include <limits.h>
@@ -12,13 +12,13 @@
 int bongo_cat_mver_gamepad_input_mode(const char *model_directory) {
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_mver_config_find(model_directory, path, sizeof(path))) return -1;
-    yyjson_doc *document = bongo_cat_json_read_file(path,
-        YYJSON_READ_JSON5 | YYJSON_READ_ALLOW_INVALID_UNICODE, NULL);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *input = yyjson_obj_get(yyjson_obj_get(root, "gamepad"), "input_mode");
-    int mode = yyjson_is_int(input) && yyjson_get_int(input) >= 0 &&
-        yyjson_get_int(input) <= INT_MAX ? (int)yyjson_get_int(input) : -1;
-    yyjson_doc_free(document);
+    BongoJsonDoc *document = bongo_cat_json_read_file(path,
+        BONGO_JSON_READ_JSON5 | BONGO_JSON_READ_ALLOW_INVALID_UNICODE, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *input = bongo_json_obj_get(bongo_json_obj_get(root, "gamepad"), "input_mode");
+    int mode = bongo_json_is_int(input) && bongo_json_get_int(input) >= 0 &&
+        bongo_json_get_int(input) <= INT_MAX ? (int)bongo_json_get_int(input) : -1;
+    bongo_json_doc_free(document);
     return mode;
 }
 

@@ -31,8 +31,9 @@ int bongo_cat_overlay_key(BongoCatOverlay *value, const char *name, bool pressed
     if (pressed) {
         snprintf(value->last_input_path, sizeof(value->last_input_path), "%s", path);
         snprintf(active_name, BONGO_CAT_ID_CAP, "%s", name);
-#ifdef BONGO_CAT_HAS_CUBISM
-        *active = bongo_cat_overlay_cached_texture(value, path);
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
+        snprintf(active_path, BONGO_CAT_PATH_CAP, "%s", path);
+        *active = value->composed_cover ? 1 : bongo_cat_overlay_cached_texture(value, path);
         if (!*active) value->input_texture_failures++;
 #else
         snprintf(active_path, BONGO_CAT_PATH_CAP, "%s", path);
@@ -43,9 +44,7 @@ int bongo_cat_overlay_key(BongoCatOverlay *value, const char *name, bool pressed
         *active = 0;
         active_path[0] = '\0';
     }
-#ifndef BONGO_CAT_HAS_CUBISM
-    value->composite_dirty = true;
-#endif
+    if (value->composed_cover) value->composite_dirty = true;
     return right ? 1 : 0;
 }
 
@@ -68,7 +67,7 @@ bool bongo_cat_overlay_effect(BongoCatOverlay *value, const char *path) {
     value->effect_path[0] = '\0';
     if (!path || !*path) return true;
     if (!bongo_cat_path_is_file(path)) return false;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     value->effect = bongo_cat_overlay_cached_texture(value, path);
 #else
     value->effect = 1;

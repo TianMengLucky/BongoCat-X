@@ -23,8 +23,8 @@ static bool audit_gaze_mirrors(BongoCatApp *app) {
             BongoCatParameterRange x, y;
             bool right = ((corner & 1) != 0) != app->settings.model.mirror;
             bool up = (corner & 2) == 0;
-            passed = bongo_cat_live2d_parameter(app->live2d, "ParamAngleX", &x) &&
-                bongo_cat_live2d_parameter(app->live2d, "ParamAngleY", &y) &&
+            passed = bongo_cat_model_runtime_parameter(app->model_runtime, "ParamAngleX", &x) &&
+                bongo_cat_model_runtime_parameter(app->model_runtime, "ParamAngleY", &y) &&
                 (right ? x.value > 5.0f : x.value < -5.0f) &&
                 (up ? y.value > 5.0f : y.value < -5.0f) && passed;
         }
@@ -46,15 +46,15 @@ bool bongo_cat_app_audit_screen_pointer(BongoCatApp *app) {
     for (int frame = 0; frame < 90; ++frame)
         bongo_cat_app_step_live2d(app, 1.0f / 60.0f);
     BongoCatParameterRange x, y, z;
-    bool passed = bongo_cat_live2d_parameter(app->live2d, "ParamAngleX", &x) &&
-        bongo_cat_live2d_parameter(app->live2d, "ParamAngleY", &y) &&
+    bool passed = bongo_cat_model_runtime_parameter(app->model_runtime, "ParamAngleX", &x) &&
+        bongo_cat_model_runtime_parameter(app->model_runtime, "ParamAngleY", &y) &&
         fabsf(x.value) < 0.5f && fabsf(y.value) < 0.5f;
-    bool has_z = bongo_cat_live2d_parameter(app->live2d, "ParamAngleZ", &z);
+    bool has_z = bongo_cat_model_runtime_parameter(app->model_runtime, "ParamAngleZ", &z);
     bongo_cat_app_apply_mouse_position(app, bounds.x + bounds.w * 0.8,
         bounds.y + bounds.h * 0.2, 1.0f / 60.0f);
     for (int frame = 0; frame < 90; ++frame)
         bongo_cat_app_step_live2d(app, 1.0f / 60.0f);
-    passed = (!has_z || (bongo_cat_live2d_parameter(app->live2d,
+    passed = (!has_z || (bongo_cat_model_runtime_parameter(app->model_runtime,
         "ParamAngleZ", &z) && fabsf(z.value) < 0.25f)) && passed;
     app->settings.model.mouse_centered = mouse_centered;
     return audit_gaze_mirrors(app) && passed;
@@ -73,12 +73,12 @@ bool bongo_cat_app_audit_display_pointer(BongoCatApp *app) {
     BongoCatMverPointerBounds bounds = projection.bounds;
     BongoCatParameterRange tl_x = {0}, tl_y = {0}, br_x = {0}, br_y = {0};
     bongo_cat_app_apply_mouse_position(app, bounds.left, bounds.top, 0.0f);
-    bool passed = bongo_cat_live2d_parameter(app->live2d, "ParamMouseX", &tl_x) &&
-        bongo_cat_live2d_parameter(app->live2d, "ParamMouseY", &tl_y);
+    bool passed = bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseX", &tl_x) &&
+        bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseY", &tl_y);
     bongo_cat_app_apply_mouse_position(app, bounds.left + bounds.width - 1,
         bounds.top + bounds.height - 1, 0.0f);
-    passed = bongo_cat_live2d_parameter(app->live2d, "ParamMouseX", &br_x) &&
-        bongo_cat_live2d_parameter(app->live2d, "ParamMouseY", &br_y) && passed;
+    passed = bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseX", &br_x) &&
+        bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseY", &br_y) && passed;
     app->settings.model.mouse_centered = centered;
     return passed && tl_x.value < -20.0f && tl_y.value > 20.0f &&
         br_x.value > 20.0f && br_y.value < -20.0f;

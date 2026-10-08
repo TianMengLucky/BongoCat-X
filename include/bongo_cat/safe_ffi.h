@@ -126,6 +126,14 @@ int bongo_safe_session_write(const void *session, size_t session_size,
     unsigned char **json, size_t *length);
 void bongo_safe_free_json(unsigned char *json, size_t length);
 
+char *bongo_safe_mver_edit(const char *data, size_t length, const char *mode,
+    const char *field, int index, const char *row);
+bool bongo_safe_mver_labels(const char *data, size_t length, const char *mode,
+    bool (*callback)(void *userdata, const char *field, size_t index, const char *label),
+    void *userdata);
+int bongo_safe_model_kind_file(const char *path);
+bool bongo_safe_inochi_validate_file(const char *path, char *message, size_t capacity);
+
 #ifdef __cplusplus
 }
 #endif

@@ -84,7 +84,7 @@ public:
             throw std::runtime_error(SDL_GetError());
         }
         BongoCatError error{};
-        framework = bongo_cat_live2d_create(BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets", &error);
+        framework = bongo_cat_model_runtime_create(BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets", &error);
         if (!framework) {
             SDL_GL_DestroyContext(context);
             SDL_DestroyWindow(window);
@@ -93,7 +93,7 @@ public:
     }
     ~Session() {
         SDL_GL_MakeCurrent(window, context);
-        bongo_cat_live2d_destroy(framework);
+        bongo_cat_model_runtime_destroy(framework);
         SDL_GL_DestroyContext(context);
         SDL_DestroyWindow(window);
     }
@@ -101,7 +101,7 @@ public:
 private:
     SDL_Window *window = nullptr;
     SDL_GLContext context = nullptr;
-    BongoCatLive2D *framework = nullptr;
+    BongoCatModelRuntime *framework = nullptr;
 };
 
 class Model {

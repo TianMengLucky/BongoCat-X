@@ -75,16 +75,16 @@ static void update_hands(BongoCatApp *app) {
     bool right = (!four_hands && right_stick) ||
         bongo_cat_overlay_hand_active(app->overlay, true);
     app->input_diagnostics.hands_seen |= (left ? 1u : 0u) | (right ? 2u : 0u);
-    bongo_cat_live2d_set_parameter(app->live2d, "CatParamStickShowLeftHand", left_stick);
-    bongo_cat_live2d_set_parameter(app->live2d, "CatParamStickShowRightHand", right_stick);
-    bongo_cat_live2d_set_parameter(app->live2d, "CatParamLeftHandDown",
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamStickShowLeftHand", left_stick);
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamStickShowRightHand", right_stick);
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamLeftHandDown",
         left ? 1.0f : 0.0f);
-    bongo_cat_live2d_set_parameter(app->live2d, "CatParamRightHandDown",
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamRightHandDown",
         right ? 1.0f : 0.0f);
 }
 
 void bongo_cat_app_refresh_hands(BongoCatApp *app) {
-    if (!app || !app->live2d) return;
+    if (!app || !app->model_runtime) return;
     update_hands(app);
     app->input_diagnostics.pending = true;
     app->dirty = true;
@@ -107,11 +107,11 @@ static bool keyboard_hands_enabled(const BongoCatApp *app) {
 
 static void set_axis(BongoCatApp *app, const char *id, float input) {
     BongoCatParameterRange range;
-    if (!bongo_cat_live2d_parameter(app->live2d, id, &range)) return;
+    if (!bongo_cat_model_runtime_parameter(app->model_runtime, id, &range)) return;
     float value = input * range.maximum;
     if (value < range.minimum) value = range.minimum;
     if (value > range.maximum) value = range.maximum;
-    bongo_cat_live2d_set_parameter(app->live2d, id, value);
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, id, value);
 }
 
 static void apply_gamepad_key(BongoCatApp *app, const char *name, bool pressed) {
@@ -132,12 +132,12 @@ static void apply_gamepad(BongoCatApp *app, const BongoCatInputEvent *event) {
     } else if (strcmp(event->name, "LeftThumb") == 0) {
         app->left_stick_pressed = event->value > 0.0f;
         apply_gamepad_key(app, event->name, app->left_stick_pressed);
-        bongo_cat_live2d_set_parameter(app->live2d, "CatParamStickLeftDown",
+        bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamStickLeftDown",
             app->left_stick_pressed);
     } else if (strcmp(event->name, "RightThumb") == 0) {
         app->right_stick_pressed = event->value > 0.0f;
         apply_gamepad_key(app, event->name, app->right_stick_pressed);
-        bongo_cat_live2d_set_parameter(app->live2d, "CatParamStickRightDown",
+        bongo_cat_model_runtime_set_parameter(app->model_runtime, "CatParamStickRightDown",
             app->right_stick_pressed);
     } else apply_gamepad_key(app, event->name, event->value > 0.05f);
     if (id) set_axis(app, id, event->value);
@@ -146,7 +146,7 @@ static void apply_gamepad(BongoCatApp *app, const BongoCatInputEvent *event) {
 }
 
 void bongo_cat_app_reset_gamepad(BongoCatApp *app) {
-    if (!app || !app->live2d) return;
+    if (!app || !app->model_runtime) return;
     for (size_t i = app->sound_shortcut_state.count; i > 0; --i) {
         if (strncmp(app->sound_shortcut_state.held[i - 1], "Gamepad:", 8)) continue;
         --app->sound_shortcut_state.count;
@@ -167,7 +167,7 @@ void bongo_cat_app_reset_gamepad(BongoCatApp *app) {
         "CatParamStickRX", "CatParamStickRY", "CatParamStickLeftDown",
         "CatParamStickRightDown"};
     for (size_t i = 0; i < sizeof(parameters) / sizeof(parameters[0]); ++i)
-        bongo_cat_live2d_set_parameter(app->live2d, parameters[i], 0.0f);
+        bongo_cat_model_runtime_set_parameter(app->model_runtime, parameters[i], 0.0f);
     const char *buttons[] = {"South", "East", "West", "North", "Select", "Mode",
         "Start", "LeftTrigger", "RightTrigger", "LeftTrigger2", "RightTrigger2",
         "DPadUp", "DPadDown", "DPadLeft", "DPadRight", "Misc1", "Misc2",
@@ -203,7 +203,7 @@ void bongo_cat_app_apply_input(BongoCatApp *app, const BongoCatInputEvent *event
         app->input_diagnostics.last_gamepad[sizeof(event->name) - 1] = '\0';
         app->input_diagnostics.last_gamepad_value = event->value;
     }
-    if (!app->live2d) {
+    if (!app->model_runtime) {
         if (keyboard) app->input_diagnostics.no_model_keys++;
         return;
     }
@@ -265,7 +265,7 @@ void bongo_cat_app_apply_input(BongoCatApp *app, const BongoCatInputEvent *event
         }
         const char *id = left
             ? "ParamMouseLeftDown" : "ParamMouseRightDown";
-        bongo_cat_live2d_set_parameter(app->live2d, id, down ? 1.0f : 0.0f);
+        bongo_cat_model_runtime_set_parameter(app->model_runtime, id, down ? 1.0f : 0.0f);
         app->dirty = true;
         break;
     }
@@ -279,12 +279,12 @@ void bongo_cat_app_apply_input(BongoCatApp *app, const BongoCatInputEvent *event
 }
 
 void bongo_cat_app_reapply_input(BongoCatApp *app) {
-    if (!app || !app->live2d) return;
+    if (!app || !app->model_runtime) return;
     app->input_diagnostics.replays++;
     app->input_diagnostics.pending = true;
-    bongo_cat_live2d_set_parameter(app->live2d, "ParamMouseLeftDown",
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "ParamMouseLeftDown",
         app->left_mouse_down ? 1.0f : 0.0f);
-    bongo_cat_live2d_set_parameter(app->live2d, "ParamMouseRightDown",
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, "ParamMouseRightDown",
         app->right_mouse_down ? 1.0f : 0.0f);
     for (size_t i = 0; i < app->active_input_count; ++i) {
         BongoCatInputEvent *event = &app->active_inputs[i];

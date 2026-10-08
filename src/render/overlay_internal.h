@@ -3,6 +3,7 @@
 
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/gl_api.h"
+#include "bongo_cat/image.h"
 #include "mver_pointer_overlay.h"
 
 #include <SDL3/SDL_opengl.h>
@@ -14,6 +15,13 @@ typedef struct TextureSlot {
 } TextureSlot;
 
 struct BongoCatOverlay {
+    bool native;
+    BongoCatImage native_background;
+    SDL_Surface *native_canvas;
+    int native_geometry[6];
+    uint32_t native_color;
+    bool native_mirror, native_flip, native_opaque;
+    uint64_t native_revision;
     BongoCatGL gl;
     BongoCatMverPointerOverlay *mver_pointer;
     GLuint program;
@@ -58,7 +66,7 @@ struct BongoCatOverlay {
 
 /* Shared texture ownership for model loading and input/effect activation. */
 void bongo_cat_overlay_clear_textures(BongoCatOverlay *value);
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
 GLuint bongo_cat_overlay_cached_texture(BongoCatOverlay *value, const char *path);
 #endif
 

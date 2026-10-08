@@ -115,9 +115,9 @@ struct BongoCatPreferences {
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;
-    float scroll_current[4];
-    float scroll_target[4];
-    bool scroll_ready[4];
+    float scroll_current[5];
+    float scroll_target[5];
+    bool scroll_ready[5];
     bool page_seen;
     int last_page;
     uint64_t page_transition_ns;

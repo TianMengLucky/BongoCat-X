@@ -6,11 +6,11 @@
 static bool behavior_active(const BongoCatApp *app,
     const BongoCatBehaviorEntry *entry, int expression) {
     if (entry->kind == BONGO_CAT_BEHAVIOR_MOTION) {
-        if (!bongo_cat_live2d_motion_visible(app->live2d,
+        if (!bongo_cat_model_runtime_motion_visible(app->model_runtime,
             entry->group, entry->index)) return false;
-        return bongo_cat_live2d_motion_persistent(app->live2d,
+        return bongo_cat_model_runtime_motion_persistent(app->model_runtime,
             entry->group, entry->index) &&
-            bongo_cat_live2d_motion_selected(app->live2d,
+            bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 entry->group, entry->index);
     }
     return entry->kind == BONGO_CAT_BEHAVIOR_EXPRESSION &&
@@ -18,14 +18,14 @@ static bool behavior_active(const BongoCatApp *app,
 }
 
 size_t bongo_cat_app_selected_motion_count(const BongoCatApp *app) {
-    if (!app || !app->live2d) return 0;
+    if (!app || !app->model_runtime) return 0;
     size_t count = 0;
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *entry = &app->behaviors.entries[i];
         if (entry->kind == BONGO_CAT_BEHAVIOR_MOTION &&
-            bongo_cat_live2d_motion_visible(app->live2d,
+            bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index) &&
-            bongo_cat_live2d_motion_selected(app->live2d,
+            bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 entry->group, entry->index)) count++;
     }
     return count;
@@ -63,8 +63,8 @@ static void make_room(BongoCatSessionState *session, size_t required) {
 }
 
 void bongo_cat_app_capture_behavior_state(BongoCatApp *app) {
-    if (!app || !bongo_cat_live2d_ready(app->live2d) || !app->loaded_model[0]) return;
-    int expression = bongo_cat_live2d_expression(app->live2d);
+    if (!app || !bongo_cat_model_runtime_ready(app->model_runtime) || !app->loaded_model[0]) return;
+    int expression = bongo_cat_model_runtime_expression(app->model_runtime);
     size_t active = 0;
     for (size_t i = 0; i < app->behaviors.count; ++i)
         if (behavior_active(app, &app->behaviors.entries[i], expression))
@@ -109,7 +109,7 @@ static const BongoCatBehaviorEntry *find_behavior(const BongoCatApp *app,
 
 void bongo_cat_app_restore_behavior_state(BongoCatApp *app,
     const char *model_id) {
-    if (!app || !app->live2d || !model_id || !model_id[0]) return;
+    if (!app || !app->model_runtime || !model_id || !model_id[0]) return;
     size_t count = app->session.active_behavior_count;
     if (count > BONGO_CAT_BEHAVIOR_BINDING_CAP)
         count = BONGO_CAT_BEHAVIOR_BINDING_CAP;
@@ -121,15 +121,15 @@ void bongo_cat_app_restore_behavior_state(BongoCatApp *app,
             saved->behavior_id);
         if (!entry) continue;
         if (entry->kind == BONGO_CAT_BEHAVIOR_MOTION &&
-            bongo_cat_live2d_motion_visible(app->live2d,
+            bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index) &&
-            bongo_cat_live2d_motion_persistent(app->live2d,
+            bongo_cat_model_runtime_motion_persistent(app->model_runtime,
                 entry->group, entry->index) &&
-            !bongo_cat_live2d_motion_selected(app->live2d,
+            !bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 entry->group, entry->index))
-            bongo_cat_live2d_restore_motion_state(app->live2d,
+            bongo_cat_model_runtime_restore_motion_state(app->model_runtime,
                 entry->group, entry->index);
         else if (entry->kind == BONGO_CAT_BEHAVIOR_EXPRESSION)
-            bongo_cat_live2d_set_expression(app->live2d, entry->index);
+            bongo_cat_model_runtime_set_expression(app->model_runtime, entry->index);
     }
 }

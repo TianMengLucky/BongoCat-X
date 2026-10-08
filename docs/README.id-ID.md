@@ -64,7 +64,7 @@
 
   **Mengaktifkan rendering Live2D (pilih salah satu):**
 
-  1. **Impor dari aplikasi (disarankan)**: buka *Pengaturan → Model*, klik *Impor Live2D Core*, lalu pilih file `Live2DCubismCore.dll` atau zip resmi Cubism SDK. Berlaku seketika tanpa perlu memulai ulang.
+  1. **Impor dari aplikasi (disarankan)**: buka *Pengaturan → Plugin*, klik *Impor Live2D Core*, lalu pilih file `Live2DCubismCore.dll` atau zip resmi Cubism SDK. Berlaku seketika tanpa perlu memulai ulang.
   2. **Letakkan di folder live2d**: unduh **Cubism SDK for Native** dari [halaman unduhan resmi](https://www.live2d.com/en/sdk/download/native/) (harus menyetujui lisensi Live2D), lalu letakkan zip atau `Live2DCubismCore.dll` yang diekstrak ke folder `live2d` di samping aplikasi atau di dalam direktori data; setelah aplikasi dimulai ulang, ia dikenali secara otomatis.
 
   Untuk langkah impor SDK lengkap saat membangun dari kode sumber, lihat bagian «Live2D / Cubism SDK» di bawah.
@@ -75,7 +75,7 @@ BongoCat menggunakan CMake dan memerlukan compiler C11, compiler C++17, CMake 3.
 atau yang lebih baru, file pengembangan OpenGL desktop, serta toolchain Rust
 (cargo, misalnya via rustup): parser yang kritis terhadap keamanan memori
 (SHA-256, decoding gambar, feed kontributor, decoding audio) berada di crate
-`src/rust/bongo-safe`, yang dibangun oleh Corrosion saat konfigurasi. SDL3, yyjson, stb,
+`src/rust/bongo-safe`, yang dibangun oleh Corrosion saat konfigurasi. SDL3, stb,
 miniaudio, dan Nuklear secara default diunduh saat proses konfigurasi, sehingga
 konfigurasi pertama memerlukan akses jaringan.
 
@@ -138,15 +138,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK (Opsional — tetap bisa dikompilasi tanpa SDK)
 
-Cubism SDK dari Live2D adalah perangkat lunak berpemilik dan **tidak** disertakan dalam
-repositori ini. Sekarang SDK bersifat **opsional**: build default
-(`BONGO_CAT_REQUIRE_CUBISM=OFF`) tetap dapat dikonfigurasi dan dikompilasi tanpa SDK
-serta menghasilkan backend diagnostik tanpa rendering Live2D. Karena renderer Live2D
-harus dikompilasi ke dalam biner, menaruh SDK saat runtime tidak dapat memberikan Live2D
-pada build tersebut — hanya build yang dibuat dengan SDK yang merespons penempatan
-runtime (berkas Core atau zip SDK di folder `live2d`). Backend diagnostik hanya untuk
-startup dan diagnostik platform.
-Untuk build dengan dukungan rendering Live2D, unduh dan pasang SDK secara manual:
+Cubism SDK tetap merupakan dependency proprietari opsional. Tanpanya, aplikasi dan plugin Inox2D tetap dapat dibangun. Plugin Live2D yang kompatibel beserta Cubism Core yang disediakan pengguna dapat mengaktifkan Live2D tanpa membangun ulang aplikasi. SDK digunakan untuk membangun plugin C++ terpisah.
 
 1. Buka [halaman unduhan Cubism SDK](https://www.live2d.com/en/sdk/download/native/), setujui Live2D Proprietary Software
    License Agreement, lalu unduh **Cubism SDK for Native** (rilis dibangun dan diuji dengan
@@ -177,7 +169,7 @@ pada default `OFF` bila Anda tidak membutuhkannya.
 
 > [!TIP]
 > Di Windows, rendering Live2D dapat diaktifkan tanpa membangun ulang: buka
-> Pengaturan → Model di aplikasi, klik "Impor Live2D Core", lalu pilih berkas
+> Pengaturan → Plugin di aplikasi, klik "Impor Live2D Core", lalu pilih berkas
 > `Live2DCubismCore.dll` atau zip SDK Cubism resmi. Perubahan langsung berlaku
 > tanpa perlu memulai ulang.
 
@@ -188,7 +180,7 @@ pada default `OFF` bila Anda tidak membutuhkannya.
 > `Live2DCubismCore.dll` atau zip SDK resmi di sana (di samping aplikasi
 > atau di direktori data) dan berkas itu akan terdeteksi otomatis setelah
 > aplikasi dimulai ulang; Anda juga dapat mengeklik "Impor Live2D Core" di
-> Pengaturan → Model untuk mengaktifkannya segera. Jika Core tidak
+> Pengaturan → Plugin untuk mengaktifkannya segera. Jika Core tidak
 > ditemukan, aplikasi kembali ke backend diagnostik dan menampilkan
 > petunjuk di jendela pengaturan.
 
@@ -196,13 +188,13 @@ pada default `OFF` bila Anda tidak membutuhkannya.
 
 | Opsi | Default | Deskripsi |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent` (termasuk Corrosion dan dependency crate Rust). Atur ke `OFF` hanya jika SDL3, yyjson, stb, miniaudio, Nuklear, dan Corrosion sudah tersedia untuk CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Unduh dependency pihak ketiga yang versinya dipin menggunakan CMake `FetchContent` (termasuk Corrosion dan dependency crate Rust). Atur ke `OFF` hanya jika SDL3, stb, miniaudio, Nuklear, dan Corrosion sudah tersedia untuk CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Path ke Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Menentukan apakah SDK yang tidak tersedia menggagalkan konfigurasi. Default `OFF`: tanpa SDK dibangun backend diagnostik tanpa rendering Live2D; atur `ON` untuk mewajibkan SDK (digunakan oleh CI rilis). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Perlakukan warning compiler native sebagai error. |
 
 Untuk build offline dengan `BONGO_CAT_FETCH_DEPS=OFF`, sediakan konfigurasi
-package CMake untuk SDL3 (termasuk `SDL3-static`) dan yyjson, serta direktori
+package CMake untuk SDL3 (termasuk `SDL3-static`) , serta direktori
 include untuk stb, Nuklear, dan miniaudio jika tidak dapat ditemukan secara
 otomatis:
 
@@ -392,7 +384,7 @@ penggunaan.
 
 ### 🖼️ Bagaimana progres dukungan Vulkan / Metal?
 
-Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay 2D, sudut membulat dan pembaruan tekstur dinamis asinkron memerlukan OpenGL. Tekstur native menerapkan batas kualitas/ukuran saat dimuat.
+Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk, sudut membulat dan pembaruan tekstur dinamis asinkron memerlukan OpenGL. Tekstur native menerapkan batas kualitas/ukuran saat dimuat. Backend native menyimpan latar meja statis dalam cache dan memasukkannya dalam batas bingkai rapat.
 
 Build SDK memakai `BONGO_CAT_CUBISM_VULKAN=ON` pada Windows / Linux x64 (`glslangValidator` atau `glslang`, paket Linux `glslang-tools`; Vulkan 1.3 saat dijalankan) dan `BONGO_CAT_CUBISM_METAL=ON` pada macOS (alat Metal Xcode). Pakai `OFF` untuk menonaktifkan ekstensi terkait. Sumber Metal dan `.metallib` hanya masuk macOS; Vulkan dan `.spv` hanya Windows / Linux x64, termasuk variasi blending. Build diagnostik tanpa SDK mengabaikan sumber daya Live2D ini. GitHub Actions menyiapkan alat dan memeriksa sumber daya per platform. Pemeriksaan statis telah dijalankan; build dan GPU belum diverifikasi. Lihat [integrasi dan validasi](live2d-vulkan-metal.md).
 
@@ -420,3 +412,11 @@ Oleh vladelaina\
 Dibuat dengan ❤️ & ⌨️
 
 </div>
+
+### Plugin perender dinamis
+
+Preferensi → Plugin mengelola pemasangan, pengaktifan, dan penghapusan perender lokal. Beralihlah ke perender lain sebelum mengubah plugin yang aktif. Live2D memakai plugin C++; Inochi2D memakai plugin Rust Inox2D dengan OpenGL, Vulkan (Windows/Linux), dan Metal (macOS), tanpa wgpu. Impor mengenali isi model terlebih dahulu (`.model3.json`, `.inp`, `.inx`). Seluruh pembacaan dan penulisan JSON dilakukan di Rust.
+
+Rilis portabel Windows berbentuk arsip ZIP. Simpan folder hasil ekstraksi `plugins` di samping program. Lihat [Plugin perender](model-plugins.md) untuk pengemasan, dependensi luring, ABI, pemetaan parameter, dan batas kompatibilitas.
+
+Setiap push ke `dev` yang mengubah kode, aset, atau konfigurasi build menerbitkan prarilis GitHub. Perubahan dokumentasi saja dilewati; tidak ada pemicu terjadwal. Semua platform membangun commit yang didorong. Prarilis tidak menggantikan rilis stabil terbaru.

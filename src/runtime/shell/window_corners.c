@@ -80,7 +80,7 @@ void bongo_cat_window_mask_corners(BongoCatApp *app, int width, int height) {
         width <= 0 || height <= 0) return;
     int x = 0, y = 0, cw = 0, ch = 0;
     bool content = !app->settings.window.obs_background &&
-        bongo_cat_live2d_viewport(app->live2d, &x, &y, &cw, &ch);
+        bongo_cat_model_runtime_viewport(app->model_runtime, &x, &y, &cw, &ch);
     BongoCatCornerRect rect = bongo_cat_corner_rect(width, height,
         content, x, y, cw, ch, app->settings.window.corner_radius_percent);
     if (rect.radius_milli <= 0 || !prepare_corner_mask()) return;

@@ -14,10 +14,10 @@ static bool swap_live2d_backend(BongoCatApp *app, BongoCatError *error) {
         SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
             "Cannot bind the pet window context for the Live2D swap: %s",
             SDL_GetError());
-    bongo_cat_live2d_destroy(app->live2d);
-    app->live2d = bongo_cat_live2d_create(app->asset_root, error);
+    bongo_cat_model_runtime_destroy(app->model_runtime);
+    app->model_runtime = bongo_cat_model_runtime_create(app->asset_root, error);
     attach_rhi_info(app);
-    bool reloaded = app->live2d && (!app->loaded_model[0] ||
+    bool reloaded = app->model_runtime && (!app->loaded_model[0] ||
         bongo_cat_app_reload_model_with_error(app, error));
     if (previous_window && previous_context &&
         previous_window != app->window &&

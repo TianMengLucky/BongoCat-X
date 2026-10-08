@@ -3,6 +3,7 @@ set(BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/input"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/lifecycle"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/model"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/model/plugins"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/model/import"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/model/import/mver"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/model/import/nearby"
@@ -42,6 +43,7 @@ set(BONGO_CAT_RENDER_SOURCES
   src/render/overlay_assets.c
   src/render/overlay_input.c
   src/render/overlay_draw.c
+  src/render/overlay_native.c
   src/render/mver_pointer_overlay.c
   src/render/mver_pointer_overlay_draw.c)
 
@@ -50,7 +52,7 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
      CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")))
   list(APPEND BONGO_CAT_RENDER_SOURCES
     src/render/rhi/rhi_vk.c src/render/rhi/rhi_vk_swapchain.c
-    src/render/rhi/rhi_vk_readback.c
+    src/render/rhi/rhi_vk_readback.c src/render/rhi/rhi_vk_background.c
     src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c)
 else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
@@ -153,6 +155,7 @@ set(BONGO_CAT_RUNTIME_IMPORT_SOURCES
   src/runtime/model/import/model_import_scan.c
   src/runtime/model/import/model_import_session.c
   src/runtime/model/import/model_import_source.c
+  src/runtime/model/import/model_import_inochi.c
 
   # Shared Mver configuration: authored fields, comments and shortcut persistence.
   src/runtime/model/mver/mver_config.c
@@ -302,6 +305,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_overlay.c
   src/ui/preferences/preferences_page_dispatch.c
   src/ui/preferences/preferences_pages.c
+  src/ui/preferences/preferences_plugins.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c
   src/ui/preferences/preferences_render.c

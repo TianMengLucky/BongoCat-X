@@ -1,5 +1,7 @@
 function(bongo_cat_vulkan_shader_io variable)
   set(source "${${variable}}")
+  string(ASCII 239 187 191 bom)
+  string(REPLACE "${bom}" "" source "${source}")
   set(start [=[    std::ifstream file(filename.GetRawString(), std::ios::ate | std::ios::binary);]=])
   set(finish [=[    VkShaderModuleCreateInfo createInfo{};]=])
   string(FIND "${source}" "${start}" a)
@@ -84,6 +86,8 @@ endfunction()
 
 function(bongo_cat_metal_shader_io variable)
   set(source "${${variable}}")
+  string(ASCII 239 187 191 bom)
+  string(REPLACE "${bom}" "" source "${source}")
   string(REPLACE "\r\n" "\n" source "${source}")
   set(helper [=[
 static NSData* bongo_cat_metal_shader_data(NSString* name)

@@ -1,6 +1,7 @@
 #include "overlay_internal.h"
 
 #include <stdlib.h>
+#include "bongo_cat/rhi.h"
 
 static const char *vertex_source =
     "#version 330 core\n"
@@ -24,6 +25,10 @@ static const char *fragment_source =
 
 BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
     BongoCatOverlay *value = calloc(1, sizeof(*value));
+    if (value && !bongo_cat_rhi_active_is_gl()) {
+        value->native = true;
+        return value;
+    }
     if (!value || !bongo_cat_gl_load(&value->gl, error)) {
         free(value);
         return NULL;

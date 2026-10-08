@@ -1,25 +1,42 @@
 #include "runtime.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
+#include "../../platform/common/gl_readback.h"
 
 #include <math.h>
-#include <SDL3/SDL_opengl.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static void advance(BongoCatApp *app, int frames) {
     for (int i = 0; i < frames; ++i)
-        bongo_cat_live2d_update(app->live2d, 1.0f / 60.0f);
+        bongo_cat_model_runtime_update(app->model_runtime, 1.0f / 60.0f);
 }
 
 static bool close_scale(float left, float right) {
     return fabsf(left - right) <= 0.0001f;
 }
 
-static bool inside(const BongoCatLive2DVisualState *state) {
+static bool inside(const BongoCatModelRuntimeVisualState *state) {
     return state && state->visible_min_x >= -1.08f &&
         state->visible_min_y >= -1.08f && state->visible_max_x <= 1.08f &&
         state->visible_max_y <= 1.08f;
+}
+
+static bool audit_draw(void *userdata) {
+    BongoCatApp *app = userdata;
+    attach_rhi_info(app);
+    return bongo_cat_model_runtime_draw_checked(app->model_runtime);
+}
+
+bool bongo_cat_model_runtime_audit_render(BongoCatApp *app, int width, int height) {
+    if (!bongo_cat_rhi_make_current(&app->rhi)) return false;
+    bongo_cat_rhi_prepare_frame(&app->rhi, width, height);
+    bongo_cat_rhi_viewport(&app->rhi, 0, 0, width, height);
+    bongo_cat_rhi_clear(&app->rhi, 0.0f, 0.0f, 0.0f, 0.0f);
+    if (bongo_cat_rhi_is_gl(&app->rhi)) return audit_draw(app);
+    app->rhi.present.draw_frame = audit_draw;
+    app->rhi.present.hook_user = app;
+    return bongo_cat_rhi_render_frame(&app->rhi);
 }
 
 static unsigned edge_pixels(int width, int height) {
@@ -31,9 +48,10 @@ static unsigned edge_pixels(int width, int height) {
         {0, 0, 1, height}, {width - 1, 0, 1, height}};
     for (size_t side = 0; side < 4; ++side) {
         int count = rectangles[side][2] * rectangles[side][3];
-        glReadPixels(rectangles[side][0], rectangles[side][1],
-            rectangles[side][2], rectangles[side][3], GL_RGBA,
-            GL_UNSIGNED_BYTE, pixels);
+        if (!bongo_cat_gl_read_window(rectangles[side][0], rectangles[side][1],
+            rectangles[side][2], rectangles[side][3], true, pixels)) {
+            free(pixels); return ~0u;
+        }
         for (int i = 0; i < count; ++i)
             if (pixels[(size_t)i * 4 + 3] > 8) visible++;
     }
@@ -42,15 +60,12 @@ static unsigned edge_pixels(int width, int height) {
 }
 
 static bool record(FILE *file, BongoCatApp *app, const char *name,
-    bool contained, BongoCatLive2DVisualState *state) {
+    bool contained, BongoCatModelRuntimeVisualState *state) {
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(app->window, &width, &height);
-    glViewport(0, 0, width, height);
-    glDisable(GL_SCISSOR_TEST); glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); glClear(GL_COLOR_BUFFER_BIT);
-    bongo_cat_live2d_draw(app->live2d);
+    if (!bongo_cat_model_runtime_audit_render(app, width, height)) return false;
     unsigned edges = edge_pixels(width, height);
-    bool available = bongo_cat_live2d_visual_state(app->live2d, state);
+    bool available = bongo_cat_model_runtime_visual_state(app->model_runtime, state);
     bool finite = available && isfinite(state->fit_scale) &&
         isfinite(state->fit_translate_x) && isfinite(state->fit_translate_y) &&
         isfinite(state->visible_min_x) && isfinite(state->visible_min_y) &&
@@ -74,10 +89,10 @@ static bool record(FILE *file, BongoCatApp *app, const char *name,
 static bool expression_matrix(FILE *file, BongoCatApp *app, int expression,
     int width, int height) {
     bool passed = true;
-    BongoCatLive2DVisualState enter = {0}, stable = {0}, current = {0};
-    bongo_cat_live2d_set_dragging(app->live2d, 0.0f, 0.0f);
+    BongoCatModelRuntimeVisualState enter = {0}, stable = {0}, current = {0};
+    bongo_cat_model_runtime_set_dragging(app->model_runtime, 0.0f, 0.0f);
     advance(app, 90);
-    if (!bongo_cat_live2d_set_expression(app->live2d, expression)) return false;
+    if (!bongo_cat_model_runtime_set_expression(app->model_runtime, expression)) return false;
     advance(app, 1);
     char label[48];
     snprintf(label, sizeof(label), "expression-%d-enter", expression);
@@ -94,26 +109,26 @@ static bool expression_matrix(FILE *file, BongoCatApp *app, int expression,
 
     const float pointers[][2] = {{-1.0f, 1.0f}, {1.0f, -1.0f}};
     for (int i = 0; i < 2; ++i) {
-        bongo_cat_live2d_set_dragging(app->live2d, pointers[i][0], pointers[i][1]);
+        bongo_cat_model_runtime_set_dragging(app->model_runtime, pointers[i][0], pointers[i][1]);
         advance(app, 90);
         snprintf(label, sizeof(label), "expression-%d-pointer-%d", expression, i);
         passed = record(file, app, label, false, &current) &&
             close_scale(stable.fit_scale, current.fit_scale) && passed;
     }
-    bongo_cat_live2d_set_mirror(app->live2d, true);
+    bongo_cat_model_runtime_set_mirror(app->model_runtime, true);
     snprintf(label, sizeof(label), "expression-%d-mirror", expression);
     passed = record(file, app, label, false, &current) &&
         close_scale(stable.fit_scale, current.fit_scale) && passed;
-    bongo_cat_live2d_reshape(app->live2d, width / 2, height / 2);
+    bongo_cat_model_runtime_reshape(app->model_runtime, width / 2, height / 2);
     snprintf(label, sizeof(label), "expression-%d-scale-50", expression);
     passed = record(file, app, label, false, &current) &&
         close_scale(stable.fit_scale, current.fit_scale) && passed;
-    bongo_cat_live2d_reshape(app->live2d, width * 2, height * 2);
+    bongo_cat_model_runtime_reshape(app->model_runtime, width * 2, height * 2);
     snprintf(label, sizeof(label), "expression-%d-scale-200", expression);
     passed = record(file, app, label, false, &current) &&
         close_scale(stable.fit_scale, current.fit_scale) && passed;
-    bongo_cat_live2d_reshape(app->live2d, width, height);
-    bongo_cat_live2d_set_mirror(app->live2d, false);
+    bongo_cat_model_runtime_reshape(app->model_runtime, width, height);
+    bongo_cat_model_runtime_set_mirror(app->model_runtime, false);
     return passed;
 }
 
@@ -137,8 +152,8 @@ static size_t behavior_indexes(const BongoCatApp *app, BongoCatBehaviorKind kind
 
 static bool motion_replay_matrix(FILE *file, BongoCatApp *app,
     const BongoCatBehaviorEntry *entry, bool mver) {
-    BongoCatLive2DVisualState active = {0}, stable = {0}, replayed = {0};
-    if (!bongo_cat_live2d_start_motion(app->live2d, entry->group, entry->index))
+    BongoCatModelRuntimeVisualState active = {0}, stable = {0}, replayed = {0};
+    if (!bongo_cat_model_runtime_start_motion(app->model_runtime, entry->group, entry->index))
         return false;
     advance(app, 1);
     char label[96];
@@ -147,7 +162,7 @@ static bool motion_replay_matrix(FILE *file, BongoCatApp *app,
     advance(app, 60);
     snprintf(label, sizeof(label), "motion-%d-stable", entry->index);
     passed = record(file, app, label, !mver, &stable) && passed;
-    if (!bongo_cat_live2d_start_motion(app->live2d, entry->group, entry->index))
+    if (!bongo_cat_model_runtime_start_motion(app->model_runtime, entry->group, entry->index))
         return false;
     advance(app, 1);
     snprintf(label, sizeof(label), "motion-%d-replayed", entry->index);
@@ -159,8 +174,8 @@ static bool motion_replay_matrix(FILE *file, BongoCatApp *app,
     return passed;
 }
 
-bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
-    if (!app || !app->live2d || !app->window) return false;
+bool bongo_cat_model_runtime_visual_audit_run(BongoCatApp *app) {
+    if (!app || !app->model_runtime || !app->window) return false;
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), app->state_root,
         "live2d-visual-audit.csv")) return false;
@@ -171,15 +186,15 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(app->window, &width, &height);
     bool passed = width > 1 && height > 1;
-    BongoCatLive2DVisualState baseline = {0}, current = {0};
-    bongo_cat_live2d_set_expression(app->live2d, -1);
-    bongo_cat_live2d_set_dragging(app->live2d, 0.0f, 0.0f);
+    BongoCatModelRuntimeVisualState baseline = {0}, current = {0};
+    bongo_cat_model_runtime_set_expression(app->model_runtime, -1);
+    bongo_cat_model_runtime_set_dragging(app->model_runtime, 0.0f, 0.0f);
     advance(app, 90);
     passed = record(file, app, "idle", false, &baseline) && passed;
     if (!baseline.mver_projection) passed = inside(&baseline) && passed;
     const float pointers[][2] = {{-1.0f, -1.0f}, {1.0f, 1.0f}};
     for (int i = 0; i < 2; ++i) {
-        bongo_cat_live2d_set_dragging(app->live2d, pointers[i][0], pointers[i][1]);
+        bongo_cat_model_runtime_set_dragging(app->model_runtime, pointers[i][0], pointers[i][1]);
         advance(app, 90);
         char label[32]; snprintf(label, sizeof(label), "pointer-%d", i);
         passed = record(file, app, label, !baseline.mver_projection, &current) &&
@@ -200,7 +215,7 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
     for (size_t i = 0; i < expression_count; ++i) {
         int expression = expression_indexes[i];
         passed = expression_matrix(file, app, expression, width, height) && passed;
-        bongo_cat_live2d_set_expression(app->live2d, -1);
+        bongo_cat_model_runtime_set_expression(app->model_runtime, -1);
         advance(app, 90);
         char label[32]; snprintf(label, sizeof(label), "expression-%d-reset", expression);
         passed = record(file, app, label, !baseline.mver_projection, &current) &&
@@ -215,9 +230,9 @@ bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app) {
             passed = motion_replay_matrix(file, app, entry, true) && passed;
         }
     }
-    bongo_cat_live2d_set_dragging(app->live2d, 0.0f, 0.0f);
-    bongo_cat_live2d_set_mirror(app->live2d, false);
-    bongo_cat_live2d_reshape(app->live2d, width, height);
+    bongo_cat_model_runtime_set_dragging(app->model_runtime, 0.0f, 0.0f);
+    bongo_cat_model_runtime_set_mirror(app->model_runtime, false);
+    bongo_cat_model_runtime_reshape(app->model_runtime, width, height);
     fprintf(file, "result,1,0,0,0,0,0,0,0,0,%d,0,%d\n",
         baseline.mver_projection, passed);
     free(expression_indexes);

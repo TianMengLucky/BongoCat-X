@@ -31,7 +31,12 @@ export OUTPUT="$build_dir/dist/$name.AppImage"
 # Build runners do not need FUSE, including subprocess AppImage tools.
 export APPIMAGE_EXTRACT_AND_RUN=1
 pushd "$build_dir" >/dev/null
-"$tool" --appdir "$appdir" \
+# Scan optional plugin ELF dependencies while retaining their install paths.
+plugin_args=()
+if [[ -d "$appdir/usr/bin/plugins" ]]; then
+  plugin_args=(--deploy-deps-only "$appdir/usr/bin/plugins")
+fi
+"$tool" --appdir "$appdir" "${plugin_args[@]}" \
   --executable "$appdir/usr/bin/BongoCat" \
   --desktop-file "$source_dir/packaging/linux/bongocat.desktop" \
   --icon-file "$source_dir/resources/assets/bongocat.png" \

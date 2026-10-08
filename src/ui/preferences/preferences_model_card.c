@@ -180,6 +180,10 @@ static void switch_away_from_hidden(BongoCatPreferences *value,
         }
     } else if (fallback) {
         bongo_cat_preferences_model_select(value, fallback);
+    } else {
+        value->pending_model_id[0] = '\0';
+        value->model_selection_pending = true;
+        value->pending_model_multiple = false;
     }
 }
 

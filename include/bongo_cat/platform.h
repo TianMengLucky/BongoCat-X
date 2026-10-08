@@ -164,6 +164,7 @@ BongoCatResult bongo_cat_platform_embedded_assets(const char *target, BongoCatEr
    builds always report it; runtime-Core builds once the user-supplied DLL
    has been located and loaded. */
 bool bongo_cat_platform_live2d_core_available(void);
+void *bongo_cat_platform_live2d_core_symbol(const char *name);
 /* True when this build can import the Cubism Core while running (Windows
    runtime-Core builds); false everywhere else. */
 bool bongo_cat_platform_live2d_core_import_supported(void);

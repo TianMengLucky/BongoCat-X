@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "Plugins",
+        "description": "Install renderer plugins and enable the engines you need. Model type selects the renderer automatically.",
+        "status": "Status",
+        "active": "In use",
+        "installed": "Installed",
+        "missing": "Not installed",
+        "enabled": "Enabled",
+        "activeHint": "Click a selected model to deselect it before disabling, replacing or removing its plugin.",
+        "remove": "Remove plugin",
+        "install": "Install local plugin",
+        "saved": "Plugin settings updated",
+        "failed": "Unable to update plugin",
+        "live2dMissing": "Install and enable the Live2D renderer on the Plugins page, then import Cubism Core.",
+        "disabled": "Disabled",
+        "liveDescription": "Live2D models require Cubism Core. Missing Core can be imported with the ZIP.",
+        "inoxDescription": "Inochi2D models in INP / INX containers.",
+        "openFolder": "Open folder",
+        "drop": "Click or drop a plugin ZIP here",
+        "dropHint": "ZIP or renderer library; missing Core is imported from the package."
+      },
       "title": "Preferences",
       "cat": {
         "title": "Preferences",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Select the Cubism Core library or the official Cubism SDK zip to enable Live2D rendering without a restart",
     "live2dCoreImportButton": "Choose file",
     "live2dCoreImportSuccess": "Live2D Cubism Core imported: Live2D rendering is now enabled",
-    "live2dCoreImportFailed": "Live2D Cubism Core import failed",
+    "live2dCoreImportFailed": "Live2D Cubism Core import failed",
     "live2dCoreRescanFound": "Live2D Core detected and loaded",
     "live2dCoreRescanMissing": "No Live2D Core found in the live2d folders yet",
     "live2dCoreScanning": "Scanning the live2d folders for the Cubism Core...",

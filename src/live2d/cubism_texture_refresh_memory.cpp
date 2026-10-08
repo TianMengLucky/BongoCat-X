@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_texture_refresh_memory.hpp"
 #include "bongo_cat/log.h"
 #include "bongo_cat/memory.h"

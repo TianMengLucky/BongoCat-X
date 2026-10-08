@@ -85,7 +85,7 @@ static void model_load_progress(void *userdata, float progress) {
         bongo_cat_preferences_model_load_progress(app->preferences, progress);
     /* The main loop is blocked during loading, so advance the visible model here. */
     if (!app || !app->loaded_model[0] || !app->model_load_last_frame_ns ||
-        !app->live2d)
+        !app->model_runtime)
         return;
     uint64_t now = SDL_GetTicksNS();
     if (progress < .98f && now - app->model_load_last_frame_ns < 16000000ull)
@@ -119,7 +119,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     BongoCatError local = {0};
     BongoCatError *failure = error ? error : &local;
     *failure = (BongoCatError){0};
-    if (!app || !app->live2d || !id) {
+    if (!app || !app->model_runtime || !id) {
         bongo_cat_error_set(failure, BONGO_CAT_ERROR_ARGUMENT,
             "Cannot select a model without an active renderer and model id");
         return false;
@@ -136,7 +136,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         commit_model(app, entry, false, false);
         return true;
     }
-    if (bongo_cat_live2d_ready(app->live2d)) bongo_cat_app_capture_behavior_state(app);
+    if (bongo_cat_model_runtime_ready(app->model_runtime)) bongo_cat_app_capture_behavior_state(app);
     bongo_cat_app_log_input(app, true);
     bool replacing_model = app->loaded_model[0] != '\0';
     if (replacing_model)
@@ -163,7 +163,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         if (!behavior_catalog_valid)
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", optional.message);
     }
-    BongoCatLive2DRenderOptions render_options = {0};
+    BongoCatModelRuntimeRenderOptions render_options = {0};
     bool mver = entry->source_format == BONGO_CAT_MODEL_SOURCE_MVER ||
         entry->source_format == BONGO_CAT_MODEL_SOURCE_MVER_PATCH;
     char config_path[BONGO_CAT_PATH_CAP] = {0};
@@ -183,7 +183,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         "force_mouse=%d left_handed=%d pointer_bounds=%d",
         render_options.projection_scale, render_options.mouse_force_move,
         render_options.pointer_left_handed, render_options.custom_pointer_bounds);
-    BongoCatLive2DTextureOptions texture_options = {
+    BongoCatModelRuntimeTextureOptions texture_options = {
         .dynamic_resolution = app->settings.model.dynamic_texture_resolution,
         .render_quality_percent = app->settings.model.render_quality_percent,
         .display_size = bongo_cat_model_texture_display_size,
@@ -217,7 +217,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         "gl_error=0x%x", previous_model, entry->id, (void *)app->window,
         (void *)app->gl_context, (void *)SDL_GL_GetCurrentWindow(),
         (void *)SDL_GL_GetCurrentContext(), (unsigned)initial_gl_error);
-    bongo_cat_live2d_reshape(app->live2d, pixel_width, pixel_height);
+    bongo_cat_model_runtime_reshape(app->model_runtime, pixel_width, pixel_height);
     snprintf(app->loading_model, sizeof(app->loading_model), "%s", entry->id);
     app->model_load_runtime_stage = 0;
     model_runtime_stage(app, "started", entry);
@@ -226,7 +226,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
        happens instead of redrawing into an intentionally resource-less model. */
     app->model_load_last_frame_ns = 0;
     const char *previous_phase = bongo_cat_diagnostics_phase("model-load");
-    BongoCatResult load_result = bongo_cat_live2d_load_ex(app->live2d,
+    BongoCatResult load_result = bongo_cat_model_runtime_load_ex(app->model_runtime,
         entry->directory, entry->setting_file, entry->preset, &render_options,
         &texture_options,
         model_load_progress, app, failure);
@@ -246,7 +246,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                 "Cannot restore the previous OpenGL context: %s", SDL_GetError());
         bongo_cat_behaviors_clear(behaviors); free(behaviors);
-        if (!bongo_cat_live2d_ready(app->live2d)) app->loaded_model[0] = '\0';
+        if (!bongo_cat_model_runtime_ready(app->model_runtime)) app->loaded_model[0] = '\0';
         request_model_frame(app, false);
         app->loading_model[0] = '\0';
         app->model_load_runtime_stage = 0;
@@ -256,17 +256,17 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     model_runtime_stage(app, "committing", entry);
     BongoCatParameterRange pointer_x, pointer_y;
     bool model_pointer =
-        bongo_cat_live2d_parameter(app->live2d, "ParamMouseX", &pointer_x) &&
-        bongo_cat_live2d_parameter(app->live2d, "ParamMouseY", &pointer_y) &&
+        bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseX", &pointer_x) &&
+        bongo_cat_model_runtime_parameter(app->model_runtime, "ParamMouseY", &pointer_y) &&
         pointer_x.maximum > pointer_x.minimum &&
         pointer_y.maximum > pointer_y.minimum;
     app->model_render_options = render_options;
     app->frame_geometry_retry_ns = 0;
     bongo_cat_app_reset_pointer_tracking(app);
-    bongo_cat_live2d_set_render_options(app->live2d, &render_options);
+    bongo_cat_model_runtime_set_render_options(app->model_runtime, &render_options);
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[tight] model-select reapply -> %d",
         app->settings.window.tight_frame ? 1 : 0);
-    bongo_cat_live2d_set_tight_frame(app->live2d, app->settings.window.tight_frame);
+    bongo_cat_model_runtime_set_tight_frame(app->model_runtime, app->settings.window.tight_frame);
     if (app->loaded_model[0] && app->behavior_catalog_valid) {
         const BongoCatModelEntry *previous_entry = bongo_cat_models_find(
             &app->models, app->loaded_model);
@@ -278,8 +278,8 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     app->behavior_catalog_valid = behavior_catalog_valid;
     bongo_cat_behaviors_clear(behaviors); free(behaviors);
     optional = (BongoCatError){0};
-    if (bongo_cat_overlay_load(app->overlay, entry->adapter_directory,
-        model_pointer, &render_options, &optional) != BONGO_CAT_OK) {
+    if (app->overlay && bongo_cat_overlay_load(app->overlay, entry->adapter_directory,
+        model_pointer, bongo_cat_model_runtime_rendering(app->model_runtime), &render_options, &optional) != BONGO_CAT_OK) {
         if (optional.message[0])
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", optional.message);
         bongo_cat_overlay_clear(app->overlay);
@@ -293,9 +293,9 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         if (bongo_cat_overlay_tight_uv_bounds(app->overlay, uv)) {
             float rect[4] = { uv[0] * 2.0f - 1.0f, 1.0f - uv[3] * 2.0f,
                 uv[2] * 2.0f - 1.0f, 1.0f - uv[1] * 2.0f };
-            bongo_cat_live2d_set_tight_overlay_rect(app->live2d, rect);
+            bongo_cat_model_runtime_set_tight_overlay_rect(app->model_runtime, rect);
         } else {
-            bongo_cat_live2d_set_tight_overlay_rect(app->live2d, NULL);
+            bongo_cat_model_runtime_set_tight_overlay_rect(app->model_runtime, NULL);
         }
     }
     snprintf(app->loaded_model, sizeof(app->loaded_model), "%s", entry->id);
@@ -304,7 +304,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     SDL_Log("[runtime] Behavior restore summary: model=%s saved=%zu "
         "motions=%zu expression=%d", entry->id, saved_behaviors,
         bongo_cat_app_selected_motion_count(app),
-        bongo_cat_live2d_expression(app->live2d));
+        bongo_cat_model_runtime_expression(app->model_runtime));
     bongo_cat_model_cover_schedule(app, entry);
     bongo_cat_random_behavior_reset(app);
     app->pointer_known = false;
@@ -314,7 +314,7 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         if (geometry_changed) SDL_SyncWindow(app->window);
         SDL_GetWindowSizeInPixels(app->window, &pixel_width, &pixel_height);
     }
-    bongo_cat_live2d_resize(app->live2d, pixel_width, pixel_height);
+    bongo_cat_model_runtime_resize(app->model_runtime, pixel_width, pixel_height);
     bongo_cat_model_memory_log("window-ready", "window=%dx%d",
         pixel_width, pixel_height);
     bongo_cat_audio_reset(app->audio);
@@ -345,10 +345,10 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
             ? bongo_cat_mver_gamepad_input_mode(entry->directory) : -1,
         entry->adapter_schema, entry->adapter_generator, (unsigned)app->active_gamepad,
         saved_behaviors, bongo_cat_app_selected_motion_count(app),
-        bongo_cat_live2d_expression(app->live2d), entry->directory,
+        bongo_cat_model_runtime_expression(app->model_runtime), entry->directory,
         entry->setting_file, entry->adapter_directory, config_path[0] ? config_path : "none");
     bongo_cat_app_log_input(app, true);
-    bongo_cat_app_capture_pending_model_cover(app);
+    /* Cover capture runs in the next frame, after the new model is visible. */
     /* Do not leave the previous frame cropped during the UI completion pass. */
     if (replacing_model) bongo_cat_app_render_now(app);
     if (restore_context && previous_window && previous_context &&
@@ -387,4 +387,40 @@ bool bongo_cat_app_reload_model_with_error(BongoCatApp *app,
     char id[BONGO_CAT_ID_CAP];
     snprintf(id, sizeof(id), "%s", app->loaded_model);
     return select_model_with_error(app, id, error, true);
+}
+
+bool bongo_cat_app_clear_model(BongoCatApp *app, BongoCatError *error) {
+    if (!app || !bongo_cat_rhi_make_current(&app->rhi)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM, "Cannot release the model renderer");
+        return false;
+    }
+    BongoCatModelRuntime *empty = bongo_cat_model_runtime_create(app->asset_root, error);
+    if (!empty) return false;
+    bongo_cat_window_snapshot_end(app);
+    if (bongo_cat_model_runtime_ready(app->model_runtime))
+        bongo_cat_app_capture_behavior_state(app);
+    if (!bongo_cat_rhi_is_gl(&app->rhi) && !bongo_cat_rhi_wait_idle(&app->rhi)) {
+        bongo_cat_model_runtime_destroy(empty);
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM, "Cannot finish the active model frame");
+        return false;
+    }
+    /* Hiding a pet should not perform a synchronous screenshot/PNG write. */
+    bongo_cat_window_set_visible(app, false);
+    bongo_cat_model_cover_finish(app);
+    bongo_cat_model_runtime_destroy(app->model_runtime);
+    app->model_runtime = empty;
+    attach_rhi_info(app);
+    bongo_cat_overlay_clear(app->overlay);
+    app->session.active_model_id[0] = '\0';
+    bongo_cat_session_clear_additional_models(&app->session);
+    app->loaded_model[0] = app->loading_model[0] = '\0';
+    app->loaded_mode = BONGO_CAT_MODE_STANDARD;
+    app->loaded_gamepad_keyboard = false;
+    app->behaviors.count = 0;
+    bongo_cat_gamepads_set_enabled(app, false);
+    app->startup_visibility_pending = false;
+    app->model_selection_serial++;
+    bongo_cat_multi_pet_primary_update(app, SDL_GetTicksNS());
+    app->dirty = true;
+    return true;
 }

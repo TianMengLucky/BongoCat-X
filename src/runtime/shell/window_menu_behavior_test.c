@@ -12,7 +12,7 @@ static const BongoCatBehaviorEntry *test_nth_behavior(BongoCatApp *app,
         const BongoCatBehaviorEntry *entry = &app->behaviors.entries[i];
         if (entry->kind != kind) continue;
         if (kind == BONGO_CAT_BEHAVIOR_MOTION &&
-            !bongo_cat_live2d_motion_visible(app->live2d,
+            !bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index)) continue;
         if (!position) return entry;
         position--;
@@ -31,7 +31,7 @@ static bool expression_self_test(BongoCatApp *app) {
     size_t count = 0;
     while (test_nth_behavior(app, BONGO_CAT_BEHAVIOR_EXPRESSION, count)) count++;
     if (!count) return true;
-    int original = bongo_cat_live2d_expression(app->live2d);
+    int original = bongo_cat_model_runtime_expression(app->model_runtime);
     char (*motions)[BONGO_CAT_MENU_LABEL_CAP] = calloc(app->behaviors.count, sizeof(*motions));
     bool *motion_checked = calloc(app->behaviors.count, sizeof(*motion_checked));
     char (*expressions)[BONGO_CAT_MENU_LABEL_CAP] = calloc(app->behaviors.count, sizeof(*expressions));
@@ -40,7 +40,7 @@ static bool expression_self_test(BongoCatApp *app) {
         return false;
     }
     size_t motion_count, expression_count, current_expression;
-    bool passed = bongo_cat_live2d_set_expression(app->live2d, -1);
+    bool passed = bongo_cat_model_runtime_set_expression(app->model_runtime, -1);
     bongo_cat_window_behavior_labels(app, motions, motion_checked, &motion_count,
         expressions, &expression_count, &current_expression);
     passed = passed && expression_count == count &&
@@ -50,7 +50,7 @@ static bool expression_self_test(BongoCatApp *app) {
         BONGO_CAT_BEHAVIOR_EXPRESSION, selected_position);
     passed = selected && bongo_cat_window_behavior_action(app,
         BONGO_CAT_MENU_EXPRESSION_FIRST + selected_position) &&
-        bongo_cat_live2d_expression(app->live2d) == selected->index && passed;
+        bongo_cat_model_runtime_expression(app->model_runtime) == selected->index && passed;
     bongo_cat_window_behavior_labels(app, motions, motion_checked, &motion_count,
         expressions, &expression_count, &current_expression);
     passed = passed && expression_count == count &&
@@ -63,33 +63,33 @@ static bool expression_self_test(BongoCatApp *app) {
         bongo_cat_window_menu_preview_init(&preview, app);
         bongo_cat_window_menu_preview(&preview,
             BONGO_CAT_MENU_EXPRESSION_FIRST + alternate_position);
-        passed = alternate && bongo_cat_live2d_expression(app->live2d) ==
+        passed = alternate && bongo_cat_model_runtime_expression(app->model_runtime) ==
             alternate->index;
         bongo_cat_window_menu_restore(&preview, BONGO_CAT_MENU_NONE);
-        passed = passed && bongo_cat_live2d_expression(app->live2d) ==
+        passed = passed && bongo_cat_model_runtime_expression(app->model_runtime) ==
             selected->index;
         bongo_cat_window_menu_preview_init(&preview, app);
         bongo_cat_window_menu_preview(&preview,
             BONGO_CAT_MENU_EXPRESSION_FIRST + alternate_position);
         bongo_cat_window_menu_restore(&preview,
             BONGO_CAT_MENU_EXPRESSION_FIRST + alternate_position);
-        passed = passed && bongo_cat_live2d_expression(app->live2d) ==
+        passed = passed && bongo_cat_model_runtime_expression(app->model_runtime) ==
             alternate->index && bongo_cat_window_menu_preview_applied(&preview,
                 BONGO_CAT_MENU_EXPRESSION_FIRST + alternate_position);
     }
     if (passed) {
-        bongo_cat_live2d_set_expression(app->live2d, selected->index);
+        bongo_cat_model_runtime_set_expression(app->model_runtime, selected->index);
         BongoCatWindowMenuPreview preview;
         bongo_cat_window_menu_preview_init(&preview, app);
         BongoCatMenuAction selected_action =
             BONGO_CAT_MENU_EXPRESSION_FIRST + selected_position;
         bongo_cat_window_menu_preview(&preview, selected_action);
-        passed = bongo_cat_live2d_expression(app->live2d) == -1;
+        passed = bongo_cat_model_runtime_expression(app->model_runtime) == -1;
         bongo_cat_window_menu_restore(&preview, selected_action);
-        passed = passed && bongo_cat_live2d_expression(app->live2d) == -1 &&
+        passed = passed && bongo_cat_model_runtime_expression(app->model_runtime) == -1 &&
             bongo_cat_window_menu_preview_applied(&preview, selected_action);
     }
-    bool restored = bongo_cat_live2d_set_expression(app->live2d, original);
+    bool restored = bongo_cat_model_runtime_set_expression(app->model_runtime, original);
     if (!passed || !restored) SDL_Log("Expression menu self-test failed: "
         "count=%llu mapped=%llu current=%llu original=%d restored=%d",
         (unsigned long long)count, (unsigned long long)expression_count,
@@ -108,9 +108,9 @@ static bool motion_lifecycle_self_test(BongoCatApp *app) {
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *entry = &app->behaviors.entries[i];
         if (entry->kind != BONGO_CAT_BEHAVIOR_MOTION ||
-            !bongo_cat_live2d_motion_visible(app->live2d,
+            !bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index)) continue;
-        if (bongo_cat_live2d_motion_persistent(app->live2d,
+        if (bongo_cat_model_runtime_motion_persistent(app->model_runtime,
             entry->group, entry->index)) {
             if (!persistent) persistent = entry;
         } else if (!one_shot) one_shot = entry;
@@ -118,34 +118,34 @@ static bool motion_lifecycle_self_test(BongoCatApp *app) {
     bool persistent_kept = true, checked = true, cleared = true;
     bool isolated = true, started = true;
     if (persistent) {
-        if (bongo_cat_live2d_motion_selected(app->live2d,
+        if (bongo_cat_model_runtime_motion_selected(app->model_runtime,
             persistent->group, persistent->index)) {
-            started = bongo_cat_live2d_start_motion(app->live2d,
+            started = bongo_cat_model_runtime_start_motion(app->model_runtime,
                 persistent->group, persistent->index) && started;
             advance_motion(app, 8);
         }
-        started = bongo_cat_live2d_start_motion(app->live2d,
+        started = bongo_cat_model_runtime_start_motion(app->model_runtime,
             persistent->group, persistent->index) && started;
         advance_motion(app, 240);
-        persistent_kept = bongo_cat_live2d_motion_selected(app->live2d,
+        persistent_kept = bongo_cat_model_runtime_motion_selected(app->model_runtime,
             persistent->group, persistent->index);
     }
     unsigned steps = 0;
     if (one_shot) {
-        started = bongo_cat_live2d_start_motion(app->live2d,
+        started = bongo_cat_model_runtime_start_motion(app->model_runtime,
             one_shot->group, one_shot->index) && started;
-        checked = bongo_cat_live2d_motion_selected(app->live2d,
+        checked = bongo_cat_model_runtime_motion_selected(app->model_runtime,
             one_shot->group, one_shot->index);
-        while (steps++ < 1200 && bongo_cat_live2d_motion_selected(app->live2d,
+        while (steps++ < 1200 && bongo_cat_model_runtime_motion_selected(app->model_runtime,
             one_shot->group, one_shot->index)) advance_motion(app, 1);
-        cleared = !bongo_cat_live2d_motion_selected(app->live2d,
+        cleared = !bongo_cat_model_runtime_motion_selected(app->model_runtime,
             one_shot->group, one_shot->index);
-        isolated = !persistent || bongo_cat_live2d_motion_selected(app->live2d,
+        isolated = !persistent || bongo_cat_model_runtime_motion_selected(app->model_runtime,
             persistent->group, persistent->index);
     }
-    if (persistent && bongo_cat_live2d_motion_selected(app->live2d,
+    if (persistent && bongo_cat_model_runtime_motion_selected(app->model_runtime,
         persistent->group, persistent->index))
-        bongo_cat_live2d_start_motion(app->live2d,
+        bongo_cat_model_runtime_start_motion(app->model_runtime,
             persistent->group, persistent->index);
     bool passed = started && persistent_kept && checked && cleared && isolated;
     SDL_Log("Motion lifecycle self-test: persistent=%d one_shot=%d "
@@ -195,7 +195,7 @@ bool bongo_cat_window_behavior_self_test(BongoCatApp *app) {
             motion_count * sizeof(before[0])) == 0;
         passed = preview_stable && passed;
         bongo_cat_window_menu_restore(&preview, BONGO_CAT_MENU_NONE);
-        passed = bongo_cat_live2d_motion_selected(app->live2d,
+        passed = bongo_cat_model_runtime_motion_selected(app->model_runtime,
             first->group, first->index) && passed;
         passed = bongo_cat_window_behavior_action(app,
             BONGO_CAT_MENU_MOTION_FIRST + preview_position) && passed;
@@ -212,7 +212,7 @@ bool bongo_cat_window_behavior_self_test(BongoCatApp *app) {
             BONGO_CAT_MENU_MOTION_FIRST + preview_position);
         passed = preview_entry && bongo_cat_window_menu_preview_applied(
             &cancel_preview, BONGO_CAT_MENU_MOTION_FIRST + preview_position) &&
-            !bongo_cat_live2d_motion_selected(app->live2d,
+            !bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 preview_entry->group, preview_entry->index) && passed;
         bool independent = false;
         for (size_t i = 1; i < motion_count && !independent; ++i) {
@@ -220,11 +220,11 @@ bool bongo_cat_window_behavior_self_test(BongoCatApp *app) {
                 BONGO_CAT_MENU_MOTION_FIRST) && passed;
             passed = bongo_cat_window_behavior_action(app,
                 BONGO_CAT_MENU_MOTION_FIRST + i) && passed;
-            bool first_selected = bongo_cat_live2d_motion_selected(app->live2d,
+            bool first_selected = bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 first->group, first->index);
             const BongoCatBehaviorEntry *candidate = test_nth_behavior(app,
                 BONGO_CAT_BEHAVIOR_MOTION, i);
-            bool candidate_selected = bongo_cat_live2d_motion_selected(app->live2d,
+            bool candidate_selected = bongo_cat_model_runtime_motion_selected(app->model_runtime,
                 candidate->group, candidate->index);
             independent = independent || (first_selected && candidate_selected);
         }
@@ -236,13 +236,13 @@ bool bongo_cat_window_behavior_self_test(BongoCatApp *app) {
         for (size_t i = 0; i < app->behaviors.count; ++i) {
             const BongoCatBehaviorEntry *item = &app->behaviors.entries[i];
             if (item->kind == BONGO_CAT_BEHAVIOR_MOTION &&
-                !bongo_cat_live2d_motion_visible(app->live2d,
+                !bongo_cat_model_runtime_motion_visible(app->model_runtime,
                     item->group, item->index) &&
-                bongo_cat_live2d_motion_same_toggle(app->live2d,
+                bongo_cat_model_runtime_motion_same_toggle(app->model_runtime,
                     first->group, first->index,
                     item->group, item->index)) paired = true;
         }
-        bool toggled_off = !bongo_cat_live2d_motion_selected(app->live2d,
+        bool toggled_off = !bongo_cat_model_runtime_motion_selected(app->model_runtime,
             first->group, first->index);
         passed = (!paired || toggled_off) && passed;
         if (!passed) SDL_Log("Motion menu self-test failed: initial=%d "

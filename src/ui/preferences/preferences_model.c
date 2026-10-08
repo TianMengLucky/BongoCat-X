@@ -127,7 +127,6 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value) {
         return;
     char id[BONGO_CAT_ID_CAP];
     snprintf(id, sizeof(id), "%s", value->pending_model_id);
-    bool multiple = value->pending_model_multiple;
     bool active = value->pending_model_active;
     value->pending_model_id[0] = '\0';
     value->model_selection_pending = false;
@@ -145,15 +144,14 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value) {
     snprintf(value->loading_model_id, sizeof(value->loading_model_id), "%s", id);
     BongoCatError error = {0};
     bongo_cat_preferences_resource_note(value, "before-model-switch");
-    bool selected = multiple ? bongo_cat_app_set_model_active(
-        value->app, id, active, &error) :
-        bongo_cat_app_select_model_with_error(value->app, id, &error);
+    bool selected = id[0] ? bongo_cat_app_set_model_active(
+        value->app, id, active, &error) : bongo_cat_app_clear_model(value->app, &error);
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
         "[model-switch-ui] success=%d frames=%u total_ms=%.1f deferred=%u",
         selected, value->model_load_render_count,
         (double)value->model_load_render_total_ns / 1000000.0,
         value->model_load_render_deferred);
-    if (selected) finish_model_load_progress(value);
+    if (selected && value->app->loaded_model[0]) finish_model_load_progress(value);
     else {
         value->model_load_progress = 0.0f;
         value->model_load_visual_active = false;

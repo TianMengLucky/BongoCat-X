@@ -5,16 +5,16 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 typedef struct ParameterSet {
     char ids[128][BONGO_CAT_ID_CAP];
     size_t count;
 } ParameterSet;
 
-static yyjson_doc *read_json(const char *path) {
+static BongoJsonDoc *read_json(const char *path) {
     FILE *file = bongo_cat_file_open(path, "rb");
-    yyjson_doc *document = file ? yyjson_read_fp(file, 0, NULL, NULL) : NULL;
+    BongoJsonDoc *document = file ? bongo_json_read_fp(file, 0, NULL, NULL) : NULL;
     if (file) fclose(file);
     return document;
 }
@@ -38,16 +38,16 @@ static bool add_parameters(const BongoCatModelEntry *model, const char *relative
     ParameterSet *parameters) {
     char path[BONGO_CAT_PATH_CAP];
     if (!reference_path(model, relative, path)) return false;
-    yyjson_doc *document = read_json(path);
+    BongoJsonDoc *document = read_json(path);
     if (!document) return false;
-    yyjson_val *array = yyjson_obj_get(yyjson_doc_get_root(document), "Parameters");
-    size_t index, count; yyjson_val *item;
-    yyjson_arr_foreach(array, index, count, item) {
-        const char *id = yyjson_get_str(yyjson_obj_get(item, "Id"));
-        if (!id || parameters->count >= 128) { yyjson_doc_free(document); return false; }
+    BongoJsonValue *array = bongo_json_obj_get(bongo_json_doc_get_root(document), "Parameters");
+    size_t index, count; BongoJsonValue *item;
+    bongo_json_arr_foreach(array, index, count, item) {
+        const char *id = bongo_json_get_str(bongo_json_obj_get(item, "Id"));
+        if (!id || parameters->count >= 128) { bongo_json_doc_free(document); return false; }
         snprintf(parameters->ids[parameters->count++], BONGO_CAT_ID_CAP, "%s", id);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return parameters->count > 0;
 }
 
@@ -61,61 +61,61 @@ static bool validate_parameter_file(const BongoCatModelEntry *model,
     const char *relative, const ParameterSet *parameters, bool motion) {
     char path[BONGO_CAT_PATH_CAP];
     if (!reference_path(model, relative, path)) return false;
-    yyjson_doc *document = read_json(path);
+    BongoJsonDoc *document = read_json(path);
     if (!document) return false;
-    yyjson_val *root = yyjson_doc_get_root(document);
-    yyjson_val *array = yyjson_obj_get(root, motion ? "Curves" : "Parameters");
-    size_t index, count; yyjson_val *item;
-    bool valid = yyjson_is_arr(array);
-    yyjson_arr_foreach(array, index, count, item) {
-        const char *target = motion ? yyjson_get_str(yyjson_obj_get(item, "Target")) : "Parameter";
-        const char *id = yyjson_get_str(yyjson_obj_get(item, "Id"));
+    BongoJsonValue *root = bongo_json_doc_get_root(document);
+    BongoJsonValue *array = bongo_json_obj_get(root, motion ? "Curves" : "Parameters");
+    size_t index, count; BongoJsonValue *item;
+    bool valid = bongo_json_is_arr(array);
+    bongo_json_arr_foreach(array, index, count, item) {
+        const char *target = motion ? bongo_json_get_str(bongo_json_obj_get(item, "Target")) : "Parameter";
+        const char *id = bongo_json_get_str(bongo_json_obj_get(item, "Id"));
         if (target && strcmp(target, "Parameter") == 0 && (!id || !has_parameter(parameters, id))) {
             valid = false; break;
         }
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return valid;
 }
 
 static bool validate_model(const BongoCatModelEntry *model) {
     char setting_path[BONGO_CAT_PATH_CAP], path[BONGO_CAT_PATH_CAP];
     if (!reference_path(model, model->setting_file, setting_path)) return false;
-    yyjson_doc *document = read_json(setting_path);
+    BongoJsonDoc *document = read_json(setting_path);
     if (!document) return false;
-    yyjson_val *root = yyjson_doc_get_root(document);
-    yyjson_val *refs = yyjson_obj_get(root, "FileReferences");
-    const char *moc = yyjson_get_str(yyjson_obj_get(refs, "Moc"));
-    const char *display = yyjson_get_str(yyjson_obj_get(refs, "DisplayInfo"));
-    bool valid = yyjson_get_int(yyjson_obj_get(root, "Version")) == 3 &&
+    BongoJsonValue *root = bongo_json_doc_get_root(document);
+    BongoJsonValue *refs = bongo_json_obj_get(root, "FileReferences");
+    const char *moc = bongo_json_get_str(bongo_json_obj_get(refs, "Moc"));
+    const char *display = bongo_json_get_str(bongo_json_obj_get(refs, "DisplayInfo"));
+    bool valid = bongo_json_get_int(bongo_json_obj_get(root, "Version")) == 3 &&
         reference_path(model, moc, path) && signature(path, "MOC3", 4);
     ParameterSet parameters = {0};
     valid = valid && display && add_parameters(model, display, &parameters);
-    yyjson_val *textures = yyjson_obj_get(refs, "Textures");
-    size_t index, count; yyjson_val *item;
+    BongoJsonValue *textures = bongo_json_obj_get(refs, "Textures");
+    size_t index, count; BongoJsonValue *item;
     size_t texture_count = 0, expression_count = 0, motion_count = 0;
-    yyjson_arr_foreach(textures, index, count, item) {
-        const char *file = yyjson_get_str(item); texture_count++;
+    bongo_json_arr_foreach(textures, index, count, item) {
+        const char *file = bongo_json_get_str(item); texture_count++;
         valid = valid && reference_path(model, file, path) &&
             signature(path, "\x89PNG\r\n\x1a\n", 8);
     }
-    yyjson_val *expressions = yyjson_obj_get(refs, "Expressions");
-    yyjson_arr_foreach(expressions, index, count, item) {
-        const char *file = yyjson_get_str(yyjson_obj_get(item, "File")); expression_count++;
+    BongoJsonValue *expressions = bongo_json_obj_get(refs, "Expressions");
+    bongo_json_arr_foreach(expressions, index, count, item) {
+        const char *file = bongo_json_get_str(bongo_json_obj_get(item, "File")); expression_count++;
         valid = valid && validate_parameter_file(model, file, &parameters, false);
     }
-    yyjson_val *motions = yyjson_obj_get(refs, "Motions");
-    size_t group_index, group_count; yyjson_val *key, *group;
-    yyjson_obj_foreach(motions, group_index, group_count, key, group) {
-        yyjson_arr_foreach(group, index, count, item) {
-            const char *file = yyjson_get_str(yyjson_obj_get(item, "File")); motion_count++;
+    BongoJsonValue *motions = bongo_json_obj_get(refs, "Motions");
+    size_t group_index, group_count; BongoJsonValue *key, *group;
+    bongo_json_obj_foreach(motions, group_index, group_count, key, group) {
+        bongo_json_arr_foreach(group, index, count, item) {
+            const char *file = bongo_json_get_str(bongo_json_obj_get(item, "File")); motion_count++;
             valid = valid && validate_parameter_file(model, file, &parameters, true);
-            const char *sound = yyjson_get_str(yyjson_obj_get(item, "Sound"));
+            const char *sound = bongo_json_get_str(bongo_json_obj_get(item, "Sound"));
             if (sound) valid = valid && reference_path(model, sound, path) &&
                 signature(path, "fLaC", 4);
         }
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     reference_path(model, "resources/background.png", path);
     return valid && texture_count == 3 && expression_count == 3 && motion_count == 4 &&
         signature(path, "\x89PNG\r\n\x1a\n", 8);

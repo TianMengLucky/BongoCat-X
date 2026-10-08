@@ -41,17 +41,17 @@ public:
     ~NativeModel() override;
     bool load(const char *directory, const char *setting_file, bool direct_textures,
         bool dynamic_texture_resolution,
-        BongoCatLive2DLoadProgress progress, void *userdata,
+        BongoCatModelRuntimeLoadProgress progress, void *userdata,
         BongoCatError *error);
     /* Keep the internal test and tooling call shape source-compatible. */
     bool load(const char *directory, const char *setting_file, bool direct_textures,
-        BongoCatLive2DLoadProgress progress, void *userdata,
+        BongoCatModelRuntimeLoadProgress progress, void *userdata,
         BongoCatError *error) {
         return load(directory, setting_file, direct_textures, false,
             progress, userdata, error);
     }
     bool load_textures(BongoCatError *error,
-        BongoCatLive2DLoadProgress progress, void *userdata,
+        BongoCatModelRuntimeLoadProgress progress, void *userdata,
         int display_width = 0, int display_height = 0,
         float render_quality_percent = 100.0f);
     size_t texture_count() const { return rhi_info_.backend == BONGO_CAT_RHI_OPENGL
@@ -61,9 +61,9 @@ public:
     bool try_reuse_texture_quality(float quality_percent);
     void release_render_resources();
     bool canvas_size(int *width, int *height) const;
-    bool frame(BongoCatLive2DFrame *frame) const;
-    bool measure_frame(BongoCatLive2DFrame *required);
-    void set_frame(const BongoCatLive2DFrame &frame);
+    bool frame(BongoCatModelRuntimeFrame *frame) const;
+    bool measure_frame(BongoCatModelRuntimeFrame *required);
+    void set_frame(const BongoCatModelRuntimeFrame &frame);
     bool viewport(int *x, int *y, int *width, int *height) const;
     bool overlay_viewport(int *x, int *y, int *width, int *height) const;
     void resize(int width, int height);
@@ -79,7 +79,7 @@ public:
     void set_vertical_flip(bool flipped);
     void set_tight_frame(bool tight);
     void set_tight_overlay_rect(const float *rect);
-    void set_render_options(const BongoCatLive2DRenderOptions &options);
+    void set_render_options(const BongoCatModelRuntimeRenderOptions &options);
     void set_rhi_info(const BongoCatRhiDeviceInfo &info);
     const BongoCatRhiDeviceInfo &rhi_info() const;
     void set_dragging(float x, float y, bool angle_z = false);
@@ -99,7 +99,7 @@ public:
         const char *right_group, int right_index) const;
     bool set_expression(int index);
     int expression() const { return expression_index_; }
-    bool visual_state(BongoCatLive2DVisualState *state) const;
+    bool visual_state(BongoCatModelRuntimeVisualState *state) const;
 
 public:
     using MotionMap = std::map<std::string, Csm::ACubismMotion *>;
@@ -145,7 +145,7 @@ private:
     void configure_builtin_accessories(const std::vector<unsigned char> &moc);
     void load_expressions();
     void load_effects();
-    void load_motions(BongoCatLive2DLoadProgress progress, void *userdata);
+    void load_motions(BongoCatModelRuntimeLoadProgress progress, void *userdata);
     void start_idle_motion();
     void update_geometry();
     ModelBounds capture_visible_bounds() const;
@@ -156,6 +156,7 @@ private:
     void apply_viewport_projection(Csm::CubismMatrix44 &projection) const;
     void update_viewport();
     void record_visible_state(Csm::CubismMatrix44 &projection) const;
+    void update_tight_frame(Csm::CubismMatrix44 &projection);
     void capture_motion_preview();
     void restore_motion_preview_state();
     void load_motion_state(const std::string &key, const char *group, int index,
@@ -203,9 +204,9 @@ private:
     void *metal_textures_ = nullptr;
 #endif
     bool load_textures_native(BongoCatError *error,
-        BongoCatLive2DLoadProgress progress, void *userdata, int display_width, int display_height);
+        BongoCatModelRuntimeLoadProgress progress, void *userdata, int display_width, int display_height);
     void native_projection(Csm::CubismMatrix44 &projection);
-    void native_visual_state(const Csm::CubismMatrix44 &projection);
+    void native_visual_state(Csm::CubismMatrix44 &projection);
     BongoCatRhiDeviceInfo rhi_info_ = {};
     std::vector<BongoCatImageAlphaMask> native_alpha_;
     size_t native_texture_bytes_ = 0;
@@ -269,11 +270,11 @@ private:
     int expression_index_ = -1;
     bool expression_clearing_ = false;
     bool expression_frame_pending_ = false;
-    BongoCatLive2DFrame frame_{};
-    BongoCatLive2DFrame required_frame_{};
+    BongoCatModelRuntimeFrame frame_{};
+    BongoCatModelRuntimeFrame required_frame_{};
     float frame_fit_scale_ = 1.0f;
     bool frame_prepared_ = false;
-    mutable BongoCatLive2DVisualState visual_state_{};
+    mutable BongoCatModelRuntimeVisualState visual_state_{};
     mutable Csm::CubismMatrix44 visual_projection_;
     mutable bool visual_state_cached_ = false;
     bool visual_state_ready_ = false;
@@ -289,7 +290,7 @@ private:
     float tight_overlay_rect_[4] = {};
     /* Frame to restore when tight mode turns off: the allocated frame at the
        moment it was enabled (base canvas plus accumulated motion overflow). */
-    BongoCatLive2DFrame tight_reference_frame_ = {};
+    BongoCatModelRuntimeFrame tight_reference_frame_ = {};
     /* Content box frozen while tight mode is on. The envelope projection
        must not follow the cropped window: the crop changes the window aspect
        ratio, and the aspect-dependent fit branch would flip the envelope and
@@ -316,7 +317,7 @@ private:
        correction and left a stale inherited crop offset. Stable geometry
        for a few frames is settled enough. */
     int tight_geom_settle_ = 0;
-    BongoCatLive2DFrame tight_geom_last_frame_ = {};
+    BongoCatModelRuntimeFrame tight_geom_last_frame_ = {};
     int tight_geom_last_width_ = -1;
     int tight_geom_last_height_ = -1;
     /* Timestamp of the previous tight-frame measurement; drives the linear
@@ -334,7 +335,7 @@ private:
        re-cropping left a permanently offset window (green band on one side,
        content clipped on the other). The 1/64 dead zone and the settle gate
        keep the tracking quiet for ordinary motion. */
-    BongoCatLive2DRenderOptions render_options_{};
+    BongoCatModelRuntimeRenderOptions render_options_{};
     bool direct_textures_ = false;
     bool dynamic_texture_resolution_ = false;
     float render_quality_percent_ = 100.0f;

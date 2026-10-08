@@ -15,7 +15,7 @@ typedef struct BongoCatPointerAudit {
 
 extern BongoCatPointerAudit bongo_cat_pointer_audit;
 
-bool bongo_cat_live2d_pointer_audit_run(BongoCatApp *app, bool mirror);
-bool bongo_cat_live2d_pointer_reverse_audit_run(BongoCatApp *app);
+bool bongo_cat_model_runtime_pointer_audit_run(BongoCatApp *app, bool mirror);
+bool bongo_cat_model_runtime_pointer_reverse_audit_run(BongoCatApp *app);
 
 #endif

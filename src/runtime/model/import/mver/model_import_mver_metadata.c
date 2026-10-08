@@ -10,16 +10,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static const char *format_name(BongoCatImportFormat format) {
+    if (format == BONGO_CAT_IMPORT_INOCHI2D) return "inochi2d";
     if (format == BONGO_CAT_IMPORT_MVER) return "bongo-cat-mver";
     if (format == BONGO_CAT_IMPORT_MVER_PATCH) return "bongo-cat-mver-patch";
     return "tauri-live2d";
 }
 
-static double number_or(yyjson_val *value, double fallback) {
-    return yyjson_is_num(value) ? yyjson_get_num(value) : fallback;
+static double number_or(BongoJsonValue *value, double fallback) {
+    return bongo_json_is_num(value) ? bongo_json_get_num(value) : fallback;
 }
 
 static bool usable_pointer_image(const char *path) {
@@ -39,23 +40,23 @@ static bool pointer_asset(const BongoCatImportCandidate *candidate,
         usable_pointer_image(path);
 }
 
-static bool add_standard_pointer(yyjson_mut_doc *output, yyjson_mut_val *root,
-    yyjson_val *config, const BongoCatImportCandidate *candidate) {
+static bool add_standard_pointer(BongoJsonMutDoc *output, BongoJsonMutValue *root,
+    BongoJsonValue *config, const BongoCatImportCandidate *candidate) {
     if (candidate->mode != BONGO_CAT_MODE_STANDARD) return true;
-    yyjson_val *decoration = yyjson_obj_get(config, "decoration");
-    yyjson_val *standard = yyjson_obj_get(config, "standard");
-    yyjson_val *mouse_value = yyjson_obj_get(standard, "mouse");
-    bool mouse = yyjson_is_bool(mouse_value) && yyjson_get_bool(mouse_value);
-    yyjson_val *live2d_value = yyjson_obj_get(standard, "l2d");
-    bool live2d = !yyjson_is_bool(live2d_value) || yyjson_get_bool(live2d_value);
+    BongoJsonValue *decoration = bongo_json_obj_get(config, "decoration");
+    BongoJsonValue *standard = bongo_json_obj_get(config, "standard");
+    BongoJsonValue *mouse_value = bongo_json_obj_get(standard, "mouse");
+    bool mouse = bongo_json_is_bool(mouse_value) && bongo_json_get_bool(mouse_value);
+    BongoJsonValue *live2d_value = bongo_json_obj_get(standard, "l2d");
+    bool live2d = !bongo_json_is_bool(live2d_value) || bongo_json_get_bool(live2d_value);
     size_t device_index = mouse ? 0 : 1;
-    yyjson_val *offset_x = yyjson_obj_get(decoration, "offsetX");
-    yyjson_val *offset_y = yyjson_obj_get(decoration, "offsetY");
-    yyjson_val *scale = yyjson_obj_get(decoration, "scalar");
-    yyjson_val *hand_offset = yyjson_obj_get(
+    BongoJsonValue *offset_x = bongo_json_obj_get(decoration, "offsetX");
+    BongoJsonValue *offset_y = bongo_json_obj_get(decoration, "offsetY");
+    BongoJsonValue *scale = bongo_json_obj_get(decoration, "scalar");
+    BongoJsonValue *hand_offset = bongo_json_obj_get(
         live2d ? standard : decoration, "hand_offset");
-    yyjson_val *line = yyjson_obj_get(decoration, "armLineColor");
-    yyjson_val *left_handed = yyjson_obj_get(decoration, "leftHanded");
+    BongoJsonValue *line = bongo_json_obj_get(decoration, "armLineColor");
+    BongoJsonValue *left_handed = bongo_json_obj_get(decoration, "leftHanded");
     const char *device = mouse ? "resources/mver-pointer/mouse.png" :
         "resources/mver-pointer/tablet.png";
     const char *left = mouse ? "resources/mver-pointer/mouse_left.png" :
@@ -65,115 +66,116 @@ static bool add_standard_pointer(yyjson_mut_doc *output, yyjson_mut_val *root,
     const char *side = mouse ? "resources/mver-pointer/mouse_side.png" : "";
     /* Mver 0.1.6's l2d switch replaces the sprite renderer. The older
        standalone mode 98 instead draws a sprite pointer over Live2D. */
-    bool sprite_pointer = !yyjson_is_true(live2d_value) ||
-        yyjson_get_int(yyjson_obj_get(config, "mode")) == 98;
+    bool sprite_pointer = !bongo_json_is_true(live2d_value) ||
+        bongo_json_get_int(bongo_json_obj_get(config, "mode")) == 98;
     bool enabled = sprite_pointer && pointer_asset(candidate, "arm.png") &&
         pointer_asset(candidate, mouse ? "mouse.png" : "tablet.png");
-    yyjson_mut_val *pointer = yyjson_mut_obj_add_obj(output, root, "standardPointer");
+    BongoJsonMutValue *pointer = bongo_json_mut_obj_add_obj(output, root, "standardPointer");
     return pointer &&
-        yyjson_mut_obj_add_bool(output, pointer, "enabled", enabled) &&
-        yyjson_mut_obj_add_bool(output, pointer, "mouse", mouse) &&
-        yyjson_mut_obj_add_bool(output, pointer, "leftHanded",
-            yyjson_is_bool(left_handed) && yyjson_get_bool(left_handed)) &&
-        yyjson_mut_obj_add_str(output, pointer, "arm",
+        bongo_json_mut_obj_add_bool(output, pointer, "enabled", enabled) &&
+        bongo_json_mut_obj_add_bool(output, pointer, "mouse", mouse) &&
+        bongo_json_mut_obj_add_bool(output, pointer, "leftHanded",
+            bongo_json_is_bool(left_handed) && bongo_json_get_bool(left_handed)) &&
+        bongo_json_mut_obj_add_str(output, pointer, "arm",
             "resources/mver-pointer/arm.png") &&
-        yyjson_mut_obj_add_strcpy(output, pointer, "device", device) &&
-        yyjson_mut_obj_add_strcpy(output, pointer, "left", left) &&
-        yyjson_mut_obj_add_strcpy(output, pointer, "right", right) &&
-        yyjson_mut_obj_add_strcpy(output, pointer, "side", side) &&
-        yyjson_mut_obj_add_real(output, pointer, "offsetX",
-            number_or(yyjson_arr_get(offset_x, device_index), 0.0)) &&
-        yyjson_mut_obj_add_real(output, pointer, "offsetY",
-            number_or(yyjson_arr_get(offset_y, device_index), 0.0)) &&
-        yyjson_mut_obj_add_real(output, pointer, "scale",
-            number_or(yyjson_arr_get(scale, device_index), 1.0)) &&
-        yyjson_mut_obj_add_real(output, pointer, "handOffsetX",
-            number_or(yyjson_arr_get(hand_offset, 0), 0.0)) &&
-        yyjson_mut_obj_add_real(output, pointer, "handOffsetY",
-            number_or(yyjson_arr_get(hand_offset, 1), 0.0)) &&
-        yyjson_mut_obj_add_int(output, pointer, "lineRed",
-            (int)number_or(yyjson_arr_get(line, 0), 0.0)) &&
-        yyjson_mut_obj_add_int(output, pointer, "lineGreen",
-            (int)number_or(yyjson_arr_get(line, 1), 0.0)) &&
-        yyjson_mut_obj_add_int(output, pointer, "lineBlue",
-            (int)number_or(yyjson_arr_get(line, 2), 0.0));
+        bongo_json_mut_obj_add_strcpy(output, pointer, "device", device) &&
+        bongo_json_mut_obj_add_strcpy(output, pointer, "left", left) &&
+        bongo_json_mut_obj_add_strcpy(output, pointer, "right", right) &&
+        bongo_json_mut_obj_add_strcpy(output, pointer, "side", side) &&
+        bongo_json_mut_obj_add_real(output, pointer, "offsetX",
+            number_or(bongo_json_arr_get(offset_x, device_index), 0.0)) &&
+        bongo_json_mut_obj_add_real(output, pointer, "offsetY",
+            number_or(bongo_json_arr_get(offset_y, device_index), 0.0)) &&
+        bongo_json_mut_obj_add_real(output, pointer, "scale",
+            number_or(bongo_json_arr_get(scale, device_index), 1.0)) &&
+        bongo_json_mut_obj_add_real(output, pointer, "handOffsetX",
+            number_or(bongo_json_arr_get(hand_offset, 0), 0.0)) &&
+        bongo_json_mut_obj_add_real(output, pointer, "handOffsetY",
+            number_or(bongo_json_arr_get(hand_offset, 1), 0.0)) &&
+        bongo_json_mut_obj_add_int(output, pointer, "lineRed",
+            (int)number_or(bongo_json_arr_get(line, 0), 0.0)) &&
+        bongo_json_mut_obj_add_int(output, pointer, "lineGreen",
+            (int)number_or(bongo_json_arr_get(line, 1), 0.0)) &&
+        bongo_json_mut_obj_add_int(output, pointer, "lineBlue",
+            (int)number_or(bongo_json_arr_get(line, 2), 0.0));
 }
 
-static bool add_render_profile(yyjson_mut_doc *output, yyjson_mut_val *root,
-    yyjson_val *config, const BongoCatImportCandidate *candidate) {
-    BongoCatLive2DRenderOptions options;
+static bool add_render_profile(BongoJsonMutDoc *output, BongoJsonMutValue *root,
+    BongoJsonValue *config, const BongoCatImportCandidate *candidate) {
+    BongoCatModelRuntimeRenderOptions options;
     bongo_cat_mver_render_options(config, &options);
-    yyjson_mut_val *render = yyjson_mut_obj_add_obj(output, root, "render");
+    BongoJsonMutValue *render = bongo_json_mut_obj_add_obj(output, root, "render");
     return render &&
-        yyjson_mut_obj_add_str(output, render, "profile", "mver-0.1.6") &&
-        yyjson_mut_obj_add_bool(output, render, "autoFrame",
+        bongo_json_mut_obj_add_str(output, render, "profile", "mver-0.1.6") &&
+        bongo_json_mut_obj_add_bool(output, render, "autoFrame",
             options.auto_frame) &&
-        yyjson_mut_obj_add_real(output, render, "projectionScale", options.projection_scale) &&
-        yyjson_mut_obj_add_real(output, render, "offsetX", options.offset_x) &&
-        yyjson_mut_obj_add_real(output, render, "offsetY", options.offset_y) &&
-        yyjson_mut_obj_add_int(output, render, "referenceWidth", options.reference_width) &&
-        yyjson_mut_obj_add_int(output, render, "referenceHeight", options.reference_height) &&
-        yyjson_mut_obj_add_bool(output, render, "mirror", options.source_mirror) &&
-        yyjson_mut_obj_add_bool(output, render, "pointerLeftHanded", options.pointer_left_handed) &&
-        yyjson_mut_obj_add_bool(output, render, "mouseForceMove", options.mouse_force_move) &&
-        yyjson_mut_obj_add_real(output, render, "mouseSpeed", options.mouse_speed) &&
-        yyjson_mut_obj_add_bool(output, render, "customPointerBounds", options.custom_pointer_bounds) &&
-        yyjson_mut_obj_add_int(output, render, "pointerLeft", options.pointer_left) &&
-        yyjson_mut_obj_add_int(output, render, "pointerTop", options.pointer_top) &&
-        yyjson_mut_obj_add_int(output, render, "pointerRight", options.pointer_right) &&
-        yyjson_mut_obj_add_int(output, render, "pointerBottom", options.pointer_bottom) &&
+        bongo_json_mut_obj_add_real(output, render, "projectionScale", options.projection_scale) &&
+        bongo_json_mut_obj_add_real(output, render, "offsetX", options.offset_x) &&
+        bongo_json_mut_obj_add_real(output, render, "offsetY", options.offset_y) &&
+        bongo_json_mut_obj_add_int(output, render, "referenceWidth", options.reference_width) &&
+        bongo_json_mut_obj_add_int(output, render, "referenceHeight", options.reference_height) &&
+        bongo_json_mut_obj_add_bool(output, render, "mirror", options.source_mirror) &&
+        bongo_json_mut_obj_add_bool(output, render, "pointerLeftHanded", options.pointer_left_handed) &&
+        bongo_json_mut_obj_add_bool(output, render, "mouseForceMove", options.mouse_force_move) &&
+        bongo_json_mut_obj_add_real(output, render, "mouseSpeed", options.mouse_speed) &&
+        bongo_json_mut_obj_add_bool(output, render, "customPointerBounds", options.custom_pointer_bounds) &&
+        bongo_json_mut_obj_add_int(output, render, "pointerLeft", options.pointer_left) &&
+        bongo_json_mut_obj_add_int(output, render, "pointerTop", options.pointer_top) &&
+        bongo_json_mut_obj_add_int(output, render, "pointerRight", options.pointer_right) &&
+        bongo_json_mut_obj_add_int(output, render, "pointerBottom", options.pointer_bottom) &&
         add_standard_pointer(output, root, config, candidate);
 }
 
-static bool add_native_render(yyjson_mut_doc *output, yyjson_mut_val *root) {
-    yyjson_mut_val *render = yyjson_mut_obj_add_obj(output, root, "render");
-    return render && yyjson_mut_obj_add_str(output, render, "profile", "native");
+static bool add_native_render(BongoJsonMutDoc *output, BongoJsonMutValue *root) {
+    BongoJsonMutValue *render = bongo_json_mut_obj_add_obj(output, root, "render");
+    return render && bongo_json_mut_obj_add_str(output, render, "profile", "native");
 }
 
 bool bongo_cat_import_adapter_metadata(const BongoCatImportCandidate *candidate,
     const char *target, BongoCatError *error) {
-    bool mver = candidate->format != BONGO_CAT_IMPORT_TAURI;
-    yyjson_doc *source = mver ? bongo_cat_json_read_file(candidate->config,
-        YYJSON_READ_JSON5 | YYJSON_READ_ALLOW_INVALID_UNICODE, NULL) : NULL;
-    yyjson_val *config = source ? yyjson_doc_get_root(source) : NULL;
-    yyjson_val *mode = yyjson_obj_get(config, bongo_cat_mode_name(candidate->mode));
+    bool mver = (candidate->format == BONGO_CAT_IMPORT_MVER ||
+        candidate->format == BONGO_CAT_IMPORT_MVER_PATCH);
+    BongoJsonDoc *source = mver ? bongo_cat_json_read_file(candidate->config,
+        BONGO_JSON_READ_JSON5 | BONGO_JSON_READ_ALLOW_INVALID_UNICODE, NULL) : NULL;
+    BongoJsonValue *config = source ? bongo_json_doc_get_root(source) : NULL;
+    BongoJsonValue *mode = bongo_json_obj_get(config, bongo_cat_mode_name(candidate->mode));
     BongoCatMverLabels *labels = mver ? calloc(1, sizeof(*labels)) : NULL;
     if (mver && !labels) {
-        yyjson_doc_free(source);
+        bongo_json_doc_free(source);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate Mver labels");
         return false;
     }
     if (mver) bongo_cat_mver_labels_load(candidate->config,
         bongo_cat_mode_name(candidate->mode), labels);
-    yyjson_mut_doc *output = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val *root = output ? yyjson_mut_obj(output) : NULL;
-    yyjson_mut_val *items = root ? yyjson_mut_obj_add_arr(output, root, "bindings") : NULL;
-    if (output) yyjson_mut_doc_set_root(output, root);
+    BongoJsonMutDoc *output = bongo_json_mut_doc_new(NULL);
+    BongoJsonMutValue *root = output ? bongo_json_mut_obj(output) : NULL;
+    BongoJsonMutValue *items = root ? bongo_json_mut_obj_add_arr(output, root, "bindings") : NULL;
+    if (output) bongo_json_mut_doc_set_root(output, root);
     bool ok = items &&
-        yyjson_mut_obj_add_int(output, root, "schemaVersion",
+        bongo_json_mut_obj_add_int(output, root, "schemaVersion",
             BONGO_CAT_MODEL_ADAPTER_SCHEMA) &&
-        yyjson_mut_obj_add_str(output, root, "kind", "bongo-cat-runtime-adapter") &&
-        yyjson_mut_obj_add_strcpy(output, root, "sourceFormat",
+        bongo_json_mut_obj_add_str(output, root, "kind", "bongo-cat-runtime-adapter") &&
+        bongo_json_mut_obj_add_strcpy(output, root, "sourceFormat",
             format_name(candidate->format));
-    if (ok && mver) ok = yyjson_is_obj(mode) &&
+    if (ok && mver) ok = bongo_json_is_obj(mode) &&
         add_render_profile(output, root, config, candidate) &&
         bongo_cat_mver_add_behaviors(output, items, config, candidate, labels, error) &&
-        bongo_cat_mver_add_audio(output, items, config, yyjson_obj_get(mode, "sounds"),
+        bongo_cat_mver_add_audio(output, items, config, bongo_json_obj_get(mode, "sounds"),
             candidate, labels, target) &&
         bongo_cat_mver_effects(output, items, config, mode, candidate, target);
     else if (ok) ok = add_native_render(output, root);
     if (ok && mver) {
         /* Adapter data describes assets/rendering only. Mver config owns keys. */
-        size_t index, count; yyjson_mut_val *item;
-        yyjson_mut_arr_foreach(items, index, count, item)
-            yyjson_mut_obj_remove_key(item, "shortcut");
+        size_t index, count; BongoJsonMutValue *item;
+        bongo_json_mut_arr_foreach(items, index, count, item)
+            bongo_json_mut_obj_remove_key(item, "shortcut");
     }
     char path[BONGO_CAT_PATH_CAP];
     if (ok) ok = bongo_cat_path_join(path, sizeof(path), target,
         BONGO_CAT_MODEL_ADAPTER_FILE) &&
-        bongo_cat_json_write_file(path, output, YYJSON_WRITE_PRETTY, NULL);
-    yyjson_mut_doc_free(output);
-    yyjson_doc_free(source);
+        bongo_cat_json_write_file(path, output, BONGO_JSON_WRITE_PRETTY, NULL);
+    bongo_json_mut_doc_free(output);
+    bongo_json_doc_free(source);
     bongo_cat_mver_labels_clear(labels); free(labels);
     if (!ok && error && !error->message[0])
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,

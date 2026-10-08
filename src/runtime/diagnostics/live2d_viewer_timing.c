@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool bongo_cat_live2d_viewer_timing(const char *path, int *track,
+bool bongo_cat_model_runtime_viewer_timing(const char *path, int *track,
     int *returning) {
     static const char *track_names[] = {"track-001", "track-002",
         "track-004", "track-008", "track-015", "track-030"};

@@ -63,7 +63,8 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
     const BongoCatRhiPresentOps *ops = &vk->owner->present;
     if (!clear_frame(vk, index) || vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS)
         return false;
-    bool drawn = !ops->draw_frame || ops->draw_frame(ops->hook_user);
+    bool drawn = bongo_cat_rhi_vk_draw_background(vk) &&
+        (!ops->draw_frame || ops->draw_frame(ops->hook_user));
     if (!drawn) {
         /* A failed callback may already have submitted work. Retire it before
            resetting our command buffer and clearing the acquired image. */
@@ -198,6 +199,7 @@ bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
     if (!vk || !info || !vk->device) return false;
     memset(info, 0, sizeof(*info));
     info->backend = BONGO_CAT_RHI_VULKAN;
+    info->vulkan_instance = vk->instance;
     info->vulkan_device = vk->device;
     info->vulkan_physical_device = vk->physical;
     info->vulkan_command_pool = vk->pool;

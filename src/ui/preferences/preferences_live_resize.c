@@ -37,7 +37,7 @@ static bool capture_live(BongoCatPreferences *value) {
         !SDL_GL_MakeCurrent(value->window, value->gl_context))
         return false;
     bool result = bongo_cat_ui_resize_cache_capture(&value->ui);
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     return result;
 }
 
@@ -47,7 +47,7 @@ static bool present_live(BongoCatPreferences *value) {
         return false;
     bool result = bongo_cat_ui_resize_cache_present(&value->ui) &&
         bongo_cat_ui_present(value->window);
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     if (result) bongo_cat_preferences_record_frame(value);
     return result;
 }
@@ -115,12 +115,12 @@ static LRESULT CALLBACK live_resize_proc(HWND window, UINT message,
         if (!value->app->loading_model[0] &&
             SDL_GL_MakeCurrent(value->window, value->gl_context)) {
             bongo_cat_ui_resize_cache_destroy(&value->ui);
-            SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+            bongo_cat_preferences_gl_restore_main(value);
         }
     }
     if (previous_window && previous_context &&
         SDL_GL_GetCurrentContext() != previous_context)
-        SDL_GL_MakeCurrent(previous_window, previous_context);
+        SDL_GL_MakeCurrent(previous_context ? previous_window : NULL, previous_context);
     return result;
 }
 

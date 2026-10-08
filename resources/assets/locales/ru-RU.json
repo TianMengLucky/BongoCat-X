@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "Плагины",
+        "description": "Установите плагины рендеринга и включите нужные движки. Формат модели автоматически определяет движок.",
+        "status": "Состояние",
+        "active": "Используется",
+        "installed": "Установлен",
+        "missing": "Не установлен",
+        "enabled": "Включён",
+        "activeHint": "Нажмите на выбранную модель, чтобы снять выбор перед изменением её плагина.",
+        "remove": "Удалить плагин",
+        "install": "Установить локальный плагин",
+        "saved": "Настройки плагина обновлены",
+        "failed": "Не удалось обновить плагин",
+        "live2dMissing": "Установите и включите Live2D на странице плагинов, затем импортируйте Cubism Core.",
+        "disabled": "Отключён",
+        "liveDescription": "Live2D требует Cubism Core. Если его нет, он импортируется вместе с ZIP.",
+        "inoxDescription": "Модели Inochi2D в формате INP / INX.",
+        "openFolder": "Открыть папку",
+        "drop": "Нажмите или перетащите ZIP плагина",
+        "dropHint": "ZIP или библиотека; отсутствующий Core импортируется из пакета."
+      },
       "title": "Настройки",
       "cat": {
         "title": "Настройки",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Выберите библиотеку Core Cubism или официальный zip-архив Cubism SDK, чтобы включить рендеринг Live2D без перезапуска",
     "live2dCoreImportButton": "Выбрать файл",
     "live2dCoreImportSuccess": "Live2D Cubism Core импортирован: рендеринг Live2D включён",
-    "live2dCoreImportFailed": "Не удалось импортировать Live2D Cubism Core",
+    "live2dCoreImportFailed": "Не удалось импортировать Live2D Cubism Core",
     "live2dCoreRescanFound": "Live2D Core обнаружен и загружен",
     "live2dCoreRescanMissing": "Live2D Core пока не найден в папках live2d",
     "live2dCoreScanning": "Идёт поиск Cubism Core в папках live2d...",

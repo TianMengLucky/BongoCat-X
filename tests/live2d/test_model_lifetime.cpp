@@ -16,7 +16,7 @@ void require(bool condition, const char *message) {
 struct Resources {
     std::vector<GLuint> textures, framebuffers;
 
-    explicit Resources(BongoCatLive2D *runtime) {
+    explicit Resources(BongoCatModelRuntime *runtime) {
         auto *renderer = runtime->model->GetRenderer<
             Csm::Rendering::CubismRenderer_OpenGLES2>();
         const auto &bindings = renderer->GetBindedTextures();
@@ -49,14 +49,19 @@ struct Resources {
             require((glIsTexture(texture) != GL_FALSE) == shared,
                 shared ? "Shared active texture was released" : "Old exclusive texture is still retained");
         }
-        for (GLuint framebuffer : framebuffers)
-            require(!glIsFramebuffer(framebuffer), "Old mask framebuffer is still retained");
+        // Drivers may recycle a deleted framebuffer name for the new renderer.
+        for (GLuint framebuffer : framebuffers) {
+            bool shared = std::find(current.framebuffers.begin(), current.framebuffers.end(),
+                framebuffer) != current.framebuffers.end();
+            require((glIsFramebuffer(framebuffer) != GL_FALSE) == shared,
+                shared ? "Active mask was released" : "Old exclusive mask is still retained");
+        }
         current.check(true);
     }
 };
 
 struct Progress {
-    BongoCatLive2D *runtime;
+    BongoCatModelRuntime *runtime;
     bongo_cat::NativeModel *previous;
     bool completed = false;
     bool preserved = true;
@@ -68,12 +73,12 @@ void loading(void *userdata, float fraction) {
     if (fraction == 1.0f) progress.completed = true;
 }
 
-void replace(BongoCatLive2D *runtime, const char *mode = "standard") {
+void replace(BongoCatModelRuntime *runtime, const char *mode = "standard") {
     Progress progress{runtime, runtime->model};
     BongoCatError error{};
     std::string directory = BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets/models/";
     directory += mode;
-    BongoCatResult result = bongo_cat_live2d_load(runtime, directory.c_str(),
+    BongoCatResult result = bongo_cat_model_runtime_load(runtime, directory.c_str(),
         "cat.model3.json", false, nullptr, loading, &progress, &error);
     require(result == BONGO_CAT_OK, error.message);
     require(progress.completed && progress.preserved,
@@ -88,7 +93,7 @@ struct Target {
         require(target.CreateRenderTarget(size, size), "Cannot create capture target");
     }
     ~Target() { target.DestroyRenderTarget(); }
-    void draw(BongoCatLive2D *runtime) {
+    void draw(BongoCatModelRuntime *runtime) {
         glBindFramebuffer(GL_FRAMEBUFFER, target.GetRenderTexture());
         glViewport(0, 0, size, size);
         glDisable(GL_SCISSOR_TEST);
@@ -96,7 +101,7 @@ struct Target {
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        bongo_cat_live2d_draw(runtime);
+        bongo_cat_model_runtime_draw(runtime);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         require(glGetError() == GL_NO_ERROR, "Model draw failed");
     }
@@ -112,11 +117,11 @@ struct Target {
 
 void model_lifetime() {
     BongoCatError error{};
-    using Runtime = std::unique_ptr<BongoCatLive2D, decltype(&bongo_cat_live2d_destroy)>;
-    Runtime runtime(bongo_cat_live2d_create(BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets",
-        &error), bongo_cat_live2d_destroy);
+    using Runtime = std::unique_ptr<BongoCatModelRuntime, decltype(&bongo_cat_model_runtime_destroy)>;
+    Runtime runtime(bongo_cat_model_runtime_create(BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets",
+        &error), bongo_cat_model_runtime_destroy);
     require(runtime != nullptr, error.message);
-    bongo_cat_live2d_resize(runtime.get(), Target::size, Target::size);
+    bongo_cat_model_runtime_resize(runtime.get(), Target::size, Target::size);
     replace(runtime.get());
 
     // No draw/update/present follows these switches, matching a hidden or
@@ -132,15 +137,15 @@ void model_lifetime() {
 
     auto *active = runtime->model;
     Resources current(runtime.get());
-    require(bongo_cat_live2d_load(runtime.get(),
+    require(bongo_cat_model_runtime_load(runtime.get(),
         BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets/models/standard",
         "missing-lifetime-test.model3.json", false, nullptr, nullptr, nullptr,
         &error) != BONGO_CAT_OK, "Invalid replacement unexpectedly loaded");
     require(runtime->model == active, "Failed replacement discarded the active model");
     current.check(true);
 
-    bongo_cat_live2d_prepare_viewer_audit(runtime.get());
-    bongo_cat_live2d_update(runtime.get(), 1.0f / 60.0f);
+    bongo_cat_model_runtime_prepare_viewer_audit(runtime.get());
+    bongo_cat_model_runtime_update(runtime.get(), 1.0f / 60.0f);
     Target capture;
     capture.draw(runtime.get());
     const auto expected = capture.read();
@@ -154,8 +159,8 @@ void model_lifetime() {
     replace(runtime.get());
     current.check_replaced(Resources(runtime.get()));
     require(capture.read() == expected, "Deleting the previous model changed its submitted frame");
-    bongo_cat_live2d_prepare_viewer_audit(runtime.get());
-    bongo_cat_live2d_update(runtime.get(), 1.0f / 60.0f);
+    bongo_cat_model_runtime_prepare_viewer_audit(runtime.get());
+    bongo_cat_model_runtime_update(runtime.get(), 1.0f / 60.0f);
     capture.draw(runtime.get());
     require(capture.read() == expected, "Replacement frame differs after resource cleanup");
     std::puts("Model lifetime: hidden switches release old textures/masks; failed loads and submitted frames preserved");

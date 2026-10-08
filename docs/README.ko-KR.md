@@ -45,14 +45,14 @@
 
   **Live2D 렌더링 활성화 (둘 중 하나 선택):**
 
-  1. **앱 내 가져오기 (권장)**: *설정 → 모델* 페이지를 열고 *Live2D Core 가져오기*를 클릭한 뒤 `Live2DCubismCore.dll` 또는 공식 Cubism SDK zip 파일을 선택하세요. 재시작 없이 즉시 적용됩니다.
+  1. **앱 내 가져오기 (권장)**: *설정 → 플러그인* 페이지를 열고 *Live2D Core 가져오기*를 클릭한 뒤 `Live2DCubismCore.dll` 또는 공식 Cubism SDK zip 파일을 선택하세요. 재시작 없이 즉시 적용됩니다.
   2. **live2d 폴더에 넣기**: [공식 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에서(Live2D 라이선스에 동의 필요) **Cubism SDK for Native**를 다운로드하여 zip 또는 압축을 푼 `Live2DCubismCore.dll`을 앱 옆 또는 데이터 디렉터리의 `live2d` 폴더에 넣고 앱을 재시작하면 자동으로 인식됩니다.
 
   소스에서 빌드할 때의 전체 SDK 가져오기 절차는 아래 «Live2D / Cubism SDK» 섹션을 참고하세요.
 
 ## 🛠️ 소스 코드로 빌드하기
 
-BongoCat은 CMake를 사용하며, C11 컴파일러, C++17 컴파일러, CMake 3.24 이상, 데스크톱 OpenGL 개발 파일, 그리고 Rust 툴체인(rustup을 통해 설치한 cargo)이 필요합니다. 메모리 안전성이 중요한 파서(SHA-256, 이미지 디코딩, 기여자 피드, 오디오 디코딩)는 `src/rust/bongo-safe` 크레이트에 있으며 Corrosion이 구성 단계에서 빌드합니다. 기본적으로 SDL3, yyjson, stb, miniaudio 및 Nuklear는 구성 단계에서 자동으로 다운로드되므로, 첫 구성 시 네트워크 연결이 필요합니다.
+BongoCat은 CMake를 사용하며, C11 컴파일러, C++17 컴파일러, CMake 3.24 이상, 데스크톱 OpenGL 개발 파일, 그리고 Rust 툴체인(rustup을 통해 설치한 cargo)이 필요합니다. 메모리 안전성이 중요한 파서(SHA-256, 이미지 디코딩, 기여자 피드, 오디오 디코딩)는 `src/rust/bongo-safe` 크레이트에 있으며 Corrosion이 구성 단계에서 빌드합니다. 기본적으로 SDL3, stb, miniaudio 및 Nuklear는 구성 단계에서 자동으로 다운로드되므로, 첫 구성 시 네트워크 연결이 필요합니다.
 
 프로젝트 루트 디렉토리(`CMakeLists.txt`가 있는 디렉토리)에서 다음 명령어를 실행하세요.
 
@@ -105,7 +105,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK (선택 사항 — 설치하지 않아도 빌드 가능)
 
-Live2D Cubism SDK는 사유 소프트웨어이며 이 리포지토리에 **포함되어 있지 않습니다**. 이제 SDK는 **선택 사항**입니다: 기본 빌드(`BONGO_CAT_REQUIRE_CUBISM=OFF`)는 SDK 없이도 구성과 컴파일이 정상적으로 이루어지며, Live2D 렌더링이 없는 진단 백엔드가 생성됩니다. Live2D 렌더러는 바이너리에 컴파일되어 포함되어야 하므로, 런타임에 SDK를 추가한다고 해서 해당 빌드에 Live2D가 생기지는 않습니다 — SDK로 빌드한 바이너리만 런타임 드롭인에 반응합니다. 진단 백엔드는 시작 및 플랫폼 진단 전용입니다. Live2D 렌더링을 지원하도록 빌드하려면 SDK를 수동으로 다운로드하여 가져오세요:
+독점 Cubism SDK는 선택 사항입니다. SDK 없이도 호스트와 Inox2D 플러그인을 빌드할 수 있습니다. 호환 Live2D 플러그인과 별도로 제공한 Cubism Core를 설치하면 호스트를 다시 빌드하지 않고 Live2D를 활성화할 수 있습니다. SDK가 있으면 별도 C++ 플러그인이 생성됩니다.
 
 1. [Cubism SDK 다운로드 페이지](https://www.live2d.com/en/sdk/download/native/)에 접속하여 Live2D 전용 소프트웨어 라이선스 계약에 동의한 뒤 **Cubism SDK for Native**를 다운로드합니다(릴리스는 `5-r.5` SDK 기준으로 빌드 및 테스트됩니다).
 2. 압축을 풉니다. 풀린 폴더 이름이 `CubismSdkForNative-5-r.5`라면 `CubismSdkForNative`로 이름을 바꾸고 `vendor/` 아래에 두어 `Core/`와 `Framework/`가 포함되도록 합니다.
@@ -123,7 +123,7 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 
 > [!TIP]
 > Windows에서는 다시 빌드하지 않고도 Live2D 렌더링을 활성화할 수 있습니다:
-> 앱에서 설정 → 모델 페이지를 연 뒤 «Live2D Core 가져오기»를 클릭하고
+> 앱에서 설정 → 플러그인 페이지를 연 뒤 «Live2D Core 가져오기»를 클릭하고
 > `Live2DCubismCore.dll` 파일 또는 공식 Cubism SDK zip을 선택하세요.
 > 즉시 적용되며 재시작이 필요하지 않습니다.
 
@@ -131,7 +131,7 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 > 이 저장소의 공식 Release 패키지는 runtime-Core 빌드입니다. Live2D 렌더러는 포함되지만
 > Core 런타임은 **번들로 제공되지 않습니다**. 앱은 시작 시 `live2d` 폴더를 확인합니다.
 > `Live2DCubismCore.dll` 또는 공식 SDK zip을 해당 폴더(응용 프로그램 옆이나 데이터
-> 디렉터리 안)에 넣으면 재시작 후 자동으로 인식됩니다. 설정 → 모델 페이지에서
+> 디렉터리 안)에 넣으면 재시작 후 자동으로 인식됩니다. 설정 → 플러그인 페이지에서
 > «Live2D Core 가져오기»를 클릭하면 즉시 활성화할 수도 있습니다. Core를 찾지 못하면
 > 앱은 진단 백엔드로 대체되고 설정 창에 안내가 표시됩니다.
 
@@ -139,12 +139,12 @@ SDK에는 Core 라이브러리, Framework 소스 코드, 그리고 `cmake/Cubism
 
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다(Corrosion 및 Rust crate 종속성 포함). SDL3, yyjson, stb, miniaudio, Nuklear 및 Corrosion을 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | CMake `FetchContent`를 사용하여 고정 버전의 서드파티 종속성을 다운로드합니다(Corrosion 및 Rust crate 종속성 포함). SDL3, stb, miniaudio, Nuklear 및 Corrosion을 CMake에서 이미 사용할 수 있는 경우에만 `OFF`로 설정하세요. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native의 경로입니다. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK가 없을 때 구성을 실패하게 할지 여부입니다. 기본값 `OFF`: SDK가 없으면 Live2D 렌더링이 없는 진단 백엔드를 빌드합니다. SDK를 필수로 요구하려면 `ON`으로 설정하세요(릴리스 CI에서 사용합니다). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 로컬 컴파일러 경고를 오류로 처리합니다. |
 
-오프라인 빌드 시 `BONGO_CAT_FETCH_DEPS=OFF`로 설정하고, SDL3(`SDL3-static` 포함) 및 yyjson의 CMake 패키지 구성을 제공하세요. stb, Nuklear 및 miniaudio를 자동으로 찾을 수 없는 경우 해당 include 디렉토리도 제공해야 합니다:
+오프라인 빌드 시 `BONGO_CAT_FETCH_DEPS=OFF`로 설정하고, SDL3(`SDL3-static` 포함) 의 CMake 패키지 구성을 제공하세요. stb, Nuklear 및 miniaudio를 자동으로 찾을 수 없는 경우 해당 include 디렉토리도 제공해야 합니다:
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -265,7 +265,7 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 지원은 어디까지 진행되었나요?
 
-설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 2D 오버레이, 둥근 모서리와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다.
+설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이, 둥근 모서리와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다. 네이티브 백엔드는 정적인 책상 배경을 캐시하고 밀착 프레임 경계에 포함합니다.
 
 SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용합니다(`glslangValidator` 또는 `glslang`, Linux 패키지 `glslang-tools`; 실행 시 Vulkan 1.3 필요). macOS는 `BONGO_CAT_CUBISM_METAL=ON`과 Xcode Metal 도구를 사용합니다. `OFF`로 해당 확장을 제외할 수 있습니다. Metal 소스와 `.metallib`는 macOS에만, Vulkan 소스와 `.spv`는 Windows / Linux x64에만 혼합 모드 변형과 함께 포함됩니다. SDK 없는 진단 빌드는 이 Live2D 리소스를 제외합니다. GitHub Actions는 플랫폼별 도구를 준비하고 리소스를 확인합니다. 정적 검사를 수행했지만 빌드와 GPU 동작은 아직 검증하지 않았습니다. [통합 현황과 검증](live2d-vulkan-metal.md)을 참조하세요.
 
@@ -287,3 +287,11 @@ SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용�
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### 동적 렌더러 플러그인
+
+설정 → 플러그인에서 로컬 렌더러를 설치, 활성화하거나 제거할 수 있습니다. 사용 중인 플러그인을 변경하려면 먼저 다른 렌더러로 전환하세요. Live2D는 C++ 플러그인을, Inochi2D는 Rust Inox2D 플러그인을 사용하며 OpenGL, Vulkan(Windows/Linux), Metal(macOS)을 지원합니다. wgpu는 사용하지 않습니다. 가져올 때 먼저 모델 내용(`.model3.json`, `.inp`, `.inx`)을 식별합니다. 모든 JSON 읽기와 쓰기는 Rust에서 처리합니다.
+
+Windows 휴대용 배포판은 ZIP 파일입니다. 압축을 푼 `plugins` 폴더를 실행 파일 옆에 두세요. 패키징, 오프라인 의존성, 플러그인 ABI, 매개변수 연결 및 호환성 제한은 [렌더러 플러그인](model-plugins.md)을 참고하세요.
+
+코드, 리소스 또는 빌드 설정을 변경하는 `dev` 푸시마다 GitHub 사전 릴리스가 게시됩니다. 문서만 변경하면 건너뛰며 예약 실행은 없습니다. 모든 플랫폼은 푸시된 커밋을 빌드합니다. 최신 안정 버전은 유지됩니다.

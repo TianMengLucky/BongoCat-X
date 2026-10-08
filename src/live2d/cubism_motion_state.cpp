@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 
 #include <CubismFramework.hpp>
@@ -7,40 +8,40 @@
 #include <cmath>
 #include <cstring>
 #include <utility>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 namespace bongo_cat {
 
-static bool curve_endpoints(yyjson_val *segments, float *start, float *end) {
-    if (!yyjson_is_arr(segments) || yyjson_arr_size(segments) < 2) return false;
-    yyjson_val *first = yyjson_arr_get(segments, 1);
-    yyjson_val *last = yyjson_arr_get(segments, yyjson_arr_size(segments) - 1);
-    if (!yyjson_is_num(first) || !yyjson_is_num(last)) return false;
-    *start = (float)yyjson_get_num(first);
-    *end = (float)yyjson_get_num(last);
+static bool curve_endpoints(BongoJsonValue *segments, float *start, float *end) {
+    if (!bongo_json_is_arr(segments) || bongo_json_arr_size(segments) < 2) return false;
+    BongoJsonValue *first = bongo_json_arr_get(segments, 1);
+    BongoJsonValue *last = bongo_json_arr_get(segments, bongo_json_arr_size(segments) - 1);
+    if (!bongo_json_is_num(first) || !bongo_json_is_num(last)) return false;
+    *start = (float)bongo_json_get_num(first);
+    *end = (float)bongo_json_get_num(last);
     return true;
 }
 
-static bool curve_returns_to_default(yyjson_val *segments, float normal) {
+static bool curve_returns_to_default(BongoJsonValue *segments, float normal) {
     float start = 0.0f, end = 0.0f;
     if (!curve_endpoints(segments, &start, &end) ||
         std::fabs(start - normal) > .0001f ||
         std::fabs(end - normal) > .0001f) return false;
     bool deviates = false;
-    size_t cursor = 2, count = yyjson_arr_size(segments);
+    size_t cursor = 2, count = bongo_json_arr_size(segments);
     while (cursor < count) {
-        yyjson_val *kind_value = yyjson_arr_get(segments, cursor);
-        if (!yyjson_is_int(kind_value) && !yyjson_is_uint(kind_value))
+        BongoJsonValue *kind_value = bongo_json_arr_get(segments, cursor);
+        if (!bongo_json_is_int(kind_value) && !bongo_json_is_uint(kind_value))
             return false;
-        int kind = (int)yyjson_get_int(kind_value);
+        int kind = (int)bongo_json_get_int(kind_value);
         size_t points = kind == 1 ? 3 :
             (kind == 0 || kind == 2 || kind == 3 ? 1 : 0);
         if (!points || cursor + points * 2 >= count) return false;
         for (size_t point = 0; point < points; ++point) {
-            yyjson_val *value = yyjson_arr_get(segments,
+            BongoJsonValue *value = bongo_json_arr_get(segments,
                 cursor + 2 + point * 2);
-            if (!yyjson_is_num(value)) return false;
-            if (std::fabs((float)yyjson_get_num(value) - normal) > .0001f)
+            if (!bongo_json_is_num(value)) return false;
+            if (std::fabs((float)bongo_json_get_num(value) - normal) > .0001f)
                 deviates = true;
         }
         cursor += 1 + points * 2;
@@ -54,21 +55,21 @@ static bool curve_has_state_target(const NativeModel::MotionStateCurve &curve) {
 
 void NativeModel::load_motion_state(const std::string &key, const char *group,
     int motion_index, const std::vector<unsigned char> &bytes) {
-    yyjson_doc *document = yyjson_read(
+    BongoJsonDoc *document = bongo_json_read(
         reinterpret_cast<const char *>(bytes.data()), bytes.size(), 0);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : nullptr;
-    yyjson_val *curves = yyjson_is_obj(root) ? yyjson_obj_get(root, "Curves") : nullptr;
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : nullptr;
+    BongoJsonValue *curves = bongo_json_is_obj(root) ? bongo_json_obj_get(root, "Curves") : nullptr;
     MotionState state; state.group = group ? group : "";
     state.index = motion_index;
     std::vector<std::string> targets;
-    size_t index, count; yyjson_val *curve;
-    if (yyjson_is_arr(curves)) yyjson_arr_foreach(curves, index, count, curve) {
-        const char *target = yyjson_get_str(yyjson_obj_get(curve, "Target"));
-        const char *id = yyjson_get_str(yyjson_obj_get(curve, "Id"));
+    size_t index, count; BongoJsonValue *curve;
+    if (bongo_json_is_arr(curves)) bongo_json_arr_foreach(curves, index, count, curve) {
+        const char *target = bongo_json_get_str(bongo_json_obj_get(curve, "Target"));
+        const char *id = bongo_json_get_str(bongo_json_obj_get(curve, "Id"));
         if (!target || !id) continue;
         targets.push_back(std::string(target) + ":" + id);
         MotionStateCurve value{target, id};
-        yyjson_val *segments = yyjson_obj_get(curve, "Segments");
+        BongoJsonValue *segments = bongo_json_obj_get(curve, "Segments");
         if (std::strcmp(target, "Parameter") == 0) {
             auto handle = Csm::CubismFramework::GetIdManager()->GetId(id);
             value.parameter = _model->GetParameterIndex(handle);
@@ -93,7 +94,7 @@ void NativeModel::load_motion_state(const std::string &key, const char *group,
         if (curve_endpoints(segments, &value.start, &value.end))
             state.curves.push_back(value);
     }
-    if (document) yyjson_doc_free(document);
+    if (document) bongo_json_doc_free(document);
     std::sort(targets.begin(), targets.end());
     targets.erase(std::unique(targets.begin(), targets.end()), targets.end());
     for (const std::string &target : targets)

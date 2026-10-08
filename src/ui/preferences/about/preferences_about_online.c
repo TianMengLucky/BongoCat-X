@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <winhttp.h>
@@ -336,24 +336,24 @@ static bool build_contributors_svg(BongoCatAboutRequest *job, void *client) {
     fetch_buffer json = {0};
     if (!http_get(client, CONTRIBUTORS_HOST, CONTRIBUTORS_PATH,
             &job->cancel, &json)) return false;
-    yyjson_doc *doc = yyjson_read(json.data, json.length, 0);
+    BongoJsonDoc *doc = bongo_json_read(json.data, json.length, 0);
     free(json.data);
-    yyjson_val *root = doc ? yyjson_doc_get_root(doc) : NULL;
-    if (!yyjson_is_arr(root)) {
-        yyjson_doc_free(doc);
+    BongoJsonValue *root = doc ? bongo_json_doc_get_root(doc) : NULL;
+    if (!bongo_json_is_arr(root)) {
+        bongo_json_doc_free(doc);
         return false;
     }
     bool ok = append(job, CONTRIBUTORS_SVG_HEADER,
         sizeof(CONTRIBUTORS_SVG_HEADER) - 1);
-    yyjson_arr_iter iter = yyjson_arr_iter_with(root);
-    yyjson_val *item;
+    BongoJsonArrIter iter = bongo_json_arr_iter_with(root);
+    BongoJsonValue *item;
     int count = 0;
-    while (ok && (item = yyjson_arr_iter_next(&iter)) &&
+    while (ok && (item = bongo_json_arr_iter_next(&iter)) &&
            count < BONGO_ABOUT_CONTRIBUTOR_CAP &&
            !SDL_GetAtomicInt(&job->cancel)) {
-        const char *login = yyjson_get_str(yyjson_obj_get(item, "login"));
-        const char *profile = yyjson_get_str(yyjson_obj_get(item, "html_url"));
-        const char *avatar = yyjson_get_str(yyjson_obj_get(item, "avatar_url"));
+        const char *login = bongo_json_get_str(bongo_json_obj_get(item, "login"));
+        const char *profile = bongo_json_get_str(bongo_json_obj_get(item, "html_url"));
+        const char *avatar = bongo_json_get_str(bongo_json_obj_get(item, "avatar_url"));
         if (!login || !avatar) continue;
         char fallback[128];
         if (!profile || strncmp(profile, "https://", 8)) {
@@ -369,7 +369,7 @@ static bool build_contributors_svg(BongoCatAboutRequest *job, void *client) {
              append(job, "\"/></a>", 7);
         if (ok) count++;
     }
-    yyjson_doc_free(doc);
+    bongo_json_doc_free(doc);
     /* An empty page means the API answered but listed nobody; surface that
        as a failure so the UI shows its retry notice. */
     if (ok && !count) ok = false;

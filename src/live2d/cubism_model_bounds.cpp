@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "model_frame_policy.h"
 
@@ -118,8 +119,8 @@ static float frame_margin(float overflow, float padding) {
 }
 
 void NativeModel::prepare_expression_frame() {
-    frame_ = BongoCatLive2DFrame{};
-    required_frame_ = BongoCatLive2DFrame{};
+    frame_ = BongoCatModelRuntimeFrame{};
+    required_frame_ = BongoCatModelRuntimeFrame{};
     /* A new model starts a fresh observe/shrink/lock tight-frame cycle. */
     tight_observed_ = false;
     tight_observe_frames_ = 0;

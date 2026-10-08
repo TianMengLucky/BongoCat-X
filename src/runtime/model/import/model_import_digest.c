@@ -184,7 +184,8 @@ static bool candidate_placeholder(const BongoCatImportCandidate *candidate,
     /* Identify bundled runtime templates by their rendered Live2D core. Do
        not use aggregate asset stamps here: older releases shipped a popular
        authored skin with the same file counts and byte totals. */
-    if (candidate->format == BONGO_CAT_IMPORT_TAURI) return false;
+    if (candidate->format == BONGO_CAT_IMPORT_TAURI ||
+        candidate->format == BONGO_CAT_IMPORT_INOCHI2D) return false;
     if (bongo_cat_import_mver_stock_model(candidate, cache)) return true;
     if (candidate->format == BONGO_CAT_IMPORT_MVER_PATCH) {
         if (!overrides->files) return true;
@@ -212,10 +213,19 @@ bool bongo_cat_import_candidate_inspect_cached(
     }
     DigestRoot roots[DIGEST_ROOT_CAP] = {0};
     size_t root_count = 0;
-    add_root(roots, &root_count, candidate->directory, "model");
+    if (candidate->format == BONGO_CAT_IMPORT_INOCHI2D) {
+        add_root(roots, &root_count, setting, "model");
+        static const char *const extra[] = { "bongocat.bindings.json", "cover.png", "background.png", "resources" };
+        for (size_t i = 0; i < sizeof(extra) / sizeof(extra[0]); ++i) {
+            char path[BONGO_CAT_PATH_CAP];
+            if (bongo_cat_path_join(path, sizeof(path), candidate->directory, extra[i]) &&
+                (bongo_cat_path_is_file(path) || bongo_cat_path_is_dir(path)))
+                add_root(roots, &root_count, path, extra[i]);
+        }
+    } else add_root(roots, &root_count, candidate->directory, "model");
     if (candidate->format == BONGO_CAT_IMPORT_TAURI)
         add_tauri_preview_roots(candidate, roots, &root_count);
-    else {
+    else if (candidate->format != BONGO_CAT_IMPORT_INOCHI2D) {
         add_root(roots, &root_count, candidate->assets, "assets");
         add_root(roots, &root_count, candidate->overrides, "overrides");
     }

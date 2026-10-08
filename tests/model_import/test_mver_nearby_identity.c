@@ -290,9 +290,15 @@ int test_mver_nearby_identity(void) {
     snprintf(binding->label, sizeof(binding->label), "Custom expression");
     CHECK(bongo_cat_path_rename(source, moved));
     bongo_cat_models_init(&app->models);
-    CHECK(bongo_cat_import_nearby_root(app, moved, &error) ==
-        BONGO_CAT_OK);
+    BongoCatResult moved_result = bongo_cat_import_nearby_root(app, moved, &error);
+    if (moved_result != BONGO_CAT_OK)
+        fprintf(stderr, "Moved nearby import failed: %s\n", error.message);
+    CHECK(moved_result == BONGO_CAT_OK);
     CHECK(app->models.count == 1 && app->models.entries[0].managed);
+    if (moved_result != BONGO_CAT_OK || app->models.count != 1) {
+        free(app);
+        goto cleanup;
+    }
     const char *new_id = app->models.entries[0].id;
     CHECK(strcmp(old_id, new_id) != 0);
     CHECK(strcmp(app->session.active_model_id, old_id) == 0);

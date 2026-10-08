@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
 static void remove_receipt(const char *models_root,
     const BongoCatImportReceipt *receipt) {
     char path[BONGO_CAT_PATH_CAP];
@@ -46,7 +46,7 @@ BongoCatResult bongo_cat_app_import_model(BongoCatApp *app, const char *source,
             bongo_cat_app_forget_behavior_state(app, receipt.ids[i]);
     if (imported_id && bongo_cat_app_select_model(app, imported_id))
         return BONGO_CAT_OK;
-#ifndef BONGO_CAT_HAS_CUBISM
+#ifndef BONGO_CAT_HAS_MODEL_PLUGINS
     const BongoCatModelEntry *entry = imported_id ?
         bongo_cat_models_find(&app->models, imported_id) : NULL;
     if (entry) {
@@ -60,7 +60,7 @@ BongoCatResult bongo_cat_app_import_model(BongoCatApp *app, const char *source,
     bongo_cat_app_refresh_installed_models(app);
     if (previous[0]) bongo_cat_app_select_model(app, previous);
     bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM,
-        "Model import was rolled back because the Live2D model could not be loaded");
+        "Model import was rolled back because the model renderer could not load it");
     return BONGO_CAT_ERROR_CUBISM;
 #endif
 }

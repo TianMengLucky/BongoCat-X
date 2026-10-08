@@ -17,7 +17,7 @@ void bongo_cat_window_snapshot_begin(BongoCatApp *app) {
        shape during gestures as well as HDR presentation. */
     if (bongo_cat_windows_layered_native_hit_test(&app->platform) ||
         bongo_cat_windows_hdr_enabled(app->window)) return;
-    if (!app->window || !app->live2d || !app->session.window.visible ||
+    if (!app->window || !app->model_runtime || !app->session.window.visible ||
         app->startup_visibility_pending || app->window_minimized || app->hover_hidden ||
         app->hover_fade_active ||
         app->settings.window.pass_through ||

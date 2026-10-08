@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "cubism_model_texture.hpp"
 #include "cubism_texture_resolution.hpp"

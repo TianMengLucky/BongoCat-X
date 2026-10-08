@@ -3,6 +3,7 @@
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
 #include "preferences_state.h"
+#include "bongo_cat/model_plugins.h"
 #include "ui_animation.h"
 #include "bongo_cat/memory.h"
 #include "bongo_cat/memory_policy.h"
@@ -89,7 +90,7 @@ static void release_window(BongoCatPreferences *value) {
     value->shown_ns = 0;
     value->fade_started_ns = 0;
     value->fade_closing = false;
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     SDL_GL_SetSwapInterval(1);
     bongo_cat_memory_policy_ui_released();
     bongo_cat_model_memory_ui_state(false, false);
@@ -98,6 +99,10 @@ static void release_window(BongoCatPreferences *value) {
         "window=%d context=%d gl_cleanup=%d context_destroyed=%d cleanup_ms=%.1f",
         value->window != NULL, value->gl_context != NULL, context_ready, context_destroyed,
         (double)(SDL_GetTicksNS() - release_started) / 1000000.0);
+}
+
+void bongo_cat_preferences_release_render_context(BongoCatPreferences *value) {
+    release_window(value);
 }
 
 void bongo_cat_preferences_show(BongoCatPreferences *value) {
@@ -143,37 +148,18 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     value->visible = true;
     bongo_cat_model_memory_ui_state(true, true);
     bongo_cat_about_refresh(value);
-#ifndef BONGO_CAT_HAS_CUBISM
-    /* Diagnostic build: the Cubism SDK was absent from vendor/CubismSdkForNative
-       at build time, so no runtime folder can restore Live2D rendering. Tell
-       the user plainly instead of advertising an import this build lacks. */
-    if (!value->sdk_notice_shown) {
-        value->sdk_notice_shown = true;
-        bongo_cat_preferences_notice_show_anchored(value->app,
-            bongo_cat_i18n_get(value->app->i18n, "native.live2dSdkMissing",
-                "This build does not include Live2D rendering (it was "
-                "compiled without the Cubism SDK): Live2D rendering, "
-                "animation, pointer tracking and cover generation are "
-                "disabled. Use a build with Live2D support, for example the "
-                "official release."),
-            true, SDK_NOTICE_DURATION_MS, true);
-    }
-#elif defined(BONGO_CAT_LIVE2D_CORE_RUNTIME)
-    /* Runtime-Core build: rendering activates once the user supplies the
-       Core library; the live2d folders were created by the startup scan. */
     if (!value->sdk_notice_shown &&
-        !bongo_cat_platform_live2d_core_available()) {
+        !bongo_cat_model_runtime_rendering(value->app->model_runtime) &&
+        bongo_cat_model_runtime_engine(value->app->model_runtime) == BONGO_CAT_MODEL_ENGINE_LIVE2D) {
         value->sdk_notice_shown = true;
+        BongoCatModelPluginInfo plugin;
+        bongo_cat_model_plugin_info(BONGO_CAT_MODEL_ENGINE_LIVE2D, &plugin);
         bongo_cat_preferences_notice_show_anchored(value->app,
-            bongo_cat_i18n_get(value->app->i18n, "native.live2dCoreMissing",
-                "Live2D Cubism Core not found, so Live2D stays disabled "
-                "until it is supplied. Drop Live2DCubismCore.dll or the "
-                "official SDK zip into the live2d folder of the data "
-                "directory and restart — startup picks it up automatically "
-                "— or import it in this window without restarting."),
+            bongo_cat_i18n_get(value->app->i18n,
+                plugin.installed && plugin.enabled ? "native.live2dCoreMissing" : "pages.preference.plugins.live2dMissing",
+                "Install and enable the Live2D renderer on the Plugins page, then supply Cubism Core."),
             true, SDK_NOTICE_DURATION_MS, true);
     }
-#endif
     if (!opening) {
         SDL_StartTextInput(value->window);
         bongo_cat_preferences_live_resize_install(value);
@@ -267,7 +253,7 @@ static void bongo_cat_preferences_close_finish(BongoCatPreferences *value) {
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
     bool about_gl_ready = SDL_GL_MakeCurrent(value->window, value->gl_context);
     bongo_cat_about_clear(value, about_gl_ready);
-    SDL_GL_MakeCurrent(previous_window, previous_context);
+    SDL_GL_MakeCurrent(previous_context ? previous_window : NULL, previous_context);
     bongo_cat_preferences_release_idle_window(value);
     bongo_cat_config_store_flush(value->app);
 }

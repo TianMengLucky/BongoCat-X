@@ -31,8 +31,7 @@ static void draw(BongoCatOverlay *value, GLuint texture,
 
 void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
     if (!value) return;
-#ifndef BONGO_CAT_HAS_CUBISM
-    if (value->composite_dirty) {
+    if (value->composed_cover && value->composite_dirty) {
         value->composite_dirty = false;
         if (value->left || value->right) {
             BongoCatError ignored = {0};
@@ -42,7 +41,6 @@ void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
                 value->clean_paws && value->right, &ignored);
         }
     }
-#endif
     bool active = value->left || value->right;
     draw(value, active && value->composite ? value->composite :
         value->background, mirror, false);
@@ -50,7 +48,8 @@ void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
 
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *value, bool mirror) {
     if (!value) return;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
+    if (value->composed_cover) return;
     draw(value, value->left, mirror, true);
     draw(value, value->right, mirror, true);
 #else
@@ -65,7 +64,7 @@ void bongo_cat_overlay_draw_pointer_before_keys(BongoCatOverlay *value) {
 
 void bongo_cat_overlay_draw_effect(BongoCatOverlay *value, bool mirror) {
     if (!value) return;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     draw(value, value->effect, mirror, true);
 #else
     (void)mirror;

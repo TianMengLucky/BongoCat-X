@@ -1,4 +1,5 @@
 #include "model_import.h"
+#include "model_import_inochi.h"
 #include "mver/model_import_mver.h"
 #include "tauri/model_import_tauri.h"
 #include "bongo_cat/path.h"
@@ -37,6 +38,8 @@ static int compare_candidates(const void *left, const void *right) {
     difference = format_rank(a) - format_rank(b);
     if (difference) return difference;
     difference = strcmp(a->directory, b->directory);
+    if (difference) return difference;
+    difference = strcmp(a->setting, b->setting);
     return difference ? difference : strcmp(a->patch_root, b->patch_root);
 }
 
@@ -64,6 +67,8 @@ bool bongo_cat_import_discover(const char *source,
     BongoCatImportDiscovery *discovery, BongoCatError *error) {
     memset(discovery, 0, sizeof(*discovery));
     seed_source_name(source, discovery);
+    int inochi = bongo_cat_import_inochi_discover(source, discovery, error);
+    if (inochi) return inochi > 0;
     /* Broad package discovery intentionally stays separate from exact probe
        dispatch: Mver may be selected from one of its authored subfolders,
        while Tauri conversion starts only from an owning package root. */
@@ -103,7 +108,7 @@ bool bongo_cat_import_discover(const char *source,
     if (recursive < 0) return false;
     if (!recursive) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
-            "Selected directory contains no valid Live2D model3 JSON");
+            "Selected directory contains no valid Live2D or Inochi2D model");
         return false;
     }
     qsort(discovery->candidates, discovery->count,

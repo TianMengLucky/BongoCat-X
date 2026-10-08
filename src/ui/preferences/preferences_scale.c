@@ -89,7 +89,7 @@ static void discard_window(BongoCatPreferences *value) {
     if (value->window) SDL_DestroyWindow(value->window);
     value->window = NULL;
     value->transparent_window = false;
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
 }
 
 static bool create_window(BongoCatPreferences *value, int width, int height,
@@ -107,6 +107,20 @@ static bool create_window(BongoCatPreferences *value, int width, int height,
 }
 
 bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
+    if (!value->app->gl_context) {
+        /* Native pet renderers have no GL context to share with settings. */
+        SDL_GL_ResetAttributes();
+#ifdef __APPLE__
+        const int major = 4, minor = 1;
+#else
+        const int major = 3, minor = 3;
+#endif
+        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major) ||
+            !SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor) ||
+            !SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) ||
+            !SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) ||
+            !SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8)) return false;
+    }
     SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS |
         SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
     SDL_DisplayID display = SDL_GetPrimaryDisplay();
@@ -182,7 +196,7 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
     SDL_StartTextInput(value->window);
     value->render_dirty = true;
     bongo_cat_preferences_live_resize_install(value);
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     return true;
 }
 
@@ -225,7 +239,7 @@ bool bongo_cat_preferences_scale_event(BongoCatPreferences *value,
     SDL_SyncWindow(value->window);
     bongo_cat_platform_configure_preferences_window(value->window);
     value->live_resize_rendering = was_rendering;
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     value->render_dirty = true;
     SDL_Log("Preferences scale changed: layout %.2f->%.2f raster %.2f->%.2f logical=%.0fx%.0f",
         old_layout, layout_scale, old_raster, raster_scale,

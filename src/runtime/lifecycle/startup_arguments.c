@@ -71,7 +71,7 @@ bool bongo_cat_startup_arguments(BongoCatApp *app, int argc, char **argv,
         else if (strcmp(arg, "--ci-freeze-model") == 0) app->smoke_freeze_model = true;
         else if (strncmp(arg, "--ci-preference-page=", 21) == 0) {
             int page = atoi(arg + 21);
-            if (page >= 0 && page < 4) app->smoke_preference_page = page;
+            if (page >= 0 && page < 5) app->smoke_preference_page = page;
         } else if (strncmp(arg, "--ci-language=", 14) == 0) {
             BongoCatLanguage language;
             if (bongo_cat_language_parse(arg + 14, &language))

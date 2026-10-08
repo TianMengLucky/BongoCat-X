@@ -29,6 +29,8 @@ extern "C" {
 BongoCatResult bongo_cat_image_load(const char *path, BongoCatImage *image, BongoCatError *error);
 bool bongo_cat_image_info(const char *path, int *width, int *height);
 void bongo_cat_image_free(BongoCatImage *image);
+bool bongo_cat_image_resize_rgba_take(BongoCatImage *source, int max_width,
+    int max_height, BongoCatImage *target, BongoCatError *error);
 /* Bounding box of texels with visible alpha, normalized to UV [0,1] with the
    origin at the top-left. False when the file is missing or fully transparent. */
 bool bongo_cat_image_opaque_bounds(const char *path,

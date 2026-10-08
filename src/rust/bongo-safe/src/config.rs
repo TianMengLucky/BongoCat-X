@@ -1,4 +1,4 @@
-//! Configuration JSON over the C ABI, replacing the yyjson-based field
+//! Configuration JSON over the C ABI, replacing the former C parser-based field
 //! readers in `config_io.c` / `config_session_io.c` and the writers in
 //! `config_settings_save.c` / `config_session_io.c`.
 //!
@@ -1023,7 +1023,7 @@ fn write_app(value: &ApplicationPreferences) -> Value {
     let languages = [
         "en-US", "zh-CN", "zh-Hant", "fr-FR", "de-DE", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "es-ES",
     ];
-    let render_backends = ["auto", "opengl", "vulkan"];
+    let render_backends = ["auto", "opengl", "vulkan", "metal"];
     serde_json::json!({
         "launchAtLogin": value.autostart,
         "runAsAdmin": value.run_as_admin,
@@ -1276,15 +1276,14 @@ fn parse_session(bytes: &[u8], session: &mut SessionState) -> Outcome<()> {
     if let Some(active_model) = root.get("activeModelId") {
         let text = match active_model {
             Value::String(text)
-                if !text.is_empty()
-                    && text.len() < ID_CAP
+                if text.len() < ID_CAP
                     && !text.bytes().any(|byte| byte == 0) =>
             {
                 text
             }
             _ => {
                 return Err(Failure::format(
-                    "Session field 'activeModelId' must be a non-empty string within the supported length".to_string(),
+                    "Session field 'activeModelId' must be a string within the supported length".to_string(),
                 ))
             }
         };
@@ -1506,6 +1505,25 @@ pub unsafe extern "C" fn bongo_safe_free_json(json: *mut u8, length: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn metal_backend_survives_settings_serialization() {
+        let app = ApplicationPreferences {
+            autostart: false, run_as_admin: false, tray_visible: true,
+            theme: 0, language: 0, render_backend: 3,
+        };
+        let json = write_app(&app);
+        assert_eq!(json["renderBackend"], "metal");
+        assert_eq!(render_backend_from_name(json["renderBackend"].as_str().unwrap()), Some(3));
+    }
+
+    #[test]
+    fn empty_model_selection_round_trips() {
+        let mut session: SessionState = unsafe { std::mem::zeroed() };
+        assert!(parse_session(br#"{"format":"bongocat/session","schemaVersion":1,"activeModelId":""}"#, &mut session).is_ok());
+        assert_eq!(session.active_model_id[0], 0);
+        assert!(build_session_json(&session).map(|json| json["activeModelId"] == "").unwrap_or(false));
+    }
 
     #[test]
     fn prints_layout_sizes() {

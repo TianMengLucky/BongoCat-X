@@ -48,10 +48,13 @@ void bongo_cat_window_apply(BongoCatApp *app);
 void bongo_cat_window_close(BongoCatApp *app);
 /* Rebuilds window + RHI backend + overlay + Live2D at a frame boundary
    from settings.app.render_backend. Returns false with error on failure. */
+bool bongo_cat_app_rebuild_render_backend_for_model(BongoCatApp *app,
+    const char *model, BongoCatError *error);
 bool bongo_cat_app_rebuild_render_backend(BongoCatApp *app,
     BongoCatError *error);
 /* Hands the active backend's device handles to the Live2D bridge. */
 void attach_rhi_info(BongoCatApp *app);
+bool bongo_cat_app_clear_model(BongoCatApp *app, BongoCatError *error);
 bool bongo_cat_app_render_native(BongoCatApp *app, bool present);
 /* 应用"只在录屏软件里显示"设置 (Windows: DWM 隐藏窗口, 桌面不显示但可采集) */
 void bongo_cat_window_apply_capture_only(BongoCatApp *app);
@@ -133,9 +136,10 @@ void bongo_cat_window_menu_action(BongoCatApp *app, BongoCatMenuAction action);
 bool bongo_cat_window_menu_self_test(BongoCatApp *app);
 bool bongo_cat_window_geometry_self_test(BongoCatApp *app);
 void bongo_cat_window_show_context_menu(BongoCatApp *app);
-void bongo_cat_live2d_audit_run(BongoCatApp *app);
-bool bongo_cat_live2d_visual_audit_run(BongoCatApp *app);
-bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app);
+void bongo_cat_model_runtime_audit_run(BongoCatApp *app);
+bool bongo_cat_model_runtime_audit_render(BongoCatApp *app, int width, int height);
+bool bongo_cat_model_runtime_visual_audit_run(BongoCatApp *app);
+bool bongo_cat_model_runtime_viewer_audit_run(BongoCatApp *app);
 void bongo_cat_frame_audit(BongoCatApp *app, int width, int height);
 void bongo_cat_frame_presentation_prepare(BongoCatApp *app,
     const unsigned char *pixels, int width, int height, bool visible);

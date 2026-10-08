@@ -6,7 +6,7 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 #define NEARBY_CACHE_KIND "bongocat/nearby-model-cache"
 
@@ -32,32 +32,32 @@ static NearbyMarker read_marker(const char *target) {
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), target,
         BONGO_CAT_NEARBY_CACHE_MARKER)) return marker;
-    yyjson_doc *document = bongo_cat_json_read_file(path, 0, NULL);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    if (!root || !yyjson_is_obj(root)) {
-        yyjson_doc_free(document);
+    BongoJsonDoc *document = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    if (!root || !bongo_json_is_obj(root)) {
+        bongo_json_doc_free(document);
         return marker;
     }
-    const char *kind = yyjson_get_str(yyjson_obj_get(root, "kind"));
-    const char *source = yyjson_get_str(yyjson_obj_get(root, "source"));
-    const char *signature = yyjson_get_str(yyjson_obj_get(root, "signature"));
-    const char *identity = yyjson_get_str(yyjson_obj_get(root, "identity"));
-    yyjson_val *adapter_ready = yyjson_obj_get(root, "adapterReady");
-    yyjson_val *placeholder = yyjson_obj_get(root, "placeholder");
-    marker.valid = yyjson_is_obj(root) && kind && source && signature &&
+    const char *kind = bongo_json_get_str(bongo_json_obj_get(root, "kind"));
+    const char *source = bongo_json_get_str(bongo_json_obj_get(root, "source"));
+    const char *signature = bongo_json_get_str(bongo_json_obj_get(root, "signature"));
+    const char *identity = bongo_json_get_str(bongo_json_obj_get(root, "identity"));
+    BongoJsonValue *adapter_ready = bongo_json_obj_get(root, "adapterReady");
+    BongoJsonValue *placeholder = bongo_json_obj_get(root, "placeholder");
+    marker.valid = bongo_json_is_obj(root) && kind && source && signature &&
         digest_valid(signature) && digest_valid(identity) &&
-        yyjson_is_bool(adapter_ready) && yyjson_is_bool(placeholder) &&
-        yyjson_get_int(yyjson_obj_get(root, "schemaVersion")) ==
+        bongo_json_is_bool(adapter_ready) && bongo_json_is_bool(placeholder) &&
+        bongo_json_get_int(bongo_json_obj_get(root, "schemaVersion")) ==
             BONGO_CAT_NEARBY_CACHE_SCHEMA &&
         strcmp(kind, NEARBY_CACHE_KIND) == 0;
     if (marker.valid) {
         snprintf(marker.source, sizeof(marker.source), "%s", source);
         snprintf(marker.signature, sizeof(marker.signature), "%s", signature);
         snprintf(marker.identity, sizeof(marker.identity), "%s", identity);
-        marker.adapter_ready = yyjson_get_bool(adapter_ready);
-        marker.placeholder = yyjson_get_bool(placeholder);
+        marker.adapter_ready = bongo_json_get_bool(adapter_ready);
+        marker.placeholder = bongo_json_get_bool(placeholder);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return marker;
 }
 
@@ -91,25 +91,25 @@ bool bongo_cat_nearby_cached_inspection(const char *target,
 static bool write_marker(const char *target, const char *source,
     const char *signature, const char *identity, BongoCatModelMode mode,
     bool placeholder, bool adapter_ready) {
-    yyjson_mut_doc *document = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val *root = document ? yyjson_mut_obj(document) : NULL;
-    if (document) yyjson_mut_doc_set_root(document, root);
+    BongoJsonMutDoc *document = bongo_json_mut_doc_new(NULL);
+    BongoJsonMutValue *root = document ? bongo_json_mut_obj(document) : NULL;
+    if (document) bongo_json_mut_doc_set_root(document, root);
     char path[BONGO_CAT_PATH_CAP];
-    bool ok = root && yyjson_mut_obj_add_int(document, root, "schemaVersion",
+    bool ok = root && bongo_json_mut_obj_add_int(document, root, "schemaVersion",
             BONGO_CAT_NEARBY_CACHE_SCHEMA) &&
-        yyjson_mut_obj_add_str(document, root, "kind", NEARBY_CACHE_KIND) &&
-        yyjson_mut_obj_add_strcpy(document, root, "source", source) &&
-        yyjson_mut_obj_add_strcpy(document, root, "signature", signature) &&
-        yyjson_mut_obj_add_strcpy(document, root, "identity", identity) &&
-        yyjson_mut_obj_add_bool(document, root, "placeholder", placeholder) &&
-        yyjson_mut_obj_add_bool(document, root, "adapterReady",
+        bongo_json_mut_obj_add_str(document, root, "kind", NEARBY_CACHE_KIND) &&
+        bongo_json_mut_obj_add_strcpy(document, root, "source", source) &&
+        bongo_json_mut_obj_add_strcpy(document, root, "signature", signature) &&
+        bongo_json_mut_obj_add_strcpy(document, root, "identity", identity) &&
+        bongo_json_mut_obj_add_bool(document, root, "placeholder", placeholder) &&
+        bongo_json_mut_obj_add_bool(document, root, "adapterReady",
             adapter_ready) &&
-        yyjson_mut_obj_add_strcpy(document, root, "mode",
+        bongo_json_mut_obj_add_strcpy(document, root, "mode",
             bongo_cat_mode_name(mode)) &&
         bongo_cat_path_join(path, sizeof(path), target,
             BONGO_CAT_NEARBY_CACHE_MARKER) &&
-        bongo_cat_json_write_file(path, document, YYJSON_WRITE_PRETTY, NULL);
-    yyjson_mut_doc_free(document);
+        bongo_cat_json_write_file(path, document, BONGO_JSON_WRITE_PRETTY, NULL);
+    bongo_json_mut_doc_free(document);
     return ok;
 }
 

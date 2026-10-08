@@ -15,7 +15,8 @@ static struct {
     unsigned serial, lines, suppressed;
     uint64_t started_ms, last_sample_ms, settled_ms;
     uint64_t peak_working_set, peak_private;
-    const char *stage, *peak_working_set_stage, *peak_private_stage;
+    /* Plugins can unload before the settled sample; retain owned labels. */
+    char stage[64], peak_working_set_stage[64], peak_private_stage[64];
     BongoCatMemoryUsage current;
 } trace;
 
@@ -25,11 +26,13 @@ static void sample_now(void) {
     if (!trace.available) return;
     if (trace.current.working_set_bytes > trace.peak_working_set) {
         trace.peak_working_set = trace.current.working_set_bytes;
-        trace.peak_working_set_stage = trace.stage;
+        snprintf(trace.peak_working_set_stage, sizeof(trace.peak_working_set_stage),
+            "%s", trace.stage);
     }
     if (trace.current.private_bytes > trace.peak_private) {
         trace.peak_private = trace.current.private_bytes;
-        trace.peak_private_stage = trace.stage;
+        snprintf(trace.peak_private_stage, sizeof(trace.peak_private_stage),
+            "%s", trace.stage);
     }
 }
 
@@ -42,7 +45,7 @@ void bongo_cat_model_memory_sample(void) {
 
 static void log_stage(const char *stage, const char *details, bool force) {
     if (!trace.active) return;
-    trace.stage = stage;
+    snprintf(trace.stage, sizeof(trace.stage), "%s", stage ? stage : "unknown");
     sample_now();
     if (!force && trace.lines >= STAGE_LOG_LIMIT) {
         trace.suppressed++;
@@ -92,7 +95,8 @@ void bongo_cat_model_memory_begin(const char *previous, const char *next,
     trace.active = trace.loading = true;
     trace.serial = ++next_serial;
     trace.started_ms = SDL_GetTicks();
-    trace.peak_working_set_stage = trace.peak_private_stage = "begin";
+    snprintf(trace.peak_working_set_stage, sizeof(trace.peak_working_set_stage), "begin");
+    snprintf(trace.peak_private_stage, sizeof(trace.peak_private_stage), "begin");
     bongo_cat_model_memory_log("begin",
         "version=2 dynamic=%d window=%dx%d previous=%s next=%s",
         dynamic, width, height, previous ? previous : "none",

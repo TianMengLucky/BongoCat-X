@@ -2,6 +2,7 @@
 #include "model_import_path.h"
 #include "model_import_probe.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/safe_ffi.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -59,6 +60,24 @@ BongoCatResult bongo_cat_import_source_directory(const char *source,
             return BONGO_CAT_ERROR_UNSUPPORTED_ARCHIVE;
         }
     }
+    int kind = bongo_safe_model_kind_file(source);
+    if (kind == BONGO_CAT_MODEL_ENGINE_INOX2D || (name && (bongo_cat_import_has_suffix_ci(name, ".inp") ||
+        bongo_cat_import_has_suffix_ci(name, ".inx")))) {
+        char message[256] = {0};
+        if (kind != BONGO_CAT_MODEL_ENGINE_INOX2D ||
+            !bongo_safe_inochi_validate_file(source, message, sizeof(message))) {
+            bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
+                "Invalid Inochi2D model: %s", message[0] ? message : "wrong file contents");
+            return BONGO_CAT_ERROR_FORMAT;
+        }
+        int length = snprintf(directory, capacity, "%s", source);
+        return length >= 0 && (size_t)length < capacity ? BONGO_CAT_OK : BONGO_CAT_ERROR_ARGUMENT;
+    }
+    if (name && bongo_cat_import_has_suffix_ci(name, ".model3.json") &&
+        kind != BONGO_CAT_MODEL_ENGINE_LIVE2D) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT, "File contents are not Live2D model3 JSON");
+        return BONGO_CAT_ERROR_FORMAT;
+    }
     if (name && bongo_cat_import_has_suffix_ci(name, ".moc3"))
         return bongo_cat_import_probe_live2d_owner(source, directory,
             capacity, error);
@@ -69,7 +88,7 @@ BongoCatResult bongo_cat_import_source_directory(const char *source,
         !bongo_cat_import_has_suffix_ci(name, ".model3.json"))) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
             "Select a BongoCat skin file, Mver config.json, image-patch PNG, "
-            "or Live2D .model3.json/.moc3 file");
+            "Live2D .model3.json/.moc3, or Inochi2D .inp/.inx file");
         return BONGO_CAT_ERROR_FORMAT;
     }
     if (bongo_cat_import_parent_path(source, directory, capacity))

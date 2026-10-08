@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static void compatible_keyboard_bindings(void) {
     static const struct { const char *row; const char *shortcut; } cases[] = {
@@ -39,12 +39,12 @@ static void compatible_keyboard_bindings(void) {
         {"[0]", ""}, {"[255]", ""}
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
-        yyjson_doc *doc = yyjson_read(cases[i].row, strlen(cases[i].row), 0);
+        BongoJsonDoc *doc = bongo_json_read(cases[i].row, strlen(cases[i].row), 0);
         char shortcut[BONGO_CAT_SHORTCUT_CAP];
-        CHECK(bongo_cat_mver_keyboard_chord(yyjson_doc_get_root(doc),
+        CHECK(bongo_cat_mver_keyboard_chord(bongo_json_doc_get_root(doc),
             shortcut, sizeof(shortcut)));
         CHECK(!strcmp(shortcut, cases[i].shortcut));
-        yyjson_doc_free(doc);
+        bongo_json_doc_free(doc);
         if (!shortcut[0]) continue;
         char codes[BONGO_CAT_SHORTCUT_CAP];
         CHECK(bongo_cat_mver_shortcut_codes(shortcut, codes, sizeof(codes)));
@@ -53,16 +53,16 @@ static void compatible_keyboard_bindings(void) {
     /* Invalid numbers must not wrap into valid keys, and small buffers fail. */
     const char *invalid[] = {"[4294967361]", "[-1]", "[17,255]"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); ++i) {
-        yyjson_doc *doc = yyjson_read(invalid[i], strlen(invalid[i]), 0);
+        BongoJsonDoc *doc = bongo_json_read(invalid[i], strlen(invalid[i]), 0);
         char shortcut[BONGO_CAT_SHORTCUT_CAP];
-        CHECK(!bongo_cat_mver_keyboard_chord(yyjson_doc_get_root(doc),
+        CHECK(!bongo_cat_mver_keyboard_chord(bongo_json_doc_get_root(doc),
             shortcut, sizeof(shortcut)));
-        yyjson_doc_free(doc);
+        bongo_json_doc_free(doc);
     }
-    yyjson_doc *doc = yyjson_read("[144]", 5, 0);
+    BongoJsonDoc *doc = bongo_json_read("[144]", 5, 0);
     char small[2];
-    CHECK(!bongo_cat_mver_keyboard_chord(yyjson_doc_get_root(doc), small, sizeof(small)));
-    yyjson_doc_free(doc);
+    CHECK(!bongo_cat_mver_keyboard_chord(bongo_json_doc_get_root(doc), small, sizeof(small)));
+    bongo_json_doc_free(doc);
 }
 
 static size_t runtime_binding_count(const BongoCatApp *app) {
@@ -77,32 +77,32 @@ static void large_model_bindings(const char *root, const BongoCatImportCandidate
     char config_path[BONGO_CAT_PATH_CAP], manifest_path[BONGO_CAT_PATH_CAP];
     CHECK(child(config_path, sizeof(config_path), root, "config.json", false));
     CHECK(child(manifest_path, sizeof(manifest_path), candidate->directory, candidate->setting, false));
-    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val *manifest = yyjson_mut_obj(doc);
-    yyjson_mut_doc_set_root(doc, manifest);
-    yyjson_mut_obj_add_int(doc, manifest, "Version", 3);
-    yyjson_mut_val *refs = yyjson_mut_obj_add_obj(doc, manifest, "FileReferences");
-    yyjson_mut_val *expressions = yyjson_mut_obj_add_arr(doc, refs, "Expressions");
+    BongoJsonMutDoc *doc = bongo_json_mut_doc_new(NULL);
+    BongoJsonMutValue *manifest = bongo_json_mut_obj(doc);
+    bongo_json_mut_doc_set_root(doc, manifest);
+    bongo_json_mut_obj_add_int(doc, manifest, "Version", 3);
+    BongoJsonMutValue *refs = bongo_json_mut_obj_add_obj(doc, manifest, "FileReferences");
+    BongoJsonMutValue *expressions = bongo_json_mut_obj_add_arr(doc, refs, "Expressions");
     for (size_t i = 0; i < ACTIONS; ++i) {
-        yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, expressions);
+        BongoJsonMutValue *item = bongo_json_mut_arr_add_obj(doc, expressions);
         char name[32]; snprintf(name, sizeof(name), "Expression-%zu", i);
-        yyjson_mut_obj_add_strcpy(doc, item, "Name", name);
-        yyjson_mut_obj_add_str(doc, item, "File", "expression.json");
+        bongo_json_mut_obj_add_strcpy(doc, item, "Name", name);
+        bongo_json_mut_obj_add_str(doc, item, "File", "expression.json");
     }
     CHECK(bongo_cat_json_write_file(manifest_path, doc, 0, NULL));
-    yyjson_mut_doc_free(doc);
-    doc = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val *config = yyjson_mut_obj(doc);
-    yyjson_mut_doc_set_root(doc, config);
-    yyjson_mut_val *standard = yyjson_mut_obj_add_obj(doc, config, "standard");
-    yyjson_mut_val *keys = yyjson_mut_obj_add_arr(doc, standard, "l2d_expression");
+    bongo_json_mut_doc_free(doc);
+    doc = bongo_json_mut_doc_new(NULL);
+    BongoJsonMutValue *config = bongo_json_mut_obj(doc);
+    bongo_json_mut_doc_set_root(doc, config);
+    BongoJsonMutValue *standard = bongo_json_mut_obj_add_obj(doc, config, "standard");
+    BongoJsonMutValue *keys = bongo_json_mut_obj_add_arr(doc, standard, "l2d_expression");
     for (size_t i = 0; i < ACTIONS; ++i) {
-        yyjson_mut_val *row = yyjson_mut_arr(doc);
-        yyjson_mut_arr_add_int(doc, row, 65);
-        yyjson_mut_arr_add_val(keys, row);
+        BongoJsonMutValue *row = bongo_json_mut_arr(doc);
+        bongo_json_mut_arr_add_int(doc, row, 65);
+        bongo_json_mut_arr_add_val(keys, row);
     }
     CHECK(bongo_cat_json_write_file(config_path, doc, 0, NULL));
-    yyjson_mut_doc_free(doc);
+    bongo_json_mut_doc_free(doc);
     BongoCatApp *app = calloc(1, sizeof(*app));
     CHECK(app != NULL);
     if (!app) return;
@@ -227,7 +227,7 @@ void test_mver_config(void) {
     }
     CHECK(write_text(path, config));
     CHECK(bongo_cat_mver_gamepad_input_mode(candidate.directory) == -1);
-    yyjson_doc *document = yyjson_read(config, strlen(config), YYJSON_READ_JSON5);
+    BongoJsonDoc *document = bongo_json_read(config, strlen(config), BONGO_JSON_READ_JSON5);
     CHECK(document != NULL);
     const BongoCatModelMode modes[] = {
         BONGO_CAT_MODE_STANDARD, BONGO_CAT_MODE_KEYBOARD, BONGO_CAT_MODE_GAMEPAD
@@ -237,21 +237,21 @@ void test_mver_config(void) {
         candidate.gamepad_buttons = modes[i] == BONGO_CAT_MODE_GAMEPAD;
         BongoCatMverLabels labels = {0};
         CHECK(bongo_cat_mver_labels_load(path, bongo_cat_mode_name(modes[i]), &labels));
-        yyjson_mut_doc *output = yyjson_mut_doc_new(NULL);
-        yyjson_mut_val *items = yyjson_mut_arr(output);
-        yyjson_mut_doc_set_root(output, items);
+        BongoJsonMutDoc *output = bongo_json_mut_doc_new(NULL);
+        BongoJsonMutValue *items = bongo_json_mut_arr(output);
+        bongo_json_mut_doc_set_root(output, items);
         BongoCatError error = {0};
         CHECK(bongo_cat_mver_add_behaviors(output, items,
-            yyjson_doc_get_root(document), &candidate, &labels, &error));
-        CHECK(yyjson_mut_arr_size(items) == 3);
+            bongo_json_doc_get_root(document), &candidate, &labels, &error));
+        CHECK(bongo_json_mut_arr_size(items) == 3);
         const char *keys[] = {i == 1 ? "C" : "F13+BracketLeft",
             i == 1 ? "D" : "F13+9", "Backspace"};
         const char *names[] = {i == 1 ? "Keyboard expression" : "Standard expression",
             i == 1 ? "Keyboard motion" : "Standard motion", "Shared lock"};
         for (size_t j = 0; j < 3; ++j) {
-            yyjson_mut_val *item = yyjson_mut_arr_get(items, j);
-            const char *key = yyjson_mut_get_str(yyjson_mut_obj_get(item, "shortcut"));
-            const char *label = yyjson_mut_get_str(yyjson_mut_obj_get(item, "label"));
+            BongoJsonMutValue *item = bongo_json_mut_arr_get(items, j);
+            const char *key = bongo_json_mut_get_str(bongo_json_mut_obj_get(item, "shortcut"));
+            const char *label = bongo_json_mut_get_str(bongo_json_mut_obj_get(item, "label"));
             CHECK(key && strcmp(key, keys[j]) == 0);
             CHECK(label && strcmp(label, names[j]) == 0);
         }
@@ -259,10 +259,10 @@ void test_mver_config(void) {
             const char *sound = bongo_cat_mver_label(&labels, "sounds", 0);
             CHECK(sound && strcmp(sound, "Gamepad sound") == 0);
         }
-        yyjson_mut_doc_free(output);
+        bongo_json_mut_doc_free(output);
         bongo_cat_mver_labels_clear(&labels);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     BongoCatApp *app = calloc(1, sizeof(*app));
     CHECK(app != NULL);
     if (app) {
@@ -340,18 +340,18 @@ void test_mver_config(void) {
             if (strstr(value->id, ":motion:CAT_motion_lock:"))
                 CHECK(!strcmp(value->shortcut, "Control+Alt+F24"));
         }
-        document = bongo_cat_json_read_file(path, YYJSON_READ_JSON5, NULL);
-        yyjson_val *root_value = yyjson_doc_get_root(document);
-        yyjson_val *keys = yyjson_arr_get(yyjson_obj_get(yyjson_obj_get(root_value,
+        document = bongo_cat_json_read_file(path, BONGO_JSON_READ_JSON5, NULL);
+        BongoJsonValue *root_value = bongo_json_doc_get_root(document);
+        BongoJsonValue *keys = bongo_json_arr_get(bongo_json_obj_get(bongo_json_obj_get(root_value,
             "standard"), "l2d_motion_lockhand"), 0);
-        CHECK(yyjson_arr_size(keys) == 3);
-        CHECK(yyjson_get_int(yyjson_arr_get(keys, 0)) == 17);
-        CHECK(yyjson_get_int(yyjson_arr_get(keys, 1)) == 18);
-        CHECK(yyjson_get_int(yyjson_arr_get(keys, 2)) == 135);
-        keys = yyjson_arr_get(yyjson_obj_get(yyjson_obj_get(root_value,
+        CHECK(bongo_json_arr_size(keys) == 3);
+        CHECK(bongo_json_get_int(bongo_json_arr_get(keys, 0)) == 17);
+        CHECK(bongo_json_get_int(bongo_json_arr_get(keys, 1)) == 18);
+        CHECK(bongo_json_get_int(bongo_json_arr_get(keys, 2)) == 135);
+        keys = bongo_json_arr_get(bongo_json_obj_get(bongo_json_obj_get(root_value,
             "keyboard"), "l2d_motion_lockhand"), 0);
-        CHECK(yyjson_get_int(yyjson_arr_get(keys, 0)) == 69);
-        yyjson_doc_free(document);
+        CHECK(bongo_json_get_int(bongo_json_arr_get(keys, 0)) == 69);
+        bongo_json_doc_free(document);
         BongoCatMverLabels preserved = {0};
         CHECK(bongo_cat_mver_labels_load(path, "keyboard", &preserved));
         const char *label = bongo_cat_mver_label(&preserved, "l2d_motion_lockhand", 0);
@@ -374,14 +374,14 @@ void test_mver_config(void) {
         CHECK(child(settings_path, sizeof(settings_path), root, "settings.json", false));
         CHECK(bongo_cat_settings_save(settings_path, &app->settings, &error) == BONGO_CAT_OK);
         document = bongo_cat_json_read_file(settings_path, 0, NULL);
-        yyjson_val *overrides = yyjson_obj_get(yyjson_doc_get_root(document), "behaviorOverrides");
-        CHECK(yyjson_arr_size(overrides) == 0);
-        size_t index, count; yyjson_val *item;
-        yyjson_arr_foreach(overrides, index, count, item) {
-            CHECK(!yyjson_obj_get(item, "shortcut"));
-            CHECK(!yyjson_obj_get(item, "shortcutDisabled"));
+        BongoJsonValue *overrides = bongo_json_obj_get(bongo_json_doc_get_root(document), "behaviorOverrides");
+        CHECK(bongo_json_arr_size(overrides) == 0);
+        size_t index, count; BongoJsonValue *item;
+        bongo_json_arr_foreach(overrides, index, count, item) {
+            CHECK(!bongo_json_obj_get(item, "shortcut"));
+            CHECK(!bongo_json_obj_get(item, "shortcutDisabled"));
         }
-        yyjson_doc_free(document);
+        bongo_json_doc_free(document);
         /* Simulate Mver editing the file while our cached value is stale. */
         CHECK(bongo_cat_mver_config_write_row(path, "standard",
             "l2d_motion_lockhand", 0, "[18,49]", &error));
@@ -395,19 +395,19 @@ void test_mver_config(void) {
     }
     CHECK(bongo_cat_mver_config_write_row(path, "standard", "l2d_motion", 3, "[65]", NULL));
     CHECK(bongo_cat_mver_config_write_row(path, "decoration", "soundClear", -1, "[17,222]", NULL));
-    document = bongo_cat_json_read_file(path, YYJSON_READ_JSON5, NULL);
-    yyjson_val *extended = yyjson_obj_get(yyjson_obj_get(yyjson_doc_get_root(document),
+    document = bongo_cat_json_read_file(path, BONGO_JSON_READ_JSON5, NULL);
+    BongoJsonValue *extended = bongo_json_obj_get(bongo_json_obj_get(bongo_json_doc_get_root(document),
         "standard"), "l2d_motion");
-    CHECK(yyjson_arr_size(extended) == 4);
-    CHECK(yyjson_get_int(yyjson_arr_get(yyjson_arr_get(extended, 1), 0)) == 255);
-    CHECK(yyjson_get_int(yyjson_arr_get(yyjson_arr_get(extended, 3), 0)) == 65);
-    yyjson_doc_free(document);
+    CHECK(bongo_json_arr_size(extended) == 4);
+    CHECK(bongo_json_get_int(bongo_json_arr_get(bongo_json_arr_get(extended, 1), 0)) == 255);
+    CHECK(bongo_json_get_int(bongo_json_arr_get(bongo_json_arr_get(extended, 3), 0)) == 65);
+    bongo_json_doc_free(document);
     CHECK(write_text(path, "{standard:{l2d_motion:null},other:42}"));
     CHECK(bongo_cat_mver_config_write_row(path, "standard", "l2d_motion", 0, "[66]", NULL));
     CHECK(!bongo_cat_mver_config_write_row(path, "standard", "l2d_motion", 0, "[invalid]", NULL));
-    document = bongo_cat_json_read_file(path, YYJSON_READ_JSON5, NULL);
-    CHECK(yyjson_get_int(yyjson_obj_get(yyjson_doc_get_root(document), "other")) == 42);
-    yyjson_doc_free(document);
+    document = bongo_cat_json_read_file(path, BONGO_JSON_READ_JSON5, NULL);
+    CHECK(bongo_json_get_int(bongo_json_obj_get(bongo_json_doc_get_root(document), "other")) == 42);
+    bongo_json_doc_free(document);
     /* Reading authored geometry and editing model keys must leave global
        user preferences and the author's decoration fields independent. */
     static const char authored[] =
@@ -416,7 +416,7 @@ void test_mver_config(void) {
         "l2d_correct:1.25,l2d_offset:[3,-4],mouse_speed:2.5},"
         "standard:{l2d_motion:[[65]]},unrelated:{author:'preserve'}}";
     CHECK(write_text(path, authored));
-    BongoCatLive2DRenderOptions options;
+    BongoCatModelRuntimeRenderOptions options;
     CHECK(bongo_cat_mver_render_read(path, &options));
     CHECK(options.reference_width == 800 && options.reference_height == 400);
     CHECK(options.projection_scale == 1.25f && options.offset_y == -4.0f);

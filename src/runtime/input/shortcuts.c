@@ -14,15 +14,15 @@ static bool hidden_toggle_has_visible_binding(BongoCatApp *app,
     const BongoCatBehaviorEntry *behavior, const char *shortcut) {
     if (!app || !behavior || !shortcut || !shortcut[0] ||
         behavior->kind != BONGO_CAT_BEHAVIOR_MOTION ||
-        bongo_cat_live2d_motion_visible(app->live2d,
+        bongo_cat_model_runtime_motion_visible(app->model_runtime,
             behavior->group, behavior->index)) return false;
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *candidate = &app->behaviors.entries[i];
         if (candidate == behavior ||
             candidate->kind != BONGO_CAT_BEHAVIOR_MOTION ||
-            !bongo_cat_live2d_motion_visible(app->live2d,
+            !bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 candidate->group, candidate->index) ||
-            !bongo_cat_live2d_motion_same_toggle(app->live2d,
+            !bongo_cat_model_runtime_motion_same_toggle(app->model_runtime,
                 behavior->group, behavior->index,
                 candidate->group, candidate->index)) continue;
         const BongoCatBehaviorShortcut *binding =

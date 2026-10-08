@@ -51,9 +51,14 @@ bool bongo_cat_app_set_model_active(BongoCatApp *app, const char *id,
             "Model is not installed: %s", id ? id : "");
         return false;
     }
-    if (!app->settings.model.multiple_pets || !app->session.active_model_id[0])
-        return active ? bongo_cat_app_select_model_with_error(app, id, error)
-            : true;
+    if (!app->settings.model.multiple_pets || !app->session.active_model_id[0]) {
+        if (!active) return !strcmp(app->session.active_model_id, id) ?
+            bongo_cat_app_clear_model(app, error) : true;
+        if (!bongo_cat_app_select_model_with_error(app, id, error)) return false;
+        /* An explicit selection also restores a pet hidden by deselection. */
+        bongo_cat_window_set_visible(app, true);
+        return true;
+    }
     bool primary = !strcmp(app->session.active_model_id, id);
     if (active) {
         if (!bongo_cat_session_add_model(&app->session, id)) {
@@ -63,7 +68,7 @@ bool bongo_cat_app_set_model_active(BongoCatApp *app, const char *id,
             return false;
         }
     } else if (primary) {
-        if (!app->session.additional_model_count) return true;
+        if (!app->session.additional_model_count) return bongo_cat_app_clear_model(app, error);
         char replacement[BONGO_CAT_ID_CAP];
         BongoCatWindowState replacement_window;
         snprintf(replacement, sizeof(replacement), "%s",

@@ -48,11 +48,11 @@ static bool render(BongoCatApp *app, bool present) {
     }
     app->render_retry_ns = 0;
     bongo_cat_window_apply_pending_resize(app);
-    bongo_cat_live2d_set_vertical_flip(app->live2d, app->settings.model.vertical_flip);
-    bongo_cat_live2d_set_mirror(app->live2d, app->settings.model.mirror);
+    bongo_cat_model_runtime_set_vertical_flip(app->model_runtime, app->settings.model.vertical_flip);
+    bongo_cat_model_runtime_set_mirror(app->model_runtime, app->settings.model.mirror);
     bool cover_requested = !present && bongo_cat_model_cover_pending(app);
     bool cover_ready = !cover_requested ||
-        bongo_cat_live2d_prepare_cover_capture(app->live2d);
+        bongo_cat_model_runtime_prepare_cover_capture(app->model_runtime);
     /* Measure the final pose and allocate its frame before clearing/drawing,
        so newly revealed motion geometry is protected on its first frame. */
     bongo_cat_window_update_model_frame(app);
@@ -70,7 +70,7 @@ static bool render(BongoCatApp *app, bool present) {
        canvas is a cropped sub-rect of the window, not the letterbox, so the
        desk/key art must draw through the overlay viewport to stay aligned
        with the pet. */
-    bool content_viewport = bongo_cat_live2d_overlay_viewport(app->live2d,
+    bool content_viewport = bongo_cat_model_runtime_overlay_viewport(app->model_runtime,
         &content_x, &content_y, &content_width, &content_height) &&
         content_width > 0 && content_height > 0;
     if (content_viewport)
@@ -80,7 +80,7 @@ static bool render(BongoCatApp *app, bool present) {
         app->settings.model.mirror);
     glViewport(0, 0, width, height);
     bongo_cat_diagnostics_phase("model-draw");
-    if (app->loaded_model[0]) bongo_cat_live2d_draw(app->live2d);
+    if (app->loaded_model[0]) bongo_cat_model_runtime_draw(app->model_runtime);
     bongo_cat_diagnostics_phase("overlay-draw");
     if (content_viewport)
         glViewport(content_x, content_y, content_width, content_height);
@@ -165,7 +165,7 @@ bool bongo_cat_app_capture_pending_model_cover(BongoCatApp *app) {
         app->loading_model[0] ? app->loading_model : "none",
         app->session.window.visible, app->dirty,
         bongo_cat_app_selected_motion_count(app),
-        bongo_cat_live2d_expression(app->live2d),
+        bongo_cat_model_runtime_expression(app->model_runtime),
         bongo_cat_model_cover_pending_path(app));
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();

@@ -116,6 +116,10 @@ try {
     Remove-Item $msixPath -Force -ErrorAction SilentlyContinue
 
     Copy-Item $ExecutablePath (Join-Path $stagingDirectory "BongoCat.exe")
+    $pluginDirectory = Join-Path (Split-Path -Parent $ExecutablePath) 'plugins'
+    if (Test-Path -LiteralPath $pluginDirectory -PathType Container) {
+        Copy-Item -LiteralPath $pluginDirectory -Destination (Join-Path $stagingDirectory 'plugins') -Recurse
+    }
 
     $manifestTemplate = Get-Content (Join-Path $scriptDirectory "AppxManifest.xml.in") -Raw
     $manifest = $manifestTemplate.Replace("@PACKAGE_VERSION@", $PackageVersion)

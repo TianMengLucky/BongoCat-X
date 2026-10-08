@@ -10,15 +10,15 @@ static const char release_json[] =
     "\"draft\":false,\"prerelease\":false,"
     "\"body\":\"Fixed input and rendering.\","
     "\"assets\":["
-    "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.exe.sha256\","
+    "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.zip.sha256\","
     "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
-    "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.exe.sha256\"},"
+    "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.zip.sha256\"},"
     "{\"name\":\"BongoCat-1.2.3-windows-x64-setup.exe\","
     "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-setup.exe\"},"
-    "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.exe\","
+    "{\"name\":\"BongoCat-1.2.3-windows-x64-portable.zip\","
     "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
-    "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.exe\"}]}";
+    "releases/download/v1.2.3/BongoCat-1.2.3-windows-x64-portable.zip\"}]}";
 
 static const char unix_release_json[] =
     "{\"tag_name\":\"v2.0.0\","
@@ -47,7 +47,7 @@ void test_update(void) {
         &release, &error));
     CHECK(strcmp(release.version, "1.2.3") == 0);
     CHECK(strstr(release.installer_url, "windows-x64-setup.exe") != NULL);
-    CHECK(strstr(release.portable_url, "windows-x64-portable.exe") != NULL);
+    CHECK(strstr(release.portable_url, "windows-x64-portable.zip") != NULL);
     CHECK(strcmp(release.notes, "Fixed input and rendering.") == 0);
 
     CHECK(bongo_cat_update_parse_release(unix_release_json, "linux-x64",

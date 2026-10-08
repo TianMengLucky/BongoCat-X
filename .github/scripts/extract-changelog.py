@@ -21,9 +21,9 @@ SECTION = re.compile(r"^## \[([^\]]+)\][^\n]*\n", re.MULTILINE)
 
 PLATFORMS = [
     ("windows-x64-setup.exe", "Windows x64 安装版"),
-    ("windows-x64-portable.exe", "Windows x64 便携版"),
+    ("windows-x64-portable.zip", "Windows x64 便携版"),
     ("windows-x86-setup.exe", "Windows x86 安装版"),
-    ("windows-x86-portable.exe", "Windows x86 便携版"),
+    ("windows-x86-portable.zip", "Windows x86 便携版"),
     ("macos-arm64.zip", "macOS Apple Silicon"),
     ("macos-x64.zip", "macOS Intel"),
     ("linux-x64.tar.gz", "Linux x64 (tar.gz)"),
@@ -47,15 +47,17 @@ def main() -> None:
     parser.add_argument("--changelog", default="CHANGELOG.md")
     parser.add_argument("--repository", required=True, help="owner/repo")
     parser.add_argument("--output", required=True, help="body file for gh-release")
+    parser.add_argument("--artifact-version", help="Package version when the release tag is a nightly tag")
     args = parser.parse_args()
 
     version = args.tag[1:] if args.tag.startswith("v") else args.tag
     heading, notes = extract_section(
         pathlib.Path(args.changelog).read_text(encoding="utf-8"), version)
 
+    artifact_version = args.artifact_version or version
     links = "\n".join(
         f"- [{label}](https://github.com/{args.repository}/releases/download/"
-        f"{args.tag}/BongoCat-X-{version}-{name})" for name, label in PLATFORMS)
+        f"{args.tag}/BongoCat-X-{artifact_version}-{name})" for name, label in PLATFORMS)
 
     body = (
         f"{notes}\n\n"
@@ -67,10 +69,10 @@ def main() -> None:
         "Cubism Core 运行库（专有授权，不随包分发），**并非**无 Live2D 能力的诊断构建。"
         "检测到 Core 后即可渲染 Live2D 模型；未检测到时回退到诊断后端并在设置窗口提示。\n\n"
         "## 🎭 启用 Live2D 教程 / Enable Live2D\n\n"
-        "1. **应用内导入（推荐 / Recommended）**：打开「设置 → 模型」页，点击"
+        "1. **应用内导入（推荐 / Recommended）**：打开「设置 → 插件」页，点击"
         "「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip "
         "压缩包，导入后立即生效（无需重启）。\n"
-        "   Open *Settings → Models* and click *Import Live2D Core*, then pick a "
+        "   Open *Settings → Plugins* and click *Import Live2D Core*, then pick a "
         "`Live2DCubismCore.dll` or the official Cubism SDK zip. Takes effect "
         "immediately, no restart needed.\n"
         "2. **live2d 文件夹投放 / Drop into the live2d folder**：从 "

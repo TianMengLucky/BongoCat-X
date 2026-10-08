@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('linux-x64', 'macos-x64', 'macos-arm64')][string]$Platform,
     [switch]$SkipSmoke,
-    [switch]$ExpectLive2D
+    [switch]$ExpectLive2D,
+    [switch]$ExpectInox2D
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,12 +33,17 @@ try {
         if ($Platform.StartsWith('macos-')) {
             $executable = Join-Path $root 'BongoCat.app/Contents/MacOS/BongoCat'
             $assets = Join-Path $root 'BongoCat.app/Contents/Resources/assets'
+            $plugins = Join-Path $root 'BongoCat.app/Contents/PlugIns'
+            $licenseRoot = Join-Path $root 'BongoCat.app/Contents/Resources/licenses'
+            $suffix = 'dylib'
         } else {
             $executable = Join-Path $root 'BongoCat'
             $assets = Join-Path $root 'assets'
+            $plugins = Join-Path $root 'plugins'
+            $licenseRoot = Join-Path $root 'licenses'
+            $suffix = 'so'
         }
-        # Build shape is passed in explicitly: builds with Live2D support
-        # must embed the Framework shaders, diagnostic builds must not.
+        # Shaders are embedded inside renderer plugins, rather than loose assets.
         $hasLive2D = $ExpectLive2D.IsPresent
         $required = @($executable) + @(
             'bongocat.png', 'locales/en-US.json',
@@ -45,14 +51,13 @@ try {
             'models/standard/demomodel.moc3',
             'models/standard/demomodel.1024/texture_00.png'
         )
-        if ($hasLive2D) {
-            $required += 'FrameworkShaders/VertShaderSrc.vert',
-                'FrameworkShaders/FragShaderSrc.frag',
-                'FrameworkShaders/VertShaderSrcBlend.vert',
-                'FrameworkShaders/FragShaderSrcBlend.frag'
-        }
         $required = $required | ForEach-Object {
             if ([IO.Path]::IsPathRooted($_)) { $_ } else { Join-Path $assets $_ }
+        }
+        if ($hasLive2D) { $required += Join-Path $plugins "libbongo_live2d.$suffix" }
+        if ($ExpectInox2D) {
+            $required += Join-Path $plugins "libbongo_inox2d.$suffix"
+            $required += Join-Path $licenseRoot 'Inox2D-LICENSE'
         }
         foreach ($path in $required) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or

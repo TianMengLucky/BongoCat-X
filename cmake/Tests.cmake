@@ -1,4 +1,35 @@
 if(BUILD_TESTING)
+  if(TARGET bongo_inox2d-shared)
+    add_executable(bongo_cat_model_plugin_tests tests/model_import/test_model_plugins.c)
+    target_include_directories(bongo_cat_model_plugin_tests PRIVATE tests/support)
+    target_link_libraries(bongo_cat_model_plugin_tests PRIVATE bongo_cat_runtime bongo_cat_warnings)
+    if(MSVC)
+      target_compile_options(bongo_cat_model_plugin_tests PRIVATE /experimental:c11atomics)
+    endif()
+    add_dependencies(bongo_cat_model_plugin_tests bongo_inox2d-shared)
+    add_test(NAME model-plugins COMMAND bongo_cat_model_plugin_tests
+      "$<TARGET_FILE:bongo_inox2d-shared>" "${CMAKE_CURRENT_BINARY_DIR}/plugin-test-data")
+    add_test(NAME plugin-archives COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/model_import/test_plugin_archives.py"
+      --tester "$<TARGET_FILE:bongo_cat_model_plugin_tests>"
+      --plugin "$<TARGET_FILE:bongo_inox2d-shared>" --build "${CMAKE_CURRENT_BINARY_DIR}")
+    set_tests_properties(plugin-archives PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
+    if(WIN32)
+      add_test(NAME inox2d-renderers COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/model_import/test_inochi_render.py"
+        --app "$<TARGET_FILE:bongo_cat>" --build "${CMAKE_CURRENT_BINARY_DIR}")
+      set_tests_properties(inox2d-renderers PROPERTIES RUN_SERIAL TRUE
+        SKIP_RETURN_CODE 77 TIMEOUT 90)
+    endif()
+  endif()
+  if(WIN32 AND TARGET bongo_live2d AND TARGET bongo_inox2d-shared AND BONGO_CAT_CUBISM_VULKAN)
+    add_test(NAME model-renderer-switch COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/model_import/test_renderer_switch.py"
+      --app "$<TARGET_FILE:bongo_cat>" --build "${CMAKE_CURRENT_BINARY_DIR}"
+      --source "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(model-renderer-switch PROPERTIES RUN_SERIAL TRUE
+      SKIP_RETURN_CODE 77 TIMEOUT 150)
+  endif()
   add_executable(bongo_cat_rhi_pixel_tests tests/platform/test_rhi_pixels.c)
   target_include_directories(bongo_cat_rhi_pixel_tests PRIVATE
     src/render/rhi tests/support)
@@ -150,7 +181,7 @@ if(BUILD_TESTING)
     "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include tests/support
     ${BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS})
   target_link_libraries(bongo_cat_hover_fade_tests PRIVATE
-    SDL3::SDL3-static yyjson bongo_cat_warnings)
+    SDL3::SDL3-static bongo_safe bongo_cat_warnings)
   add_test(NAME hover-fade COMMAND bongo_cat_hover_fade_tests)
 
   add_executable(bongo_cat_audio_tests tests/media/test_audio.c)
@@ -281,27 +312,33 @@ if(BUILD_TESTING)
     --import-notice)
 
   if(BONGO_CAT_CUBISM_ENABLED)
+    add_library(bongo_live2d_test_bridge STATIC EXCLUDE_FROM_ALL ${BONGO_CAT_LIVE2D_SOURCES})
+    target_link_libraries(bongo_live2d_test_bridge PUBLIC bongo_cat_runtime Framework bongo_cubism_plugin_shaders)
+    target_include_directories(bongo_live2d_test_bridge PUBLIC src/live2d)
+    foreach(method IN LISTS BONGO_CAT_MODEL_PLUGIN_METHODS)
+      target_compile_definitions(bongo_live2d_test_bridge PUBLIC
+        "bongo_cat_model_runtime_${method}=cubism_runtime_${method}")
+    endforeach()
     add_executable(bongo_cat_core_profile_tests tests/live2d/test_core_profile.cpp)
     target_include_directories(bongo_cat_core_profile_tests PRIVATE src/live2d)
     target_link_libraries(bongo_cat_core_profile_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     add_test(NAME live2d-core-profile COMMAND bongo_cat_core_profile_tests)
     set_tests_properties(live2d-core-profile PROPERTIES TIMEOUT 30)
 
     add_executable(bongo_cat_render_resources_tests tests/live2d/test_render_resources.cpp)
     target_include_directories(bongo_cat_render_resources_tests PRIVATE src/live2d tests/support)
     target_link_libraries(bongo_cat_render_resources_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     add_test(NAME live2d-render-resources COMMAND bongo_cat_render_resources_tests)
     set_tests_properties(live2d-render-resources PROPERTIES TIMEOUT 30)
 
     add_executable(bongo_cat_model_lifetime_tests tests/live2d/test_model_lifetime.cpp)
     target_include_directories(bongo_cat_model_lifetime_tests PRIVATE src/live2d)
     target_link_libraries(bongo_cat_model_lifetime_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     target_compile_definitions(bongo_cat_model_lifetime_tests PRIVATE
       BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-    bongo_cat_stage_cubism_assets(bongo_cat_model_lifetime_tests)
     add_test(NAME live2d-model-lifetime COMMAND bongo_cat_model_lifetime_tests)
     set_tests_properties(live2d-model-lifetime PROPERTIES TIMEOUT 60)
 
@@ -310,20 +347,18 @@ if(BUILD_TESTING)
     target_include_directories(bongo_cat_texture_sharing_tests SYSTEM PRIVATE
       ${BONGO_CAT_STB_INCLUDE_DIR})
     target_link_libraries(bongo_cat_texture_sharing_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     target_compile_definitions(bongo_cat_texture_sharing_tests PRIVATE
       BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-    bongo_cat_stage_cubism_assets(bongo_cat_texture_sharing_tests)
     add_test(NAME live2d-texture-sharing COMMAND bongo_cat_texture_sharing_tests)
     set_tests_properties(live2d-texture-sharing PROPERTIES TIMEOUT 60)
 
     add_executable(bongo_cat_texture_equivalence_tests
       tests/live2d/test_texture_equivalence.cpp)
     target_link_libraries(bongo_cat_texture_equivalence_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     target_compile_definitions(bongo_cat_texture_equivalence_tests PRIVATE
       BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-    bongo_cat_stage_cubism_assets(bongo_cat_texture_equivalence_tests)
     add_test(NAME live2d-texture-equivalence COMMAND bongo_cat_texture_equivalence_tests)
     set_tests_properties(live2d-texture-equivalence PROPERTIES TIMEOUT 180)
     add_executable(bongo_cat_motion_state_tests
@@ -331,7 +366,7 @@ if(BUILD_TESTING)
     target_include_directories(bongo_cat_motion_state_tests PRIVATE
       src/live2d tests/support)
     target_link_libraries(bongo_cat_motion_state_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
+      bongo_live2d_test_bridge bongo_cat_warnings)
     add_test(NAME live2d-motion-state COMMAND bongo_cat_motion_state_tests)
   endif()
 
@@ -415,7 +450,7 @@ if(BUILD_TESTING)
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckMacOSBundleIcon.cmake")
   endif()
 
-  if(BONGO_CAT_RUNTIME_CORE_MODE)
+  if(BONGO_CAT_RUNTIME_CORE_MODE AND BONGO_CAT_CUBISM_ENABLED)
     # Test executables linking bongo_cat_runtime inherit the Cubism Core
     # import of this mode. On Windows delay-load the Core DLL import so every
     # test binary still starts when the user-supplied DLL is absent; on POSIX
@@ -429,18 +464,6 @@ if(BUILD_TESTING)
     if(WIN32)
       set(BONGO_CAT_RUNTIME_CORE_LIBRARY
         "${CUBISM_CORE_PATH}/dll/windows/${CUBISM_WINDOWS_ARCH}/Live2DCubismCore.dll")
-      set(BONGO_CAT_DELAYLOAD_TARGETS ${BONGO_CAT_LIVE2D_TEST_TARGETS}
-        bongo_cat_multi_pet_shortcut_tests bongo_cat_image_filter_tests
-        bongo_cat_image_png_stream_tests bongo_cat_image_texture_cache_tests
-        bongo_cat_image_upload_fallback_tests bongo_cat_overlay_layout_tests
-        bongo_cat_audio_tests bongo_cat_log_policy_tests
-        bongo_cat_mver_import_tests
-        bongo_cat_windows_presentation_tests bongo_cat_windows_capture_tests)
-      foreach(BONGO_CAT_TEST_TARGET IN LISTS BONGO_CAT_DELAYLOAD_TARGETS)
-        target_link_options(${BONGO_CAT_TEST_TARGET} PRIVATE
-          "/DELAYLOAD:Live2DCubismCore.dll")
-        target_link_libraries(${BONGO_CAT_TEST_TARGET} PRIVATE delayimp)
-      endforeach()
     elseif(APPLE)
       set(BONGO_CAT_RUNTIME_CORE_LIBRARY
         "${CUBISM_CORE_PATH}/dll/macos/libLive2DCubismCore.dylib")

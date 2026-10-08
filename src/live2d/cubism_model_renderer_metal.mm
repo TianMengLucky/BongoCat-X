@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #import <Metal/Metal.h>
 #include "cubism_model.hpp"
 #include <Rendering/Metal/CubismRenderer_Metal.hpp>

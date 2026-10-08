@@ -1,6 +1,7 @@
 #include "model_cover.h"
 
 #include "bongo_cat/path.h"
+#include "bongo_cat/image.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -86,6 +87,13 @@ void bongo_cat_model_cover_schedule(BongoCatApp *app,
     if (!bongo_cat_path_join(path, sizeof(path), entry->adapter_directory,
         BONGO_CAT_MODEL_COVER_FILE)) return;
     discard_removed_tasks(app);
+    char source[BONGO_CAT_PATH_CAP];
+    uint64_t cover_size = 0, cover_time = 0, source_time = 0;
+    int width = 0, height = 0;
+    if (bongo_cat_path_file_info(path, &cover_size, &cover_time) && cover_size &&
+        bongo_cat_path_join(source, sizeof(source), entry->directory, entry->setting_file) &&
+        bongo_cat_path_file_info(source, NULL, &source_time) && cover_time >= source_time &&
+        bongo_cat_image_info(path, &width, &height) && width > 0 && height > 0) return;
     for (size_t i = 0; i < app->pending_model_cover_count; ++i) {
         if (strcmp(app->pending_model_cover_ids[i], entry->id) != 0 &&
             strcmp(app->pending_model_cover_paths[i], path) != 0) continue;

@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static bool safe_reference(const char *value) {
     if (!value || !value[0] || value[0] == '/' || value[0] == '\\' ||
@@ -35,35 +35,35 @@ static bool referenced_texture(const char *root, const char *relative) {
     return bongo_cat_image_info(path, NULL, NULL);
 }
 
-static bool optional_reference(const char *root, yyjson_val *refs,
+static bool optional_reference(const char *root, BongoJsonValue *refs,
     const char *name, bool allow_missing) {
-    yyjson_val *value = yyjson_obj_get(refs, name);
+    BongoJsonValue *value = bongo_json_obj_get(refs, name);
     if (!value) return true;
-    const char *relative = yyjson_get_str(value);
+    const char *relative = bongo_json_get_str(value);
     return relative && (allow_missing ? (!relative[0] || safe_reference(relative))
         : referenced_file(root, relative));
 }
 
-static bool behavior_references(const char *root, yyjson_val *refs,
+static bool behavior_references(const char *root, BongoJsonValue *refs,
     bool allow_missing) {
-    yyjson_val *expressions = yyjson_obj_get(refs, "Expressions");
-    if (expressions && !yyjson_is_arr(expressions)) return false;
-    size_t index, count; yyjson_val *item;
-    yyjson_arr_foreach(expressions, index, count, item) {
-        const char *file = yyjson_get_str(yyjson_obj_get(item, "File"));
+    BongoJsonValue *expressions = bongo_json_obj_get(refs, "Expressions");
+    if (expressions && !bongo_json_is_arr(expressions)) return false;
+    size_t index, count; BongoJsonValue *item;
+    bongo_json_arr_foreach(expressions, index, count, item) {
+        const char *file = bongo_json_get_str(bongo_json_obj_get(item, "File"));
         if (!(allow_missing ? safe_reference(file) : referenced_file(root, file)))
             return false;
     }
-    yyjson_val *motions = yyjson_obj_get(refs, "Motions");
-    if (motions && !yyjson_is_obj(motions)) return false;
-    size_t group_index, group_count; yyjson_val *key, *group;
-    yyjson_obj_foreach(motions, group_index, group_count, key, group) {
-        if (!yyjson_is_arr(group)) return false;
-        yyjson_arr_foreach(group, index, count, item) {
-            const char *file = yyjson_get_str(yyjson_obj_get(item, "File"));
+    BongoJsonValue *motions = bongo_json_obj_get(refs, "Motions");
+    if (motions && !bongo_json_is_obj(motions)) return false;
+    size_t group_index, group_count; BongoJsonValue *key, *group;
+    bongo_json_obj_foreach(motions, group_index, group_count, key, group) {
+        if (!bongo_json_is_arr(group)) return false;
+        bongo_json_arr_foreach(group, index, count, item) {
+            const char *file = bongo_json_get_str(bongo_json_obj_get(item, "File"));
             if (!(allow_missing ? safe_reference(file) : referenced_file(root, file)))
                 return false;
-            const char *sound = yyjson_get_str(yyjson_obj_get(item, "Sound"));
+            const char *sound = bongo_json_get_str(bongo_json_obj_get(item, "Sound"));
             if (sound && !(allow_missing && !sound[0]) && !safe_reference(sound))
                 return false;
         }
@@ -72,18 +72,18 @@ static bool behavior_references(const char *root, yyjson_val *refs,
 }
 
 bool bongo_cat_import_manifest_document_valid(const char *root,
-    yyjson_doc *document, bool allow_missing_optional) {
-    yyjson_val *manifest = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *refs = yyjson_is_obj(manifest)
-        ? yyjson_obj_get(manifest, "FileReferences") : NULL;
-    const char *moc = yyjson_get_str(yyjson_obj_get(refs, "Moc"));
-    yyjson_val *textures = yyjson_obj_get(refs, "Textures");
-    bool valid = yyjson_get_int(yyjson_obj_get(manifest, "Version")) == 3 &&
-        yyjson_is_obj(refs) && referenced_file(root, moc) && yyjson_is_arr(textures) &&
-        yyjson_arr_size(textures) > 0;
-    size_t index, maximum; yyjson_val *texture;
-    yyjson_arr_foreach(textures, index, maximum, texture)
-        valid = valid && referenced_texture(root, yyjson_get_str(texture));
+    BongoJsonDoc *document, bool allow_missing_optional) {
+    BongoJsonValue *manifest = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *refs = bongo_json_is_obj(manifest)
+        ? bongo_json_obj_get(manifest, "FileReferences") : NULL;
+    const char *moc = bongo_json_get_str(bongo_json_obj_get(refs, "Moc"));
+    BongoJsonValue *textures = bongo_json_obj_get(refs, "Textures");
+    bool valid = bongo_json_get_int(bongo_json_obj_get(manifest, "Version")) == 3 &&
+        bongo_json_is_obj(refs) && referenced_file(root, moc) && bongo_json_is_arr(textures) &&
+        bongo_json_arr_size(textures) > 0;
+    size_t index, maximum; BongoJsonValue *texture;
+    bongo_json_arr_foreach(textures, index, maximum, texture)
+        valid = valid && referenced_texture(root, bongo_json_get_str(texture));
     valid = valid && optional_reference(root, refs, "Physics", allow_missing_optional) &&
         optional_reference(root, refs, "Pose", allow_missing_optional) &&
         optional_reference(root, refs, "DisplayInfo", allow_missing_optional) &&
@@ -97,10 +97,10 @@ bool bongo_cat_import_manifest_valid(const char *root, const char *setting,
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), root, setting)) return false;
     FILE *file = bongo_cat_file_open(path, "rb");
-    yyjson_doc *document = file ? yyjson_read_fp(file, 0, NULL, NULL) : NULL;
+    BongoJsonDoc *document = file ? bongo_json_read_fp(file, 0, NULL, NULL) : NULL;
     if (file) fclose(file);
     bool valid = bongo_cat_import_manifest_document_valid(root, document, false);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!valid && error) bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
         "Model manifest or referenced assets are invalid: %s", path);
     return valid;

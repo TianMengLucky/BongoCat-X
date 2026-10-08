@@ -1,9 +1,18 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include <Rendering/Vulkan/CubismClass_Vulkan.hpp>
 #include <exception>
 #include <stdexcept>
 
 namespace bongo_cat {
+void release_vulkan_device() {
+    class RendererAccess : public Csm::Rendering::CubismRenderer_Vulkan {
+    public:
+        using CubismRenderer_Vulkan::DoStaticRelease;
+    };
+    RendererAccess::DoStaticRelease();
+}
+
 Csm::Rendering::CubismRenderer *create_vulkan_renderer(
     Csm::csmUint32 width, Csm::csmUint32 height) {
     class Renderer final : public Csm::Rendering::CubismRenderer_Vulkan {

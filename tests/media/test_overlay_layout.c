@@ -26,12 +26,12 @@ static void layout_case(BongoCatOverlay *overlay, const char *root,
     memset(pixels, 255, bytes);
     CHECK(stbi_write_png(background, width, height, 4, pixels, width * 4));
     free(pixels);
-    BongoCatLive2DRenderOptions options = {0};
+    BongoCatModelRuntimeRenderOptions options = {0};
     options.mver_projection = mver;
     options.reference_width = reference_width;
     options.reference_height = reference_height;
     BongoCatError error = {0};
-    CHECK(bongo_cat_overlay_load(overlay, root, true, &options, &error) == BONGO_CAT_OK);
+    CHECK(bongo_cat_overlay_load(overlay, root, true, true, &options, &error) == BONGO_CAT_OK);
     glClear(GL_COLOR_BUFFER_BIT);
     bongo_cat_overlay_draw_background(overlay, false);
     check_pixel(filled);

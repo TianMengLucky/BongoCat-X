@@ -42,7 +42,7 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
         value->render_retry_ns = now + 1000000000ull;
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
             "Preferences GL context could not be activated: %s", SDL_GetError());
-        SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+        bongo_cat_preferences_gl_restore_main(value);
         return;
     }
     value->render_retry_ns = 0;
@@ -101,7 +101,7 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
     value->ui.frame_building = false;
     if (close_requested) {
         nk_clear(&value->ui.context);
-        SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+        bongo_cat_preferences_gl_restore_main(value);
         bongo_cat_preferences_close(value);
         return;
     }
@@ -140,7 +140,7 @@ void bongo_cat_preferences_render(BongoCatPreferences *value) {
         value->render_dirty = true;
         value->render_retry_ns = value->asset_retry_ns;
     }
-    SDL_GL_MakeCurrent(value->app->window, value->app->gl_context);
+    bongo_cat_preferences_gl_restore_main(value);
     bongo_cat_ui_cursor_apply(&value->ui);
     if (value->import_requested && !bongo_cat_preferences_import_is_open(
         value->import_dialog)) {

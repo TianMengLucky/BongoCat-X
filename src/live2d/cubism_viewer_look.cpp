@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_viewer_look.hpp"
 
 #include <CubismFramework.hpp>

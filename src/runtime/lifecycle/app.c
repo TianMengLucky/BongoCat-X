@@ -4,6 +4,7 @@
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/image.h"
 #include "bongo_cat/log.h"
+#include "bongo_cat/model_plugins.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -32,12 +33,12 @@ static void cache_startup_display_fps(BongoCatApp *app) {
    Cubism Vulkan/Metal renderers can drive it (see docs/live2d-vulkan-metal.md). */
 void attach_rhi_info(BongoCatApp *app) {
     BongoCatRhiDeviceInfo info;
-    if (app->live2d && bongo_cat_rhi_get_device_info(&app->rhi, &info))
-        bongo_cat_live2d_set_rhi_info(app->live2d, &info);
+    if (app->model_runtime && bongo_cat_rhi_get_device_info(&app->rhi, &info))
+        bongo_cat_model_runtime_set_rhi_info(app->model_runtime, &info);
 }
 
 static bool load_selected_model(BongoCatApp *app, BongoCatError *error) {
-    if (!app->models.count && !app->secondary_pet) {
+    if ((!app->session.active_model_id[0] || !app->models.count) && !app->secondary_pet) {
         app->startup_visibility_pending = false;
         bongo_cat_window_set_visible(app, false);
         return true;
@@ -75,6 +76,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_shortcut_init(&app->shortcut_state);
     bongo_cat_models_init(&app->models);
     if (!bongo_cat_startup_prepare(app, argc, argv, error)) return false;
+    bongo_cat_model_plugins_set_root(app->data_root);
     bongo_cat_image_set_texture_cache_root(app->cache_root);
     bongo_cat_config_store_load(app);
     if (app->secondary_pet) {
@@ -118,16 +120,11 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_window_apply(app);
     cache_startup_display_fps(app);
     bongo_cat_startup_stage(app, "platform-ready");
-    if (bongo_cat_rhi_live2d_supported(&app->rhi)) {
-        app->live2d = bongo_cat_live2d_create(app->asset_root, error);
-        if (!app->live2d) return false;
-        attach_rhi_info(app);
-    } else {
-        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
-            "No Live2D renderer compiled for %s", bongo_cat_rhi_describe(&app->rhi));
-    }
+    app->model_runtime = bongo_cat_model_runtime_create(app->asset_root, error);
+    if (!app->model_runtime) return false;
+    attach_rhi_info(app);
     optional = (BongoCatError){0};
-    if (bongo_cat_rhi_is_gl(&app->rhi)) app->overlay = bongo_cat_overlay_create(&optional);
+    app->overlay = bongo_cat_overlay_create(&optional);
     if (!app->overlay) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
         "Overlay disabled: %s", optional.message);
     optional = (BongoCatError){0}; app->audio = bongo_cat_audio_create(&optional);
@@ -135,7 +132,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     else bongo_cat_audio_set_enabled(app->audio, true);
     scan_models(app);
     /* Attach the selected device before any textures or renderer are created. */
-    if (app->live2d && !load_selected_model(app, error)) {
+    if (app->model_runtime && !load_selected_model(app, error)) {
         if (bongo_cat_rhi_is_gl(&app->rhi)) return false;
         app->settings.app.render_backend = BONGO_CAT_RENDER_BACKEND_OPENGL;
         if (!bongo_cat_app_rebuild_render_backend(app, error) || !load_selected_model(app, error))
@@ -173,7 +170,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
         !app->session.window.visible) {
         bongo_cat_window_set_visible(app, true);
     }
-    bongo_cat_live2d_audit_run(app);
+    bongo_cat_model_runtime_audit_run(app);
     if (app->smoke_context_menu) bongo_cat_window_show_context_menu(app);
     if (app->smoke_shortcuts && !bongo_cat_app_shortcuts_self_test(app)) {
         BongoCatError shortcut_error = {0};
@@ -197,7 +194,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
             bongo_cat_startup_ci_failure(app, &menu_error);
         }
     }
-    if (app->smoke_preferences || !app->models.count)
+    if (app->smoke_preferences || !app->loaded_model[0])
         bongo_cat_preferences_show(app->preferences);
     app->last_frame_ns = SDL_GetTicksNS();
     app->dirty = true;

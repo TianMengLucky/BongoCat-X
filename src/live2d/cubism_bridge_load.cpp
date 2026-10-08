@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "bongo_cat/model.h"
 #include "bongo_cat/model_memory.h"
 #include "bongo_cat/resource_trace.h"
@@ -13,11 +14,11 @@
 #include <exception>
 #include <new>
 
-extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
+extern "C" BongoCatResult bongo_cat_model_runtime_load_ex(BongoCatModelRuntime *runtime,
     const char *directory, const char *setting, bool preset,
-    const BongoCatLive2DRenderOptions *render_options,
-    const BongoCatLive2DTextureOptions *texture_options,
-    BongoCatLive2DLoadProgress progress, void *userdata,
+    const BongoCatModelRuntimeRenderOptions *render_options,
+    const BongoCatModelRuntimeTextureOptions *texture_options,
+    BongoCatModelRuntimeLoadProgress progress, void *userdata,
     BongoCatError *error) {
     if (!runtime) return BONGO_CAT_ERROR_ARGUMENT;
     const bool gl = runtime->rhi_info.backend == BONGO_CAT_RHI_OPENGL;
@@ -181,11 +182,11 @@ extern "C" BongoCatResult bongo_cat_live2d_load_ex(BongoCatLive2D *runtime,
     return error ? error->code : BONGO_CAT_ERROR_CUBISM;
 }
 
-extern "C" BongoCatResult bongo_cat_live2d_load(BongoCatLive2D *runtime,
+extern "C" BongoCatResult bongo_cat_model_runtime_load(BongoCatModelRuntime *runtime,
     const char *directory, const char *setting, bool preset,
-    const BongoCatLive2DRenderOptions *render_options,
-    BongoCatLive2DLoadProgress progress, void *userdata,
+    const BongoCatModelRuntimeRenderOptions *render_options,
+    BongoCatModelRuntimeLoadProgress progress, void *userdata,
     BongoCatError *error) {
-    return bongo_cat_live2d_load_ex(runtime, directory, setting, preset,
+    return bongo_cat_model_runtime_load_ex(runtime, directory, setting, preset,
         render_options, nullptr, progress, userdata, error);
 }

@@ -51,6 +51,12 @@ bool bongo_cat_rhi_metal_get_device_info(const BongoCatRhi *rhi,
     return false;
 }
 
+bool bongo_cat_rhi_metal_set_background(BongoCatRhi *rhi, const void *pixels,
+    int width, int height, int pitch, uint64_t revision) {
+    (void)rhi; (void)pixels; (void)width; (void)height; (void)pitch; (void)revision;
+    return false;
+}
+
 bool bongo_cat_rhi_metal_get_frame_info(const BongoCatRhi *rhi,
     BongoCatRhiMetalFrameInfo *info) {
     (void)rhi; (void)info;

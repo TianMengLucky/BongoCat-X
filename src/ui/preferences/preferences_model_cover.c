@@ -15,6 +15,7 @@ typedef struct ModelCoverSlot {
     int requested_width;
     int requested_height;
     uint64_t generation;
+    bool reload_pending;
 } ModelCoverSlot;
 
 static ModelCoverSlot cover_cache[BONGO_CAT_MODEL_CAP];
@@ -50,26 +51,10 @@ bool bongo_cat_preferences_model_cover_reload(BongoCatApp *app,
         ModelCoverSlot *slot = &cover_cache[i];
         if (!slot->image.texture || slot->app != app ||
             strcmp(slot->path, path) != 0) continue;
-        int width = 0, height = 0;
-        BongoCatError ignored = {0};
-        unsigned int texture = bongo_cat_image_texture_thumbnail(path,
-            slot->requested_width, slot->requested_height, &width, &height,
-            &ignored);
-        if (!texture) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_RENDER,
-                "Model cover cache reload failed: %s", path);
-            return false;
-        }
-        unsigned int previous = slot->image.texture;
-        slot->image.texture = texture;
-        slot->image.width = width;
-        slot->image.height = height;
-        slot->generation = cover_generation;
-        glDeleteTextures(1, &previous);
-        if (app->preferences)
-            bongo_cat_preferences_invalidate(app->preferences);
-        SDL_Log("Model cover cache reloaded: %s (%dx%d)", path,
-            width, height);
+        /* Capture may run on Vulkan/Metal without any GL context. Defer
+           texture upload/deletion until the settings context draws this slot. */
+        slot->reload_pending = true;
+        if (app->preferences) bongo_cat_preferences_invalidate(app->preferences);
         return true;
     }
     if (app->preferences)
@@ -118,7 +103,7 @@ const BongoCatModelCover *bongo_cat_preferences_model_cover(
         ModelCoverSlot *slot = &cover_cache[i];
         if (slot->image.texture && slot->app == app && !strcmp(slot->path, path)) {
             if (slot->requested_width == pixel_width &&
-                slot->requested_height == pixel_height) {
+                slot->requested_height == pixel_height && !slot->reload_pending) {
                 slot->generation = cover_generation; return &slot->image;
             }
             glDeleteTextures(1, &slot->image.texture);

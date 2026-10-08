@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 int bongo_cat_mver_modifier_index(int code) {
     return code == 16 ? 0 : code == 17 ? 1 : code == 18 ? 2 : -1;
@@ -103,15 +103,15 @@ static const char *shortcut_key(int code, char generated[16]) {
 }
 
 bool bongo_cat_mver_keyboard_chord(void *raw, char *output, size_t capacity) {
-    yyjson_val *row = raw;
+    BongoJsonValue *row = raw;
     if (!output || !capacity) return false;
     output[0] = '\0';
-    if (!yyjson_is_arr(row)) return false;
+    if (!bongo_json_is_arr(row)) return false;
     bool modifiers[3] = {false}, primary = false, meta = false;
-    size_t index, count; yyjson_val *key;
-    yyjson_arr_foreach(row, index, count, key) {
-        if (!yyjson_is_int(key) && !yyjson_is_uint(key)) return false;
-        int64_t raw_code = yyjson_get_sint(key);
+    size_t index, count; BongoJsonValue *key;
+    bongo_json_arr_foreach(row, index, count, key) {
+        if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) return false;
+        int64_t raw_code = bongo_json_get_sint(key);
         if (raw_code < 0 || raw_code > 255) return false;
         int code = (int)raw_code;
         /* Mouse buttons, sided modifiers and disabled rows share the same
@@ -140,23 +140,23 @@ bool bongo_cat_mver_keyboard_chord(void *raw, char *output, size_t capacity) {
         append(output, capacity, key_name);
 }
 
-static bool gamepad_chord(yyjson_val *row, char *output, size_t capacity) {
-    if (!yyjson_is_arr(row) || yyjson_arr_size(row) != 1) return false;
-    yyjson_val *key = yyjson_arr_get_first(row);
-    if (!yyjson_is_int(key) && !yyjson_is_uint(key)) return false;
+static bool gamepad_chord(BongoJsonValue *row, char *output, size_t capacity) {
+    if (!bongo_json_is_arr(row) || bongo_json_arr_size(row) != 1) return false;
+    BongoJsonValue *key = bongo_json_arr_get_first(row);
+    if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) return false;
     BongoCatMverKeyNames names = bongo_cat_mver_gamepad_names(
-        (int)yyjson_get_int(key));
+        (int)bongo_json_get_int(key));
     return names.count && names.items[0] &&
         snprintf(output, capacity, "Gamepad:%s", names.items[0]) > 0;
 }
 
 bool bongo_cat_mver_chord(const BongoCatImportCandidate *candidate,
     void *raw, char *output, size_t capacity) {
-    yyjson_val *row = raw;
-    yyjson_val *only = yyjson_is_arr(row) && yyjson_arr_size(row) == 1
-        ? yyjson_arr_get_first(row) : NULL;
-    int code = (yyjson_is_int(only) || yyjson_is_uint(only))
-        ? (int)yyjson_get_int(only) : -1;
+    BongoJsonValue *row = raw;
+    BongoJsonValue *only = bongo_json_is_arr(row) && bongo_json_arr_size(row) == 1
+        ? bongo_json_arr_get_first(row) : NULL;
+    int code = (bongo_json_is_int(only) || bongo_json_is_uint(only))
+        ? (int)bongo_json_get_int(only) : -1;
     return candidate && candidate->gamepad_buttons && code >= 0 && code <= 15
         ? gamepad_chord(row, output, capacity) :
             bongo_cat_mver_keyboard_chord(row, output, capacity);
@@ -203,13 +203,13 @@ bool bongo_cat_mver_shortcut_codes(const char *shortcut, char *output, size_t ca
 /* Mver's audio uses Windows keys even when its visual mode uses a gamepad.
    Preserve arbitrary chords, modifier-only keys, and mouse buttons. */
 bool bongo_cat_mver_sound_chord(void *raw, char *output, size_t capacity) {
-    yyjson_val *row = raw;
-    if (!output || !capacity || !yyjson_is_arr(row) || !yyjson_arr_size(row)) return false;
+    BongoJsonValue *row = raw;
+    if (!output || !capacity || !bongo_json_is_arr(row) || !bongo_json_arr_size(row)) return false;
     output[0] = '\0';
-    size_t index, count; yyjson_val *key;
-    yyjson_arr_foreach(row, index, count, key) {
-        if (!yyjson_is_int(key) && !yyjson_is_uint(key)) return false;
-        int64_t raw_code = yyjson_get_sint(key);
+    size_t index, count; BongoJsonValue *key;
+    bongo_json_arr_foreach(row, index, count, key) {
+        if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) return false;
+        int64_t raw_code = bongo_json_get_sint(key);
         if (count == 1 && (raw_code == 0 || raw_code == 255)) return true;
         if (raw_code <= 0 || raw_code >= 255) return false;
         int code = (int)raw_code;

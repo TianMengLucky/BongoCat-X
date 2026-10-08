@@ -1,4 +1,5 @@
 #include "model_import.h"
+#include "model_import_inochi.h"
 #include "model_import_path.h"
 #include "model_import_mver_copy.h"
 #include "tauri/model_import_tauri.h"
@@ -10,6 +11,8 @@
 static bool copy_package_files(const BongoCatImportCandidate *candidate,
     const char *target, BongoCatImportCandidate *installed,
     BongoCatError *error) {
+    if (candidate->format == BONGO_CAT_IMPORT_INOCHI2D)
+        return bongo_cat_import_inochi_copy(candidate, target, installed, error);
     if (candidate->format == BONGO_CAT_IMPORT_TAURI)
         return bongo_cat_import_tauri_convert_to_mver(candidate, target,
             installed, error);
@@ -105,6 +108,15 @@ bool bongo_cat_import_prepare_storage(
     for (size_t i = 0; i < discovery->count; ++i)
         tauri = tauri && discovery->candidates[i].format ==
             BONGO_CAT_IMPORT_TAURI;
+    if (discovery->candidates[0].format == BONGO_CAT_IMPORT_INOCHI2D &&
+        single_package_root(discovery)) {
+        for (size_t i = 0; i < discovery->count; ++i) {
+            BongoCatImportCandidate installed;
+            if (!bongo_cat_import_prepare_package(&discovery->candidates[i],
+                target, &installed, error)) return false;
+        }
+        return true;
+    }
     if (!tauri && single_package_root(discovery)) {
         BongoCatImportCandidate installed;
         return bongo_cat_import_prepare_package(&discovery->candidates[0],

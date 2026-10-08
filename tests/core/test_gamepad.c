@@ -12,7 +12,7 @@ static bool south, dpad, keyboard, effect;
 static unsigned shortcut_calls;
 static float left_hand, right_hand;
 
-bool bongo_cat_live2d_set_parameter(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_set_parameter(BongoCatModelRuntime *live2d,
     const char *id, float value) {
     (void)live2d;
     if (!strcmp(id, "CatParamLeftHandDown")) left_hand = value;
@@ -20,7 +20,7 @@ bool bongo_cat_live2d_set_parameter(BongoCatLive2D *live2d,
     return true;
 }
 
-bool bongo_cat_live2d_parameter(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_parameter(BongoCatModelRuntime *live2d,
     const char *id, BongoCatParameterRange *range) {
     (void)live2d; (void)id;
     *range = (BongoCatParameterRange){-1.0f, 1.0f, 0.0f};
@@ -111,7 +111,7 @@ int main(void) {
         SDL_Quit();
         return bongo_cat_test_failures ? 1 : 77;
     }
-    app.live2d = (BongoCatLive2D *)&app;
+    app.model_runtime = (BongoCatModelRuntime *)&app;
     app.loaded_mode = BONGO_CAT_MODE_GAMEPAD;
     BongoCatBehaviorEntry behavior = {
         .kind = BONGO_CAT_BEHAVIOR_EFFECT, .momentary = true};

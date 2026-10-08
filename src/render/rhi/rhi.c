@@ -143,6 +143,16 @@ bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi) {
     }
 }
 
+bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
+    int width, int height, int pitch, uint64_t revision) {
+    if (!rhi) return false;
+    if (rhi->backend == BONGO_CAT_RHI_VULKAN)
+        return bongo_cat_rhi_vk_set_background(rhi, pixels, width, height, pitch, revision);
+    if (rhi->backend == BONGO_CAT_RHI_METAL)
+        return bongo_cat_rhi_metal_set_background(rhi, pixels, width, height, pitch, revision);
+    return false;
+}
+
 bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi) {
     return rhi && (rhi->backend != BONGO_CAT_RHI_VULKAN ||
         bongo_cat_rhi_vk_wait_idle(rhi));

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static bool locale_path(char *output, size_t capacity, const char *root,
     const char *name) {
@@ -47,28 +47,28 @@ static bool locale_encoding_valid(const char *root, const char *name) {
     return valid;
 }
 
-static yyjson_doc *load(const char *root, const char *name) {
+static BongoJsonDoc *load(const char *root, const char *name) {
     char path[BONGO_CAT_PATH_CAP];
     if (!locale_path(path, sizeof(path), root, name)) return NULL;
-    return yyjson_read_file(path, 0, NULL, NULL);
+    return bongo_json_read_file(path, 0, NULL, NULL);
 }
 
-static bool same_shape(yyjson_val *reference, yyjson_val *candidate,
+static bool same_shape(BongoJsonValue *reference, BongoJsonValue *candidate,
     const char *path) {
-    if (!reference || !candidate || yyjson_get_type(reference) != yyjson_get_type(candidate)) {
+    if (!reference || !candidate || bongo_json_get_type(reference) != bongo_json_get_type(candidate)) {
         fprintf(stderr, "Locale mismatch at %s\n", path);
         return false;
     }
-    if (yyjson_is_obj(reference) &&
-        yyjson_obj_size(reference) != yyjson_obj_size(candidate)) {
+    if (bongo_json_is_obj(reference) &&
+        bongo_json_obj_size(reference) != bongo_json_obj_size(candidate)) {
         fprintf(stderr, "Locale key count mismatch at %s\n", path);
         return false;
     }
-    if (!yyjson_is_obj(reference)) return true;
-    size_t index, count; yyjson_val *key, *value;
-    yyjson_obj_foreach(reference, index, count, key, value) {
-        const char *name = yyjson_get_str(key);
-        yyjson_val *next = yyjson_obj_get(candidate, name);
+    if (!bongo_json_is_obj(reference)) return true;
+    size_t index, count; BongoJsonValue *key, *value;
+    bongo_json_obj_foreach(reference, index, count, key, value) {
+        const char *name = bongo_json_get_str(key);
+        BongoJsonValue *next = bongo_json_obj_get(candidate, name);
         char child[BONGO_CAT_PATH_CAP];
         size_t path_length = strlen(path), name_length = strlen(name);
         size_t separator = path_length ? 1 : 0;
@@ -88,7 +88,7 @@ static bool same_shape(yyjson_val *reference, yyjson_val *candidate,
 
 /* i18n_get silently falls back to English, so presence checks must look at
    the locale document itself to be able to report a gap at all. */
-static bool lookup_path(yyjson_val *value, const char *dotted) {
+static bool lookup_path(BongoJsonValue *value, const char *dotted) {
     const char *cursor = dotted;
     while (value && cursor && *cursor) {
         const char *dot = strchr(cursor, '.');
@@ -97,7 +97,7 @@ static bool lookup_path(yyjson_val *value, const char *dotted) {
         if (!length || length >= sizeof(part)) return false;
         memcpy(part, cursor, length);
         part[length] = '\0';
-        value = yyjson_is_obj(value) ? yyjson_obj_get(value, part) : NULL;
+        value = bongo_json_is_obj(value) ? bongo_json_obj_get(value, part) : NULL;
         cursor = dot ? dot + 1 : NULL;
     }
     return value != NULL;
@@ -126,36 +126,36 @@ static uint32_t next_utf8(const unsigned char **cursor) {
     return point;
 }
 
-static bool covers_value(const uint32_t *ranges, yyjson_val *value) {
-    if (yyjson_is_str(value)) {
-        const unsigned char *text = (const unsigned char *)yyjson_get_str(value);
+static bool covers_value(const uint32_t *ranges, BongoJsonValue *value) {
+    if (bongo_json_is_str(value)) {
+        const unsigned char *text = (const unsigned char *)bongo_json_get_str(value);
         while (*text) {
             uint32_t point = next_utf8(&text);
             if (point >= 0x20 && !includes(ranges, point)) return false;
         }
-    } else if (yyjson_is_arr(value)) {
-        size_t index, count; yyjson_val *item;
-        yyjson_arr_foreach(value, index, count, item)
+    } else if (bongo_json_is_arr(value)) {
+        size_t index, count; BongoJsonValue *item;
+        bongo_json_arr_foreach(value, index, count, item)
             if (!covers_value(ranges, item)) return false;
-    } else if (yyjson_is_obj(value)) {
-        size_t index, count; yyjson_val *key, *item;
-        yyjson_obj_foreach(value, index, count, key, item)
+    } else if (bongo_json_is_obj(value)) {
+        size_t index, count; BongoJsonValue *key, *item;
+        bongo_json_obj_foreach(value, index, count, key, item)
             if (!covers_value(ranges, item)) return false;
     }
     return true;
 }
 
-static bool contains_replacement(yyjson_val *value) {
-    if (yyjson_is_str(value)) {
-        const unsigned char *text = (const unsigned char *)yyjson_get_str(value);
+static bool contains_replacement(BongoJsonValue *value) {
+    if (bongo_json_is_str(value)) {
+        const unsigned char *text = (const unsigned char *)bongo_json_get_str(value);
         while (*text) if (next_utf8(&text) == 0xfffd) return true;
-    } else if (yyjson_is_arr(value)) {
-        size_t index, count; yyjson_val *item;
-        yyjson_arr_foreach(value, index, count, item)
+    } else if (bongo_json_is_arr(value)) {
+        size_t index, count; BongoJsonValue *item;
+        bongo_json_arr_foreach(value, index, count, item)
             if (contains_replacement(item)) return true;
-    } else if (yyjson_is_obj(value)) {
-        size_t index, count; yyjson_val *key, *item;
-        yyjson_obj_foreach(value, index, count, key, item)
+    } else if (bongo_json_is_obj(value)) {
+        size_t index, count; BongoJsonValue *key, *item;
+        bongo_json_obj_foreach(value, index, count, key, item)
             if (contains_replacement(item)) return true;
     }
     return false;
@@ -165,7 +165,7 @@ int main(void) {
     char root[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(root, sizeof(root), BONGO_CAT_NATIVE_SOURCE_DIR,
         "resources/assets/locales")) return 1;
-    yyjson_doc *reference = load(root, "zh-CN");
+    BongoJsonDoc *reference = load(root, "zh-CN");
     if (!reference) return 1;
     const char *required_ui_keys[] = {
         "pages.preference.general.labels.runAsAdmin",
@@ -196,17 +196,17 @@ int main(void) {
             fprintf(stderr, "Invalid UTF-8 locale encoding: %s\n", name);
             return 8;
         }
-        yyjson_doc *document = load(root, name);
+        BongoJsonDoc *document = load(root, name);
         if (!document) {
             fprintf(stderr, "Cannot load locale: %s\n", name);
             return 1;
         }
-        if (contains_replacement(yyjson_doc_get_root(document))) {
+        if (contains_replacement(bongo_json_doc_get_root(document))) {
             fprintf(stderr, "Invalid replacement character in locale: %s\n", name);
             return 2;
         }
-        if (!same_shape(yyjson_doc_get_root(reference),
-                yyjson_doc_get_root(document), "")) {
+        if (!same_shape(bongo_json_doc_get_root(reference),
+                bongo_json_doc_get_root(document), "")) {
             if (canonical) return 2;
             fprintf(stderr, "Warning: locale %s does not match the zh-CN key "
                 "shape; missing entries fall back to English\n", name);
@@ -216,13 +216,13 @@ int main(void) {
         uint32_t ranges[2048];
         if (!i18n || bongo_cat_i18n_glyph_ranges(i18n, ranges, 2048) < 3 ||
             ranges[0] != 0x20 || !includes(ranges, expected[language]) ||
-            !covers_value(ranges, yyjson_doc_get_root(document))) {
+            !covers_value(ranges, bongo_json_doc_get_root(document))) {
             fprintf(stderr, "Missing U+%04X for %s\n", expected[language], name);
             return 3;
         }
         for (size_t i = 0; i < sizeof(required_ui_keys) /
             sizeof(required_ui_keys[0]); ++i) {
-            if (lookup_path(yyjson_doc_get_root(document),
+            if (lookup_path(bongo_json_doc_get_root(document),
                     required_ui_keys[i])) continue;
             if (canonical) {
                 fprintf(stderr, "Missing required translation %s for %s\n",
@@ -233,7 +233,7 @@ int main(void) {
                 name, required_ui_keys[i]);
         }
         bongo_cat_i18n_destroy(i18n);
-        yyjson_doc_free(document);
+        bongo_json_doc_free(document);
     }
     BongoCatError error = {0};
     BongoCatI18n *all = bongo_cat_i18n_create(root,
@@ -246,14 +246,14 @@ int main(void) {
     for (size_t i = 0; i < sizeof(menu_points) / sizeof(menu_points[0]); ++i)
         if (!includes(all_ranges, menu_points[i])) return 5;
     for (int language = 0; language < BONGO_CAT_LANG_COUNT; ++language) {
-        yyjson_doc *document = load(root,
+        BongoJsonDoc *document = load(root,
             bongo_cat_language_name((BongoCatLanguage)language));
-        if (!document || !covers_value(all_ranges, yyjson_doc_get_root(document)))
+        if (!document || !covers_value(all_ranges, bongo_json_doc_get_root(document)))
             return 6;
-        yyjson_doc_free(document);
+        bongo_json_doc_free(document);
     }
     bongo_cat_i18n_destroy(all);
-    yyjson_doc_free(reference);
+    bongo_json_doc_free(reference);
     puts("i18n smoke passed");
     return 0;
 }

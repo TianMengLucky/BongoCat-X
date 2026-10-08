@@ -1,9 +1,7 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "cubism_texture_resolution.hpp"
-extern "C" {
-#include "../media/image_internal.h"
-}
 #include <SDL3/SDL_log.h>
 #include <cstring>
 #include <memory>
@@ -41,7 +39,7 @@ void NativeModel::set_rhi_info(const BongoCatRhiDeviceInfo &info) {
 const BongoCatRhiDeviceInfo &NativeModel::rhi_info() const { return rhi_info_; }
 
 bool NativeModel::load_textures_native(BongoCatError *error,
-    BongoCatLive2DLoadProgress progress, void *userdata, int display_width, int display_height) {
+    BongoCatModelRuntimeLoadProgress progress, void *userdata, int display_width, int display_height) {
     release_render_resources();
     int count = setting_->GetTextureCount();
     native_alpha_.resize((size_t)count);
@@ -137,9 +135,10 @@ void NativeModel::native_projection(Csm::CubismMatrix44 &projection) {
         m[0] /= sx; m[4] /= sx; m[12] = (m[12] - frame_.right + frame_.left) / sx;
         m[1] /= sy; m[5] /= sy; m[13] = (m[13] - frame_.top + frame_.bottom) / sy;
     } else apply_viewport_projection(projection);
+    if (tight) update_tight_frame(projection);
 }
-void NativeModel::native_visual_state(const Csm::CubismMatrix44 &projection) {
-    visual_state_ = BongoCatLive2DVisualState{};
+void NativeModel::native_visual_state(Csm::CubismMatrix44 &projection) {
+    visual_state_ = BongoCatModelRuntimeVisualState{};
     visual_state_.fit_scale = frame_fit_scale_;
     visual_state_.fitted = frame_fit_scale_ < 0.9999f;
     visual_state_.mver_projection = render_options_.mver_projection;

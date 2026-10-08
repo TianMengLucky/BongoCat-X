@@ -6,24 +6,18 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
 #include "windows_live2d_sdk.h"
-
 #include <SDL3/SDL.h>
 #include <windows.h>
-
 #ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
-#include <delayimp.h>
 #include <miniz.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-
 #define REGISTRY_KEY L"Software\\BongoCat\\Live2D"
 #define REGISTRY_VALUE L"CoreDll"
-
 static HMODULE core_module;
 static bool attempted;
-
 static wchar_t *wide_from_utf8(const char *text) {
     int size = MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
     if (size <= 0) return NULL;
@@ -43,24 +37,8 @@ static char *utf8_from_wide(const wchar_t *text) {
     return narrow;
 }
 
-/* A delay-load failure means the located DLL does not match the Core the
-   framework was compiled against; log it instead of crashing. */
-static FARPROC WINAPI delay_load_failure_hook(unsigned notify,
-    PDelayLoadInfo info) {
-    if (notify == dliFailLoadLib && info)
-        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM,
-            "[live2d] Cannot load %s (error %lu)", info->szDll,
-            (unsigned long)info->dwLastError);
-    else if (notify == dliFailGetProc && info)
-        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM,
-            "[live2d] Core DLL misses %s", info->dlp.szProcName);
-    return NULL;
-}
-const PfnDliHook __pfnDliFailureHook2 = delay_load_failure_hook;
-
 static bool try_load(const wchar_t *path) {
-    const char *(WINAPI *version)(void);
-    const char *text;
+    unsigned int (__cdecl *version)(void);
     if (core_module) return true;
     if (!path) return false;
     core_module = LoadLibraryW(path);
@@ -70,11 +48,13 @@ static bool try_load(const wchar_t *path) {
             (unsigned long)GetLastError());
         return false;
     }
-    version = (const char *(WINAPI *)(void))(void *)
-        GetProcAddress(core_module, "csmVersion");
-    text = version ? version() : NULL;
-    SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM, "[live2d] Cubism Core loaded (%s)",
-        text ? text : "version unknown");
+    version = (unsigned int (__cdecl *)(void))(void *)GetProcAddress(core_module, "csmGetVersion");
+    if (!version || !GetProcAddress(core_module, "csmReviveMocInPlace") ||
+        !GetProcAddress(core_module, "csmInitializeModelInPlace")) {
+        FreeLibrary(core_module); core_module = NULL;
+        return false;
+    }
+    SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM, "[live2d] Cubism Core loaded (version %u)", version());
     return true;
 }
 
@@ -145,7 +125,7 @@ static int select_core_entry(mz_zip_archive *zip, char *entry_name,
    contents of that shared folder straight into out_dir (live2d/<zip name>/)
    keeps the SDK browsable without nesting a duplicate directory. */
 static size_t common_top_level(mz_zip_archive *zip) {
-    const char *common = NULL;
+    char common[BONGO_CAT_PATH_CAP];
     size_t common_length = 0;
     unsigned count = mz_zip_reader_get_num_files(zip);
     unsigned i;
@@ -156,9 +136,10 @@ static size_t common_top_level(mz_zip_archive *zip) {
             continue;
         separator = strchr(stat.m_filename, '/');
         if (!separator) return 0;
-        if (!common) {
-            common = stat.m_filename;
-            common_length = (size_t)(separator - common) + 1;
+        if (!common_length) {
+            common_length = (size_t)(separator - stat.m_filename) + 1;
+            if (common_length >= sizeof(common)) return 0;
+            memcpy(common, stat.m_filename, common_length);
         } else if (strncmp(common, stat.m_filename, common_length) != 0) {
             return 0;
         }
@@ -384,6 +365,10 @@ void bongo_cat_windows_live2d_sdk_prepare(const char *data_dir) {
        later rescan hit a double free inside SDL_free. */
 }
 
+void *bongo_cat_platform_live2d_core_symbol(const char *name) {
+    if (!attempted && !core_module) bongo_cat_windows_live2d_sdk_prepare(NULL);
+    return core_module && name ? (void *)(uintptr_t)GetProcAddress(core_module, name) : NULL;
+}
 bool bongo_cat_windows_live2d_sdk_ready(void) {
     if (!attempted) bongo_cat_windows_live2d_sdk_prepare(NULL);
     return core_module != NULL;
@@ -406,13 +391,13 @@ bool bongo_cat_windows_live2d_sdk_import(const char *path,
     if (length > 4 && _stricmp(path + length - 4, ".zip") == 0) {
         /* Official SDK zip: unpack below live2d/<zip name>/ — the layout the
            startup scan uses — and load the Core from there. */
-        char out_dir[BONGO_CAT_PATH_CAP];
+        char out_dir[BONGO_CAT_PATH_CAP], live2d_dir[BONGO_CAT_PATH_CAP];
         char stem[BONGO_CAT_PATH_CAP];
         snprintf(stem, sizeof(stem), "%s", bongo_cat_path_name(path));
         size_t stem_length = strlen(stem);
         if (stem_length > 4) stem[stem_length - 4] = '\0';
-        if (!bongo_cat_path_join(out_dir, sizeof(out_dir), data_dir, "live2d") ||
-            !bongo_cat_path_join(out_dir, sizeof(out_dir), out_dir, stem) ||
+        if (!bongo_cat_path_join(live2d_dir, sizeof(live2d_dir), data_dir, "live2d") ||
+            !bongo_cat_path_join(out_dir, sizeof(out_dir), live2d_dir, stem) ||
             !bongo_cat_path_create_directory(out_dir)) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
                 "Cannot prepare the extraction folder for the SDK zip");
@@ -488,6 +473,7 @@ bool bongo_cat_windows_live2d_sdk_rescan(const char *data_dir) {
     return false;
 #endif
 }
+void *bongo_cat_platform_live2d_core_symbol(const char *name) { (void)name; return NULL; }
 bool bongo_cat_windows_live2d_sdk_ready(void) {
 #ifdef BONGO_CAT_HAS_CUBISM
     return true;

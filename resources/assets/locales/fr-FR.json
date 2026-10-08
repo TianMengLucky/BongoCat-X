@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "Plugins",
+        "description": "Installez les plugins de rendu et activez les moteurs nécessaires. Le format du modèle détermine le moteur.",
+        "status": "État",
+        "active": "Utilisé",
+        "installed": "Installé",
+        "missing": "Non installé",
+        "enabled": "Activé",
+        "activeHint": "Cliquez sur un modèle sélectionné pour le désélectionner avant de modifier son plugin.",
+        "remove": "Supprimer le plugin",
+        "install": "Installer un plugin local",
+        "saved": "Paramètres du plugin mis à jour",
+        "failed": "Impossible de mettre à jour le plugin",
+        "live2dMissing": "Installez et activez Live2D dans la page des plugins, puis importez Cubism Core.",
+        "disabled": "Désactivé",
+        "liveDescription": "Live2D nécessite Cubism Core, qui peut être importé avec le ZIP si nécessaire.",
+        "inoxDescription": "Modèles Inochi2D au format INP / INX.",
+        "openFolder": "Ouvrir le dossier",
+        "drop": "Cliquez ou déposez un ZIP de plugin ici",
+        "dropHint": "ZIP ou bibliothèque ; Core est importé du paquet si nécessaire."
+      },
       "title": "Préférences",
       "cat": {
         "title": "Préférences",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Sélectionnez la bibliothèque Core de Cubism ou le zip officiel de Cubism SDK pour activer le rendu Live2D sans redémarrage",
     "live2dCoreImportButton": "Choisir un fichier",
     "live2dCoreImportSuccess": "Live2D Cubism Core importé : le rendu Live2D est désormais activé",
-    "live2dCoreImportFailed": "Échec de l'import de Live2D Cubism Core",
+    "live2dCoreImportFailed": "Échec de l'import de Live2D Cubism Core",
     "live2dCoreRescanFound": "Live2D Core détecté et chargé",
     "live2dCoreRescanMissing": "Aucun Live2D Core trouvé dans les dossiers live2d pour l'instant",
     "live2dCoreScanning": "Recherche du Cubism Core dans les dossiers live2d...",

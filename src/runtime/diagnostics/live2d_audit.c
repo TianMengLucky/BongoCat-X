@@ -3,18 +3,19 @@
 #include "live2d_pointer_audit.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/model_plugins.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define input bongo_cat_live2d_audit_input
-#define motion bongo_cat_live2d_audit_motion
-#define parameter_override_scenario bongo_cat_live2d_audit_parameter_override
+#define input bongo_cat_model_runtime_audit_input
+#define motion bongo_cat_model_runtime_audit_motion
+#define parameter_override_scenario bongo_cat_model_runtime_audit_parameter_override
 
 static bool value(BongoCatApp *app, const char *id, float *output) {
     BongoCatParameterRange range;
-    if (!bongo_cat_live2d_parameter(app->live2d, id, &range)) return false;
+    if (!bongo_cat_model_runtime_parameter(app->model_runtime, id, &range)) return false;
     if (output) *output = range.value;
     return true;
 }
@@ -23,23 +24,27 @@ static bool value(BongoCatApp *app, const char *id, float *output) {
 #define POINTER_VISIBLE_STEP_LIMIT 8.8f
 
 static bool apply(BongoCatApp *app, const char *scenario) {
+    if (strcmp(scenario, "deselect") == 0) {
+        BongoCatError error = {0};
+        return bongo_cat_app_clear_model(app, &error);
+    }
     if (strncmp(scenario, "switch:", 7) == 0)
         return bongo_cat_app_select_model(app, scenario + 7);
     if (strcmp(scenario, "visual-consistency") == 0)
-        return bongo_cat_live2d_visual_audit_run(app);
+        return bongo_cat_model_runtime_visual_audit_run(app);
     if (strcmp(scenario, "viewer-sequence") == 0)
-        return bongo_cat_live2d_viewer_audit_run(app);
+        return bongo_cat_model_runtime_viewer_audit_run(app);
     if (strcmp(scenario, "mouse-screen") == 0)
         return bongo_cat_app_audit_screen_pointer(app);
     if (strcmp(scenario, "mouse-hand-screen") == 0)
         return bongo_cat_app_audit_display_pointer(app);
     if (strcmp(scenario, "mirror") == 0) app->settings.model.mirror = true;
     else if (strcmp(scenario, "mouse-move") == 0)
-        return bongo_cat_live2d_pointer_audit_run(app, false);
+        return bongo_cat_model_runtime_pointer_audit_run(app, false);
     else if (strcmp(scenario, "mouse-move-mirror") == 0)
-        return bongo_cat_live2d_pointer_audit_run(app, true);
+        return bongo_cat_model_runtime_pointer_audit_run(app, true);
     else if (strcmp(scenario, "mouse-reverse") == 0)
-        return bongo_cat_live2d_pointer_reverse_audit_run(app);
+        return bongo_cat_model_runtime_pointer_reverse_audit_run(app);
     else if (strcmp(scenario, "key-left") == 0)
         input(app, BONGO_CAT_INPUT_KEY_DOWN, "KeyA", 1.0f);
     else if (strcmp(scenario, "key-tab-left") == 0)
@@ -86,7 +91,7 @@ static bool apply(BongoCatApp *app, const char *scenario) {
 
 static void parameter(FILE *file, BongoCatApp *app, const char *id) {
     BongoCatParameterRange range;
-    if (bongo_cat_live2d_parameter(app->live2d, id, &range))
+    if (bongo_cat_model_runtime_parameter(app->model_runtime, id, &range))
         fprintf(file, "parameter.%s=%.4f [%.4f,%.4f]\n", id,
             range.value, range.minimum, range.maximum);
     else fprintf(file, "parameter.%s=unavailable\n", id);
@@ -109,6 +114,13 @@ static bool signed_value(BongoCatApp *app, const char *id, bool positive) {
 
 static bool assertions(BongoCatApp *app, const char *scenario, bool operation) {
     if (!operation) return false;
+    if (strcmp(scenario, "deselect") == 0) {
+        BongoCatModelPluginInfo live, inox;
+        bongo_cat_model_plugin_info(BONGO_CAT_MODEL_ENGINE_LIVE2D, &live);
+        bongo_cat_model_plugin_info(BONGO_CAT_MODEL_ENGINE_INOX2D, &inox);
+        return !app->loaded_model[0] && !app->session.active_model_id[0] &&
+            !app->session.additional_model_count && !live.active && !inox.active;
+    }
     if (strncmp(scenario, "switch:", 7) == 0)
         return strcmp(app->session.active_model_id, scenario + 7) == 0;
     if (strcmp(scenario, "idle") == 0 || strcmp(scenario, "mouse-screen") == 0 || strcmp(scenario, "mouse-hand-screen") == 0 || strcmp(scenario, "mirror") == 0 ||
@@ -116,7 +128,7 @@ static bool assertions(BongoCatApp *app, const char *scenario, bool operation) {
         strcmp(scenario, "viewer-sequence") == 0 ||
         strncmp(scenario, "motion-", 7) == 0) return true;
     if (strncmp(scenario, "expression-", 11) == 0)
-        return bongo_cat_live2d_expression(app->live2d) == atoi(scenario + 11);
+        return bongo_cat_model_runtime_expression(app->model_runtime) == atoi(scenario + 11);
     if (strcmp(scenario, "key-left") == 0 || strcmp(scenario, "key-tab-left") == 0)
         return active(app, "CatParamLeftHandDown");
     if (strcmp(scenario, "key-right") == 0)
@@ -169,7 +181,7 @@ static bool assertions(BongoCatApp *app, const char *scenario, bool operation) {
     return false;
 }
 
-void bongo_cat_live2d_audit_run(BongoCatApp *app) {
+void bongo_cat_model_runtime_audit_run(BongoCatApp *app) {
     if (!app || !app->smoke_live2d_scenario[0]) return;
     uint64_t started = SDL_GetTicksNS();
     bool result = apply(app, app->smoke_live2d_scenario);
@@ -188,12 +200,12 @@ void bongo_cat_live2d_audit_run(BongoCatApp *app) {
         app->smoke_live2d_scenario, app->session.active_model_id,
         bongo_cat_mode_name(app->loaded_mode), result ? "accepted" : "rejected",
         verified ? "passed" : "failed", duration_ms);
-#ifdef BONGO_CAT_HAS_CUBISM
-    fputs("renderer=cubism-native\n", file);
-    if (!verified) app->exit_code = 1;
-#else
-    fputs("renderer=diagnostic; visual-model-result=blocked\n", file);
-#endif
+    if (bongo_cat_model_runtime_rendering(app->model_runtime)) {
+        fputs(bongo_cat_model_runtime_engine(app->model_runtime) ==
+            BONGO_CAT_MODEL_ENGINE_LIVE2D ? "renderer=cubism-native\n" :
+            "renderer=inox2d-native\n", file);
+        if (!verified) app->exit_code = 1;
+    } else fputs("renderer=diagnostic; visual-model-result=blocked\n", file);
     const char *parameters[] = {"CatParamLeftHandDown", "CatParamRightHandDown",
         "CatParamStickLX", "CatParamStickLY", "CatParamStickRX", "CatParamStickRY",
         "CatParamStickLeftDown", "CatParamStickRightDown",

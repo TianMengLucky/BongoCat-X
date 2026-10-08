@@ -55,12 +55,12 @@ static bool random_behavior_candidate(BongoCatApp *app,
     return entry->kind == kind &&
         bongo_cat_settings_random_enabled(&app->settings, entry->id) &&
         (kind != BONGO_CAT_BEHAVIOR_MOTION ||
-        bongo_cat_live2d_motion_visible(app->live2d, entry->group, entry->index));
+        bongo_cat_model_runtime_motion_visible(app->model_runtime, entry->group, entry->index));
 }
 
 static void random_behavior_run(BongoCatApp *app, uint64_t now,
     BongoCatBehaviorKind kind) {
-    int current_expression = bongo_cat_live2d_expression(app->live2d);
+    int current_expression = bongo_cat_model_runtime_expression(app->model_runtime);
     size_t count = 0;
     size_t alternate_count = 0;
     for (size_t i = 0; i < app->behaviors.count; ++i) {
@@ -84,7 +84,7 @@ static void random_behavior_run(BongoCatApp *app, uint64_t now,
         if (choice--) continue;
         if (kind == BONGO_CAT_BEHAVIOR_MOTION)
             bongo_cat_app_run_behavior(app, entry);
-        else if (bongo_cat_live2d_set_expression(app->live2d, entry->index))
+        else if (bongo_cat_model_runtime_set_expression(app->model_runtime, entry->index))
             app->dirty = true;
         return;
     }
@@ -133,7 +133,7 @@ static void sequential_model_run(BongoCatApp *app) {
 
 void bongo_cat_random_behavior_update(BongoCatApp *app, uint64_t now) {
     if (app && app->window_snapshot) return;
-    if (!app || !app->live2d) {
+    if (!app || !app->model_runtime || !app->loaded_model[0]) {
         bongo_cat_random_behavior_reset(app);
         return;
     }

@@ -45,7 +45,7 @@
 
   **启用 Live2D 渲染（任选其一）：**
 
-  1. **应用内导入（推荐）**：打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
+  1. **应用内导入（推荐）**：打开「设置 → 插件」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
   2. **live2d 文件夹投放**：从 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 许可协议）下载 **Cubism SDK for Native**，将 zip 或解压出的 `Live2DCubismCore.dll` 放入应用目录/数据目录下的 `live2d` 文件夹，重启应用后自动识别启用。
 
   源码构建时 SDK 的完整导入步骤见下方「Live2D / Cubism SDK」章节。
@@ -56,7 +56,7 @@
 
 ## 🛠️ 从源码构建
 
-BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本、桌面 OpenGL 开发文件，以及 Rust 工具链（通过 rustup 安装 cargo）：内存安全关键的解析器（SHA-256、图像解码、贡献者信息流、音频解码）位于 `src/rust/bongo-safe` crate 中，配置阶段由 Corrosion 自动构建。默认情况下，SDL3、yyjson、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
+BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本、桌面 OpenGL 开发文件，以及 Rust 工具链（通过 rustup 安装 cargo）：内存安全关键的解析器（SHA-256、图像解码、贡献者信息流、音频解码）位于 `src/rust/bongo-safe` crate 中，配置阶段由 Corrosion 自动构建。默认情况下，SDL3、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
 
 请在项目根目录（包含 `CMakeLists.txt` 的目录）运行以下命令。
 
@@ -109,7 +109,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / Cubism SDK（可选：不安装也能编译）
 
-Live2D Cubism SDK 为专有软件，**不会**随本仓库分发。SDK 现在是**可选的**：默认构建（`BONGO_CAT_REQUIRE_CUBISM=OFF`）在缺少 SDK 时也能正常配置和编译，产物是不含 Live2D 渲染的诊断后端——由于 Live2D 渲染器必须在编译期链接进二进制，运行时把 SDK 投放进去也**无法**为该构建补上渲染能力（仅带渲染器的版本会响应投放），它只用于启动与平台诊断。
+Cubism SDK 仍是可选的专有构建依赖。没有 SDK 时仍可构建宿主和 Inox2D 插件；安装兼容的 Live2D 动态插件并提供 Cubism Core 后即可启用 Live2D，无需重新编译宿主。有 SDK 时会生成独立的 C++ 插件。
 
 若要构建带 Live2D 渲染支持的版本，仍需手动下载并导入 SDK：
 
@@ -128,21 +128,21 @@ cmake -S . -B build -G Ninja \
 SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。SDK 就位后照常配置即可得到带 Live2D 渲染的版本；`BONGO_CAT_REQUIRE_CUBISM=ON` 的作用是让 SDK 缺失时配置直接失败并打印导入方法（发布流水线使用），没有必要时保持默认的 `OFF` 即可。
 
 > [!TIP]
-> Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 模型」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
+> Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 插件」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
 
 > [!NOTE]
-> 本仓库官方 Release 提供的安装包为 runtime-Core 构建：内置 Live2D 渲染支持，但**不附带 Core 运行库**。启动时会先检查 `live2d` 文件夹——把 `Live2DCubismCore.dll` 或官方 SDK zip 放入应用目录/数据目录下的该文件夹，重启后即被自动识别启用；也可以在应用内「设置 → 模型」页点击「导入 Live2D Core」立即生效。没有检测到 Core 时会回退到诊断后端，并在设置窗口给出提示。
+> 本仓库官方 Release 提供的安装包为 runtime-Core 构建：内置 Live2D 渲染支持，但**不附带 Core 运行库**。启动时会先检查 `live2d` 文件夹——把 `Live2DCubismCore.dll` 或官方 SDK zip 放入应用目录/数据目录下的该文件夹，重启后即被自动识别启用；也可以在应用内「设置 → 插件」页点击「导入 Live2D Core」立即生效。没有检测到 Core 时会回退到诊断后端，并在设置窗口给出提示。
 
 ### ⚙️ CMake 选项
 
 | 选项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖（含 Corrosion 与 Rust crate 依赖）。仅当 SDL3、yyjson、stb、miniaudio、Nuklear 和 Corrosion 已可供 CMake 使用时才设为 `OFF`。 |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下载固定版本的第三方依赖（含 Corrosion 与 Rust crate 依赖）。仅当 SDL3、stb、miniaudio、Nuklear 和 Corrosion 已可供 CMake 使用时才设为 `OFF`。 |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路径。 |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | SDK 缺失时是否让配置失败。默认 `OFF`：缺失时构建不带 Live2D 渲染的诊断后端；设为 `ON` 则要求 SDK 必须存在（发布 CI 使用）。 |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 将本地编译器警告视为错误。 |
 
-离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`）和 yyjson 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：
+离线构建时将 `BONGO_CAT_FETCH_DEPS=OFF`，并提供 SDL3（包括 `SDL3-static`） 的 CMake 包配置；如果 stb、Nuklear 和 miniaudio 无法自动发现，还需提供其包含目录：
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -279,9 +279,9 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 ### 🖼️ Vulkan / Metal 支持到哪一步了？
 
-设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：2D 覆盖层、圆角遮罩和异步动态纹理刷新目前仅在 OpenGL 路径实现；原生路径在加载时应用画质 / 显示尺寸限制。
+设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 效果 / 指针覆盖层、圆角遮罩和异步动态纹理刷新目前仅在 OpenGL 路径实现；原生路径在加载时应用画质 / 显示尺寸限制。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围。
 
-带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。本轮完成静态检查，尚未构建或进行 GPU 实测，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
+带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。Windows 已完成构建与 GPU 回归测试；macOS 的 Metal Rust 接口已通过类型检查，尚待真机验证，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
 
 ## 🙏 特别感谢
 > [!TIP]
@@ -299,3 +299,11 @@ By vladelaina<br>
 Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
 Made with ❤️ & ⌨️
 </div>
+
+### 动态渲染插件
+
+在「设置 → 插件」中安装本地插件、启用或停用渲染引擎、移除用户安装的插件。使用中的插件需先切换到其他渲染器后再修改。Live2D 使用独立 C++ 插件；Inochi2D 使用 Rust Inox2D 插件，支持 OpenGL、Vulkan（Windows/Linux）和 Metal（macOS），不使用 wgpu。导入会先识别内容，支持 `.model3.json` 和 `.inp`／`.inx`。全部 JSON 解析和序列化由 Rust 完成。
+
+Windows 便携版为 ZIP 包，解压后请保留程序旁的 `plugins` 目录。打包方式、离线依赖、插件 ABI、参数映射与兼容限制见[动态渲染插件说明](docs/model-plugins.md)。
+
+向 `dev` 推送代码、资源或构建配置更新时，会发布 GitHub 夜间预发布版本；仅修改文档时跳过，没有定时触发。所有平台固定使用此次推送的提交，夜间版不替换最新正式版。

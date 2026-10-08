@@ -40,6 +40,7 @@ static bool package_identity_seen(
 
 static BongoCatModelSourceFormat source_format(
     const BongoCatImportCandidate *candidate) {
+    if (candidate->format == BONGO_CAT_IMPORT_INOCHI2D) return BONGO_CAT_MODEL_SOURCE_INOCHI2D;
     if (candidate->format == BONGO_CAT_IMPORT_MVER_PATCH)
         return BONGO_CAT_MODEL_SOURCE_MVER_PATCH;
     return candidate->format == BONGO_CAT_IMPORT_TAURI
@@ -47,6 +48,7 @@ static BongoCatModelSourceFormat source_format(
 }
 
 static const char *variant_name(const BongoCatImportCandidate *candidate) {
+    if (candidate->format == BONGO_CAT_IMPORT_INOCHI2D) return candidate->setting;
     if (candidate->patch_root[0]) {
         const char *name = bongo_cat_path_name(candidate->patch_root);
         if (name && name[0]) return name;

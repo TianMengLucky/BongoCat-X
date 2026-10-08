@@ -6,7 +6,7 @@
 
 int bongo_cat_test_failures;
 
-static void contains(BongoCatLive2DFrame allocated, BongoCatLive2DFrame required,
+static void contains(BongoCatModelRuntimeFrame allocated, BongoCatModelRuntimeFrame required,
     int width, int height, bool flip) {
     BongoCatFrameViewport v = bongo_cat_frame_viewport(allocated, required,
         width, height, flip);
@@ -22,7 +22,7 @@ static void contains(BongoCatLive2DFrame allocated, BongoCatLive2DFrame required
 }
 
 int main() {
-    BongoCatLive2DFrame empty{};
+    BongoCatModelRuntimeFrame empty{};
     CHECK(bongo_cat_frame_equal(empty,
         bongo_cat_frame_observe(empty, -.8f, -.9f, .9f, .8f)));
     auto extended = bongo_cat_frame_observe(empty, -1.3f, -.8f, .8f, 1.1f);
@@ -39,7 +39,7 @@ int main() {
         bongo_cat_frame_observe(extended, 2, -2, -2, 2)));
 
     /* Modest extension preserves the content's pixel dimensions and origin. */
-    BongoCatLive2DFrame normal{.25f, .125f, .125f, 0};
+    BongoCatModelRuntimeFrame normal{.25f, .125f, .125f, 0};
     auto v = bongo_cat_frame_viewport(normal, normal, 880, 360, false);
     CHECK(v.width == 640 && v.height == 320 && v.x == 160 && v.y == 0);
     auto flipped = bongo_cat_frame_viewport(normal, normal, 880, 360, true);
@@ -52,7 +52,7 @@ int main() {
 
     for (int left = 0; left < 8; ++left) {
         for (int top = 0; top < 8; ++top) {
-            BongoCatLive2DFrame requested{left * .25f, top * .25f,
+            BongoCatModelRuntimeFrame requested{left * .25f, top * .25f,
                 top * .125f, left * .125f};
             auto allocated = bongo_cat_frame_limit(empty, requested, 2.0, 2.0, 2.0);
             /* The remainder-spending step lands exactly on the budget; float
@@ -66,7 +66,7 @@ int main() {
             contains(allocated, requested, 640, 360, true);
         }
     }
-    BongoCatLive2DFrame huge{10, 4, 8, 9};
+    BongoCatModelRuntimeFrame huge{10, 4, 8, 9};
     auto pixels_limited = bongo_cat_frame_limit(empty, huge, 1.125, 1.25, 1.5);
     CHECK(bongo_cat_frame_area(pixels_limited) <= 1.125);
     CHECK(bongo_cat_frame_equal(normal,

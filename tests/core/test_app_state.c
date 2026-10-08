@@ -18,14 +18,14 @@ static int active_expression = -1;
 static int restored_motion_count;
 static size_t overlay_key_calls;
 int bongo_cat_test_failures;
-
 static float parameter(const char *id) {
     for (size_t i = parameter_count; i > 0; --i)
         if (strcmp(parameters[i - 1].id, id) == 0) return parameters[i - 1].value;
     return -999.0f;
 }
 
-bool bongo_cat_live2d_set_parameter(BongoCatLive2D *live2d, const char *id, float value) {
+bool bongo_cat_model_runtime_ready(const BongoCatModelRuntime *runtime) { return runtime != NULL; }
+bool bongo_cat_model_runtime_set_parameter(BongoCatModelRuntime *live2d, const char *id, float value) {
     (void)live2d;
     for (size_t i = 0; i < parameter_count; ++i)
         if (!strcmp(parameters[i].id, id)) {
@@ -39,7 +39,7 @@ bool bongo_cat_live2d_set_parameter(BongoCatLive2D *live2d, const char *id, floa
     return true;
 }
 
-bool bongo_cat_live2d_parameter(BongoCatLive2D *live2d, const char *id,
+bool bongo_cat_model_runtime_parameter(BongoCatModelRuntime *live2d, const char *id,
     BongoCatParameterRange *range) {
     (void)live2d; (void)id;
     if (!range) return false;
@@ -47,7 +47,7 @@ bool bongo_cat_live2d_parameter(BongoCatLive2D *live2d, const char *id,
     return true;
 }
 
-bool bongo_cat_live2d_start_motion(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_start_motion(BongoCatModelRuntime *live2d,
     const char *group, int index) {
     (void)live2d; (void)group;
     if (index < 0 || index >= (int)(sizeof(active_motions) /
@@ -56,7 +56,7 @@ bool bongo_cat_live2d_start_motion(BongoCatLive2D *live2d,
     return true;
 }
 
-bool bongo_cat_live2d_restore_motion_state(BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_restore_motion_state(BongoCatModelRuntime *live2d,
     const char *group, int index) {
     (void)live2d; (void)group;
     if (index < 0 || index >= (int)(sizeof(active_motions) /
@@ -66,26 +66,26 @@ bool bongo_cat_live2d_restore_motion_state(BongoCatLive2D *live2d,
     return true;
 }
 
-bool bongo_cat_live2d_motion_selected(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_motion_selected(const BongoCatModelRuntime *live2d,
     const char *group, int index) {
     (void)live2d; (void)group;
     return index >= 0 && index < (int)(sizeof(active_motions) /
         sizeof(active_motions[0])) && active_motions[index];
 }
 
-bool bongo_cat_live2d_motion_persistent(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_motion_persistent(const BongoCatModelRuntime *live2d,
     const char *group, int index) {
     (void)live2d; (void)group;
     return index == 1;
 }
 
-bool bongo_cat_live2d_motion_visible(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_motion_visible(const BongoCatModelRuntime *live2d,
     const char *group, int index) {
     (void)live2d; (void)group; (void)index;
     return true;
 }
 
-bool bongo_cat_live2d_motion_same_toggle(const BongoCatLive2D *live2d,
+bool bongo_cat_model_runtime_motion_same_toggle(const BongoCatModelRuntime *live2d,
     const char *left_group, int left_index,
     const char *right_group, int right_index) {
     (void)live2d; (void)left_group; (void)left_index;
@@ -93,13 +93,13 @@ bool bongo_cat_live2d_motion_same_toggle(const BongoCatLive2D *live2d,
     return false;
 }
 
-bool bongo_cat_live2d_set_expression(BongoCatLive2D *live2d, int index) {
+bool bongo_cat_model_runtime_set_expression(BongoCatModelRuntime *live2d, int index) {
     (void)live2d;
     active_expression = index;
     return true;
 }
 
-int bongo_cat_live2d_expression(const BongoCatLive2D *live2d) {
+int bongo_cat_model_runtime_expression(const BongoCatModelRuntime *live2d) {
     (void)live2d;
     return active_expression;
 }
@@ -190,7 +190,7 @@ static void check_behavior_state(BongoCatApp *app) {
 
 static void check_input_modes(void) {
     static BongoCatApp app;
-    app.live2d = (BongoCatLive2D *)(uintptr_t)1;
+    app.model_runtime = (BongoCatModelRuntime *)(uintptr_t)1;
     app.overlay = (BongoCatOverlay *)(uintptr_t)1;
     const BongoCatModelMode modes[] = {BONGO_CAT_MODE_STANDARD,
         BONGO_CAT_MODE_KEYBOARD, BONGO_CAT_MODE_GAMEPAD};
@@ -262,7 +262,7 @@ static void check_input_modes(void) {
 
 static void check_stick_deadzone(void) {
     static BongoCatApp app;
-    app.live2d = (BongoCatLive2D *)(uintptr_t)1;
+    app.model_runtime = (BongoCatModelRuntime *)(uintptr_t)1;
     app.overlay = (BongoCatOverlay *)(uintptr_t)1;
     app.loaded_mode = BONGO_CAT_MODE_GAMEPAD;
     static const struct { const char *name, *parameter; float drift; } axes[] = {
@@ -346,7 +346,7 @@ static void check_stick_deadzone(void) {
 
 static void check_four_hands(void) {
     static BongoCatApp app;
-    app.live2d = (BongoCatLive2D *)(uintptr_t)1;
+    app.model_runtime = (BongoCatModelRuntime *)(uintptr_t)1;
     app.loaded_mode = BONGO_CAT_MODE_GAMEPAD;
     bongo_cat_app_refresh_hands(&app);
     CHECK(parameter("CatParamStickShowLeftHand") == 0.0f);
@@ -415,7 +415,7 @@ int main(void) {
     /* BongoCatApp contains the input queue and model catalogs and is too
        large for the default 1 MiB Windows test-thread stack. */
     static BongoCatApp app = {0};
-    app.live2d = (BongoCatLive2D *)(uintptr_t)1;
+    app.model_runtime = (BongoCatModelRuntime *)(uintptr_t)1;
     app.overlay = (BongoCatOverlay *)(uintptr_t)1;
 
     BongoCatInputEvent event = input(BONGO_CAT_INPUT_MOUSE_DOWN, "Middle", 1.0f);

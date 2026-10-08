@@ -30,12 +30,12 @@ bool bongo_cat_app_map_pointer(BongoCatApp *app,
 static void set_parameter(BongoCatApp *app, const char *id,
     float x_ratio, float y_ratio, bool horizontal_mirror) {
     BongoCatParameterRange range;
-    if (!bongo_cat_live2d_parameter(app->live2d, id, &range)) return;
+    if (!bongo_cat_model_runtime_parameter(app->model_runtime, id, &range)) return;
     size_t length = strlen(id);
     char axis = length ? id[length - 1] : 'X';
     float value = bongo_cat_mouse_parameter_value(range.minimum, range.maximum,
         x_ratio, y_ratio, axis, horizontal_mirror);
-    bongo_cat_live2d_set_parameter(app->live2d, id, value);
+    bongo_cat_model_runtime_set_parameter(app->model_runtime, id, value);
 }
 
 void bongo_cat_app_apply_mouse_coordinates(BongoCatApp *app,
@@ -84,8 +84,8 @@ void bongo_cat_app_apply_mouse_coordinates(BongoCatApp *app,
     /* Pointer and window messages are not atomic during a native window move. */
     if (!app->settings.model.mouse_centered || !app->window_drag_active) {
         if (app->settings.model.mouse_centered)
-            bongo_cat_live2d_set_centered_dragging(app->live2d, drag_x, drag_y);
-        else bongo_cat_live2d_set_dragging(app->live2d, drag_x, drag_y);
+            bongo_cat_model_runtime_set_centered_dragging(app->model_runtime, drag_x, drag_y);
+        else bongo_cat_model_runtime_set_dragging(app->model_runtime, drag_x, drag_y);
     }
     app->dirty = true;
 }

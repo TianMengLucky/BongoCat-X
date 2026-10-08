@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "model_frame_policy.h"
 
@@ -84,7 +85,7 @@ void NativeModel::prepare_frame_bounds() {
     }
 }
 
-bool NativeModel::measure_frame(BongoCatLive2DFrame *required) {
+bool NativeModel::measure_frame(BongoCatModelRuntimeFrame *required) {
     if (!_model || !required) return false;
     ModelBounds envelope;
     auto include = [](ModelBounds &bounds, float x, float y) {
@@ -166,7 +167,7 @@ bool NativeModel::measure_frame(BongoCatLive2DFrame *required) {
        simply tries again. Speeds are asymmetric: growth is quick (content
        must not be clipped long), shrinking is slow and gentle. Geometry is
        published at ~30 Hz to avoid hammering the window manager. */
-    BongoCatLive2DFrame output = required_frame_;
+    BongoCatModelRuntimeFrame output = required_frame_;
     if (tight_frame_) {
         constexpr float grow_speed_px_s = 1800.0f;
         constexpr float shrink_speed_px_s = 420.0f;

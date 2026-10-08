@@ -21,7 +21,7 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
         }
         return true;
     } else if (behavior->kind == BONGO_CAT_BEHAVIOR_MOTION) {
-        bool started = bongo_cat_live2d_start_motion(app->live2d,
+        bool started = bongo_cat_model_runtime_start_motion(app->model_runtime,
             behavior->group, behavior->index);
         if (!started) return false;
         if (behavior->sound[0]) {
@@ -29,9 +29,9 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
             bongo_cat_audio_play(app->audio, behavior->sound, &error);
         }
     } else {
-        int expression = bongo_cat_live2d_expression(app->live2d) ==
+        int expression = bongo_cat_model_runtime_expression(app->model_runtime) ==
             behavior->index ? -1 : behavior->index;
-        if (!bongo_cat_live2d_set_expression(app->live2d, expression)) return false;
+        if (!bongo_cat_model_runtime_set_expression(app->model_runtime, expression)) return false;
     }
     bongo_cat_app_capture_behavior_state(app);
     app->input_diagnostics.visual_actions++;

@@ -11,7 +11,8 @@
 typedef enum BongoCatImportFormat {
     BONGO_CAT_IMPORT_TAURI,
     BONGO_CAT_IMPORT_MVER,
-    BONGO_CAT_IMPORT_MVER_PATCH
+    BONGO_CAT_IMPORT_MVER_PATCH,
+    BONGO_CAT_IMPORT_INOCHI2D
 } BongoCatImportFormat;
 
 typedef struct BongoCatImportCandidate {
@@ -122,7 +123,7 @@ void bongo_cat_import_describe_nearby_entry(BongoCatModelEntry *entry,
 void bongo_cat_import_apply_metadata(BongoCatApp *app, const char *model_id,
     const char *directory);
 bool bongo_cat_import_render_options(const char *directory,
-    BongoCatLive2DRenderOptions *options);
+    BongoCatModelRuntimeRenderOptions *options);
 
 /* Recursive source scanning. */
 BongoCatResult bongo_cat_import_scan(const char *root,

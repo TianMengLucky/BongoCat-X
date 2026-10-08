@@ -9,9 +9,20 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 ## [未发布]
 
-- **Live2D 原生后端接通与热切换**：设置 → 应用支持 Windows / Linux x64 的 OpenGL ↔ Vulkan 和 macOS 的 OpenGL ↔ Metal 即时切换；重建窗口、设备和模型，保留已选动作 / 表情，初始化或模型重载失败时恢复 OpenGL。补齐 Rust 图像解码、预乘纹理上传、SDK 工厂路由、帧绘制、真实 GPU 像素回读与封面 / 点击命中路径；修复旧 GL 上下文恢复和 Windows 分层呈现误用 GL 交换函数的问题。Vulkan/Metal 仍为实验性，2D 覆盖层、圆角和异步动态纹理刷新尚待迁移，本轮仅静态验证，详见 [进度与验证清单](docs/live2d-vulkan-metal.md)。
+- **原生桌面背景**：补齐 Vulkan / Metal 的静态桌子 PNG 绘制，缓存解码、缩放与 GPU 上传结果，并将桌面纳入紧贴边缘裁剪范围；Windows Vulkan 实际画面已验证。
+- **原生后端紧贴边缘**：Live2D 的 OpenGL、Vulkan 和 Metal 共用边界观察、收紧及稳定跟踪逻辑，修复 Vulkan 下紧贴桌宠边缘不生效。
+- **模型切换与封面缓存**：修复切换渲染后端后设置窗口上下文失效；移除取消选择按钮，改为点击已选模型取消；复用未过期 PNG 封面，延后新封面抓取，并在构建时预编译 Inox2D 原生着色器。
+- **模型与插件管理**：支持取消所有模型并保留空选择；插件页支持拖入 ZIP，已有 Core 时保留，缺失时自动从用户提供的包中导入。
+- **动态渲染插件**：通过版本化 C ABI 加载 C++ Live2D 和 Rust Inox2D 插件，移除旧渲染接口；设置新增插件页，支持本地安装、启用与移除。
+- **模型识别与导入**：先检查文件内容，再分流 Cubism 与 INP/INX 模型；容器、网格和纹理由 Rust 校验，文件改名不会误判模型引擎。
+- **Inox2D 原生后端**：使用上游 OpenGL、ash Vulkan 和 metal Metal，不依赖 wgpu；原生后端共享宿主设备与帧目标，避免插件与宿主间的整帧像素传输。Windows OpenGL/Vulkan 遮罩、七种混合模式、染色与合成对比测试通过；Metal 尚待 macOS 真机验证。
+- **JSON 全面迁移至 Rust**：移除 C yyjson 依赖，使用 serde_json、json5 与 jsonc-parser，保留 Mver 注释编辑能力。
+- **插件随包分发**：Live2D 着色器嵌入插件，SDK-less 宿主可加载独立插件；Windows 便携包改为包含插件的 ZIP，Cubism Core 仍由用户提供。
+- **dev 夜间预发布**：复用多平台发布流程，由 `dev` 代码更新触发，跳过纯文档更新，固定提交 SHA，并保持正式发布频道独立。
+
+- **Live2D 原生后端接通与热切换**：设置 → 应用支持 Windows / Linux x64 的 OpenGL ↔ Vulkan 和 macOS 的 OpenGL ↔ Metal 即时切换；重建窗口、设备和模型，保留已选动作 / 表情，初始化或模型重载失败时恢复 OpenGL。补齐 Rust 图像解码、预乘纹理上传、SDK 工厂路由、帧绘制、真实 GPU 像素回读与封面 / 点击命中路径；修复旧 GL 上下文恢复和 Windows 分层呈现误用 GL 交换函数的问题。Vulkan/Metal 仍为实验性，2D 覆盖层、圆角和异步动态纹理刷新尚待迁移，Windows 已完成构建与 GPU 回归验证，macOS 真机验证待补充，详见 [进度与验证清单](docs/live2d-vulkan-metal.md)。
 - **平台裁剪与构建资源**：Metal 实现 / `.metallib` 仅编入 macOS，Vulkan 实现 / `.spv` 仅编入 Windows / Linux x64；其他目标使用轻量接口桩，macOS 不拉取 Vulkan 头文件和 volk。SDK 构建按平台启用对应后端，编译基础与全部混合模式着色器，并纳入嵌入资源 / Linux 安装包；加载不依赖工作目录。发布工作流准备编译工具、选择后端并检查资源，CI 增加平台裁剪和资源加载补丁检查。
-- **资源与静态分析清理**：统一后端结果类型，修复 Vulkan 格式 / 交换链生命周期和初始化失败泄漏，Metal 使用 ARC 状态对象；共享像素转换，保留旧 ABI 并新增完整 Vulkan / Metal 帧句柄接口。修复导入摘要边界、空配置目录检查和默认字段初始化，清理重复生成路径；新增像素布局回归测试。
+- **资源与静态分析清理**：统一后端结果类型，修复 Vulkan 格式 / 交换链生命周期和初始化失败泄漏，Metal 使用 ARC 状态对象；共享像素转换，通过插件 ABI 提供完整 Vulkan / Metal 帧句柄接口。修复导入摘要边界、空配置目录检查和默认字段初始化，清理重复生成路径；新增像素布局回归测试。
 
 ### 新增
 

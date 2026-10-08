@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static bool mver_model(const BongoCatModelEntry *model) {
     return model && (model->source_format == BONGO_CAT_MODEL_SOURCE_MVER ||
@@ -116,12 +116,12 @@ bool bongo_cat_mver_shortcuts_load(BongoCatApp *app, const BongoCatModelEntry *m
         bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot find Mver configuration");
         return false;
     }
-    yyjson_doc *document = bongo_cat_json_read_file(path,
-        YYJSON_READ_JSON5 | YYJSON_READ_ALLOW_INVALID_UNICODE, NULL);
+    BongoJsonDoc *document = bongo_cat_json_read_file(path,
+        BONGO_JSON_READ_JSON5 | BONGO_JSON_READ_ALLOW_INVALID_UNICODE, NULL);
     BongoCatBehaviorCatalog *catalog = calloc(1, sizeof(*catalog));
     BongoCatMverLabels *labels = calloc(1, sizeof(*labels));
     bool ok = document && catalog && labels &&
-        yyjson_is_obj(yyjson_doc_get_root(document)) &&
+        bongo_json_is_obj(bongo_json_doc_get_root(document)) &&
         bongo_cat_behaviors_load(catalog, model, error) == BONGO_CAT_OK;
     if (ok) bongo_cat_mver_labels_load(path, bongo_cat_mode_name(model->mode), labels);
     BongoCatModelShortcutNode *parsed = NULL;
@@ -140,20 +140,20 @@ bool bongo_cat_mver_shortcuts_load(BongoCatApp *app, const BongoCatModelEntry *m
         value->shortcut_external = true;
         value->shortcut[0] = '\0'; value->shortcut_disabled = true;
         if (!address(model, entry, &mode, &field, &index)) continue;
-        yyjson_val *root = yyjson_doc_get_root(document);
-        yyjson_val *rows = yyjson_obj_get(yyjson_obj_get(root, mode), field);
-        yyjson_val *row = index < 0 ? rows : yyjson_arr_get(rows, (size_t)index);
-        yyjson_val *input = yyjson_obj_get(yyjson_obj_get(root,
+        BongoJsonValue *root = bongo_json_doc_get_root(document);
+        BongoJsonValue *rows = bongo_json_obj_get(bongo_json_obj_get(root, mode), field);
+        BongoJsonValue *row = index < 0 ? rows : bongo_json_arr_get(rows, (size_t)index);
+        BongoJsonValue *input = bongo_json_obj_get(bongo_json_obj_get(root,
             bongo_cat_mode_name(model->mode)), "input_mode");
         BongoCatImportCandidate candidate = {0};
         candidate.gamepad_buttons = model->mode == BONGO_CAT_MODE_GAMEPAD &&
-            (!yyjson_is_int(input) || yyjson_get_int(input) != 0);
-        yyjson_val *only = yyjson_is_arr(row) && yyjson_arr_size(row) == 1
-            ? yyjson_arr_get_first(row) : NULL;
-        int code = yyjson_is_int(only) ? (int)yyjson_get_int(only) : -1;
+            (!bongo_json_is_int(input) || bongo_json_get_int(input) != 0);
+        BongoJsonValue *only = bongo_json_is_arr(row) && bongo_json_arr_size(row) == 1
+            ? bongo_json_arr_get_first(row) : NULL;
+        int code = bongo_json_is_int(only) ? (int)bongo_json_get_int(only) : -1;
         bool gamepad = candidate.gamepad_buttons && entry->kind == BONGO_CAT_BEHAVIOR_EFFECT;
-        bool disabled = !row || yyjson_is_null(row) ||
-            (yyjson_is_arr(row) && !yyjson_arr_size(row)) || code == 255 ||
+        bool disabled = !row || bongo_json_is_null(row) ||
+            (bongo_json_is_arr(row) && !bongo_json_arr_size(row)) || code == 255 ||
             (code == 0 && !gamepad);
         if (!disabled) {
             bool chord_valid = entry->kind == BONGO_CAT_BEHAVIOR_EFFECT
@@ -171,7 +171,7 @@ bool bongo_cat_mver_shortcuts_load(BongoCatApp *app, const BongoCatModelEntry *m
     else free_nodes(parsed);
     if (!ok && error && !error->message[0])
         bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot read Mver shortcuts: %s", path);
-    yyjson_doc_free(document); bongo_cat_behaviors_clear(catalog); free(catalog); bongo_cat_mver_labels_clear(labels); free(labels);
+    bongo_json_doc_free(document); bongo_cat_behaviors_clear(catalog); free(catalog); bongo_cat_mver_labels_clear(labels); free(labels);
     return ok;
 }
 
@@ -213,14 +213,14 @@ bool bongo_cat_model_shortcut_save(BongoCatApp *app, const char *id,
     bongo_cat_behaviors_clear(catalog); free(catalog);
     if (model->mode == BONGO_CAT_MODE_GAMEPAD &&
         (!strcmp(field, "face") || !strcmp(field, "emoticonClear"))) {
-        yyjson_doc *config = bongo_cat_json_read_file(path, YYJSON_READ_JSON5, NULL);
-        yyjson_val *input = yyjson_obj_get(yyjson_obj_get(yyjson_doc_get_root(config),
+        BongoJsonDoc *config = bongo_cat_json_read_file(path, BONGO_JSON_READ_JSON5, NULL);
+        BongoJsonValue *input = bongo_json_obj_get(bongo_json_obj_get(bongo_json_doc_get_root(config),
             "gamepad"), "input_mode");
         char *end;
         long key = strtol(row + 1, &end, 10);
         bool ambiguous = *end == ']' && key >= 0 && key <= 15 &&
-            (!yyjson_is_int(input) || yyjson_get_int(input) != 0);
-        yyjson_doc_free(config);
+            (!bongo_json_is_int(input) || bongo_json_get_int(input) != 0);
+        bongo_json_doc_free(config);
         if (ambiguous) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,
                 "Mver interprets this key as a gamepad button; use a modifier combination");

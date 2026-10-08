@@ -18,7 +18,7 @@ certificate during submission.
 The package name and publisher are stored in `AppxManifest.xml.in`. The PFN
 and package SID are derived by Windows and must not be used as signing
 secrets. The Store package is x64; the separate Windows x86 workflow target
-only publishes its desktop installer and portable executable.
+only publishes its desktop installer and portable archive.
 
 The manifest declares a system-managed `BongoCat.lnk` on the current user's
 desktop through the `desktop7:windows.shortcut` extension. Windows creates the
@@ -84,7 +84,7 @@ The job verifies the digests and required files before configuring CMake with
 
 ## Local build and install check
 
-`build.bat Release -Package` builds the portable executable, Inno Setup
+`build.bat Release -Package` builds the portable archive, Inno Setup
 installer, and unsigned MSIX in `build-cubism\dist`. It requires Inno Setup
 6.3+ and the Windows 10/11 SDK, and runs the same MSIX validation as CI.
 The MSIX filename is recorded in `build-cubism\bongocat-msix-name.txt` for

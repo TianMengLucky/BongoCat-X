@@ -31,6 +31,7 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
     }
     vk->frame_ready = false;
     bongo_cat_rhi_vk_release_readback(vk);
+    bongo_cat_rhi_vk_release_background(vk);
     vk->image_count = 0;
     vk->current_image = VK_NULL_HANDLE;
     vk->current_view = VK_NULL_HANDLE;
@@ -112,13 +113,15 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
     info.imageColorSpace = color_space;
     info.imageExtent = extent;
     info.imageArrayLayers = 1;
-    if (!(caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+    if ((caps.supportedUsageFlags & (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT)) != (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
             "Vulkan surface does not support frame readback");
         return false;
     }
     info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.preTransform = caps.currentTransform;
     static const VkCompositeAlphaFlagBitsKHR alpha_modes[] = {

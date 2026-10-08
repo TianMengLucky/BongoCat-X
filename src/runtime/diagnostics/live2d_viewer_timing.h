@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-bool bongo_cat_live2d_viewer_timing(const char *path, int *track,
+bool bongo_cat_model_runtime_viewer_timing(const char *path, int *track,
     int *returning);
 
 #endif

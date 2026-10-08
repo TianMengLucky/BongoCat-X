@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "插件",
+        "description": "安装渲染插件并启用所需引擎。导入时识别模型类型，自动选择对应渲染器。",
+        "status": "状态",
+        "active": "正在使用",
+        "installed": "已安装",
+        "missing": "未安装",
+        "enabled": "启用",
+        "activeHint": "点击已选模型可取消选择；停用、替换或移除插件前，请先取消使用它的模型。",
+        "remove": "移除插件",
+        "install": "安装本地插件",
+        "saved": "插件设置已更新",
+        "failed": "无法更新插件",
+        "live2dMissing": "请在插件页面安装并启用 Live2D 渲染器，然后导入 Cubism Core。",
+        "disabled": "已停用",
+        "liveDescription": "Live2D 模型需要 Cubism Core，缺失时可随 ZIP 一起导入。",
+        "inoxDescription": "支持 INP / INX 格式的 Inochi2D 模型。",
+        "openFolder": "打开目录",
+        "drop": "点击或拖入插件 ZIP",
+        "dropHint": "支持 ZIP 或动态库；缺少 Core 时从包中自动导入。"
+      },
       "title": "偏好设置",
       "cat": {
         "title": "偏好",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "选择 Cubism Core 库文件或官方 Cubism SDK 的 zip 压缩包，无需重启即可启用 Live2D 渲染",
     "live2dCoreImportButton": "选择文件",
     "live2dCoreImportSuccess": "Live2D Cubism Core 导入成功，Live2D 渲染已启用",
-    "live2dCoreImportFailed": "Live2D Cubism Core 导入失败",
+    "live2dCoreImportFailed": "Live2D Cubism Core 导入失败",
     "live2dCoreRescanFound": "Live2D Core 检测并加载成功",
     "live2dCoreRescanMissing": "在 live2d 文件夹中尚未发现 Live2D Core",
     "live2dCoreScanning": "正在扫描 live2d 文件夹中的 Cubism Core...",

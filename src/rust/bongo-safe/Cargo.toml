@@ -7,9 +7,10 @@ publish = false
 
 [lib]
 name = "bongo_safe"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+inox2d = { git = "https://github.com/Inochi2D/inox2d", rev = "d4dd9dd7f16b775042cbda44370570abf9a8cf81" }
 base64 = "0.22"
 image = { version = "0.25", default-features = false, features = [
     "png",
@@ -24,6 +25,8 @@ image = { version = "0.25", default-features = false, features = [
 ] }
 roxmltree = "0.20"
 serde = "1"
+json5 = "0.4"
+jsonc-parser = { version = "0.34", features = ["cst", "serde"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 sha2 = "0.10"
 symphonia = { version = "0.5", default-features = false, features = [

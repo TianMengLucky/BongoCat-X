@@ -1,4 +1,5 @@
 #include "model_import_probe.h"
+#include "model_import_inochi.h"
 #include "model_import_path.h"
 #include "mver/model_import_mver.h"
 #include "tauri/model_import_tauri.h"
@@ -68,6 +69,7 @@ BongoCatResult bongo_cat_import_probe_live2d_owner(const char *source,
 
 const char *bongo_cat_import_format_name(BongoCatImportFormat format) {
     switch (format) {
+    case BONGO_CAT_IMPORT_INOCHI2D: return "inochi2d";
     case BONGO_CAT_IMPORT_MVER: return "mver";
     case BONGO_CAT_IMPORT_MVER_PATCH: return "mver-patch";
     case BONGO_CAT_IMPORT_TAURI: return "tauri";
@@ -98,6 +100,7 @@ int bongo_cat_import_probe_exact(const char *source,
         BongoCatImportFormat format;
         ExactProbe probe;
     } probes[] = {
+        {BONGO_CAT_IMPORT_INOCHI2D, bongo_cat_import_inochi_discover},
         {BONGO_CAT_IMPORT_MVER, bongo_cat_import_mver_discover_exact},
         {BONGO_CAT_IMPORT_MVER_PATCH,
             bongo_cat_import_mver_patch_discover_exact},
@@ -109,7 +112,7 @@ int bongo_cat_import_probe_exact(const char *source,
         int found = run_probe(source, discovery, probes[i].format,
             probes[i].probe, diagnostic, started, error);
         if (found == 0) continue;
-        if (found < 0 && policy == BONGO_CAT_IMPORT_PROBE_FALLBACK &&
+        if (probes[i].format != BONGO_CAT_IMPORT_INOCHI2D && found < 0 && policy == BONGO_CAT_IMPORT_PROBE_FALLBACK &&
             i + 1 < sizeof(probes) / sizeof(probes[0])) continue;
         if (format) *format = probes[i].format;
         return found;

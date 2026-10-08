@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "プラグイン",
+        "description": "描画プラグインをインストールし、必要なエンジンを有効にします。モデル形式から描画エンジンを自動選択します。",
+        "status": "状態",
+        "active": "使用中",
+        "installed": "インストール済み",
+        "missing": "未インストール",
+        "enabled": "有効",
+        "activeHint": "選択中のモデルをクリックして解除すると、そのプラグインを無効化、交換、削除できます。",
+        "remove": "プラグインを削除",
+        "install": "ローカルプラグインをインストール",
+        "saved": "プラグイン設定を更新しました",
+        "failed": "プラグインを更新できません",
+        "live2dMissing": "プラグイン画面で Live2D 描画を有効にし、Cubism Core をインポートしてください。",
+        "disabled": "無効",
+        "liveDescription": "Live2D には Cubism Core が必要です。未導入なら ZIP と一緒にインポートできます。",
+        "inoxDescription": "INP / INX 形式の Inochi2D モデルに対応します。",
+        "openFolder": "フォルダーを開く",
+        "drop": "クリックまたはプラグイン ZIP をドロップ",
+        "dropHint": "ZIP またはライブラリ。Core が未導入の場合はパッケージから自動インポート。"
+      },
       "title": "設定",
       "cat": {
         "title": "設定",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Cubism Core ライブラリまたは公式 Cubism SDK の zip を選択すると、再起動なしで Live2D レンダリングを有効にできます",
     "live2dCoreImportButton": "ファイルを選択",
     "live2dCoreImportSuccess": "Live2D Cubism Core をインポートしました。Live2D レンダリングが有効になりました",
-    "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",
+    "live2dCoreImportFailed": "Live2D Cubism Core のインポートに失敗しました",
     "live2dCoreRescanFound": "Live2D Core を検出して読み込みました",
     "live2dCoreRescanMissing": "live2d フォルダーに Live2D Core が見つかりません",
     "live2dCoreScanning": "live2d フォルダー内の Cubism Core を検索中...",

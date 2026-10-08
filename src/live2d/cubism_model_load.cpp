@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "cubism_viewer_look.hpp"
 #include "bongo_cat/file.h"
@@ -116,10 +117,10 @@ std::string NativeModel::path(const char *relative) const {
 
 bool NativeModel::load(const char *directory, const char *setting_file,
     bool direct_textures, bool dynamic_texture_resolution,
-    BongoCatLive2DLoadProgress progress, void *userdata, BongoCatError *error) {
+    BongoCatModelRuntimeLoadProgress progress, void *userdata, BongoCatError *error) {
     if (!directory || !setting_file) return false;
     visual_state_ready_ = false;
-    visual_state_ = BongoCatLive2DVisualState{};
+    visual_state_ = BongoCatModelRuntimeVisualState{};
     direct_textures_ = direct_textures;
     dynamic_texture_resolution_ = dynamic_texture_resolution;
     directory_ = directory;
@@ -131,21 +132,21 @@ bool NativeModel::load(const char *directory, const char *setting_file,
         return false;
     }
     bool normalized = false;
-    yyjson_doc *document = bongo_cat_model_json_parse(
+    BongoJsonDoc *document = bongo_cat_model_json_parse(
         reinterpret_cast<const char *>(json.data()), json.size(), &normalized);
     if (document && normalized) {
         size_t size = 0;
-        char *canonical = yyjson_write(document, 0, &size);
+        char *canonical = bongo_json_write(document, 0, &size);
         if (!canonical) {
-            yyjson_doc_free(document);
+            bongo_json_doc_free(document);
             bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
                 "Cannot prepare model setting: %s", setting_file);
             return false;
         }
         json.assign(canonical, canonical + size);
-        std::free(canonical);
+        bongo_json_free_text(canonical);
     }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!validate_model_setting_json(json, setting_file, error)) return false;
     if (progress) progress(userdata, .10f);
     setting_ = new(std::nothrow)
@@ -282,7 +283,7 @@ void NativeModel::load_effects() {
     _updateScheduler.SortUpdatableList();
 }
 
-void NativeModel::load_motions(BongoCatLive2DLoadProgress progress,
+void NativeModel::load_motions(BongoCatModelRuntimeLoadProgress progress,
     void *userdata) {
     idle_motion_keys_.clear();
     motion_signatures_.clear();

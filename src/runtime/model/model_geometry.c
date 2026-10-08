@@ -6,7 +6,7 @@
 
 /* Share the aspect policy between texture planning and the window commit.
    The incoming width must never come from the outgoing model's window. */
-static bool content_size(const BongoCatLive2DRenderOptions *options,
+static bool content_size(const BongoCatModelRuntimeRenderOptions *options,
     int canvas_width, int canvas_height, int requested_height,
     int *width, int *height) {
     int reference_width = canvas_width > 0 ? canvas_width : 612;
@@ -24,7 +24,7 @@ static bool content_size(const BongoCatLive2DRenderOptions *options,
 }
 
 bool bongo_cat_model_texture_display_size(void *userdata,
-    const BongoCatLive2DRenderOptions *options, int canvas_width,
+    const BongoCatModelRuntimeRenderOptions *options, int canvas_width,
     int canvas_height, int *display_width, int *display_height) {
     BongoCatApp *app = userdata;
     int width = 0, height = 0, pixels_w = 0, pixels_h = 0;
@@ -70,11 +70,11 @@ BongoCatModelContentAnchor bongo_cat_model_content_anchor(BongoCatApp *app) {
 }
 
 bool bongo_cat_model_apply_aspect(BongoCatApp *app,
-    const BongoCatLive2DRenderOptions *options,
+    const BongoCatModelRuntimeRenderOptions *options,
     const BongoCatModelContentAnchor *anchor, bool replacing_model) {
     if (!app || !app->window) return false;
     int canvas_width = 0, canvas_height = 0;
-    bongo_cat_live2d_canvas_size(app->live2d, &canvas_width, &canvas_height);
+    bongo_cat_model_runtime_canvas_size(app->model_runtime, &canvas_width, &canvas_height);
     int x, y, width, height;
     if (!SDL_GetWindowPosition(app->window, &x, &y) ||
         !SDL_GetWindowSize(app->window, &width, &height)) return false;

@@ -43,27 +43,27 @@ struct Manifest {
 };
 
 Manifest read_manifest(const std::string &directory, const char *setting) {
-    using Document = std::unique_ptr<yyjson_doc, decltype(&yyjson_doc_free)>;
+    using Document = std::unique_ptr<BongoJsonDoc, decltype(&bongo_json_doc_free)>;
     Document doc(bongo_cat_model_json_read((directory + "/" + setting).c_str(),
-        nullptr), yyjson_doc_free);
+        nullptr), bongo_json_doc_free);
     require(doc != nullptr, "Cannot read model settings");
-    yyjson_val *files = yyjson_obj_get(yyjson_doc_get_root(doc.get()), "FileReferences");
+    BongoJsonValue *files = bongo_json_obj_get(bongo_json_doc_get_root(doc.get()), "FileReferences");
     Manifest result;
     size_t i, count;
-    yyjson_val *key, *value;
-    yyjson_obj_foreach(yyjson_obj_get(files, "Motions"), i, count, key, value) {
-        for (size_t motion = 0; motion < yyjson_arr_size(value); ++motion)
-            result.motions.push_back({yyjson_get_str(key), (int)motion});
+    BongoJsonValue *key, *value;
+    bongo_json_obj_foreach(bongo_json_obj_get(files, "Motions"), i, count, key, value) {
+        for (size_t motion = 0; motion < bongo_json_arr_size(value); ++motion)
+            result.motions.push_back({bongo_json_get_str(key), (int)motion});
     }
-    result.expressions = (int)yyjson_arr_size(yyjson_obj_get(files, "Expressions"));
-    const char *display = yyjson_get_str(yyjson_obj_get(files, "DisplayInfo"));
+    result.expressions = (int)bongo_json_arr_size(bongo_json_obj_get(files, "Expressions"));
+    const char *display = bongo_json_get_str(bongo_json_obj_get(files, "DisplayInfo"));
     if (display && *display) {
         Document cdi(bongo_cat_model_json_read((directory + "/" + display).c_str(),
-            nullptr), yyjson_doc_free);
+            nullptr), bongo_json_doc_free);
         require(cdi != nullptr, "Cannot read parameter display information");
-        yyjson_arr_foreach(yyjson_obj_get(yyjson_doc_get_root(cdi.get()),
+        bongo_json_arr_foreach(bongo_json_obj_get(bongo_json_doc_get_root(cdi.get()),
             "Parameters"), i, count, value) {
-            const char *id = yyjson_get_str(yyjson_obj_get(value, "Id"));
+            const char *id = bongo_json_get_str(bongo_json_obj_get(value, "Id"));
             if (id && *id) result.parameters.emplace_back(id);
         }
     }
@@ -135,7 +135,7 @@ struct Target {
         height = h;
         check_gl("capture allocation");
     }
-    void draw(BongoCatLive2D *model) const {
+    void draw(BongoCatModelRuntime *model) const {
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glViewport(0, 0, width, height);
         glDisable(GL_SCISSOR_TEST);
@@ -144,7 +144,7 @@ struct Target {
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        bongo_cat_live2d_draw(model);
+        bongo_cat_model_runtime_draw(model);
         check_gl("model draw");
     }
 };
@@ -153,22 +153,22 @@ struct Capture { std::string label, digest; size_t visible = 0; };
 
 class Sequence {
 public:
-    Sequence(BongoCatLive2D *model, std::vector<Capture> &reference, bool compare)
+    Sequence(BongoCatModelRuntime *model, std::vector<Capture> &reference, bool compare)
         : model_(model), reference_(reference), compare_(compare) {}
 
     void size(int width, int height) {
         target_.resize(width, height);
-        bongo_cat_live2d_resize(model_, width, height);
+        bongo_cat_model_runtime_resize(model_, width, height);
     }
     void reset() {
-        bongo_cat_live2d_prepare_viewer_audit(model_);
-        bongo_cat_live2d_set_expression(model_, -1);
-        bongo_cat_live2d_set_mirror(model_, false);
-        bongo_cat_live2d_set_centered_dragging(model_, 0, 0);
+        bongo_cat_model_runtime_prepare_viewer_audit(model_);
+        bongo_cat_model_runtime_set_expression(model_, -1);
+        bongo_cat_model_runtime_set_mirror(model_, false);
+        bongo_cat_model_runtime_set_centered_dragging(model_, 0, 0);
     }
     void advance(int frames) {
         for (int frame = 0; frame < frames; ++frame) {
-            bongo_cat_live2d_update(model_, 1.0f / 60.0f);
+            bongo_cat_model_runtime_update(model_, 1.0f / 60.0f);
             target_.draw(model_);
         }
     }
@@ -200,7 +200,7 @@ public:
         require(position_ == reference_.size(), "Frame count mismatch");
     }
 private:
-    BongoCatLive2D *model_;
+    BongoCatModelRuntime *model_;
     std::vector<Capture> &reference_;
     bool compare_;
     size_t position_ = 0;
@@ -216,15 +216,15 @@ void run(const char *assets, const char *directory, const char *setting,
     Session session;
     std::srand(1);
     BongoCatError error{};
-    using Runtime = std::unique_ptr<BongoCatLive2D, decltype(&bongo_cat_live2d_destroy)>;
-    Runtime runtime(bongo_cat_live2d_create(assets, &error), bongo_cat_live2d_destroy);
+    using Runtime = std::unique_ptr<BongoCatModelRuntime, decltype(&bongo_cat_model_runtime_destroy)>;
+    Runtime runtime(bongo_cat_model_runtime_create(assets, &error), bongo_cat_model_runtime_destroy);
     require(runtime != nullptr, error.message);
-    bongo_cat_live2d_resize(runtime.get(), 640, 640);
-    require(bongo_cat_live2d_load(runtime.get(), directory, setting, direct,
+    bongo_cat_model_runtime_resize(runtime.get(), 640, 640);
+    require(bongo_cat_model_runtime_load(runtime.get(), directory, setting, direct,
         nullptr, nullptr, nullptr, &error) == BONGO_CAT_OK, error.message);
     if (shared) {
         std::srand(1);
-        require(bongo_cat_live2d_load(runtime.get(), directory, setting, direct,
+        require(bongo_cat_model_runtime_load(runtime.get(), directory, setting, direct,
             nullptr, nullptr, nullptr, &error) == BONGO_CAT_OK, error.message);
     }
     check_gl("model load");
@@ -234,10 +234,10 @@ void run(const char *assets, const char *directory, const char *setting,
         sequence.size(size[0], size[1]);
         for (int mirror = 0; mirror < 2; ++mirror) {
             sequence.reset();
-            bongo_cat_live2d_set_mirror(runtime.get(), mirror != 0);
+            bongo_cat_model_runtime_set_mirror(runtime.get(), mirror != 0);
             for (int input = 0; input < 3; ++input) {
                 float direction = (float)(input - 1);
-                bongo_cat_live2d_set_centered_dragging(runtime.get(), direction, -direction);
+                bongo_cat_model_runtime_set_centered_dragging(runtime.get(), direction, -direction);
                 sequence.advance(15);
                 sequence.capture("view:" + std::to_string(size[0]) + "x" +
                     std::to_string(size[1]) + ":" + std::to_string(mirror) + ":" +
@@ -248,7 +248,7 @@ void run(const char *assets, const char *directory, const char *setting,
     sequence.size(640, 640);
     for (const auto &motion : manifest.motions) {
         sequence.reset();
-        require(bongo_cat_live2d_start_motion(runtime.get(), motion.group.c_str(),
+        require(bongo_cat_model_runtime_start_motion(runtime.get(), motion.group.c_str(),
             motion.index), "Cannot start motion " + motion.group + ":" +
             std::to_string(motion.index));
         int previous = 0;
@@ -261,7 +261,7 @@ void run(const char *assets, const char *directory, const char *setting,
     }
     for (int expression = 0; expression < manifest.expressions; ++expression) {
         sequence.reset();
-        require(bongo_cat_live2d_set_expression(runtime.get(), expression),
+        require(bongo_cat_model_runtime_set_expression(runtime.get(), expression),
             "Cannot select expression " + std::to_string(expression));
         for (int sample = 0; sample < 3; ++sample) {
             sequence.advance(15);
@@ -274,9 +274,9 @@ void run(const char *assets, const char *directory, const char *setting,
     for (const auto &id : manifest.parameters) {
         sequence.reset();
         BongoCatParameterRange range{};
-        if (!bongo_cat_live2d_parameter(runtime.get(), id.c_str(), &range)) continue;
+        if (!bongo_cat_model_runtime_parameter(runtime.get(), id.c_str(), &range)) continue;
         for (int maximum = 0; maximum < 2; ++maximum) {
-            require(bongo_cat_live2d_set_parameter(runtime.get(), id.c_str(),
+            require(bongo_cat_model_runtime_set_parameter(runtime.get(), id.c_str(),
                 maximum ? range.maximum : range.minimum), "Cannot set parameter " + id);
             sequence.advance(2);
             sequence.capture("parameter:" + id + ":" + std::to_string(maximum));

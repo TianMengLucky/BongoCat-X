@@ -4,7 +4,7 @@ BongoCatPointerAudit bongo_cat_pointer_audit;
 
 static bool value(BongoCatApp *app, const char *id, float *output) {
     BongoCatParameterRange range;
-    if (!bongo_cat_live2d_parameter(app->live2d, id, &range)) return false;
+    if (!bongo_cat_model_runtime_parameter(app->model_runtime, id, &range)) return false;
     if (output) *output = range.value;
     return true;
 }
@@ -23,7 +23,7 @@ static bool test_center(BongoCatApp *app, SDL_Rect *bounds,
         bounds->w > 0 && bounds->h > 0;
 }
 
-bool bongo_cat_live2d_pointer_audit_run(BongoCatApp *app, bool mirror) {
+bool bongo_cat_model_runtime_pointer_audit_run(BongoCatApp *app, bool mirror) {
     SDL_Rect bounds;
     double center_x, center_y;
     if (!test_center(app, &bounds, &center_x, &center_y)) return false;
@@ -36,7 +36,7 @@ bool bongo_cat_live2d_pointer_audit_run(BongoCatApp *app, bool mirror) {
     return true;
 }
 
-bool bongo_cat_live2d_pointer_reverse_audit_run(BongoCatApp *app) {
+bool bongo_cat_model_runtime_pointer_reverse_audit_run(BongoCatApp *app) {
     SDL_Rect bounds;
     double center_x, center_y;
     if (!test_center(app, &bounds, &center_x, &center_y)) return false;

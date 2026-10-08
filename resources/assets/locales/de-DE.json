@@ -7,6 +7,27 @@
       }
     },
     "preference": {
+      "plugins": {
+        "title": "Plugins",
+        "description": "Renderer-Plugins installieren und benötigte Engines aktivieren. Das Modellformat bestimmt den Renderer automatisch.",
+        "status": "Status",
+        "active": "In Verwendung",
+        "installed": "Installiert",
+        "missing": "Nicht installiert",
+        "enabled": "Aktiviert",
+        "activeHint": "Ein ausgewähltes Modell anklicken, um es vor Plugin-Änderungen abzuwählen.",
+        "remove": "Plugin entfernen",
+        "install": "Lokales Plugin installieren",
+        "saved": "Plugin-Einstellungen aktualisiert",
+        "failed": "Plugin konnte nicht aktualisiert werden",
+        "live2dMissing": "Live2D auf der Plugin-Seite installieren und aktivieren, dann Cubism Core importieren.",
+        "disabled": "Deaktiviert",
+        "liveDescription": "Live2D benötigt Cubism Core. Fehlender Core kann mit der ZIP importiert werden.",
+        "inoxDescription": "Inochi2D-Modelle im INP-/INX-Format.",
+        "openFolder": "Ordner öffnen",
+        "drop": "Klicken oder Plugin-ZIP hier ablegen",
+        "dropHint": "ZIP oder Bibliothek; fehlender Core wird aus dem Paket importiert."
+      },
       "title": "Einstellungen",
       "cat": {
         "title": "Einstellungen",
@@ -241,7 +262,7 @@
     "live2dCoreImportHint": "Wählen Sie die Cubism-Core-Bibliothek oder das offizielle Cubism-SDK-ZIP, um Live2D-Rendering ohne Neustart zu aktivieren",
     "live2dCoreImportButton": "Datei auswählen",
     "live2dCoreImportSuccess": "Live2D Cubism Core importiert: Live2D-Rendering ist jetzt aktiviert",
-    "live2dCoreImportFailed": "Import des Live2D Cubism Core fehlgeschlagen",
+    "live2dCoreImportFailed": "Import des Live2D Cubism Core fehlgeschlagen",
     "live2dCoreRescanFound": "Live2D Core erkannt und geladen",
     "live2dCoreRescanMissing": "Noch kein Live2D Core in den live2d-Ordnern gefunden",
     "live2dCoreScanning": "Cubism Core wird in den live2d-Ordnern gesucht...",

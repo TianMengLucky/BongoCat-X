@@ -5,7 +5,7 @@
 
 #include "bongo_cat/rhi.h"
 
-struct BongoCatLive2D {
+struct BongoCatModelRuntime {
     bongo_cat::NativeModel *model;
     int width = 612;
     int height = 354;

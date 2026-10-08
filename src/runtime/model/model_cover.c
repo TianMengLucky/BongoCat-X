@@ -17,11 +17,10 @@ typedef struct CoverWriter {
 } CoverWriter;
 
 void bongo_cat_model_cover_capture_before_switch(BongoCatApp *app) {
-    if (!app || !app->loaded_model[0]) return;
+    if (!app || !app->loaded_model[0] || !bongo_cat_model_cover_pending(app)) return;
     const BongoCatModelEntry *entry = bongo_cat_models_find(&app->models,
         app->loaded_model);
     if (!entry) return;
-    bongo_cat_model_cover_schedule(app, entry);
     if (!bongo_cat_model_cover_pending(app)) return;
     if (!bongo_cat_app_capture_pending_model_cover(app))
         SDL_Log("Model cover refresh before switch deferred: id=%s",

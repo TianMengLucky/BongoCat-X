@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "bongo_cat/file.h"
 #include "bongo_cat/model.h"
 #include "bongo_cat/resource_trace.h"
@@ -22,9 +23,14 @@
 using Csm::CubismFramework;
 
 BongoCatRhiBackend s_live2d_rhi_backend = BONGO_CAT_RHI_OPENGL;
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+namespace bongo_cat { void release_vulkan_device(); }
+#endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
 namespace bongo_cat { void release_metal_device(void *device); }
 #endif
+
+unsigned char *bongo_cat_cubism_shader_bytes(const std::string& path, size_t *size);
 
 namespace {
 class Allocator final : public Csm::ICubismAllocator {
@@ -59,6 +65,11 @@ void log_message(const char *message) {
 
 Csm::csmByte *load_file(const std::string path, Csm::csmSizeInt *size) {
     if (size) *size = 0;
+    size_t shader_size = 0;
+    if (auto *shader = bongo_cat_cubism_shader_bytes(path, &shader_size)) {
+        if (size) *size = static_cast<Csm::csmSizeInt>(shader_size);
+        return shader;
+    }
     FILE *file = bongo_cat_file_open(path.c_str(), "rb");
     if (!file) {
         const char *base = SDL_GetBasePath();
@@ -125,16 +136,21 @@ void stop_framework() {
     if (--runtime_count > 0) return;
     CubismFramework::Dispose();
     CubismFramework::CleanUp();
+    // Core outlives the plugin; it must not retain the unloaded log callback.
+    Live2D::Cubism::Core::csmSetLogFunction(nullptr);
     runtime_count = 0;
 }
 
 } // namespace
 
-static BongoCatLive2D *create_runtime(const char *asset_root,
+static BongoCatModelRuntime *create_runtime(const char *asset_root,
     BongoCatError *error) {
     resource_root = asset_root ? asset_root : "";
+    BongoCatRhiDeviceInfo device{};
+    bongo_cat_rhi_get_active_device_info(&device);
+    s_live2d_rhi_backend = device.backend;
     if (!start_framework(error)) return nullptr;
-    BongoCatLive2D *runtime = new(std::nothrow) BongoCatLive2D{};
+    BongoCatModelRuntime *runtime = new(std::nothrow) BongoCatModelRuntime{};
     if (!runtime) {
         stop_framework();
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate Cubism runtime");
@@ -142,16 +158,17 @@ static BongoCatLive2D *create_runtime(const char *asset_root,
     if (runtime) {
         bongo_cat_rhi_get_active_device_info(&runtime->rhi_info);
         s_live2d_rhi_backend = runtime->rhi_info.backend;
+
     }
     return runtime;
 }
 
-extern "C" BongoCatLive2D *bongo_cat_live2d_create(const char *asset_root,
+extern "C" BongoCatModelRuntime *bongo_cat_model_runtime_create(const char *asset_root,
     BongoCatError *error) {
     return create_runtime(asset_root, error);
 }
 
-extern "C" void bongo_cat_live2d_destroy(BongoCatLive2D *runtime) {
+extern "C" void bongo_cat_model_runtime_destroy(BongoCatModelRuntime *runtime) {
     if (!runtime) return;
     delete runtime->model;
     bongo_cat_resource_trace_atlas(0.0);
@@ -161,7 +178,7 @@ extern "C" void bongo_cat_live2d_destroy(BongoCatLive2D *runtime) {
         bongo_cat::release_offscreen_pool();
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (runtime_count == 1 && runtime->rhi_info.backend == BONGO_CAT_RHI_VULKAN)
-        Csm::Rendering::CubismRenderer_Vulkan::DoStaticRelease();
+        bongo_cat::release_vulkan_device();
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
     if (runtime_count == 1 && runtime->rhi_info.backend == BONGO_CAT_RHI_METAL)
@@ -171,34 +188,34 @@ extern "C" void bongo_cat_live2d_destroy(BongoCatLive2D *runtime) {
     stop_framework();
 }
 
-extern "C" bool bongo_cat_live2d_ready(const BongoCatLive2D *runtime) {
+extern "C" bool bongo_cat_model_runtime_ready(const BongoCatModelRuntime *runtime) {
     return runtime && runtime->model;
 }
 
-extern "C" bool bongo_cat_live2d_canvas_size(const BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_canvas_size(const BongoCatModelRuntime *runtime,
     int *width, int *height) {
     return runtime && runtime->model &&
         runtime->model->canvas_size(width, height);
 }
 
-extern "C" bool bongo_cat_live2d_frame(const BongoCatLive2D *runtime,
-    BongoCatLive2DFrame *frame) {
+extern "C" bool bongo_cat_model_runtime_frame(const BongoCatModelRuntime *runtime,
+    BongoCatModelRuntimeFrame *frame) {
     return runtime && runtime->model && runtime->model->frame(frame);
 }
 
-extern "C" bool bongo_cat_live2d_viewport(const BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_viewport(const BongoCatModelRuntime *runtime,
     int *x, int *y, int *width, int *height) {
     return runtime && runtime->model &&
         runtime->model->viewport(x, y, width, height);
 }
 
-extern "C" bool bongo_cat_live2d_overlay_viewport(const BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_overlay_viewport(const BongoCatModelRuntime *runtime,
     int *x, int *y, int *width, int *height) {
     return runtime && runtime->model &&
         runtime->model->overlay_viewport(x, y, width, height);
 }
 
-extern "C" void bongo_cat_live2d_resize(BongoCatLive2D *runtime, int width, int height) {
+extern "C" void bongo_cat_model_runtime_resize(BongoCatModelRuntime *runtime, int width, int height) {
     if (!runtime) return;
     if (width > 0 && height > 0) {
         runtime->width = width;
@@ -206,7 +223,7 @@ extern "C" void bongo_cat_live2d_resize(BongoCatLive2D *runtime, int width, int 
     }
     if (runtime->model) runtime->model->resize(width, height);
 }
-extern "C" void bongo_cat_live2d_reshape(BongoCatLive2D *runtime, int width, int height) {
+extern "C" void bongo_cat_model_runtime_reshape(BongoCatModelRuntime *runtime, int width, int height) {
     if (!runtime) return;
     if (width > 0 && height > 0) {
         runtime->width = width;
@@ -214,45 +231,45 @@ extern "C" void bongo_cat_live2d_reshape(BongoCatLive2D *runtime, int width, int
     }
     if (runtime->model) runtime->model->reshape(width, height);
 }
-extern "C" bool bongo_cat_live2d_update(BongoCatLive2D *runtime, float elapsed) {
+extern "C" bool bongo_cat_model_runtime_update(BongoCatModelRuntime *runtime, float elapsed) {
     if (!runtime) return false;
     return runtime->model && runtime->model->update(elapsed);
 }
 
-extern "C" bool bongo_cat_live2d_texture_refresh_pending(const BongoCatLive2D *runtime, bool active) {
+extern "C" bool bongo_cat_model_runtime_texture_refresh_pending(const BongoCatModelRuntime *runtime, bool active) {
     return runtime && runtime->model && runtime->model->texture_refresh_pending(active);
 }
 
-extern "C" bool bongo_cat_live2d_texture_refresh_due(const BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_texture_refresh_due(const BongoCatModelRuntime *runtime,
     bool active, bool allow_start) {
     return runtime && runtime->model && runtime->model->texture_refresh_due(active, allow_start);
 }
 
-extern "C" bool bongo_cat_live2d_try_reuse_texture_quality(BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_try_reuse_texture_quality(BongoCatModelRuntime *runtime,
     float quality_percent) {
     return runtime && runtime->model && runtime->model->try_reuse_texture_quality(quality_percent);
 }
 
-extern "C" bool bongo_cat_live2d_measure_frame(BongoCatLive2D *runtime,
-    BongoCatLive2DFrame *required) {
+extern "C" bool bongo_cat_model_runtime_measure_frame(BongoCatModelRuntime *runtime,
+    BongoCatModelRuntimeFrame *required) {
     return runtime && runtime->model && runtime->model->measure_frame(required);
 }
 
-extern "C" void bongo_cat_live2d_set_frame(BongoCatLive2D *runtime,
-    const BongoCatLive2DFrame *frame) {
+extern "C" void bongo_cat_model_runtime_set_frame(BongoCatModelRuntime *runtime,
+    const BongoCatModelRuntimeFrame *frame) {
     if (runtime && runtime->model && frame) runtime->model->set_frame(*frame);
 }
-extern "C" bool bongo_cat_live2d_refresh_textures(BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_refresh_textures(BongoCatModelRuntime *runtime,
     bool active, bool allow_start) {
     return runtime && runtime->model && runtime->model->refresh_texture_resolution(active, allow_start);
 }
-extern "C" bool bongo_cat_live2d_texture_refresh_busy(const BongoCatLive2D *runtime) {
+extern "C" bool bongo_cat_model_runtime_texture_refresh_busy(const BongoCatModelRuntime *runtime) {
     return runtime && runtime->model && runtime->model->texture_refresh_busy();
 }
-extern "C" void bongo_cat_live2d_cancel_texture_refresh(BongoCatLive2D *runtime) {
+extern "C" void bongo_cat_model_runtime_cancel_texture_refresh(BongoCatModelRuntime *runtime) {
     if (runtime && runtime->model) runtime->model->cancel_texture_refresh_async();
 }
-extern "C" bool bongo_cat_live2d_draw_checked(BongoCatLive2D *runtime) {
+extern "C" bool bongo_cat_model_runtime_draw_checked(BongoCatModelRuntime *runtime) {
     if (!runtime || !runtime->model ||
         !runtime->model->GetRenderer<Csm::Rendering::CubismRenderer>()) return false;
     try { runtime->model->draw(); return true; }
@@ -265,80 +282,86 @@ extern "C" bool bongo_cat_live2d_draw_checked(BongoCatLive2D *runtime) {
         runtime->model->release_render_resources();
     return false;
 }
-extern "C" void bongo_cat_live2d_draw(BongoCatLive2D *runtime) {
-    (void)bongo_cat_live2d_draw_checked(runtime);
+extern "C" void bongo_cat_model_runtime_draw(BongoCatModelRuntime *runtime) {
+    (void)bongo_cat_model_runtime_draw_checked(runtime);
 }
-extern "C" void bongo_cat_live2d_set_vertical_flip(BongoCatLive2D *runtime, bool flipped) {
+extern "C" void bongo_cat_model_runtime_set_vertical_flip(BongoCatModelRuntime *runtime, bool flipped) {
     if (runtime && runtime->model) runtime->model->set_vertical_flip(flipped);
 }
 
-extern "C" void bridge_live2d_set_rhi_info(BongoCatLive2D *runtime,
+extern "C" void bongo_cat_model_runtime_set_rhi_info(BongoCatModelRuntime *runtime,
     const BongoCatRhiDeviceInfo *info) {
     if (!runtime) return;
     runtime->rhi_info = info ? *info : BongoCatRhiDeviceInfo{};
     s_live2d_rhi_backend = runtime->rhi_info.backend;
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (info && info->backend == BONGO_CAT_RHI_VULKAN && volkInitialize() == VK_SUCCESS) {
+        volkLoadInstance((VkInstance)info->vulkan_instance);
+        volkLoadDevice((VkDevice)info->vulkan_device);
+    }
+#endif
     if (runtime->model) runtime->model->set_rhi_info(runtime->rhi_info);
 }
 
-extern "C" void bongo_cat_live2d_set_mirror(BongoCatLive2D *runtime, bool mirror) {
+extern "C" void bongo_cat_model_runtime_set_mirror(BongoCatModelRuntime *runtime, bool mirror) {
     if (runtime && runtime->model) runtime->model->set_mirror(mirror); }
-extern "C" void bongo_cat_live2d_set_render_options(BongoCatLive2D *runtime,
-    const BongoCatLive2DRenderOptions *options) {
+extern "C" void bongo_cat_model_runtime_set_render_options(BongoCatModelRuntime *runtime,
+    const BongoCatModelRuntimeRenderOptions *options) {
     if (runtime && runtime->model && options)
         runtime->model->set_render_options(*options); }
-extern "C" void bongo_cat_live2d_set_tight_frame(BongoCatLive2D *runtime, bool tight) {
+extern "C" void bongo_cat_model_runtime_set_tight_frame(BongoCatModelRuntime *runtime, bool tight) {
     if (runtime && runtime->model) runtime->model->set_tight_frame(tight); }
-extern "C" void bongo_cat_live2d_set_tight_overlay_rect(BongoCatLive2D *runtime,
+extern "C" void bongo_cat_model_runtime_set_tight_overlay_rect(BongoCatModelRuntime *runtime,
     const float *rect) {
     if (runtime && runtime->model) runtime->model->set_tight_overlay_rect(rect); }
-extern "C" void bongo_cat_live2d_set_dragging(BongoCatLive2D *runtime,
+extern "C" void bongo_cat_model_runtime_set_dragging(BongoCatModelRuntime *runtime,
     float x, float y) {
     if (runtime && runtime->model) runtime->model->set_dragging(x, y); }
-extern "C" void bongo_cat_live2d_set_centered_dragging(BongoCatLive2D *runtime,
+extern "C" void bongo_cat_model_runtime_set_centered_dragging(BongoCatModelRuntime *runtime,
     float x, float y) {
     if (runtime && runtime->model) runtime->model->set_dragging(x, y, true); }
-extern "C" void bongo_cat_live2d_prepare_viewer_audit(BongoCatLive2D *runtime) {
+extern "C" void bongo_cat_model_runtime_prepare_viewer_audit(BongoCatModelRuntime *runtime) {
     if (runtime && runtime->model) runtime->model->prepare_viewer_audit();
 }
-extern "C" bool bongo_cat_live2d_prepare_cover_capture(
-    BongoCatLive2D *runtime) {
+extern "C" bool bongo_cat_model_runtime_prepare_cover_capture(
+    BongoCatModelRuntime *runtime) {
     return runtime && runtime->model &&
         runtime->model->prepare_cover_capture();
 }
-extern "C" bool bongo_cat_live2d_set_parameter(BongoCatLive2D *runtime, const char *id, float value) {
+extern "C" bool bongo_cat_model_runtime_set_parameter(BongoCatModelRuntime *runtime, const char *id, float value) {
     return runtime && runtime->model && runtime->model->set_parameter(id, value);
 }
-extern "C" bool bongo_cat_live2d_parameter(BongoCatLive2D *runtime, const char *id,
+extern "C" bool bongo_cat_model_runtime_parameter(BongoCatModelRuntime *runtime, const char *id,
     BongoCatParameterRange *range) {
     return runtime && runtime->model && range && runtime->model->parameter(id,
         &range->minimum, &range->maximum, &range->value);
 }
-extern "C" bool bongo_cat_live2d_start_motion(BongoCatLive2D *runtime, const char *group, int index) {
+extern "C" bool bongo_cat_model_runtime_start_motion(BongoCatModelRuntime *runtime, const char *group, int index) {
     return runtime && runtime->model && runtime->model->start_motion(group, index);
 }
-extern "C" bool bongo_cat_live2d_restore_motion_state(BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_restore_motion_state(BongoCatModelRuntime *runtime,
     const char *group, int index) {
     return runtime && runtime->model &&
         runtime->model->restore_motion_state(group, index);
 }
-extern "C" bool bongo_cat_live2d_preview_motion(BongoCatLive2D *runtime, const char *group, int index) {
+extern "C" bool bongo_cat_model_runtime_preview_motion(BongoCatModelRuntime *runtime, const char *group, int index) {
     return runtime && runtime->model && runtime->model->preview_motion(group, index); }
-extern "C" bool bongo_cat_live2d_restore_motion_preview(BongoCatLive2D *runtime) { return runtime && runtime->model && runtime->model->restore_motion_preview(); }
-extern "C" bool bongo_cat_live2d_commit_motion_preview(BongoCatLive2D *runtime, const char *group, int index) {
+extern "C" bool bongo_cat_model_runtime_restore_motion_preview(BongoCatModelRuntime *runtime) { return runtime && runtime->model && runtime->model->restore_motion_preview(); }
+extern "C" bool bongo_cat_model_runtime_commit_motion_preview(BongoCatModelRuntime *runtime, const char *group, int index) {
     return runtime && runtime->model && runtime->model->commit_motion_preview(group, index); }
-extern "C" bool bongo_cat_live2d_motion_selected(const BongoCatLive2D *runtime, const char *group, int index) { return runtime && runtime->model && runtime->model->motion_selected(group, index); }
-extern "C" bool bongo_cat_live2d_motion_persistent(const BongoCatLive2D *runtime,
+extern "C" bool bongo_cat_model_runtime_motion_selected(const BongoCatModelRuntime *runtime, const char *group, int index) { return runtime && runtime->model && runtime->model->motion_selected(group, index); }
+extern "C" bool bongo_cat_model_runtime_motion_persistent(const BongoCatModelRuntime *runtime,
     const char *group, int index) {
     return runtime && runtime->model &&
         runtime->model->motion_persistent(group, index); }
-extern "C" bool bongo_cat_live2d_motion_visible(const BongoCatLive2D *runtime, const char *group, int index) {
+extern "C" bool bongo_cat_model_runtime_motion_visible(const BongoCatModelRuntime *runtime, const char *group, int index) {
     return runtime && runtime->model && runtime->model->motion_visible(group, index); }
-extern "C" bool bongo_cat_live2d_motion_same_toggle(
-    const BongoCatLive2D *runtime, const char *left_group, int left_index,
+extern "C" bool bongo_cat_model_runtime_motion_same_toggle(
+    const BongoCatModelRuntime *runtime, const char *left_group, int left_index,
     const char *right_group, int right_index) {
     return runtime && runtime->model && runtime->model->motion_same_toggle(
         left_group, left_index, right_group, right_index); }
-extern "C" bool bongo_cat_live2d_set_expression(BongoCatLive2D *runtime, int index) {
+extern "C" bool bongo_cat_model_runtime_set_expression(BongoCatModelRuntime *runtime, int index) {
     return runtime && runtime->model && runtime->model->set_expression(index); }
-extern "C" int bongo_cat_live2d_expression(const BongoCatLive2D *runtime) {
+extern "C" int bongo_cat_model_runtime_expression(const BongoCatModelRuntime *runtime) {
     return runtime && runtime->model ? runtime->model->expression() : -1; }

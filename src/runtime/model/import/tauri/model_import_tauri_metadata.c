@@ -4,18 +4,18 @@
 
 #include <math.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
-static bool finite_number(yyjson_val *value) {
-    return yyjson_is_num(value) && isfinite(yyjson_get_num(value));
+static bool finite_number(BongoJsonValue *value) {
+    return bongo_json_is_num(value) && isfinite(bongo_json_get_num(value));
 }
 
-static bool read_offset(yyjson_val *value, double *x, double *y) {
-    if (!yyjson_is_arr(value) || yyjson_arr_size(value) < 2 ||
-        !finite_number(yyjson_arr_get(value, 0)) ||
-        !finite_number(yyjson_arr_get(value, 1))) return false;
-    double next_x = yyjson_get_num(yyjson_arr_get(value, 0));
-    double next_y = yyjson_get_num(yyjson_arr_get(value, 1));
+static bool read_offset(BongoJsonValue *value, double *x, double *y) {
+    if (!bongo_json_is_arr(value) || bongo_json_arr_size(value) < 2 ||
+        !finite_number(bongo_json_arr_get(value, 0)) ||
+        !finite_number(bongo_json_arr_get(value, 1))) return false;
+    double next_x = bongo_json_get_num(bongo_json_arr_get(value, 0));
+    double next_y = bongo_json_get_num(bongo_json_arr_get(value, 1));
     if (next_x < -100.0 || next_x > 100.0 || next_y < -100.0 ||
         next_y > 100.0) return false;
     *x = next_x;
@@ -23,12 +23,12 @@ static bool read_offset(yyjson_val *value, double *x, double *y) {
     return true;
 }
 
-static bool read_window(yyjson_val *value, int *width, int *height) {
-    if (!yyjson_is_arr(value) || yyjson_arr_size(value) < 2 ||
-        !yyjson_is_num(yyjson_arr_get(value, 0)) ||
-        !yyjson_is_num(yyjson_arr_get(value, 1))) return false;
-    double next_width = yyjson_get_num(yyjson_arr_get(value, 0));
-    double next_height = yyjson_get_num(yyjson_arr_get(value, 1));
+static bool read_window(BongoJsonValue *value, int *width, int *height) {
+    if (!bongo_json_is_arr(value) || bongo_json_arr_size(value) < 2 ||
+        !bongo_json_is_num(bongo_json_arr_get(value, 0)) ||
+        !bongo_json_is_num(bongo_json_arr_get(value, 1))) return false;
+    double next_width = bongo_json_get_num(bongo_json_arr_get(value, 0));
+    double next_height = bongo_json_get_num(bongo_json_arr_get(value, 1));
     if (!isfinite(next_width) || !isfinite(next_height) ||
         next_width < 64.0 || next_width > 8192.0 ||
         next_height < 64.0 || next_height > 8192.0)
@@ -62,28 +62,28 @@ bool bongo_cat_tauri_read_calibration(
         bongo_cat_tauri_legacy_calibration(candidate, calibration);
         return true;
     }
-    yyjson_doc *document = bongo_cat_json_read_file(path, 0, NULL);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *schema = yyjson_obj_get(root, "schemaVersion");
-    const char *kind = yyjson_get_str(yyjson_obj_get(root, "kind"));
-    const char *mode = yyjson_get_str(yyjson_obj_get(root, "mode"));
-    yyjson_val *decoration = yyjson_obj_get(root, "decoration");
-    bool valid = yyjson_is_int(schema) && yyjson_get_int(schema) == 1 &&
+    BongoJsonDoc *document = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *schema = bongo_json_obj_get(root, "schemaVersion");
+    const char *kind = bongo_json_get_str(bongo_json_obj_get(root, "kind"));
+    const char *mode = bongo_json_get_str(bongo_json_obj_get(root, "mode"));
+    BongoJsonValue *decoration = bongo_json_obj_get(root, "decoration");
+    bool valid = bongo_json_is_int(schema) && bongo_json_get_int(schema) == 1 &&
         kind && strcmp(kind, "bongo-cat-mver-source") == 0 &&
         (!mode || strcmp(mode, bongo_cat_mode_name(candidate->mode)) == 0) &&
-        yyjson_is_obj(decoration);
+        bongo_json_is_obj(decoration);
     if (valid) {
         bongo_cat_tauri_calibration_defaults(calibration);
-        yyjson_val *scale = yyjson_obj_get(decoration, "l2d_correct");
+        BongoJsonValue *scale = bongo_json_obj_get(decoration, "l2d_correct");
         bool have_scale = false;
         if (finite_number(scale)) {
-            double value = yyjson_get_num(scale);
+            double value = bongo_json_get_num(scale);
             if (value > 0.01 && value <= 100.0) {
                 calibration->l2d_correct = value;
                 have_scale = true;
             }
         }
-        bool have_window = read_window(yyjson_obj_get(decoration, "window_size"),
+        bool have_window = read_window(bongo_json_obj_get(decoration, "window_size"),
             &calibration->window_width, &calibration->window_height);
         if (!have_scale || !have_window) {
             TauriMverCalibration authored = *calibration;
@@ -94,13 +94,13 @@ bool bongo_cat_tauri_read_calibration(
                 calibration->window_height = authored.window_height;
             }
         }
-        read_offset(yyjson_obj_get(decoration, "l2d_offset"),
+        read_offset(bongo_json_obj_get(decoration, "l2d_offset"),
             &calibration->l2d_offset_x, &calibration->l2d_offset_y);
         calibration->auto_frame = !(have_scale && have_window);
-        yyjson_val *mirror = yyjson_obj_get(decoration,
+        BongoJsonValue *mirror = bongo_json_obj_get(decoration,
             "l2d_horizontal_flip");
-        if (yyjson_is_bool(mirror)) calibration->mirror = yyjson_get_bool(mirror);
+        if (bongo_json_is_bool(mirror)) calibration->mirror = bongo_json_get_bool(mirror);
     } else bongo_cat_tauri_legacy_calibration(candidate, calibration);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return true;
 }

@@ -1,3 +1,4 @@
+#include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
 #include "cubism_target_bindings.hpp"
 #include "bongo_cat/gl_api.h"

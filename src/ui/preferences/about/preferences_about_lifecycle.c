@@ -32,7 +32,7 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
         bool refresh = value->visible && job->refresh_needed &&
             !SDL_GetAtomicInt(&job->cancel);
         if (value->visible && job->status == 200 && !SDL_GetAtomicInt(&job->cancel)) {
-            if (value->page == 3) value->render_dirty = true;
+            if (value->page == 4) value->render_dirty = true;
             if (!same_contributors(s->contributors, job->feed)) {
                 bongo_cat_about_feed_free(s->contributors);
                 s->contributors = job->feed;
@@ -59,7 +59,7 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
 bool bongo_cat_about_event(BongoCatPreferences *value, const SDL_Event *event) {
     if (value->about.event_type && event->type == value->about.event_type) {
         bongo_cat_about_refresh(value);
-        if (value->visible && value->page == 3) value->render_dirty = true;
+        if (value->visible && value->page == 4) value->render_dirty = true;
         return true;
     }
     return false;

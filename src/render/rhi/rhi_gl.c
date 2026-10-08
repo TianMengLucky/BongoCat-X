@@ -18,7 +18,7 @@ static bool set_gl_attributes(int samples) {
     SDL_GL_ResetAttributes();
 #ifdef __APPLE__
     const int major = 4, minor = 1, profile = SDL_GL_CONTEXT_PROFILE_CORE;
-#elif defined(BONGO_CAT_HAS_CUBISM)
+#elif defined(BONGO_CAT_HAS_MODEL_PLUGINS)
     const int major = 3, minor = 3, profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 #else
     const int major = 3, minor = 3, profile = SDL_GL_CONTEXT_PROFILE_CORE;
@@ -28,6 +28,7 @@ static bool set_gl_attributes(int samples) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile) &&
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) &&
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0) &&
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) &&
         SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8) &&
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, samples > 0 ? 1 : 0) &&
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, samples);

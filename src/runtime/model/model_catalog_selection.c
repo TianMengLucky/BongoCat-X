@@ -60,7 +60,7 @@ static void clear_loaded_model(BongoCatApp *app) {
 }
 
 bool bongo_cat_model_catalog_reconcile(BongoCatApp *app) {
-    if (!app) return false;
+    if (!app || !app->session.active_model_id[0]) return false;
     BongoCatModelSelection selection =
         bongo_cat_model_selection_capture(app);
     const BongoCatModelEntry *active = bongo_cat_models_find(&app->models,
@@ -84,7 +84,7 @@ bool bongo_cat_model_catalog_reconcile(BongoCatApp *app) {
     bongo_cat_model_selection_restore(app, &selection);
     if (!selection_matches(app, &selection)) changed = true;
     if (app->loaded_model[0] && !loaded) {
-        if (active && app->live2d) {
+        if (active && app->model_runtime) {
             BongoCatError error = {0};
             if (!bongo_cat_app_select_model_with_error(app, active->id,
                     &error)) {

@@ -3,7 +3,7 @@
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
 
-#include <SDL3/SDL_opengl.h>
+#include "../../platform/common/gl_readback.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,13 +26,13 @@ static const char *return_names[] = {"return-001", "return-002", "return-004",
     "return-008", "return-015", "return-030"};
 static bool parameter(BongoCatApp *app, const char *id, float *value) {
     BongoCatParameterRange range;
-    if (!bongo_cat_live2d_parameter(app->live2d, id, &range)) return false;
+    if (!bongo_cat_model_runtime_parameter(app->model_runtime, id, &range)) return false;
     *value = range.value;
     return true;
 }
 static bool parameter_range(BongoCatApp *app, const char *id,
     BongoCatParameterRange *range) {
-    return bongo_cat_live2d_parameter(app->live2d, id, range);
+    return bongo_cat_model_runtime_parameter(app->model_runtime, id, range);
 }
 static float viewer_target(const BongoCatParameterRange *range,
     float direction, float weight) {
@@ -50,18 +50,14 @@ static bool save_frame(BongoCatApp *app, const char *directory,
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(app->window, &width, &height);
     if (width < 2 || height < 2) return false;
-    glViewport(0, 0, width, height);
-    glDisable(GL_SCISSOR_TEST);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    bongo_cat_live2d_draw(app->live2d);
-    glFinish();
+    if (!bongo_cat_model_runtime_audit_render(app, width, height)) return false;
     size_t pitch = (size_t)width * 4;
     unsigned char *pixels = malloc(pitch * (size_t)height);
     unsigned char *row = malloc(pitch);
     if (!pixels || !row) { free(pixels); free(row); return false; }
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    if (!bongo_cat_gl_read_window(0, 0, width, height, true, pixels)) {
+        free(pixels); free(row); return false;
+    }
     for (int y = 0; y < height / 2; ++y) {
         unsigned char *top = pixels + (size_t)y * pitch;
         unsigned char *bottom = pixels + (size_t)(height - 1 - y) * pitch;
@@ -86,8 +82,8 @@ static bool save_frame(BongoCatApp *app, const char *directory,
             if (available) fprintf(metrics, ",%.6f", value);
             else fputs(",nan", metrics);
         }
-        BongoCatLive2DVisualState visual = {0};
-        bool visual_ready = bongo_cat_live2d_visual_state(app->live2d, &visual);
+        BongoCatModelRuntimeVisualState visual = {0};
+        bool visual_ready = bongo_cat_model_runtime_visual_state(app->model_runtime, &visual);
         if (visual_ready) fprintf(metrics, ",%d,%d,%d,%d,%d,%d,%d",
             visual.drawable_count, visual.drawable_visible,
             visual.drawable_vertex_changed, visual.offscreen_count,
@@ -101,19 +97,14 @@ static void render_step(BongoCatApp *app) {
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(app->window, &width, &height);
     if (width < 2 || height < 2) return;
-    glViewport(0, 0, width, height);
-    glDisable(GL_SCISSOR_TEST);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    bongo_cat_live2d_draw(app->live2d);
+    if (!bongo_cat_model_runtime_audit_render(app, width, height)) return;
     if (!bongo_cat_platform_present(&app->platform, width, height))
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
             "Viewer audit frame presentation failed: %s", SDL_GetError());
 }
 static void advance(BongoCatApp *app, int frames) {
     for (int frame = 0; frame < frames; ++frame) {
-        bongo_cat_live2d_update(app->live2d, 1.0f / 60.0f);
+        bongo_cat_model_runtime_update(app->model_runtime, 1.0f / 60.0f);
         render_step(app);
     }
 }
@@ -126,7 +117,7 @@ static bool save_timed(BongoCatApp *app, const char *directory,
 static bool advance_tracking(BongoCatApp *app, int frames,
     float *previous_x, float *maximum_step) {
     for (int frame = 0; frame < frames; ++frame) {
-        bongo_cat_live2d_update(app->live2d, 1.0f / 60.0f);
+        bongo_cat_model_runtime_update(app->model_runtime, 1.0f / 60.0f);
         render_step(app);
         float current_x = 0.0f;
         if (!parameter(app, "ParamAngleX", &current_x)) return false;
@@ -137,15 +128,15 @@ static bool advance_tracking(BongoCatApp *app, int frames,
     return true;
 }
 
-bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
-    if (!app || !app->live2d || !app->window) return false;
+bool bongo_cat_model_runtime_viewer_audit_run(BongoCatApp *app) {
+    if (!app || !app->model_runtime || !app->window) return false;
     int original_width = 0, original_height = 0;
     SDL_GetWindowSize(app->window, &original_width, &original_height);
     if (!SDL_SetWindowSize(app->window, 900, 900) ||
         !SDL_SyncWindow(app->window)) return false;
     int audit_width = 0, audit_height = 0;
     SDL_GetWindowSizeInPixels(app->window, &audit_width, &audit_height);
-    bongo_cat_live2d_resize(app->live2d, audit_width, audit_height);
+    bongo_cat_model_runtime_resize(app->model_runtime, audit_width, audit_height);
     char root[BONGO_CAT_PATH_CAP], native[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(root, sizeof(root), app->state_root,
         "cubism-viewer-audit") ||
@@ -169,9 +160,9 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
     fputs(",drawable_count,drawable_visible,drawable_vertex_changed,"
         "offscreen_count,offscreen_positive,part_count,part_positive,"
         "required_available\n", metrics);
-    bongo_cat_live2d_prepare_viewer_audit(app->live2d);
-    bool passed = bongo_cat_live2d_set_expression(app->live2d, -1);
-    bongo_cat_live2d_set_dragging(app->live2d, 0.0f, 0.0f);
+    bongo_cat_model_runtime_prepare_viewer_audit(app->model_runtime);
+    bool passed = bongo_cat_model_runtime_set_expression(app->model_runtime, -1);
+    bongo_cat_model_runtime_set_dragging(app->model_runtime, 0.0f, 0.0f);
     advance(app, 120);
     const char *expression_id = "Param6";
     float expression_before = 0.0f;
@@ -180,7 +171,7 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
         expression_id = "Param5";
         expression_parameter = parameter(app, expression_id, &expression_before);
     }
-    if (bongo_cat_live2d_set_expression(app->live2d, 2)) {
+    if (bongo_cat_model_runtime_set_expression(app->model_runtime, 2)) {
         advance(app, 60);
         passed = save_frame(app, native, "track-000", metrics) && passed;
         passed = save_frame(app, native, "idle", metrics) && passed;
@@ -190,7 +181,7 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
             &expression_after) && expression_after > expression_before + 0.5f && passed;
     } else passed = false;
 
-    bongo_cat_live2d_set_dragging(app->live2d, -0.008875728f, 0.0f);
+    bongo_cat_model_runtime_set_dragging(app->model_runtime, -0.008875728f, 0.0f);
     advance(app, 12);
     const float target_drag_x = 0.497041464f;
     const float target_drag_y = 0.598930478f;
@@ -213,11 +204,11 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
         target_drag_y, viewer_gain);
     const float target_z = has_angle_z ? viewer_target(&angle_z_range,
         -target_drag_x * target_drag_y, 1.0f) : 0.0f;
-    bongo_cat_live2d_set_centered_dragging(app->live2d, target_drag_x, target_drag_y);
+    bongo_cat_model_runtime_set_centered_dragging(app->model_runtime, target_drag_x, target_drag_y);
     float previous_x = 0.0f, maximum_step = 0.0f;
     int track_frames[] = {1, 2, 4, 8, 15, 30};
     int return_frames[] = {1, 2, 4, 8, 15, 30};
-    passed = bongo_cat_live2d_viewer_timing(app->smoke_viewer_trace,
+    passed = bongo_cat_model_runtime_viewer_timing(app->smoke_viewer_trace,
         track_frames,
         return_frames) && passed;
     passed = parameter(app, "ParamAngleX", &previous_x) && passed;
@@ -244,7 +235,7 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
     if (has_body_x) passed = parameter_near(app, "ParamBodyAngleX",
         viewer_target(&body_x_range, target_drag_x, viewer_gain), 0.2f) && passed;
 
-    bongo_cat_live2d_set_centered_dragging(app->live2d, 0.0f, 0.0f);
+    bongo_cat_model_runtime_set_centered_dragging(app->model_runtime, 0.0f, 0.0f);
     previous = 0;
     for (size_t i = 0; i < 6; ++i) {
         passed = advance_tracking(app, return_frames[i] - previous, &previous_x, &maximum_step) && passed;
@@ -265,7 +256,7 @@ bool bongo_cat_live2d_viewer_audit_run(BongoCatApp *app) {
     SDL_SetWindowSize(app->window, original_width, original_height);
     SDL_SyncWindow(app->window);
     SDL_GetWindowSizeInPixels(app->window, &audit_width, &audit_height);
-    bongo_cat_live2d_resize(app->live2d, audit_width, audit_height);
+    bongo_cat_model_runtime_resize(app->model_runtime, audit_width, audit_height);
     app->dirty = true;
     return passed;
 }

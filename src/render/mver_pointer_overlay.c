@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 static const char *vertex_source =
     "#version 330 core\n"
@@ -111,12 +111,12 @@ static bool load_texture(const char *directory, const char *relative,
     return texture->id != 0;
 }
 
-static double number_or(yyjson_val *value, double fallback) {
-    return yyjson_is_num(value) ? yyjson_get_num(value) : fallback;
+static double number_or(BongoJsonValue *value, double fallback) {
+    return bongo_json_is_num(value) ? bongo_json_get_num(value) : fallback;
 }
 
-static float color(yyjson_val *pointer, const char *name) {
-    double value = number_or(yyjson_obj_get(pointer, name), 0.0);
+static float color(BongoJsonValue *pointer, const char *name) {
+    double value = number_or(bongo_json_obj_get(pointer, name), 0.0);
     if (value < 0.0) value = 0.0;
     if (value > 255.0) value = 255.0;
     return (float)(value / 255.0);
@@ -129,38 +129,38 @@ bool bongo_cat_mver_pointer_overlay_load(BongoCatMverPointerOverlay *value,
     char metadata[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_model_adapter_metadata_path(directory, metadata,
         sizeof(metadata))) return false;
-    yyjson_doc *document = bongo_cat_json_read_file(metadata, 0, NULL);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *pointer = yyjson_obj_get(root, "standardPointer");
-    yyjson_val *render = yyjson_obj_get(root, "render");
-    bool requested = yyjson_is_obj(pointer) &&
-        yyjson_is_true(yyjson_obj_get(pointer, "enabled"));
+    BongoJsonDoc *document = bongo_cat_json_read_file(metadata, 0, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *pointer = bongo_json_obj_get(root, "standardPointer");
+    BongoJsonValue *render = bongo_json_obj_get(root, "render");
+    bool requested = bongo_json_is_obj(pointer) &&
+        bongo_json_is_true(bongo_json_obj_get(pointer, "enabled"));
     if (!requested) {
-        yyjson_doc_free(document);
+        bongo_json_doc_free(document);
         return true;
     }
     value->reference_width = (int)number_or(
-        yyjson_obj_get(render, "referenceWidth"), 1400.0);
+        bongo_json_obj_get(render, "referenceWidth"), 1400.0);
     value->reference_height = (int)number_or(
-        yyjson_obj_get(render, "referenceHeight"), 1400.0);
-    value->mouse = yyjson_is_true(yyjson_obj_get(pointer, "mouse"));
-    value->left_handed = yyjson_is_true(yyjson_obj_get(pointer, "leftHanded"));
-    value->geometry.offset_x = (float)number_or(yyjson_obj_get(pointer, "offsetX"), 0.0);
-    value->geometry.offset_y = (float)number_or(yyjson_obj_get(pointer, "offsetY"), 0.0);
+        bongo_json_obj_get(render, "referenceHeight"), 1400.0);
+    value->mouse = bongo_json_is_true(bongo_json_obj_get(pointer, "mouse"));
+    value->left_handed = bongo_json_is_true(bongo_json_obj_get(pointer, "leftHanded"));
+    value->geometry.offset_x = (float)number_or(bongo_json_obj_get(pointer, "offsetX"), 0.0);
+    value->geometry.offset_y = (float)number_or(bongo_json_obj_get(pointer, "offsetY"), 0.0);
     value->geometry.hand_offset_x = (float)number_or(
-        yyjson_obj_get(pointer, "handOffsetX"), 0.0);
+        bongo_json_obj_get(pointer, "handOffsetX"), 0.0);
     value->geometry.hand_offset_y = (float)number_or(
-        yyjson_obj_get(pointer, "handOffsetY"), 0.0);
-    value->scale = (float)number_or(yyjson_obj_get(pointer, "scale"), 1.0);
+        bongo_json_obj_get(pointer, "handOffsetY"), 0.0);
+    value->scale = (float)number_or(bongo_json_obj_get(pointer, "scale"), 1.0);
     value->line_red = color(pointer, "lineRed");
     value->line_green = color(pointer, "lineGreen");
     value->line_blue = color(pointer, "lineBlue");
     value->x_ratio = value->y_ratio = 0.5f;
-    const char *arm = yyjson_get_str(yyjson_obj_get(pointer, "arm"));
-    const char *device = yyjson_get_str(yyjson_obj_get(pointer, "device"));
-    const char *left = yyjson_get_str(yyjson_obj_get(pointer, "left"));
-    const char *right = yyjson_get_str(yyjson_obj_get(pointer, "right"));
-    const char *side = yyjson_get_str(yyjson_obj_get(pointer, "side"));
+    const char *arm = bongo_json_get_str(bongo_json_obj_get(pointer, "arm"));
+    const char *device = bongo_json_get_str(bongo_json_obj_get(pointer, "device"));
+    const char *left = bongo_json_get_str(bongo_json_obj_get(pointer, "left"));
+    const char *right = bongo_json_get_str(bongo_json_obj_get(pointer, "right"));
+    const char *side = bongo_json_get_str(bongo_json_obj_get(pointer, "side"));
     bool valid = value->reference_width > 0 && value->reference_height > 0 &&
         isfinite(value->scale) && load_texture(directory, arm, true,
             &value->arm, error) && load_texture(directory, device, true,
@@ -169,7 +169,7 @@ bool bongo_cat_mver_pointer_overlay_load(BongoCatMverPointerOverlay *value,
             &value->right, error) && load_texture(directory, side, false,
             &value->side, error);
     value->enabled = valid;
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     if (!valid) clear_textures(value);
     return valid;
 }

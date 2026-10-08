@@ -45,14 +45,14 @@
 
   **Activar el renderizado Live2D (elige una opción):**
 
-  1. **Importar desde la aplicación (recomendado)**: abre *Ajustes → Modelos*, pulsa *Importar Live2D Core* y selecciona un archivo `Live2DCubismCore.dll` o el zip oficial del SDK de Cubism. Surte efecto de inmediato, sin reiniciar.
+  1. **Importar desde la aplicación (recomendado)**: abre *Ajustes → Plugins*, pulsa *Importar Live2D Core* y selecciona un archivo `Live2DCubismCore.dll` o el zip oficial del SDK de Cubism. Surte efecto de inmediato, sin reiniciar.
   2. **Soltar en la carpeta live2d**: descarga **Cubism SDK for Native** desde la [página oficial de descargas](https://www.live2d.com/en/sdk/download/native/) (acepta la licencia de Live2D) y coloca el zip o el `Live2DCubismCore.dll` extraído en la carpeta `live2d` junto a la aplicación o en el directorio de datos; tras reiniciar se detecta automáticamente.
 
   Para los pasos completos de importación del SDK al compilar desde el código fuente, consulta la sección «Live2D / Cubism SDK» más abajo.
 
 ## 🛠️ Compilar desde el código fuente
 
-BongoCat usa CMake y requiere un compilador C11, un compilador C++17, CMake 3.24 o superior, los archivos de desarrollo de OpenGL para escritorio y la cadena de herramientas de Rust (cargo, por ejemplo mediante rustup): los analizadores críticos para la seguridad de memoria (SHA-256, decodificación de imágenes, el feed de colaboradores y la decodificación de audio) se encuentran en el crate `src/rust/bongo-safe`, que Corrosion compila durante la configuración. Por defecto, SDL3, yyjson, stb, miniaudio y Nuklear se descargan automáticamente durante la configuración, por lo que la primera configuración requiere conexión a internet.
+BongoCat usa CMake y requiere un compilador C11, un compilador C++17, CMake 3.24 o superior, los archivos de desarrollo de OpenGL para escritorio y la cadena de herramientas de Rust (cargo, por ejemplo mediante rustup): los analizadores críticos para la seguridad de memoria (SHA-256, decodificación de imágenes, el feed de colaboradores y la decodificación de audio) se encuentran en el crate `src/rust/bongo-safe`, que Corrosion compila durante la configuración. Por defecto, SDL3, stb, miniaudio y Nuklear se descargan automáticamente durante la configuración, por lo que la primera configuración requiere conexión a internet.
 
 Ejecuta los siguientes comandos en la raíz del proyecto (el directorio que contiene `CMakeLists.txt`).
 
@@ -105,17 +105,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ### 🎭 Live2D / SDK de Cubism (Opcional: también compila sin él)
 
-El SDK de Cubism de Live2D es software propietario y **no** se distribuye
-con este repositorio. Ahora el SDK es **opcional**: la compilación
-predeterminada (`BONGO_CAT_REQUIRE_CUBISM=OFF`) se configura y compila
-con normalidad aunque falte el SDK, y genera un backend de diagnóstico
-sin renderizado de Live2D. Como el renderizador de Live2D debe compilarse
-dentro del binario, depositar el SDK en tiempo de ejecución no puede
-añadir Live2D a esa compilación: solo una compilación hecha con
-el SDK responde al depósito en tiempo de ejecución. El backend de
-diagnóstico existe únicamente para el arranque y el diagnóstico de la
-plataforma. Para compilar con compatibilidad de renderizado de Live2D,
-descargue e importe el SDK manualmente:
+El SDK propietario de Cubism sigue siendo opcional. Sin él se compilan la aplicación y el plugin Inox2D. Un plugin Live2D compatible y Cubism Core proporcionado por el usuario permiten activar Live2D sin recompilar la aplicación. Con el SDK se genera el plugin C++ independiente.
 
 1. Abra la [página de descarga del SDK de Cubism](https://www.live2d.com/en/sdk/download/native/), acepte el Live2D Proprietary Software License Agreement y descargue **Cubism SDK for Native** (las versiones se compilan y prueban con el SDK `5-r.5`).
 2. Extraiga el archivo. Si la carpeta extraída se llama `CubismSdkForNative-5-r.5`, cámbiele el nombre a `CubismSdkForNative` y colóquela en `vendor/` de modo que el árbol contenga `Core/` y `Framework/`.
@@ -160,12 +150,12 @@ lo necesite.
 
 | Opción | Valor por defecto | Descripción |
 | --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | Descarga dependencias de terceros en versiones fijadas mediante `FetchContent` de CMake (incluidos Corrosion y las dependencias del crate de Rust). Establécelo en `OFF` solo si SDL3, yyjson, stb, miniaudio, Nuklear y Corrosion ya están disponibles para CMake. |
+| `BONGO_CAT_FETCH_DEPS` | `ON` | Descarga dependencias de terceros en versiones fijadas mediante `FetchContent` de CMake (incluidos Corrosion y las dependencias del crate de Rust). Establécelo en `OFF` solo si SDL3, stb, miniaudio, Nuklear y Corrosion ya están disponibles para CMake. |
 | `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Ruta del Cubism SDK for Native. |
 | `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | Si falta el SDK, la configuración falla. El valor predeterminado es `OFF`: sin el SDK compila el backend de diagnóstico sin renderizado de Live2D; establézcalo en `ON` para exigir el SDK (lo usa la CI de releases). |
 | `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | Trata las advertencias del compilador nativo como errores. |
 
-Para una compilación sin conexión, establece `BONGO_CAT_FETCH_DEPS=OFF` y proporciona las configuraciones de paquetes de CMake para SDL3 (incluido `SDL3-static`) y yyjson; si stb, Nuklear y miniaudio no se pueden detectar automáticamente, indica también sus directorios de inclusión:
+Para una compilación sin conexión, establece `BONGO_CAT_FETCH_DEPS=OFF` y proporciona las configuraciones de paquetes de CMake para SDL3 (incluido `SDL3-static`) ; si stb, Nuklear y miniaudio no se pueden detectar automáticamente, indica también sus directorios de inclusión:
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -286,7 +276,7 @@ No. BongoCat procesa las entradas de teclado y ratón localmente para impulsar a
 
 ### 🖼️ ¿Cuál es el estado del soporte de Vulkan / Metal?
 
-Ajustes → Aplicación → Backend de renderizado permite cambiar al instante: OpenGL ↔ Vulkan en Windows / Linux x64 y OpenGL ↔ Metal en macOS. Sistema usa OpenGL por defecto. Se conectaron la carga de texturas nativas, el dibujo de Cubism, la lectura de GPU y la recarga del modelo; se conservan el modelo y los movimientos/expresiones seleccionados. Los errores de inicialización o recarga restauran OpenGL. Vulkan/Metal son experimentales: las capas 2D, las esquinas redondeadas y la actualización dinámica asíncrona de texturas requieren OpenGL. Las texturas nativas aplican límites de calidad/tamaño al cargarse.
+Ajustes → Aplicación → Backend de renderizado permite cambiar al instante: OpenGL ↔ Vulkan en Windows / Linux x64 y OpenGL ↔ Metal en macOS. Sistema usa OpenGL por defecto. Se conectaron la carga de texturas nativas, el dibujo de Cubism, la lectura de GPU y la recarga del modelo; se conservan el modelo y los movimientos/expresiones seleccionados. Los errores de inicialización o recarga restauran OpenGL. Vulkan/Metal son experimentales: las capas de teclas/efectos/puntero, las esquinas redondeadas y la actualización dinámica asíncrona de texturas requieren OpenGL. Las texturas nativas aplican límites de calidad/tamaño al cargarse. Los backends nativos almacenan el fondo estático de la mesa en caché y lo incluyen en los límites del marco ajustado.
 
 Las compilaciones con SDK usan `BONGO_CAT_CUBISM_VULKAN=ON` en Windows / Linux x64 (`glslangValidator` o `glslang`, paquete Linux `glslang-tools`; Vulkan 1.3 al ejecutar) y `BONGO_CAT_CUBISM_METAL=ON` en macOS (herramientas Metal de Xcode). Use `OFF` para desactivar la extensión. Los archivos Metal y `.metallib` se incluyen solo en macOS; Vulkan y `.spv` solo en Windows / Linux x64, con variantes de mezcla. Las compilaciones de diagnóstico sin SDK omiten estos recursos Live2D. GitHub Actions prepara las herramientas y verifica los recursos por plataforma. Se realizaron comprobaciones estáticas; falta validar compilación y GPU. Véase [integración y validación](live2d-vulkan-metal.md).
 
@@ -308,3 +298,11 @@ Derechos de autor © 2026 - **BongoCat**<br>
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### Plugins de renderizado dinámicos
+
+Preferencias → Plugins permite instalar, activar y eliminar renderizadores locales. Cambia a otro renderizador antes de modificar un plugin activo. Live2D utiliza un plugin C++; Inochi2D utiliza el plugin Rust Inox2D con OpenGL, Vulkan (Windows/Linux) y Metal (macOS), sin wgpu. La importación identifica primero el contenido del modelo (`.model3.json`, `.inp`, `.inx`). Todo el análisis y la escritura de JSON se realiza en Rust.
+
+Las versiones portátiles de Windows se distribuyen como archivos ZIP. Mantén la carpeta extraída `plugins` junto al ejecutable. Consulta [Plugins de renderizado](model-plugins.md) para los paquetes, las dependencias sin conexión, la ABI, la asignación de parámetros y los límites de compatibilidad.
+
+Cada push a `dev` que cambia código, recursos o configuración de compilación publica una versión preliminar nocturna en GitHub. Se omiten los cambios solo de documentación; no hay ejecución programada. Todas las plataformas usan el commit enviado. Estas versiones no reemplazan la última versión estable.

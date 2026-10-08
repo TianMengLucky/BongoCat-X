@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <yyjson.h>
+#include "bongo_cat/json_dom.h"
 
 typedef struct StockLive2DProfile {
     BongoCatModelMode mode;
@@ -67,18 +67,18 @@ static bool reference_digest(const char *root, const char *relative,
 }
 
 static bool profile_matches(const StockLive2DProfile *profile,
-    const BongoCatImportCandidate *candidate, yyjson_val *refs,
+    const BongoCatImportCandidate *candidate, BongoJsonValue *refs,
     BongoCatImportDigestCache *cache) {
     if (profile->mode != candidate->mode) return false;
-    const char *moc = yyjson_get_str(yyjson_obj_get(refs, "Moc"));
-    yyjson_val *textures = yyjson_obj_get(refs, "Textures");
-    if (!yyjson_is_arr(textures) ||
-        yyjson_arr_size(textures) != profile->texture_count) return false;
+    const char *moc = bongo_json_get_str(bongo_json_obj_get(refs, "Moc"));
+    BongoJsonValue *textures = bongo_json_obj_get(refs, "Textures");
+    if (!bongo_json_is_arr(textures) ||
+        bongo_json_arr_size(textures) != profile->texture_count) return false;
     char digest[65];
     if (!reference_digest(candidate->directory, moc, cache, digest) ||
         strcmp(digest, profile->moc) != 0) return false;
     for (size_t i = 0; i < profile->texture_count; ++i) {
-        const char *texture = yyjson_get_str(yyjson_arr_get(textures, i));
+        const char *texture = bongo_json_get_str(bongo_json_arr_get(textures, i));
         if (!reference_digest(candidate->directory, texture, cache, digest) ||
             strcmp(digest, profile->textures[i]) != 0) return false;
     }
@@ -122,17 +122,17 @@ bool bongo_cat_import_mver_stock_model(
     char manifest[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(manifest, sizeof(manifest), candidate->directory,
             candidate->setting)) return false;
-    yyjson_doc *document = bongo_cat_import_mver_manifest_read(manifest, NULL);
-    yyjson_val *root = document ? yyjson_doc_get_root(document) : NULL;
-    yyjson_val *refs = yyjson_is_obj(root)
-        ? yyjson_obj_get(root, "FileReferences") : NULL;
+    BongoJsonDoc *document = bongo_cat_import_mver_manifest_read(manifest, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    BongoJsonValue *refs = bongo_json_is_obj(root)
+        ? bongo_json_obj_get(root, "FileReferences") : NULL;
     bool matched = false;
-    for (size_t i = 0; yyjson_is_obj(refs) &&
+    for (size_t i = 0; bongo_json_is_obj(refs) &&
         i < sizeof(profiles) / sizeof(profiles[0]); ++i)
         if (profile_matches(&profiles[i], candidate, refs, cache)) {
             matched = true;
             break;
         }
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     return matched;
 }

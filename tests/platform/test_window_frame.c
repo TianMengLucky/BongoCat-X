@@ -9,7 +9,7 @@ int bongo_cat_test_failures;
 static int window_x, window_y, window_w, window_h, dpi, resize_calls;
 static bool fail_resize, flipped;
 static uint64_t ticks;
-static BongoCatLive2DFrame allocated, requested;
+static BongoCatModelRuntimeFrame allocated, requested;
 static BongoCatFrameViewport viewport;
 
 static bool position(SDL_Window *window, int *x, int *y) {
@@ -32,16 +32,16 @@ static void update_viewport(void) {
     viewport = bongo_cat_frame_viewport(allocated, requested,
         window_w * dpi, window_h * dpi, flipped);
 }
-bool bongo_cat_live2d_frame(const BongoCatLive2D *model, BongoCatLive2DFrame *frame) {
+bool bongo_cat_model_runtime_frame(const BongoCatModelRuntime *model, BongoCatModelRuntimeFrame *frame) {
     (void)model; *frame = allocated; return true;
 }
-bool bongo_cat_live2d_measure_frame(BongoCatLive2D *model, BongoCatLive2DFrame *frame) {
+bool bongo_cat_model_runtime_measure_frame(BongoCatModelRuntime *model, BongoCatModelRuntimeFrame *frame) {
     (void)model; *frame = requested; update_viewport(); return true;
 }
-void bongo_cat_live2d_set_frame(BongoCatLive2D *model, const BongoCatLive2DFrame *frame) {
+void bongo_cat_model_runtime_set_frame(BongoCatModelRuntime *model, const BongoCatModelRuntimeFrame *frame) {
     (void)model; allocated = *frame; update_viewport();
 }
-bool bongo_cat_live2d_viewport(const BongoCatLive2D *model,
+bool bongo_cat_model_runtime_viewport(const BongoCatModelRuntime *model,
     int *x, int *y, int *w, int *h) {
     (void)model; *x = viewport.x; *y = viewport.y;
     *w = viewport.width; *h = viewport.height; return true;
@@ -93,7 +93,7 @@ static void reset(BongoCatApp *app) {
     window_x = 500; window_y = 400; window_w = 640; window_h = 320;
     dpi = 1; resize_calls = 0; fail_resize = flipped = false;
     ticks = 1000000000ull;
-    allocated = requested = (BongoCatLive2DFrame){0};
+    allocated = requested = (BongoCatModelRuntimeFrame){0};
     app->session.window.scale_percent = 100;
     app->session.window.content_width = 640;
     app->session.window.content_height = 320;
@@ -108,7 +108,7 @@ int main(void) {
     reset(app);
     bongo_cat_window_update_model_frame(app);
     CHECK(!resize_calls);
-    requested = (BongoCatLive2DFrame){.25f, .125f, 0, 0};
+    requested = (BongoCatModelRuntimeFrame){.25f, .125f, 0, 0};
     bongo_cat_window_update_model_frame(app);
     CHECK(resize_calls == 1 && window_w == 800 && window_h == 360);
     CHECK(window_x == 340 && window_y == 360);
@@ -123,7 +123,7 @@ int main(void) {
 
     reset(app);
     app->settings.model.vertical_flip = flipped = true;
-    requested = (BongoCatLive2DFrame){0, .125f, 0, 0};
+    requested = (BongoCatModelRuntimeFrame){0, .125f, 0, 0};
     bongo_cat_window_update_model_frame(app);
     CHECK(window_y == 400 && viewport.y == 40);
     CHECK(fabs(window_y + app->model_pointer_anchor_y * window_h - 560) < .01);
@@ -141,11 +141,12 @@ int main(void) {
     window_x = 0; requested.left = .25f;
     bongo_cat_window_update_model_frame(app);
     CHECK(!resize_calls && window_x == 0 && viewport.scale < 1.0f);
-    CHECK(viewport.x - requested.left * viewport.width < 0);
+    CHECK(viewport.x - requested.left * viewport.width >= -1);
+    CHECK(viewport.x + (1.0f + requested.right) * viewport.width <= window_w + 1);
 
     reset(app);
     dpi = 4; update_viewport();
-    requested = (BongoCatLive2DFrame){4, 4, 4, 4};
+    requested = (BongoCatModelRuntimeFrame){4, 4, 4, 4};
     bongo_cat_window_update_model_frame(app);
     CHECK((double)window_w * window_h * dpi * dpi <= 4194304.0);
     CHECK(viewport.scale < 1.0f);

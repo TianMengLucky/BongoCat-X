@@ -157,11 +157,11 @@ void test_mver_manifest(void) {
     CHECK(child(path, sizeof(path), model, "cat.model3.json", false));
     CHECK(write_text(path, broken));
     bool repaired = false;
-    yyjson_doc *document = bongo_cat_import_mver_manifest_read(path, &repaired);
+    BongoJsonDoc *document = bongo_cat_import_mver_manifest_read(path, &repaired);
     CHECK(document && repaired);
-    CHECK(yyjson_arr_size(yyjson_obj_get(yyjson_doc_get_root(document),
+    CHECK(bongo_json_arr_size(bongo_json_obj_get(bongo_json_doc_get_root(document),
         "Groups")) == 1);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     CHECK(!bongo_cat_import_manifest_valid(model, "cat.model3.json", NULL));
     CHECK(bongo_cat_import_mver_manifest_valid(model, "cat.model3.json"));
     CHECK(child(models, sizeof(models), root, "models", true));
@@ -203,14 +203,14 @@ void test_mver_manifest(void) {
         "\"Moc\":\"cat.moc3\",\"Textures\":[\"texture.png\",],},}"));
     document = bongo_cat_import_mver_manifest_read(path, &repaired);
     CHECK(document && repaired);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     static const char bom_manifest[] = "\xEF\xBB\xBF"
         "{\"Version\":3,\"FileReferences\":{\"Moc\":\"cat.moc3\","
         "\"Textures\":[\"texture.png\"]}}";
     document = bongo_cat_model_json_parse(bom_manifest,
         sizeof(bom_manifest) - 1, &repaired);
     CHECK(document && repaired);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     CHECK(write_text(path, "{\"Version\":3,\"FileReferences\":{"
         "\"Moc\":\"cat.moc3\",\"Textures\":[\"missing.png\"]]}}}"));
     CHECK(child(model, sizeof(model), package, "img/standard/cat_model", false));
@@ -224,13 +224,13 @@ void test_mver_manifest(void) {
         CHECK(write_text(path, rejected[i]));
         document = bongo_cat_import_mver_manifest_read(path, &repaired);
         CHECK(!document && !repaired);
-        yyjson_doc_free(document);
+        bongo_json_doc_free(document);
     }
     CHECK(write_text(path, "{\"Version\":3,\"FileReferences\":{"
         "\"Moc\":\"cat.moc3\",\"Textures\":[\"texture.png\"]}}"));
     document = bongo_cat_import_mver_manifest_read(path, &repaired);
     CHECK(document && !repaired);
-    yyjson_doc_free(document);
+    bongo_json_doc_free(document);
     CHECK(write_text(path, "{\"Version\":3,\"FileReferences\":{"
         "\"Moc\":\"cat.moc3\",\"Textures\":[\"texture.png\"],"
         "\"Physics\":\"missing.physics3.json\",\"Pose\":\"\","

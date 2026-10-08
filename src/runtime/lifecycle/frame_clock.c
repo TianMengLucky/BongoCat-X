@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 static uint64_t frame_interval_ns(const BongoCatApp *app) {
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     int fps = app && app->settings.model.max_fps > 0 ?
         app->settings.model.max_fps : 60;
     if (app && app->settings.model.max_fps == BONGO_CAT_DISPLAY_MAX_FPS &&
@@ -39,7 +39,7 @@ int bongo_cat_window_wait_timeout(const BongoCatApp *app, uint64_t now) {
        A ready CPU batch otherwise waits for a full 16 ms frame interval before
        the GL thread can consume it. Keep the shorter wakeup only while a job
        can make progress; paused/no-job states retain their idle cadence. */
-    if (wait_ms > 8 && bongo_cat_live2d_texture_refresh_busy(app->live2d))
+    if (wait_ms > 8 && bongo_cat_model_runtime_texture_refresh_busy(app->model_runtime))
         wait_ms = 8;
     if (bongo_cat_preferences_needs_frame(app->preferences) && wait_ms > 4)
         wait_ms = 4;
@@ -91,7 +91,7 @@ bool bongo_cat_window_wait_timeout_self_test(void) {
     app->session.window.visible = true;
     app->settings.model.max_fps = 60;
     app->last_frame_ns = now;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     app->settings.model.max_fps = 30;
     uint64_t interval_30 = frame_interval_ns(app);
     app->settings.model.max_fps = 60;
@@ -131,7 +131,7 @@ bool bongo_cat_window_wait_timeout_self_test(void) {
         bongo_cat_window_wait_timeout(app, now + 3000000ull) != 5 ||
         bongo_cat_window_wait_timeout(app, now + 8000000ull) != 0) goto done;
     app->resize_gesture = app->resize_target_pending = false;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     app->settings.model.max_fps = 1;
 #endif
     app->click_through_applied = true;
@@ -146,7 +146,7 @@ bool bongo_cat_window_wait_timeout_self_test(void) {
         remaining_ms(now + frame_interval_ns(app), now)) goto done;
     app->settings.window.pass_through = false;
     app->settings.window.hide_on_hover = false;
-#ifdef BONGO_CAT_HAS_CUBISM
+#ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     app->settings.model.max_fps = 60;
 #endif
     if (!bongo_cat_model_frame_due(app,

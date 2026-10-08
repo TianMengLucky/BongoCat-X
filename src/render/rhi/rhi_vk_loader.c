@@ -94,6 +94,12 @@ bool bongo_cat_rhi_vk_load_instance_fns(BongoCatRhiVk *vk) {
     BONGO_CAT_VK_LOAD(vkGetPhysicalDeviceMemoryProperties);
     BONGO_CAT_VK_LOAD(vkCmdPipelineBarrier);
     BONGO_CAT_VK_LOAD(vkCmdCopyImageToBuffer);
+    BONGO_CAT_VK_LOAD(vkCmdCopyImage);
+    BONGO_CAT_VK_LOAD(vkCmdCopyBufferToImage);
+    BONGO_CAT_VK_LOAD(vkBindImageMemory);
+    BONGO_CAT_VK_LOAD(vkGetImageMemoryRequirements);
+    BONGO_CAT_VK_LOAD(vkDestroyImage);
+    BONGO_CAT_VK_LOAD(vkCreateImage);
 
     return true;
 }

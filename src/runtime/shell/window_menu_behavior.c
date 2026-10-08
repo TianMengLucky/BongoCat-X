@@ -14,7 +14,7 @@ static const BongoCatBehaviorEntry *nth_behavior(BongoCatApp *app,
         if (entry->kind != kind) continue;
         if (kind == BONGO_CAT_BEHAVIOR_SOUND && !entry->sound[0] && !entry->sound_clear) continue;
         if (kind == BONGO_CAT_BEHAVIOR_MOTION &&
-            !bongo_cat_live2d_motion_visible(app->live2d,
+            !bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index)) continue;
         if (!position) return entry;
         position--;
@@ -32,16 +32,16 @@ static bool hidden_toggle_has_visible_binding(BongoCatApp *app,
     const BongoCatBehaviorEntry *entry, const char *shortcut) {
     if (!app || !entry || !shortcut || !shortcut[0] ||
         entry->kind != BONGO_CAT_BEHAVIOR_MOTION ||
-        bongo_cat_live2d_motion_visible(app->live2d,
+        bongo_cat_model_runtime_motion_visible(app->model_runtime,
             entry->group, entry->index)) return false;
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *candidate = &app->behaviors.entries[i];
         const char *bound = behavior_shortcut(app, candidate->id);
         if (candidate != entry &&
             candidate->kind == BONGO_CAT_BEHAVIOR_MOTION &&
-            bongo_cat_live2d_motion_visible(app->live2d,
+            bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 candidate->group, candidate->index) &&
-            bongo_cat_live2d_motion_same_toggle(app->live2d,
+            bongo_cat_model_runtime_motion_same_toggle(app->model_runtime,
                 entry->group, entry->index,
                 candidate->group, candidate->index) &&
             bound && strcmp(bound, shortcut) == 0) return true;
@@ -93,14 +93,14 @@ void bongo_cat_window_behavior_labels(BongoCatApp *app,
     *motion_count = 0; *expression_count = 0;
     if (current_expression) *current_expression = BONGO_CAT_BEHAVIOR_LIMIT;
     if (!app) return;
-    int active_expression = bongo_cat_live2d_expression(app->live2d);
+    int active_expression = bongo_cat_model_runtime_expression(app->model_runtime);
     for (size_t i = 0; i < app->behaviors.count; ++i) {
         const BongoCatBehaviorEntry *entry = &app->behaviors.entries[i];
         if (entry->kind == BONGO_CAT_BEHAVIOR_MOTION && motions) {
-            if (!bongo_cat_live2d_motion_visible(app->live2d,
+            if (!bongo_cat_model_runtime_motion_visible(app->model_runtime,
                 entry->group, entry->index)) continue;
             if (motion_checked) motion_checked[*motion_count] =
-                bongo_cat_live2d_motion_selected(app->live2d,
+                bongo_cat_model_runtime_motion_selected(app->model_runtime,
                     entry->group, entry->index);
             menu_label(motions[*motion_count], app, entry);
             (*motion_count)++;
@@ -147,7 +147,7 @@ bool bongo_cat_window_behavior_preview(BongoCatApp *app,
         size_t position = (size_t)(action - BONGO_CAT_MENU_MOTION_FIRST);
         const BongoCatBehaviorEntry *entry = nth_behavior(app,
             BONGO_CAT_BEHAVIOR_MOTION, position);
-        return entry && bongo_cat_live2d_preview_motion(app->live2d,
+        return entry && bongo_cat_model_runtime_preview_motion(app->model_runtime,
             entry->group, entry->index);
     }
     if (action >= BONGO_CAT_MENU_EXPRESSION_FIRST &&
@@ -156,9 +156,9 @@ bool bongo_cat_window_behavior_preview(BongoCatApp *app,
         const BongoCatBehaviorEntry *entry = nth_behavior(app,
             BONGO_CAT_BEHAVIOR_EXPRESSION, position);
         if (!entry) return false;
-        int target = bongo_cat_live2d_expression(app->live2d) == entry->index ?
+        int target = bongo_cat_model_runtime_expression(app->model_runtime) == entry->index ?
             -1 : entry->index;
-        return bongo_cat_live2d_set_expression(app->live2d, target);
+        return bongo_cat_model_runtime_set_expression(app->model_runtime, target);
     }
     return false;
 }
@@ -171,7 +171,7 @@ bool bongo_cat_window_behavior_commit_preview(BongoCatApp *app,
     const BongoCatBehaviorEntry *entry = nth_behavior(app,
         BONGO_CAT_BEHAVIOR_MOTION,
         (size_t)(action - BONGO_CAT_MENU_MOTION_FIRST));
-    if (!entry || !bongo_cat_live2d_commit_motion_preview(app->live2d,
+    if (!entry || !bongo_cat_model_runtime_commit_motion_preview(app->model_runtime,
         entry->group, entry->index)) return false;
     if (entry->sound[0]) {
         BongoCatError error = {0};

@@ -8,7 +8,7 @@
    framebuffer fractions. Growth in eighths amortizes surface reallocations.
    Negative margins crop the canvas: the frame system uses them for the tight
    window mode, where the window shrinks to the pet's visible envelope. */
-static inline bool bongo_cat_frame_valid(BongoCatLive2DFrame f) {
+static inline bool bongo_cat_frame_valid(BongoCatModelRuntimeFrame f) {
     return isfinite(f.left) && isfinite(f.top) && isfinite(f.right) &&
         isfinite(f.bottom) && f.left > -1.0f && f.top > -1.0f &&
         f.right > -1.0f && f.bottom > -1.0f &&
@@ -16,8 +16,8 @@ static inline bool bongo_cat_frame_valid(BongoCatLive2DFrame f) {
         1.0f + f.top + f.bottom >= 0.01f;
 }
 
-static inline bool bongo_cat_frame_equal(BongoCatLive2DFrame a,
-    BongoCatLive2DFrame b) {
+static inline bool bongo_cat_frame_equal(BongoCatModelRuntimeFrame a,
+    BongoCatModelRuntimeFrame b) {
     return a.left == b.left && a.top == b.top &&
         a.right == b.right && a.bottom == b.bottom;
 }
@@ -28,9 +28,9 @@ static inline float bongo_cat_frame_margin(float previous, double overflow) {
     return (float)(ceil((overflow + 0.0625) * 8.0) / 8.0);
 }
 
-static inline BongoCatLive2DFrame bongo_cat_frame_tight(
+static inline BongoCatModelRuntimeFrame bongo_cat_frame_tight(
     float min_x, float min_y, float max_x, float max_y) {
-    BongoCatLive2DFrame frame = {0, 0, 0, 0};
+    BongoCatModelRuntimeFrame frame = {0, 0, 0, 0};
     if (!isfinite(min_x) || !isfinite(min_y) || !isfinite(max_x) ||
         !isfinite(max_y) || min_x > max_x || min_y > max_y)
         return frame;
@@ -46,8 +46,8 @@ static inline BongoCatLive2DFrame bongo_cat_frame_tight(
     return frame;
 }
 
-static inline BongoCatLive2DFrame bongo_cat_frame_observe(
-    BongoCatLive2DFrame previous, float min_x, float min_y,
+static inline BongoCatModelRuntimeFrame bongo_cat_frame_observe(
+    BongoCatModelRuntimeFrame previous, float min_x, float min_y,
     float max_x, float max_y) {
     if (!isfinite(min_x) || !isfinite(min_y) || !isfinite(max_x) ||
         !isfinite(max_y) || min_x > max_x || min_y > max_y) return previous;
@@ -58,15 +58,15 @@ static inline BongoCatLive2DFrame bongo_cat_frame_observe(
     return previous;
 }
 
-static inline double bongo_cat_frame_area(BongoCatLive2DFrame f) {
+static inline double bongo_cat_frame_area(BongoCatModelRuntimeFrame f) {
     return (1.0 + f.left + f.right) * (1.0 + f.top + f.bottom);
 }
 
-static inline BongoCatLive2DFrame bongo_cat_frame_mix(
-    BongoCatLive2DFrame a, BongoCatLive2DFrame b, double t) {
+static inline BongoCatModelRuntimeFrame bongo_cat_frame_mix(
+    BongoCatModelRuntimeFrame a, BongoCatModelRuntimeFrame b, double t) {
     /* Bidirectional: the tight mode shrinks (crops) from the current frame,
        while observe-mode targets only ever grow. */
-    BongoCatLive2DFrame f;
+    BongoCatModelRuntimeFrame f;
     f.left = (float)(a.left + (b.left - a.left) * t);
     f.top = (float)(a.top + (b.top - a.top) * t);
     f.right = (float)(a.right + (b.right - a.right) * t);
@@ -79,8 +79,8 @@ static inline BongoCatLive2DFrame bongo_cat_frame_mix(
    bucket_div sets the resize grid as fractions of the canvas (8 = 1/8 buckets
    for observe mode, 32 = fine ~pixel buckets for tight cropping, where a
    single 1/8 step would visibly squash the pet by 12.5%). */
-static inline BongoCatLive2DFrame bongo_cat_frame_limit_ex(
-    BongoCatLive2DFrame current, BongoCatLive2DFrame required,
+static inline BongoCatModelRuntimeFrame bongo_cat_frame_limit_ex(
+    BongoCatModelRuntimeFrame current, BongoCatModelRuntimeFrame required,
     double area_limit, double width_limit, double height_limit,
     double bucket_div) {
     if (!bongo_cat_frame_valid(current) || !bongo_cat_frame_valid(required) ||
@@ -93,7 +93,7 @@ static inline BongoCatLive2DFrame bongo_cat_frame_limit_ex(
     double low = 0.0, high = 1.0;
     for (int i = 0; i < 25; ++i) {
         double t = i == 0 ? 1.0 : (low + high) * 0.5;
-        BongoCatLive2DFrame f = bongo_cat_frame_mix(current, required, t);
+        BongoCatModelRuntimeFrame f = bongo_cat_frame_mix(current, required, t);
         if (bongo_cat_frame_area(f) <= area_limit &&
             1.0 + f.left + f.right <= width_limit &&
             1.0 + f.top + f.bottom <= height_limit) {
@@ -101,7 +101,7 @@ static inline BongoCatLive2DFrame bongo_cat_frame_limit_ex(
             if (t == 1.0) break;
         } else high = t;
     }
-    BongoCatLive2DFrame f = bongo_cat_frame_mix(current, required, low);
+    BongoCatModelRuntimeFrame f = bongo_cat_frame_mix(current, required, low);
     /* Round whole buckets away from the target: growth rounds down, crop
        rounds up. Cropping past the envelope would clip pet pixels. */
     float *edges[] = {&f.left, &f.right, &f.top, &f.bottom};
@@ -131,8 +131,8 @@ static inline BongoCatLive2DFrame bongo_cat_frame_limit_ex(
     return f;
 }
 
-static inline BongoCatLive2DFrame bongo_cat_frame_limit(
-    BongoCatLive2DFrame current, BongoCatLive2DFrame required,
+static inline BongoCatModelRuntimeFrame bongo_cat_frame_limit(
+    BongoCatModelRuntimeFrame current, BongoCatModelRuntimeFrame required,
     double area_limit, double width_limit, double height_limit) {
     return bongo_cat_frame_limit_ex(current, required, area_limit,
         width_limit, height_limit, 8.0);
@@ -144,7 +144,7 @@ typedef struct BongoCatFrameViewport {
 } BongoCatFrameViewport;
 
 static inline BongoCatFrameViewport bongo_cat_frame_viewport(
-    BongoCatLive2DFrame allocated, BongoCatLive2DFrame required,
+    BongoCatModelRuntimeFrame allocated, BongoCatModelRuntimeFrame required,
     int width, int height, bool flip) {
     BongoCatFrameViewport v = {0, 0, width, height, 1.0f};
     if (width <= 0 || height <= 0 || !bongo_cat_frame_valid(allocated) ||

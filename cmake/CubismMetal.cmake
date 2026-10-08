@@ -33,7 +33,11 @@ list(APPEND metal_sources "${shader_patched}")
 set_source_files_properties(${metal_sources} PROPERTIES COMPILE_OPTIONS "-fno-objc-arc")
 target_sources(Framework PRIVATE ${metal_sources})
 target_include_directories(Framework SYSTEM PRIVATE "${metal_dir}")
-target_link_libraries(Framework PUBLIC "-framework Metal" "-framework QuartzCore")
+# Foundation (NSData/NSString/NSBundle/NSMutableArray/NSLog, CF string
+# constants) is used by the patched shader assets and the Metal bridge; without
+# it the plugin fails to link even though Metal/QuartzCore are present.
+target_link_libraries(Framework PUBLIC
+  "-framework Metal" "-framework QuartzCore" "-framework Foundation")
 
 include(cmake/CubismNativeShaders.cmake)
 bongo_cat_compile_native_shaders(METAL "${metal_dir}/Shaders"

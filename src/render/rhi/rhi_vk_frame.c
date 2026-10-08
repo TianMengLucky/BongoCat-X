@@ -203,7 +203,9 @@ bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
     info->vulkan_instance = vk->instance;
     info->vulkan_device = vk->device;
     info->vulkan_physical_device = vk->physical;
-    info->vulkan_command_pool = vk->pool;
+    /* VkCommandPool is a non-dispatchable handle (uint64_t on 32-bit Vulkan),
+       so it needs the same explicit conversion as the image/view handles. */
+    info->vulkan_command_pool = (void *)(uintptr_t)vk->pool;
     info->vulkan_queue = vk->queue;
     info->queue_family = vk->queue_family;
     info->image_count = vk->image_count;

@@ -37,8 +37,15 @@ function(bongo_cat_compile_native_shaders backend input output)
           "${CMAKE_BINARY_DIR}/native-shader-intermediates/preamble-${_bongo_shader_name}")
         string(FIND "${_bongo_shader_text}" "#version" _bongo_version_pos)
         if(_bongo_version_pos GREATER -1)
-          string(FIND "${_bongo_shader_text}" "\n" _bongo_version_eol
-            "${_bongo_version_pos}")
+          # string(FIND) takes no start offset, so slice from #version first
+          # and add the offset back to locate the end of that line.
+          string(SUBSTRING "${_bongo_shader_text}" "${_bongo_version_pos}" -1
+            _bongo_after_version)
+          string(FIND "${_bongo_after_version}" "\n" _bongo_version_eol)
+          if(_bongo_version_eol GREATER -1)
+            math(EXPR _bongo_version_eol
+              "${_bongo_version_eol} + ${_bongo_version_pos}")
+          endif()
         else()
           set(_bongo_version_eol -1)
         endif()

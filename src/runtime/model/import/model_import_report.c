@@ -92,6 +92,7 @@ static size_t missing_motion_sounds(const BongoCatImportCandidate *candidate) {
     BongoJsonValue *motions = bongo_json_obj_get(refs, "Motions");
     size_t missing = 0, group_index, group_count; BongoJsonValue *key, *group;
     bongo_json_obj_foreach(motions, group_index, group_count, key, group) {
+        (void)key;
         size_t index, count; BongoJsonValue *item;
         bongo_json_arr_foreach(group, index, count, item) {
             const char *sound = bongo_json_get_str(bongo_json_obj_get(item, "Sound"));

@@ -203,7 +203,10 @@ static void collect_value(BongoJsonValue *value, uint32_t *points, size_t *count
         bongo_json_arr_foreach(value, index, maximum, item) collect_value(item, points, count);
     } else if (bongo_json_is_obj(value)) {
         size_t index, maximum; BongoJsonValue *key, *item;
-        bongo_json_obj_foreach(value, index, maximum, key, item) collect_value(item, points, count);
+        bongo_json_obj_foreach(value, index, maximum, key, item) {
+            (void)key;
+            collect_value(item, points, count);
+        }
     }
 }
 

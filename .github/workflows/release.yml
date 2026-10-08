@@ -29,8 +29,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: bongocat-release-${{ github.ref_type == 'tag' && github.ref || 'nightly-dev' }}
-  cancel-in-progress: false
+  # Release and nightly builds share one group so they can never run at the
+  # same time. A tag-triggered release preempts an in-flight nightly; a
+  # nightly queued while a release runs waits instead of cancelling it.
+  group: bongocat-release
+  cancel-in-progress: ${{ github.ref_type == 'tag' }}
 
 jobs:
   version-check:

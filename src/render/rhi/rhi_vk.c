@@ -104,7 +104,7 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
             "No Vulkan physical devices found");
         goto failed;
     }
-    VkPhysicalDevice *devices = malloc(device_count * sizeof(*devices));
+    VkPhysicalDevice *devices = malloc(device_count * sizeof(VkPhysicalDevice));
     if (!devices) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
             "Cannot list the Vulkan physical devices");

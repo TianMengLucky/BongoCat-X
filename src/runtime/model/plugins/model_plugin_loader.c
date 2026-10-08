@@ -28,9 +28,10 @@ bool bongo_cat_model_plugin_open(BongoCatModelRuntime *target,
         SDL_UnloadObject(library);
         return false;
     }
-    if (!(plugin->graphics_backends & (1u << (unsigned)target->rhi.backend))) {
+    if (!plugin || !(plugin->graphics_backends & (1u << (unsigned)target->rhi.backend))) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "%s does not support the selected graphics backend", plugin->name);
+            "%s does not support the selected graphics backend",
+            plugin ? plugin->name : "The plugin");
         SDL_UnloadObject(library);
         return false;
     }

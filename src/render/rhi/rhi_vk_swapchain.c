@@ -161,9 +161,9 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
             "vkGetSwapchainImagesKHR failed");
         return false;
     }
-    vk->images = malloc(vk->image_count * sizeof(*vk->images));
-    vk->views = calloc(vk->image_count, sizeof(*vk->views));
-    vk->framebuffers = calloc(vk->image_count, sizeof(*vk->framebuffers));
+    vk->images = malloc(vk->image_count * sizeof(VkImage));
+    vk->views = calloc(vk->image_count, sizeof(VkImageView));
+    vk->framebuffers = calloc(vk->image_count, sizeof(VkFramebuffer));
     uint32_t queried_count = vk->image_count;
     if (!vk->images || !vk->views || !vk->framebuffers ||
         vk->vkGetSwapchainImagesKHR(vk->device, vk->swapchain,

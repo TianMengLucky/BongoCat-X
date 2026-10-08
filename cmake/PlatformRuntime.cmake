@@ -56,8 +56,11 @@ elseif(APPLE)
     src/platform/macos/macos_keys.m
     src/platform/macos/macos_tray.m
     src/render/rhi/rhi_metal.m)
+  # ARC cannot be enabled for a source that consumes the runtime PCH, which is
+  # built without it; opt this file out like the other ARC .mm sources.
   set_source_files_properties(src/render/rhi/rhi_metal.m PROPERTIES
-    COMPILE_OPTIONS "-fobjc-arc")
+    COMPILE_OPTIONS "-fobjc-arc"
+    SKIP_PRECOMPILE_HEADERS ON)
   target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE "-framework Cocoa"
     "-framework ApplicationServices" "-framework Metal"

@@ -57,9 +57,6 @@ void bongo_cat_pref_form_end(struct nk_context *context,
     nk_group_end(context); restore_style(context, saved); }
 #define form_begin bongo_cat_pref_form_begin
 #define form_end bongo_cat_pref_form_end
-static float left_width(struct nk_context *context) {
-    return NK_MAX(220.0f, nk_window_get_content_region(context).w - 228.0f);
-}
 static void form_title(struct nk_context *context, const char *title) {
     bongo_cat_pref_form_title_sized(context, title, 220.0f); }
 void bongo_cat_pref_description(struct nk_context *context, const char *text,

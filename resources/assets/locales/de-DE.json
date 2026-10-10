@@ -30,10 +30,21 @@
       },
       "title": "Einstellungen",
       "cat": {
+        "background": {
+          "title": "Eigenes Hintergrundbild",
+          "help": "Ein zentriertes Bild füllt das Fenster proportional aus. Nicht mit einfarbigem Hintergrund kombinierbar; alle Backends werden unterstützt.",
+          "image": "Hintergrundbild",
+          "selected": "Bild in den App-Daten gespeichert. Ein anderes PNG, JPEG, WebP, BMP oder GIF (erstes Bild) bis 64 MB und 16 Megapixel wählen.",
+          "empty": "PNG, JPEG, WebP, BMP oder GIF (erstes Bild) bis 64 MB und 16 Megapixel wählen. Die App speichert eine importierte Kopie.",
+          "choose": "Bild auswählen",
+          "imported": "Hintergrundbild importiert",
+          "failed": "Bild kann nicht geladen werden. Wähle PNG, JPEG, WebP, BMP oder GIF mit höchstens 64 MB und 16 Megapixeln."
+        },
         "title": "Einstellungen",
         "labels": {
           "modelSettings": "Modell",
           "gamepadFourHands": "Vierhandmodus am Gamepad",
+          "multiKeyDisplay": "Mehrtasten-Anzeige",
           "dynamicTextureResolution": "Dynamische Texturauflösung deaktivieren",
           "renderQuality": "Modellqualität (%)",
           "mirrorMode": "Spiegelmodus",
@@ -46,7 +57,6 @@
           "windowSettings": "Fenster",
           "passThrough": "Klicks durchlassen",
           "alwaysOnTop": "Immer im Vordergrund",
-          "keepInScreen": "Auf dem Bildschirm halten",
           "edgeSnap": "Am Bildschirmrand andocken",
           "captureOnly": "Nur in Aufnahmeprogrammen",
           "windowSize": "Fenstergröße",
@@ -66,22 +76,35 @@
           "maxFPS": "Maximale Bildrate"
         },
         "hints": {
-          "dynamicTextureResolution": "Passt die Texturauflösung automatisch an die tatsächliche Anzeigegröße an, um Bilddetails zu erhalten und gleichzeitig die Grafikspeichernutzung zu optimieren. Es wird generell davon abgeraten, diese Option zu aktivieren.",
-          "renderQuality": "Probieren Sie verschiedene Stufen aus, um die beste Balance zwischen Bildqualität und Speicherverbrauch zu finden.",
-          "hoverRequires": "Die obigen Optionen [Klickdurchlässigkeit] und [Immer im Vordergrund] müssen aktiviert sein.",
+          "dynamicTextureResolution": "Aktiviert: Texturen nicht mehr an die Fenstergröße anpassen, sondern die Qualitätsauflösung nutzen. Kann mehr Grafikspeicher benötigen.",
+          "renderQuality": "Texturauflösung senken, um Grafikspeicher zu sparen. Nach der Anpassung neu laden; Doppelklick stellt den Standard wieder her.",
+          "hoverRequires": "Beim Überfahren ausblenden, danach wieder einblenden. Überblendzeit einstellen; [Klicks durchlassen] und [Immer im Vordergrund] sind nötig.",
           "hoverUnavailable": "Ausblenden bei Mausberührung ist in dieser Desktop-Umgebung nicht verfügbar.",
-          "gamepadFourHands": "Im Gamepad-Modus bleiben zwei zusätzliche Hände sichtbar. Das Aussehen hängt vom Modell ab",
-          "forceMouseInput": "Bewegt das Modell mit der rohen Gerätebewegung, damit es der Maus folgt, selbst wenn ein Spiel den Zeiger ausblendet",
-          "passThrough": "Auch per Rechtsklick auf das Symbol im Infobereich deaktivierbar",
-          "alwaysOnTop": "Wenn aktiviert, bleibt das Fenster über allen anderen Fenstern.",
-          "keepInScreen": "Wenn aktiviert, bleibt das Fenster automatisch innerhalb der Bildschirmgrenzen.",
-          "captureOnly": "Auf dem Desktop unsichtbar, in OBS weiterhin sichtbar",
-          "obsBackground": "Fensteraufnahme schwarz?",
+          "gamepadFourHands": "Im Gamepad-Modus zwei zusätzliche Hände ständig anzeigen, sofern das Modell sie enthält.",
+          "multiKeyDisplay": "Nur Mver: gehaltene Tasten pro Seite in einer Blase mit + verbinden. Gespiegelte Zeichen bleiben lesbar; Zuschnitte in hand-layout.json festlegen.",
+          "forceMouseInput": "Unter Windows rohe Mausbewegungen verwenden, auch bei verstecktem oder gesperrtem Spielcursor.",
+          "passThrough": "Klicks erreichen die Fenster hinter dem Tier. Bei Bedarf im Tray-Menü ausschalten.",
+          "alwaysOnTop": "Das Tier bleibt über anderen Fenstern.",
+          "captureOnly": "Auf dem Windows-Desktop ausblenden, für kompatible Aufnahmeprogramme sichtbar bleiben.",
+          "obsBackground": "Eine einfarbige Fläche hinter dem Tier anzeigen. Bei schwarzer OBS-Aufnahme helfen die Hinweise hier.",
           "obsBackgroundHelp": "OBS: Diese Option aktivieren, die Windows-7-Kompatibilitätsmethode verwenden und den Hintergrund mit einem Farbschlüssel-Filter entfernen.",
-          "tightFrame": "Passt die Fenstergröße automatisch an den sichtbaren Bereich des Haustiers an und reduziert transparente Ränder.",
-          "windowSize": "Mit dem [Mausrad] die Größe ändern oder die [rechte Maustaste gedrückt halten]: nach rechts ziehen zum Vergrößern, nach links zum Verkleinern",
+          "tightFrame": "Das Fenster an das sichtbare Tier und den Hintergrund anpassen, um transparente Ränder zu verkleinern.",
+          "windowSize": "Mit Mausrad oder rechter Maustaste skalieren. Zurücksetzen bringt das Tier ins Bild; das Größensymbol stellt den Standardmaßstab wieder her.",
           "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
-          "hideOnHover": "Wenn Klickdurchlässigkeit und Immer im Vordergrund aktiviert sind, wird das Haustier beim Darüberfahren sofort ausgeblendet und beim Verlassen wieder angezeigt."
+          "hideOnHover": "Wenn Klickdurchlässigkeit und Immer im Vordergrund aktiviert sind, wird das Haustier beim Darüberfahren sofort ausgeblendet und beim Verlassen wieder angezeigt.",
+          "edgeSnap": "Beim Ziehen nahe an einen Bildschirmrand dort einrasten.",
+          "windowCorners": "Fensterecken abrunden. Höhere Werte machen sie runder; mit allen Grafik-Backends nutzbar.",
+          "opacity": "Fenstertransparenz einstellen, auch mit Strg+Mausrad.",
+          "randomExpression": "In festem Abstand einen zufälligen Ausdruck wählen. Über die Einstellungen die Auswahl begrenzen.",
+          "randomMotion": "In festem Abstand eine zufällige Bewegung abspielen. Über die Einstellungen auswählen; jede nutzt ihre gespeicherte Lautstärke.",
+          "sequentialModel": "Modelle im festgelegten Abstand der Reihe nach wechseln. Die Einstellungen bestimmen die beteiligten Modelle.",
+          "mirrorMode": "Modell horizontal spiegeln. Unterstützte Mver-Tastenzeichen bleiben lesbar.",
+          "verticalFlip": "Modell vertikal spiegeln, sodass es kopfüber hängt.",
+          "mouseMirror": "Die horizontale Mausverfolgung umkehren, ohne das Modell zu spiegeln.",
+          "mouseVerticalFlip": "Die vertikale Mausverfolgung umkehren, ohne das Modell zu spiegeln.",
+          "mouseCentered": "Für die Mausverfolgung die Bildschirmmitte statt der Position des Tiers verwenden.",
+          "ignoreMouse": "Mausbewegungen und Maustasten steuern das Modell nicht mehr; Tastatur und Gamepad bleiben aktiv.",
+          "maxFPS": "Modellbildrate begrenzen. Regler bis zur Bildschirmrate, Eingabe bis 360 FPS; Doppelklick stellt den Standard wieder her."
         }
       },
       "general": {
@@ -104,8 +127,8 @@
         "options": {
           "parallelRecording": "Parallele Befehlsaufzeichnung",
           "bindless": "Bindless",
-          "asyncCompute": "Asynchrone Berechnung",
           "largeAllocation": "Große Speicherblöcke",
+          "optimizationDisabled": "Ausgeschaltet",
           "optimizationActive": "Aktiviert",
           "optimizationUnavailable": "Nicht verfügbar",
           "auto": "System",
@@ -113,12 +136,12 @@
           "darkMode": "Dunkel"
         },
         "hints": {
-          "largeRenderOptimization": "Parallele Aufzeichnung, Bindless, asynchrone Berechnung und große Speicherblöcke nutzen, soweit unterstützt. Kann mehr Speicher benötigen; Renderer und Modell werden neu geladen.",
+          "largeRenderOptimization": "Zusätzliche Vulkan/Metal-Optimierungen wählen. Änderungen laden das Modell neu; Speicherbedarf und Unterstützung hängen vom Renderer ab.",
           "largeRenderUnavailable": "Der aktuelle Modell-Renderer unterstützt keine dieser Optimierungen; die Darstellung bleibt unverändert.",
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",
           "autostartFailed": "Die Einstellung für den automatischen Start konnte nicht aktualisiert werden",
-          "runAsAdmin": "Wenn die App als Administrator ausgeführt wird, werden einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfasst.",
-          "renderBackend": "Wechsel sofort ohne Neustart. Vulkan/Metal unterstützen Live2D experimentell. Alle Backends unterstützen Tischhintergründe und abgerundete Ecken; Tasten-, Effekt- und Zeiger-Overlays benötigen OpenGL",
+          "runAsAdmin": "Eingaben in Windows-Spielen mit Administratorrechten besser erfassen. Aktivierung fordert Rechte an und startet die App neu.",
+          "renderBackend": "Sofort wechseln; bei Fehler zurück zu OpenGL. Experimentelles Vulkan/Metal unterstützt auch Hintergründe, Rundungen und Tasten-, Effekt- und Zeigeranzeigen.",
           "renderBackendChanged": "Wechsle das Render-Backend",
           "renderBackendFallback": "Der gewählte Renderer ist nicht verfügbar; OpenGL wurde wiederhergestellt",
           "runAsAdminHelp": "Als Administrator ausgeführt kann die App einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfassen und auch in Spielen reagieren, die mit Administratorrechten laufen.\n\nBeim Aktivieren: Die App fordert Administratorrechte an und startet sich neu; jeder spätere Start (auch der Autostart) läuft ebenfalls als Administrator. Ist der Autostart aktiviert, zeigt Windows bei jeder Anmeldung einmal eine Benutzerkontensteuerung (UAC) an.\n\nBeim Deaktivieren: Ab dem nächsten Start gelten wieder normale Rechte; die laufende App ist nicht betroffen.",
@@ -127,10 +150,17 @@
           "portableModeEnabled": "Portabler Modus aktiviert, Daten kopiert. Wirkt nach einem Neustart",
           "portableModeDisabled": "Nach einem Neustart wird wieder der Systemspeicherort verwendet",
           "portableModeFailed": "Die Einstellung für den portablen Modus kann nicht geändert werden",
-          "inputMonitoringPermission": "Nach dem Erlauben neu starten.",
+          "inputMonitoringPermission": "In der macOS-Eingabeüberwachung Tastatureingaben anderer Apps erlauben; BongoCat danach vollständig beenden und neu starten.",
           "inputMonitoringPermissionGuide": "Die Eingabeüberwachung erlaubt BongoCat, in anderen Apps gedrückte Tasten zu sehen; die Maus funktioniert auch ohne sie. BongoCat baut die Überwachung beim Start auf, eine Berechtigungsänderung erfordert daher einen Neustart.\n\nSchritte:\n1. Öffnen Sie Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung.\n2. Schalten Sie den bereits gelisteten BongoCat-Eintrag ein; entfernen Sie keine vorhandenen Einträge.\n3. Falls BongoCat fehlt, klicken Sie auf \"+\" und fügen Sie die laufende Kopie hinzu (prüfen Sie den Speicherort).\n4. Beenden Sie BongoCat vollständig und starten Sie es erneut, damit es die Überwachung neu aufbaut.\n\nWenn die Tastatur weiterhin nicht reagiert, können Sie den BongoCat-Eintrag selbst entfernen und neu hinzufügen.",
           "administratorPermission": "Als Administrator kann die Anwendung bestimmte Systemtasten und Eingabeereignisse zuverlässiger erfassen.",
-          "administratorPermissionGuide": "Für eine zuverlässigere Erfassung bestimmter Systemtasten und Eingabeereignisse wird empfohlen, die Anwendung als Administrator auszuführen.\n\nVorgehen:\n1. Beenden Sie zuerst die Anwendung.\n2. Suchen Sie die exe-Datei oder ihre Verknüpfung im Datei-Explorer.\n3. Wählen Sie die Startart:\n   - Einmalig: Rechtsklick und \"Als Administrator ausführen\" wählen.\n   - Immer: Rechtsklick > Eigenschaften > Kompatibilität > \"Programm als Administrator ausführen\" aktivieren > OK."
+          "administratorPermissionGuide": "Für eine zuverlässigere Erfassung bestimmter Systemtasten und Eingabeereignisse wird empfohlen, die Anwendung als Administrator auszuführen.\n\nVorgehen:\n1. Beenden Sie zuerst die Anwendung.\n2. Suchen Sie die exe-Datei oder ihre Verknüpfung im Datei-Explorer.\n3. Wählen Sie die Startart:\n   - Einmalig: Rechtsklick und \"Als Administrator ausführen\" wählen.\n   - Immer: Rechtsklick > Eigenschaften > Kompatibilität > \"Programm als Administrator ausführen\" aktivieren > OK.",
+          "launchOnStartup": "BongoCat bei der Anmeldung automatisch starten.",
+          "portableModeSummary": "Daten neben der Programmdatei speichern. Beim Aktivieren vorhandene Daten kopieren; der Speicherort gilt nach einem Neustart.",
+          "parallelRecording": "Vulkan-Befehle auf mehreren Threads aufzeichnen, wenn Modell und Renderer dies unterstützen.",
+          "bindless": "Bei Unterstützung eine Vulkan-Texturtabelle nutzen. Live2D hat Modell- und Gerätelimits; Inox2D implementiert diese Option noch nicht.",
+          "largeAllocation": "Vulkan-Ressourcen bündeln oder Inox2D-Metal-Vertexpuffer teilen. Live2D Metal verwendet Puffer automatisch wieder.",
+          "language": "Oberflächensprache sofort ändern; Modellnamen bleiben im Original.",
+          "themeMode": "Systemdarstellung übernehmen oder ein helles bzw. dunkles Einstellungsfenster wählen."
         },
         "status": {
           "authorized": "Autorisiert",
@@ -190,7 +220,12 @@
             "stopAllAudio": "Alle Audios stoppen",
             "motionIndex": "Bewegung {index}",
             "motionGroupIndex": "Bewegungsgruppe {index}",
-            "expressionIndex": "Ausdruck {index}"
+            "expressionIndex": "Ausdruck {index}",
+            "motionVolume": "Lautstärke"
+          },
+          "hints": {
+            "motionVolume": "Nur den Ton dieser Bewegung anpassen. 0% schaltet ihn stumm; Doppelklick auf den Wert stellt 100% wieder her",
+            "motionVolumeSaveFailed": "Lautstärke kann nicht gespeichert werden: Einstellungslimit erreicht"
           }
         }
       },
@@ -356,6 +391,7 @@
     "selected": "Ausgewählt",
     "import": "Importieren",
     "importing": "Wird importiert...",
-    "builtIn": "integriert"
+    "builtIn": "integriert",
+    "multiplePetsHint": "Mehrere Modelle für bis zu acht Tiere auswählen. Deaktivieren stellt die Einzelauswahl wieder her."
   }
 }

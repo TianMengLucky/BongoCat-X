@@ -24,7 +24,7 @@ impl NativeGpu {
         {
             return Err("Host graphics device is unavailable".into());
         }
-        let _ = (large_allocation, parallel_recording); // Metal keeps its native allocator.
+        let _ = parallel_recording; // Parallel encoding is currently Vulkan-only.
         match backend {
             #[cfg(any(target_os = "windows", target_os = "linux"))]
             1 => Ok(Self::Vulkan(crate::native_vulkan::Vulkan::new(
@@ -36,7 +36,10 @@ impl NativeGpu {
             )?)),
             #[cfg(target_os = "macos")]
             2 => Ok(Self::Metal(crate::native_metal::Metal::new(
-                info, model, hidden,
+                info,
+                model,
+                hidden,
+                large_allocation,
             )?)),
             _ => Err("Native backend is unavailable on this platform".into()),
         }

@@ -8,6 +8,7 @@
 #include "model_import.h"
 #include "runtime.h"
 #include "bongo_cat/i18n.h"
+#include "bongo_cat/overlay.h"
 #include "bongo_cat/platform.h"
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/log.h"
@@ -246,7 +247,8 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MULTIPLE_MODELS);
     if (bongo_cat_pref_toggle(context, "multiple-pets", tr(app,
             "native.multiplePets",
-            "Display multiple"), "", &multiple))
+            "Display multiple"), tr(app, "native.multiplePetsHint",
+            "Select several models to display up to eight pets. Disable to return to a single selection."), &multiple))
         bongo_cat_app_set_multiple_pets(app, multiple);
     /* Runtime-Core builds: offer the Live2D Core import while rendering is
        still disabled; the row disappears as soon as the Core is loaded. The
@@ -258,8 +260,7 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
             "live2d-core-import",
             tr(app, "native.live2dCoreImport", "Import Live2D Core"),
             tr(app, "native.live2dCoreImportHint",
-            "Select the Cubism Core library or the official Cubism SDK "
-            "zip to enable Live2D rendering without a restart"),
+            "Select the Cubism Core library or the official Cubism SDK zip to enable Live2D rendering without a restart"),
             BONGO_CAT_UI_ICON_SYNC,
             tr(app, "native.live2dCoreImportButton", "Choose file"));
         if (action == 1) {
@@ -283,8 +284,7 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
             "restore-builtins",
             tr(app, "native.restoreBuiltins", "Restore default models"),
             tr(app, "native.restoreBuiltinsHint",
-                "One or more built-in models were deleted; restore them "
-                "from the application assets"),
+                "One or more built-in models were deleted; restore them from the application assets"),
             BONGO_CAT_UI_ICON_SYNC,
             tr(app, "native.restoreBuiltinsButton", "Restore"));
         if (action == 1 || action == 2) {
@@ -331,7 +331,8 @@ void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context) {
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
     if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
-        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), "",
+        "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), tr(app, "pages.preference.cat.hints.ignoreMouse",
+            "Stop mouse movement and buttons from driving the model; keyboard and gamepad input remain active."),
         &model->ignore_mouse)) {
         app->pointer_known = false;
         app->dirty = true;
@@ -341,95 +342,32 @@ void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     if (bongo_cat_pref_toggle(context, "force-mouse-input", tr(app,
         "pages.preference.cat.labels.forceMouseInput", "Force Mouse Input"),
         tr(app, "pages.preference.cat.hints.forceMouseInput",
-            "Drive the model with raw device motion so it keeps following the mouse when a game hides the cursor"),
+            "Use raw mouse motion on Windows to follow a hidden or locked game cursor."),
         &model->force_mouse_input))
         bongo_cat_app_reset_pointer_tracking(app);
 #endif
 }
 
-/* Render backend row of the general page (kept here like the pointer rows
-   so the page module stays within the source size policy). Switching asks
-   the app loop to hot-rebuild the render stack at the next frame
-   boundary. */
-void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
-    BongoCatApplicationPreferences *options, struct nk_context *context) {
-    const char *items[4];
-    BongoCatRenderBackend values[4];
-    int count = 0, selected = 0;
-    items[count] = tr(app, "pages.preference.general.options.auto", "System");
-    values[count] = BONGO_CAT_RENDER_BACKEND_AUTO;
-    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_AUTO)
-        selected = count;
-    count++;
-    items[count] = "OpenGL";
-    values[count] = BONGO_CAT_RENDER_BACKEND_OPENGL;
-    if (options->render_backend == BONGO_CAT_RENDER_BACKEND_OPENGL)
-        selected = count;
-    count++;
-#if defined(_WIN32) || (defined(__linux__) && defined(__x86_64__))
-    BongoCatRhi vulkan = {.backend = BONGO_CAT_RHI_VULKAN};
-    if (bongo_cat_rhi_backend_available(vulkan.backend) && bongo_cat_rhi_live2d_supported(&vulkan)) {
-        items[count] = "Vulkan";
-        values[count] = BONGO_CAT_RENDER_BACKEND_VULKAN;
-        if (options->render_backend == BONGO_CAT_RENDER_BACKEND_VULKAN)
-            selected = count;
-        count++;
-    }
-#endif
-#ifdef __APPLE__
-    BongoCatRhi metal = {.backend = BONGO_CAT_RHI_METAL};
-    if (bongo_cat_rhi_live2d_supported(&metal)) {
-        items[count] = "Metal";
-        values[count] = BONGO_CAT_RENDER_BACKEND_METAL;
-        if (options->render_backend == BONGO_CAT_RENDER_BACKEND_METAL)
-            selected = count;
-        count++;
-    }
-#endif
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
-    int next = bongo_cat_pref_combo(context, "render-backend", tr(app,
-        "pages.preference.general.labels.renderBackend", "Render Backend"),
-        tr(app, "pages.preference.general.hints.renderBackend",
-            "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally. All backends support desk backgrounds and rounded corners; key/effect/pointer overlays require OpenGL"),
-        items, count, selected);
-    if (values[next] != options->render_backend) {
-        options->render_backend = values[next];
-        app->render_backend_swap_pending = true;
-        bongo_cat_preferences_notice_show(app, tr(app,
-            "pages.preference.general.hints.renderBackendChanged",
-            "Switching the render backend"), false);
-    }
-}
-
-void bongo_cat_preferences_large_render_row(BongoCatApp *app,
-    BongoCatApplicationPreferences *options, struct nk_context *context) {
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
-    if (bongo_cat_pref_toggle(context, "large-render-optimization", tr(app,
-        "pages.preference.general.labels.largeRenderOptimization", "Large Rendering Optimization"),
-        tr(app, "pages.preference.general.hints.largeRenderOptimization",
-            "Request parallel recording, Bindless, async compute and large memory blocks where supported. May use more memory; reloads the renderer and model."),
-        &options->large_render_optimization)) app->render_backend_swap_pending = true;
-    if (!options->large_render_optimization) return;
-    uint32_t active = bongo_cat_model_runtime_optimizations(app->model_runtime);
-    if (!active) {
-        nk_layout_row_dynamic(context, 36, 1);
-        nk_label_wrap(context, tr(app, "pages.preference.general.hints.largeRenderUnavailable",
-            "The current model renderer provides none of these optimizations."));
-        return;
-    }
-    const uint32_t bits[] = {BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING, BONGO_CAT_OPTIMIZE_BINDLESS,
-        BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE, BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION};
-    const char *keys[] = {"pages.preference.general.options.parallelRecording",
-        "pages.preference.general.options.bindless", "pages.preference.general.options.asyncCompute",
-        "pages.preference.general.options.largeAllocation"};
-    const char *fallbacks[] = {"Parallel command recording", "Bindless", "Async compute", "Large memory blocks"};
-    for (size_t i = 0; i < SDL_arraysize(bits); ++i) {
-        char status[256];
-        snprintf(status, sizeof(status), "%s: %s", tr(app, keys[i], fallbacks[i]),
-            tr(app, active & bits[i] ? "pages.preference.general.options.optimizationActive" :
-                "pages.preference.general.options.optimizationUnavailable",
-                active & bits[i] ? "Enabled" : "Unavailable"));
-        nk_layout_row_dynamic(context, 24, 1);
-        nk_label(context, status, NK_TEXT_LEFT);
+/* Model-section rows of the cat settings page: gamepad four-hand mode and
+   the multi-key display toggle. Kept here like the pointer rows so the page
+   module stays within the source size policy. */
+void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
+    BongoCatModelPreferences *model, struct nk_context *context) {
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
+    if (bongo_cat_pref_toggle(context, "gamepad-four-hands", tr(app,
+        "pages.preference.cat.labels.gamepadFourHands", "Gamepad Four-Hand Mode"), tr(app,
+        "pages.preference.cat.hints.gamepadFourHands", "Keep two extra hands visible in gamepad mode, if the model supplies them."),
+        &model->gamepad_four_hands))
+        bongo_cat_app_refresh_hands(app);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
+    if (bongo_cat_pref_toggle(context, "multi-key-display", tr(app,
+        "pages.preference.cat.labels.multiKeyDisplay", "Multi-Key Display"), tr(app,
+        "pages.preference.cat.hints.multiKeyDisplay",
+        "Mver only: join held keys with + in one bubble per side. Mirrored characters stay readable; configure crops in hand-layout.json."),
+        &model->multi_key_display)) {
+        bongo_cat_overlay_set_multi_key_display(app->overlay,
+            model->multi_key_display);
+        bongo_cat_app_reapply_input(app);
+        app->dirty = true;
     }
 }

@@ -59,6 +59,23 @@ function(bongo_cat_trim_sdl_windows target source_root)
 }
 ]=])
   bongo_cat_sdl_replace_section(window
+    "const LONG style = GetWindowLong(hwnd, GWL_EXSTYLE);\n\n    SDL_assert(style != 0);"
+    "if (opacity == 1.0f) {"
+    [=[/* BongoCat patch: a plain borderless window can legitimately have an
+       empty extended style, and GetWindowLong returns 0 both for that case
+       and for a failed query. The upstream SDL_assert(style != 0) misfires
+       on startup here (bongo_cat_window_apply restores opacity before the
+       first frame adds any WS_EX_* flag). Distinguish the failure with
+       GetLastError instead of asserting. */
+    LONG style;
+    SetLastError(ERROR_SUCCESS);
+    style = GetWindowLong(hwnd, GWL_EXSTYLE);
+    if (style == 0 && GetLastError() != ERROR_SUCCESS) {
+        return WIN_SetError("GetWindowLong()");
+    }
+
+    ]=])
+  bongo_cat_sdl_replace_section(window
     "void WIN_RaiseWindow(" "void WIN_MaximizeWindow("
     [=[void WIN_RaiseWindow(SDL_VideoDevice *_this, SDL_Window *window)
 {

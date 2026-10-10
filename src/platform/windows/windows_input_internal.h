@@ -15,6 +15,8 @@ typedef struct WindowsRawHeld {
     char name[16];
     unsigned references;
     bool emitted;
+    unsigned virtual_key;
+    ULONGLONG pressed_ms, up_ms;
 } WindowsRawHeld;
 
 typedef struct WindowsRawDevice {
@@ -54,7 +56,7 @@ typedef struct WindowsInputState {
     unsigned device_count;
     WindowsRawHeld keys[BONGO_CAT_WINDOWS_RAW_HELD_LIMIT];
     WindowsRawHeld buttons[BONGO_CAT_WINDOWS_MOUSE_BUTTON_COUNT];
-    bool desktop_unavailable, wake_pending, retry_events;
+    bool desktop_unavailable, wake_pending, retry_events, keys_down;
     /* Shared motion buffers are protected by relative_lock. Detection and
        model consumption have separate totals; neither drains the other's data. */
     bool relative_active, receiving;
@@ -75,6 +77,7 @@ bool bongo_cat_windows_input_push_event(WindowsInputState *state,
     BongoCatInputKind kind, const char *name, float value);
 void bongo_cat_windows_input_wake(WindowsInputState *state);
 void bongo_cat_windows_input_flush(WindowsInputState *state);
+void bongo_cat_windows_input_reconcile_keys(WindowsInputState *state, ULONGLONG now);
 void bongo_cat_windows_input_packet(WindowsInputState *state,
     const RAWINPUT *packet, UINT bytes);
 WindowsRawDevice *bongo_cat_windows_input_device(WindowsInputState *state,

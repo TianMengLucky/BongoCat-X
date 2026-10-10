@@ -189,6 +189,7 @@ void NativeModel::bind_textures() {
 
 void NativeModel::release_textures() {
     cancel_texture_refresh();
+    native_texture_info_.clear();
     textures_.clear();
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     release_textures_vulkan();

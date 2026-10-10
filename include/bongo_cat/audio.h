@@ -11,6 +11,11 @@ BongoCatResult bongo_cat_audio_play(BongoCatAudio *audio, const char *path, Bong
 /* With overlap disabled, only the same clip restarts; other clips continue. */
 BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path,
     bool overlap, BongoCatError *error);
+/* Motion ids isolate gain and voice reuse even when motions share a clip. */
+BongoCatResult bongo_cat_audio_play_motion(BongoCatAudio *audio, const char *path,
+    const char *motion_id, float volume, BongoCatError *error);
+void bongo_cat_audio_set_motion_volume(BongoCatAudio *audio,
+    const char *motion_id, float volume);
 void bongo_cat_audio_update(BongoCatAudio *audio);
 void bongo_cat_audio_reset(BongoCatAudio *audio);
 void bongo_cat_audio_stop(BongoCatAudio *audio);

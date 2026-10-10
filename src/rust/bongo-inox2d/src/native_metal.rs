@@ -16,6 +16,7 @@ pub struct Metal {
     stencil: Vec<DepthStencilState>,
     sampler: SamplerState,
     hidden: HashSet<u32>,
+    large_allocation: bool,
     surface: RefCell<Option<Surface>>,
 }
 struct Surface {
@@ -25,7 +26,12 @@ struct Surface {
     stencil: [Texture; 2],
 }
 impl Metal {
-    pub unsafe fn new(info: RhiInfo, model: &Model, hidden: HashSet<u32>) -> Result<Self, String> {
+    pub unsafe fn new(
+        info: RhiInfo,
+        model: &Model,
+        hidden: HashSet<u32>,
+        large_allocation: bool,
+    ) -> Result<Self, String> {
         if info.metal_device.is_null() || info.rhi_handle.is_null() {
             return Err("Missing host Metal device".into());
         }
@@ -109,6 +115,7 @@ impl Metal {
             stencil,
             sampler,
             hidden,
+            large_allocation,
             surface: RefCell::new(None),
         };
         for source in &model.textures {
@@ -121,7 +128,7 @@ impl Metal {
             limits.max_image_width = Some(16384);
             limits.max_image_height = Some(16384);
             reader.limits(limits);
-            let mut image = reader.decode().map_err(|e| e.to_string())?.to_rgba8();
+            let mut image = reader.decode().map_err(|e| e.to_string())?.into_rgba8();
             for pixel in image.pixels_mut() {
                 for c in 0..3 {
                     pixel[c] = ((u16::from(pixel[c]) * u16::from(pixel[3]) + 127) / 255) as u8;
@@ -216,7 +223,45 @@ impl Metal {
             });
         }
         let s = surface.as_ref().unwrap();
-        for command in Plan::collect(model, &self.hidden, matrix) {
+        let plan = Plan::collect(model, &self.hidden, matrix);
+        // One allocation per frame, retained by Metal's command buffer. Never
+        // overwrite a previous frame's storage while the GPU may still read it.
+        let packed = if self.large_allocation {
+            let size = plan.iter().try_fold(0usize, |total, command| {
+                let count = match command {
+                    Command::Paint(p) => p.vertices.len(),
+                    Command::Clear { .. } => 0,
+                };
+                count
+                    .checked_mul(std::mem::size_of::<Vertex>())
+                    .and_then(|bytes| total.checked_add(bytes))
+                    .ok_or("Metal vertex buffer size overflow")
+            })?;
+            if size == 0 {
+                None
+            } else {
+                let buffer = self
+                    .device
+                    .new_buffer(size as u64, MTLResourceOptions::StorageModeShared);
+                let mut offset = 0;
+                for command in &plan {
+                    if let Command::Paint(p) = command {
+                        let bytes: &[u8] = bytemuck::cast_slice(&p.vertices);
+                        std::ptr::copy_nonoverlapping(
+                            bytes.as_ptr(),
+                            buffer.contents().cast::<u8>().add(offset),
+                            bytes.len(),
+                        );
+                        offset += bytes.len();
+                    }
+                }
+                Some(buffer)
+            }
+        } else {
+            None
+        };
+        let mut vertex_offset = 0;
+        for command in plan {
             let target = match &command {
                 Command::Clear { target, .. } => *target,
                 Command::Paint(p) => p.target,
@@ -249,16 +294,25 @@ impl Metal {
             if let Command::Paint(p) = command {
                 if !p.vertices.is_empty() {
                     let bytes: &[u8] = bytemuck::cast_slice(&p.vertices);
-                    let buffer = self.device.new_buffer_with_data(
-                        bytes.as_ptr().cast(),
-                        bytes.len() as u64,
-                        MTLResourceOptions::StorageModeShared,
-                    );
+                    let local = if packed.is_none() {
+                        Some(self.device.new_buffer_with_data(
+                            bytes.as_ptr().cast(),
+                            bytes.len() as u64,
+                            MTLResourceOptions::StorageModeShared,
+                        ))
+                    } else {
+                        None
+                    };
+                    let (buffer, offset) = match &packed {
+                        Some(buffer) => (buffer, vertex_offset),
+                        None => (local.as_ref().unwrap(), 0),
+                    };
                     encoder.set_render_pipeline_state(&self.pipelines[p.blend * 3 + p.mode]);
                     encoder.set_depth_stencil_state(&self.stencil[p.mode]);
                     encoder.set_stencil_reference_value(p.stencil);
                     encoder.set_cull_mode(MTLCullMode::None);
-                    encoder.set_vertex_buffer(0, Some(&buffer), 0);
+                    encoder.set_vertex_buffer(0, Some(buffer), offset);
+                    vertex_offset += bytes.len() as u64;
                     encoder.set_fragment_bytes(
                         1,
                         std::mem::size_of_val(&p.uniform) as u64,

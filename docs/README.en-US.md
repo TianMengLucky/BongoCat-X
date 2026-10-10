@@ -56,7 +56,9 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+
+  **What’s new in 2.1.2:** multi-key bubbles with readable mirrored characters, per-motion volume, custom image backgrounds, and key/effect/pointer overlays on Vulkan / Metal. Settings now explain each option; Keep on Screen has been removed. Optional renderer optimizations show their availability, with performance gains still unmeasured. See the [changelog](../CHANGELOG.md) and [hand layout guide](hand-layout.md).
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -386,15 +388,23 @@ configuration, or usage data.
 ### Linux Wayland Input
 
 X11 uses XInput2 by default. Experimental evdev input for Wayland is off by
-default. After reviewing [the input permission risks](SECURITY.md#linux-input),
+default. After reviewing [the input permission risks](../SECURITY.md#linux-input),
 it can be explicitly selected for one launch:
 
 ```sh
 BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 ```
 
-This does not grant device permissions. Do not run the app as root or add
-your account to the `input` group to make it work. Raw input can include
+Startup first tries read-only device access as the current user. On permission
+denial, protected installations request authentication through `/usr/bin/sudo`,
+open devices, then drop privileges and re-execute before SDL, settings, models
+or plugins initialize. Automatic elevation requires root-owned binaries and
+parent directories not writable by group or other users. Development/portable
+installs need separately administered device access. Configure a trusted sudo
+absolute path with `BONGO_CAT_SUDO_EXECUTABLE`. Authentication or privilege-drop
+failure stops startup. No device permissions or udev rules are changed.
+Only startup devices are monitored; hot-plug requires a restart. Do not launch
+the app directly as root or add your account to the `input` group. Raw input can include
 password keystrokes and is not paused on screen lock or session switching.
 Close the app to stop monitoring; hiding it does not stop input. Launch
 without the variable to return to the default backend. Evdev mouse following
@@ -403,9 +413,9 @@ always-on-top support still depend on the compositor.
 
 ### 🖼️ What is the Vulkan / Metal support status?
 
-Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays now support all backends. Live2D supports dynamic texture resolution on OpenGL, Vulkan and Metal, with background decoding/resizing and synchronous native GPU uploads. Disabling it reloads textures at the quality-selected resolution. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture. Overlays reuse SDL software rendering, cached until input changes, then composite into the completed native frame and upload to the GPU; performance remains unmeasured.
 
-Large Rendering Optimization is off by default and displays the enabled features; switching reloads the model. Inox2D Vulkan supports parallel command recording and large memory blocks; Live2D Vulkan supports large allocations through VMA. Small scenes use serial recording. Bindless, async compute and Live2D parallel recording are not implemented. OpenGL / Metal have no available features. Larger pools may use more memory.
+Large Rendering Optimization appears with Vulkan / Metal and is off by default. Vulkan offers three independent options; Metal offers only large allocations. Changes reload the model. Inox2D Metal packs frame vertices into a shared buffer when enabled and allocates per node when disabled; Live2D Metal reports this option as unavailable. Inox2D Vulkan supports parallel command recording and large memory blocks. Live2D Vulkan supports VMA allocations and parallel recording for ordinary blending without offscreen nodes or high-precision masks. Live2D needs at least 128 Drawables for secondary buffers and 128 drawable snapshots for up to four workers; other models retain the SDK serial path. Live2D Vulkan Bindless uses a table of up to 64 atlas textures for ordinary blending without offscreen nodes, with fallback when device features or capacity are insufficient. Inox2D Bindless is not implemented. Larger pools may use more memory; performance gains remain unmeasured.
 
 SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Windows builds and GPU regression tests pass. Metal Rust APIs pass cross-target type checking; macOS GPU validation is pending. See [integration status and validation](live2d-vulkan-metal.md).
 
@@ -437,3 +447,13 @@ Windows portable releases are ZIP archives. Keep the extracted `plugins` directo
 Each `dev` push that changes code, assets or build configuration publishes a GitHub nightly prerelease. Documentation-only pushes are skipped; there is no scheduled trigger. All platforms build the pushed commit. Nightlies do not replace the latest stable release.
 
 Nightly prereleases reuse the [nightly release page](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), update its tag and replace assets with stable names instead of creating a release for each build. Failed platforms retain their previous assets.
+
+Preferences → Preferences → Window includes Custom Image Background. Choose Image imports PNG, JPEG, WebP, BMP or GIF (first frame). The image fills the window centered while preserving its aspect ratio; enabling it disables Solid Background and vice versa. Imported images are stored in the application data directory and remain available after the original is moved. Limits: 64 MB and 16 megapixels per image. OpenGL, Vulkan and Metal are supported.
+
+Live2D automatically reuses geometry buffers and repeated render state. OpenGL streaming, Vulkan upload batching and pipeline caching, Metal shared buffer slots, and native adaptive masks require no additional switch. Performance and platform behavior of these new paths remain to be measured.
+
+### Multiple keys and readable mirrored characters
+
+Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).
+
+The action dialog checks each motion’s `Sound` reference and whether the audio file exists, then shows an individual volume control beside motions with audio. Set 0–100% by dragging or typing; double-click restores 100%, and 0% mutes. Settings persist per model and motion and apply to dialog playback, shortcuts, random motions and the context menu, including live adjustment. Other motions sharing the same clip keep their own volume.

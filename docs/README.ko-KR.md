@@ -42,7 +42,9 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+
+  **2.1.2 업데이트:** 여러 키 말풍선과 반전해도 읽을 수 있는 글자, 동작별 음량, 사용자 이미지 배경, Vulkan / Metal 키·효과·포인터 표시를 추가했습니다. 설정의 각 옵션 설명을 보완하고 화면 안에 유지 옵션을 제거했습니다. 추가 렌더링 최적화의 사용 가능 상태를 표시하며 성능 효과는 아직 측정되지 않았습니다. [변경 기록](../CHANGELOG.md)과 [손 이미지 자르기 안내](hand-layout.md)를 참고하세요.
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -271,9 +273,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 지원은 어디까지 진행되었나요?
 
-설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다. 네이티브 백엔드는 책상 배경을 캐시하고 밀착 프레임 경계에 포함하며, 추가 전체 화면 텍스처 없이 GPU에서 네 모서리를 둥글게 처리합니다.
+설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이는 이제 모든 백엔드를 지원합니다. Live2D는 OpenGL, Vulkan, Metal에서 동적 텍스처 해상도를 지원하며 백그라운드 디코딩/크기 조절과 동기 네이티브 GPU 업로드를 사용합니다. 비활성화하면 선택한 화질에 맞춰 텍스처를 다시 로드합니다. 네이티브 백엔드는 책상 배경을 캐시하고 밀착 프레임 경계에 포함하며, 추가 전체 화면 텍스처 없이 GPU에서 네 모서리를 둥글게 처리합니다. 오버레이는 SDL 소프트웨어 렌더링을 사용하고 입력이 바뀔 때까지 캐시하며, 완성된 네이티브 프레임에 합성한 뒤 GPU에 다시 업로드합니다. 성능은 아직 측정하지 않았습니다.
 
-대규모 렌더링 최적화는 기본적으로 꺼져 있으며 활성 기능을 표시합니다. 전환 시 모델을 다시 로드합니다. Inox2D Vulkan은 병렬 명령 기록과 대용량 메모리 블록을, Live2D Vulkan은 VMA 대용량 할당을 지원합니다. 작은 장면은 단일 스레드로 기록합니다. Bindless, 비동기 연산 및 Live2D 병렬 기록은 아직 구현되지 않았습니다. OpenGL / Metal에는 해당 기능이 없습니다. 큰 풀은 메모리를 더 사용할 수 있습니다.
+대규모 렌더링 최적화는 Vulkan / Metal에서 표시되며 기본적으로 꺼져 있습니다. Vulkan은 세 옵션, Metal은 대용량 메모리 할당만 제공합니다. Inox2D Metal은 프레임 정점을 공유 버퍼로 합치며 Live2D Metal에서는 사용할 수 없습니다. 세 하위 옵션은 개별 저장되며 변경 시 모델을 다시 로드합니다. Inox2D Vulkan은 병렬 명령 기록과 대용량 메모리 블록을 지원합니다. Live2D Vulkan은 VMA와 일반 혼합 모델의 병렬 기록을 지원하며 오프스크린 노드와 고정밀 마스크는 제외됩니다. Live2D는 Drawable 128개 이상에서 보조 버퍼를 사용하고 그릴 수 있는 스냅샷 128개 이상에서 최대 4개 작업 스레드를 사용합니다. 다른 모델은 SDK 직렬 경로를 유지합니다. Live2D Vulkan Bindless는 일반 혼합 및 오프스크린 노드가 없는 모델에서 최대 64개 아틀라스 텍스처 테이블을 사용하며 장치 기능이나 용량이 부족하면 기존 경로로 돌아갑니다. Inox2D Bindless는 아직 구현되지 않았습니다. 큰 풀은 메모리를 더 사용할 수 있으며 성능 향상은 아직 측정하지 않았습니다.
 
 SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용합니다(`glslangValidator` 또는 `glslang`, Linux 패키지 `glslang-tools`; 실행 시 Vulkan 1.3 필요). macOS는 `BONGO_CAT_CUBISM_METAL=ON`과 Xcode Metal 도구를 사용합니다. `OFF`로 해당 확장을 제외할 수 있습니다. Metal 소스와 `.metallib`는 macOS에만, Vulkan 소스와 `.spv`는 Windows / Linux x64에만 혼합 모드 변형과 함께 포함됩니다. SDK 없는 진단 빌드는 이 Live2D 리소스를 제외합니다. GitHub Actions는 플랫폼별 도구를 준비하고 리소스를 확인합니다. 정적 검사를 수행했지만 빌드와 GPU 동작은 아직 검증하지 않았습니다. [통합 현황과 검증](live2d-vulkan-metal.md)을 참조하세요.
 
@@ -305,3 +307,19 @@ Windows 휴대용 배포판은 ZIP 파일입니다. 압축을 푼 `plugins` 폴�
 코드, 리소스 또는 빌드 설정을 변경하는 `dev` 푸시마다 GitHub 사전 릴리스가 게시됩니다. 문서만 변경하면 건너뛰며 예약 실행은 없습니다. 모든 플랫폼은 푸시된 커밋을 빌드합니다. 최신 안정 버전은 유지됩니다.
 
 야간 사전 릴리스는 [nightly 릴리스 페이지](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)를 재사용하고 태그를 갱신하며 고정된 이름의 파일을 교체합니다. 빌드에 실패한 플랫폼은 이전 파일을 유지합니다.
+
+### Linux Wayland / evdev
+
+Linux Wayland의 실험적 evdev 입력은 `BONGOCAT_ENABLE_EVDEV=1`로 활성화합니다. 먼저 일반 사용자로 장치를 읽기 전용으로 엽니다. 권한이 부족하면 보호된 설치에서 `/usr/bin/sudo` 인증을 요청하고 장치를 연 뒤 즉시 권한을 내려 다시 실행한 다음 SDL, 설정, 모델을 초기화합니다. 프로그램, sudo와 상위 디렉터리는 root 소유여야 하며 그룹과 다른 사용자가 쓸 수 없어야 합니다. 개발 및 휴대용 설치에는 관리자가 별도로 장치 접근 권한을 부여해야 합니다. sudo 경로는 `BONGO_CAT_SUDO_EXECUTABLE`로 설정할 수 있습니다. 실패하면 시작이 중단되며 영구 권한은 변경하지 않습니다. 시작 시 존재하는 장치만 감시하므로 새 장치는 재시작해야 합니다. root로 직접 실행하거나 `input` 그룹에 가입하지 마세요. 원시 입력에 비밀번호가 포함될 수 있으며 화면 잠금, 세션 전환, 펫 숨기기는 감시를 멈추지 않습니다.
+
+[SECURITY.md](../SECURITY.md#linux-input)
+
+설정 → 설정 → 창에서 사용자 지정 이미지 배경을 선택할 수 있습니다. PNG, JPEG, WebP, BMP 또는 GIF(첫 프레임)를 지원합니다. 비율을 유지하고 중앙에 배치하여 창을 채우며, 단색 배경과 동시에 사용할 수 없습니다. 앱 데이터 폴더에 복사하므로 원본을 옮겨도 유지됩니다. 제한은 64 MB 및 1600만 픽셀입니다. OpenGL, Vulkan, Metal을 지원합니다.
+
+Live2D는 지오메트리 버퍼와 반복되는 렌더링 상태를 자동으로 재사용합니다. OpenGL 동적 업로드, Vulkan 일괄 업로드와 파이프라인 캐시, Metal 공유 버퍼 슬롯 및 네이티브 적응형 마스크에는 추가 스위치가 필요 없습니다. 새 경로의 성능과 플랫폼 동작은 실측이 필요합니다.
+
+### 여러 키 표시와 미러 모드 문자
+
+Mver (OpenGL/Vulkan/Metal)은 손, 말풍선 테두리, 글자를 따로 잘라 누른 키를 +로 연결해 하나의 말풍선에 표시합니다. 테두리와 꼬리는 모델과 함께 뒤집히며, 단일 키 모드에서도 글자는 읽는 방향을 유지합니다. 손 이미지 옆의 `hand-layout.json`에서 세 자르기 영역, + 양쪽 간격, 각 손의 표시 개수를 설정하고 변경 후 앱을 다시 시작하세요. [설명과 예제](hand-layout.md)를 참고하세요.
+
+동작 창은 `Sound` 참조와 오디오 파일의 존재를 확인하고, 오디오가 있는 동작 옆에만 개별 음량 조절을 표시합니다. 드래그하거나 값을 입력해 0–100%로 조절하며, 두 번 클릭하면 100%로 복원되고 0%는 음소거입니다. 설정은 모델과 동작별로 저장되어 창 재생, 단축키, 무작위 동작, 컨텍스트 메뉴에 적용되며 재생 중에도 조절됩니다. 같은 파일을 쓰는 다른 동작의 음량에는 영향을 주지 않습니다.

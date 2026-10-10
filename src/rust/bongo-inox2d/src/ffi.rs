@@ -39,9 +39,10 @@ pub unsafe extern "C" fn bongo_cat_model_plugin_optimize_v1(
         if r.loaded.is_some() {
             return 0;
         }
-        r.large_allocation = cfg!(any(target_os = "windows", target_os = "linux"))
-            && backend == 1
-            && requested & 8 != 0;
+        let native_backend = (cfg!(any(target_os = "windows", target_os = "linux"))
+            && backend == 1)
+            || (cfg!(target_os = "macos") && backend == 2);
+        r.large_allocation = native_backend && requested & 8 != 0;
         r.parallel_recording = cfg!(any(target_os = "windows", target_os = "linux"))
             && backend == 1
             && requested & 1 != 0
@@ -374,7 +375,13 @@ mod optimization_tests {
             assert!(!r.large_allocation);
             assert!(!r.parallel_recording);
             assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 0), 0);
-            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 2), 0);
+            let metal = if cfg!(target_os = "macos") { 8 } else { 0 };
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 2), metal);
+            assert_eq!(r.large_allocation, metal != 0);
+            assert!(!r.parallel_recording);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 6, 2), 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 0, 2), 0);
+            assert!(!r.large_allocation);
             assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 6, 1), 0);
             assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 16, 1), 0);
             assert_eq!(

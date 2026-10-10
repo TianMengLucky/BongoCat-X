@@ -42,7 +42,9 @@ Escaneie o código QR com o QQ ou procure o grupo **211957388** para participar 
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+
+  **Novidades da 2.1.2:** balões com várias teclas e caracteres legíveis ao espelhar, volume por movimento, fundos personalizados e camadas de teclas, efeitos e ponteiro no Vulkan / Metal. Cada opção agora tem explicação; Manter na tela foi removido. As otimizações opcionais mostram sua disponibilidade; o desempenho ainda não foi medido. Veja o [histórico de mudanças](../CHANGELOG.md) e o [guia de recortes](hand-layout.md).
 
   Baixe a versão mais recente nas [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -274,9 +276,9 @@ Não. O BongoCat processa entradas de teclado e mouse localmente para impulsiona
 
 ### 🖼️ Qual é o progresso do suporte a Vulkan / Metal?
 
-Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro e atualização dinâmica assíncrona de texturas exigem OpenGL. Texturas nativas aplicam limites de qualidade/tamanho ao carregar. Os backends nativos armazenam o fundo de mesa em cache, o incluem no quadro ajustado e arredondam os quatro cantos na GPU sem outra textura de tela inteira.
+Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro agora suportam todos os motores. Live2D suporta resolução dinâmica em OpenGL, Vulkan e Metal, com decodificação/redimensionamento em segundo plano e envio nativo à GPU síncrono. Desativar recarrega as texturas conforme a qualidade escolhida. Os backends nativos armazenam o fundo de mesa em cache, o incluem no quadro ajustado e arredondam os quatro cantos na GPU sem outra textura de tela inteira. As camadas usam renderização por software do SDL, ficam em cache até a entrada mudar e são compostas no quadro nativo concluído antes do envio à GPU; o desempenho ainda não foi medido.
 
-A otimização de renderização grande vem desativada e mostra as funções ativadas; a troca recarrega o modelo. Inox2D Vulkan oferece gravação paralela e blocos grandes; Live2D Vulkan oferece alocações grandes com VMA. Cenas pequenas usam gravação serial. Bindless, computação assíncrona e gravação paralela de Live2D não estão implementados. OpenGL / Metal não oferecem essas funções. Pools maiores podem usar mais memória.
+A otimização de renderização aparece em Vulkan / Metal e fica desativada por padrão. Vulkan oferece três opções; Metal apenas grandes alocações. Inox2D Metal agrupa os vértices de cada quadro; Live2D Metal mostra a opção como indisponível. As três subopções são salvas separadamente; alterações recarregam o modelo. Inox2D Vulkan oferece gravação paralela e blocos grandes. Live2D Vulkan oferece VMA e gravação paralela com mistura comum, sem nós fora da tela ou máscaras de alta precisão. Live2D exige 128 Drawables para buffers secundários e 128 snapshots desenháveis para usar até quatro threads; outros modelos mantêm a rota serial do SDK. Live2D Vulkan Bindless usa uma tabela de até 64 texturas de atlas com mistura comum e sem nós fora da tela; retorna à rota anterior se os recursos ou a capacidade do dispositivo forem insuficientes. Inox2D Bindless não está implementado. Pools maiores podem usar mais memória; os ganhos de desempenho ainda não foram medidos.
 
 Compilações com SDK usam `BONGO_CAT_CUBISM_VULKAN=ON` no Windows / Linux x64 (`glslangValidator` ou `glslang`, pacote Linux `glslang-tools`; Vulkan 1.3 na execução) e `BONGO_CAT_CUBISM_METAL=ON` no macOS (ferramentas Metal do Xcode). Use `OFF` para desativar a extensão. Fontes Metal e `.metallib` entram apenas no macOS; Vulkan e `.spv` apenas no Windows / Linux x64, incluindo variantes de mistura. Compilações de diagnóstico sem SDK omitem esses recursos Live2D. GitHub Actions prepara as ferramentas e verifica recursos por plataforma. Verificações estáticas foram executadas; compilação e GPU ainda não foram validadas. Veja [integração e validação](live2d-vulkan-metal.md).
 
@@ -308,3 +310,19 @@ As versões portáteis para Windows são arquivos ZIP. Mantenha a pasta extraíd
 Cada push para `dev` que altera código, recursos ou configuração de compilação publica uma versão de pré-lançamento no GitHub. Alterações apenas na documentação são ignoradas; não há execução agendada. Todas as plataformas usam o commit enviado. A versão estável mais recente não é substituída.
 
 As prévias noturnas reutilizam a [página nightly](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), atualizam a tag e substituem arquivos com nomes fixos. Plataformas com falha mantêm seus arquivos anteriores.
+
+### Linux Wayland / evdev
+
+A entrada evdev experimental no Linux Wayland é ativada com `BONGOCAT_ENABLE_EVDEV=1`. Primeiro, os dispositivos são abertos somente para leitura como usuário normal. Se o acesso for negado, uma instalação protegida solicita autenticação por `/usr/bin/sudo`, abre os dispositivos e reinicia após abandonar imediatamente os privilégios, antes de inicializar SDL, configurações e modelos. O programa, sudo e diretórios superiores devem pertencer a root e não permitir escrita pelo grupo ou outros usuários. Instalações de desenvolvimento e portáteis precisam de permissões administradas separadamente. O caminho confiável do sudo é configurável por `BONGO_CAT_SUDO_EXECUTABLE`. Falhas interrompem a inicialização; permissões permanentes não são alteradas. Apenas dispositivos presentes ao iniciar são monitorados; novas conexões exigem reiniciar. Não execute diretamente como root nem entre no grupo `input`. A entrada pode incluir senhas e não pausa ao bloquear a tela, trocar de sessão ou ocultar o pet.
+
+[SECURITY.md](../SECURITY.md#linux-input)
+
+Preferências → Preferências → Janela permite escolher uma imagem de fundo personalizada: PNG, JPEG, WebP, BMP ou GIF (primeiro quadro). A imagem preenche a janela centralizada, mantendo a proporção, e não pode ser usada com o fundo de cor sólida. A cópia fica no diretório de dados do aplicativo, mesmo que o original seja movido. Limites: 64 MB e 16 megapixels. Compatível com OpenGL, Vulkan e Metal.
+
+Live2D reutiliza automaticamente buffers de geometria e estados de renderização repetidos. Uploads OpenGL, lotes e cache de pipelines Vulkan, buffers compartilhados Metal e máscaras nativas adaptativas não exigem outro interruptor. O desempenho e o comportamento por plataforma ainda precisam ser medidos.
+
+### Várias teclas e caracteres legíveis no modo espelho
+
+Mver (OpenGL/Vulkan/Metal) recorta separadamente a mão, a borda e os caracteres, unindo as teclas pressionadas com + em um único balão. A borda e a ponta espelham com o modelo; os caracteres continuam legíveis, também no modo de uma tecla. Configure as três áreas, o espaçamento ao redor de + e o limite por lado em `hand-layout.json` junto às imagens das mãos e reinicie após editar. Veja o [guia e o exemplo](hand-layout.md).
+
+A janela de ações verifica a referência `Sound` e se o arquivo existe, mostrando um controle individual junto aos movimentos com áudio. Ajuste de 0 a 100% arrastando ou digitando; um clique duplo restaura 100% e 0% silencia. Os valores são salvos por modelo e movimento e valem para a janela, atalhos, movimentos aleatórios e menu de contexto, inclusive durante a reprodução. Outros movimentos que usam o mesmo arquivo mantêm seu próprio volume.

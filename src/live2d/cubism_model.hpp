@@ -1,13 +1,12 @@
 #ifndef BONGO_CAT_CUBISM_MODEL_HPP
 #define BONGO_CAT_CUBISM_MODEL_HPP
 
-#ifdef CSM_TARGET_MAC_GL
 #include "cubism_core_profile.hpp"
-#endif
 
 #include "bongo_cat/model.h"
 #include "bongo_cat/image.h"
 #include "cubism_mask_policy.hpp"
+#include "cubism_metal_geometry.hpp"
 #include "cubism_texture_refresh_memory.hpp"
 
 #include <Model/CubismUserModel.hpp>
@@ -16,6 +15,7 @@
 #include <Math/CubismMatrix44.hpp>
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
 #include <Rendering/Vulkan/CubismRenderer_Vulkan.hpp>
+#include "cubism_vulkan_geometry.hpp"
 #endif
 #include <Rendering/OpenGL/CubismRenderer_OpenGLES2.hpp>
 #include <SDL3/SDL_opengl.h>
@@ -33,6 +33,7 @@ class ViewerLookUpdater;
 class ParameterOverrideUpdater;
 struct ModelTexture;
 struct TextureRefresh;
+struct NativeTextureRefresh;
 struct TextureResolution;
 
 class NativeModel final : public Csm::CubismUserModel {
@@ -180,6 +181,10 @@ private:
     void select_motion(const std::string &key, bool selected);
     void release_textures();
     void schedule_texture_refresh();
+    bool refresh_native_texture_resolution(bool active, bool allow_start);
+    bool native_texture_refresh_due(bool active, bool allow_start) const;
+    bool native_texture_refresh_busy() const;
+    void cancel_native_texture_refresh(bool wait);
     void cancel_texture_refresh();
     TextureResolution texture_refresh_bound(const ModelTexture &texture,
         int limit, float quality_percent) const;
@@ -189,31 +194,37 @@ private:
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     /* Cubism Vulkan renderer paths (see docs/live2d-vulkan-metal.md). */
     bool create_renderer_vulkan(BongoCatError *error);
-    bool upload_texture_vulkan(int index, const std::vector<unsigned char> &pixels,
+    bool upload_texture_vulkan(int index, const unsigned char *pixels,
         int width, int height, BongoCatError *error);
     void release_textures_vulkan();
     std::vector<Csm::CubismImageVulkan> vulkan_textures_;
+    std::shared_ptr<VulkanGeometry> vulkan_geometry_;
     void draw_vulkan();
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
     bool create_renderer_metal(BongoCatError *error);
-    bool upload_texture_metal(int index, const std::vector<unsigned char> &pixels,
+    bool upload_texture_metal(int index, const unsigned char *pixels,
         int width, int height, BongoCatError *error);
     void release_textures_metal();
     void draw_metal();
     void *metal_textures_ = nullptr;
+    std::shared_ptr<MetalGeometry> metal_geometry_;
 #endif
     bool load_textures_native(BongoCatError *error,
         BongoCatModelRuntimeLoadProgress progress, void *userdata, int display_width, int display_height);
+    void prepare_native_mask_sizes();
     void native_projection(Csm::CubismMatrix44 &projection);
     void native_visual_state(Csm::CubismMatrix44 &projection);
     BongoCatRhiDeviceInfo rhi_info_ = {};
     std::vector<BongoCatImageAlphaMask> native_alpha_;
     size_t native_texture_bytes_ = 0;
+    std::vector<std::shared_ptr<ModelTexture>> native_texture_info_;
+    NativeTextureRefresh *native_texture_refresh_ = nullptr;
 
     int prepare_mask_layout();
     bool update_mask_buffers();
     void bind_textures();
+    void prepare_gl_geometry();
     std::vector<unsigned char> read(const std::string &path,
         size_t maximum = (size_t)-1) const;
     std::string path(const char *relative) const;
@@ -237,19 +248,19 @@ private:
     std::vector<float> parameter_baseline_values_;
     std::vector<float> parameter_save_scratch_;
     std::vector<unsigned char> parameter_overrides_;
+    std::vector<int> parameter_override_indices_;
     std::vector<float> motion_preview_parameters_;
     std::vector<float> motion_preview_parts_;
     Csm::csmVector<Csm::CubismIdHandle> eye_blink_ids_;
     Csm::csmVector<Csm::CubismIdHandle> lip_sync_ids_;
     std::string directory_;
-#ifdef CSM_TARGET_MAC_GL
     CoreProfileBuffers core_buffers_;
-#endif
     int width_ = 612;
     int height_ = 354;
     int renderer_width_ = 0;
     int renderer_height_ = 0;
     int mask_texture_limit_ = 0;
+    int mask_buffer_count_ = 0;
     struct MaskBuffers { MaskSize layout; MaskSize size; };
     MaskBuffers drawable_masks_, offscreen_masks_;
     bool mask_update_failed_ = false;

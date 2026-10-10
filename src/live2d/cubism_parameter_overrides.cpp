@@ -53,10 +53,11 @@ void NativeModel::save_parameters() {
     const int count = _model->GetParameterCount();
     auto &current = parameter_save_scratch_;
     current.resize((size_t)count);
-    for (int i = 0; i < count; ++i) {
-        current[(size_t)i] = _model->GetParameterValue(i);
+    if (count > 0)
+        std::copy_n(Live2D::Cubism::Core::csmGetParameterValues(_model->GetModel()),
+            count, current.begin());
+    for (int i = 0; i < count; ++i)
         _model->SetParameterValue(i, parameter_baseline_values_[(size_t)i]);
-    }
     _model->SaveParameters();
     for (int i = 0; i < count; ++i)
         _model->SetParameterValue(i, current[(size_t)i]);
@@ -64,11 +65,10 @@ void NativeModel::save_parameters() {
 
 void NativeModel::apply_parameter_overrides() {
     if (!_model) return;
-    const int count = _model->GetParameterCount();
-    for (int i = 0; i < count; ++i) {
-        if (!parameter_overrides_[(size_t)i]) continue;
-        _model->SetParameterValue(i, parameter_override_values_[(size_t)i]);
-    }
+    // Input typically overrides only a handful of a model's parameters.
+    // Preserve SDK clamping/repeat rules while avoiding a full scan twice per tick.
+    for (int index : parameter_override_indices_)
+        _model->SetParameterValue(index, parameter_override_values_[(size_t)index]);
     parameter_overrides_applied_ = true;
 }
 

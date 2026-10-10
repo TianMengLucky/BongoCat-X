@@ -2,8 +2,15 @@
 #define BONGO_CAT_MVER_POINTER_OVERLAY_H
 
 #include "bongo_cat/common.h"
+#include <SDL3/SDL_surface.h>
 
 typedef struct BongoCatMverPointerOverlay BongoCatMverPointerOverlay;
+typedef void (*BongoCatMverPointerNativeDraw)(void *userdata,
+    unsigned int primitive, const float *vertices, size_t count,
+    SDL_Surface *surface);
+void bongo_cat_mver_pointer_overlay_set_native_draw(
+    BongoCatMverPointerOverlay *value, BongoCatMverPointerNativeDraw draw,
+    void *userdata);
 
 BongoCatMverPointerOverlay *bongo_cat_mver_pointer_overlay_create(
     BongoCatError *error);

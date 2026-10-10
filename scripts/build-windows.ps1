@@ -81,9 +81,101 @@ function Write-GitHubBuildAnnotations {
         }
 }
 
+# --- Environment hygiene -------------------------------------------------
+# MSBuild builds a case-insensitive dictionary from the process environment
+# and aborts when two names differ only in case:
+#   error MSB6001: "CL.exe" ... System.ArgumentException: 已添加项
+#   (key HTTP_PROXY, added key http_proxy)
+# Windows itself tolerates that pair — its variable names are case-insensitive
+# — but MSBuild does not, and the failure reaches us as a bogus
+# "No CMAKE_C_COMPILER could be found" during configure. Proxy tooling and
+# sandboxes commonly export both spellings, so collapse every duplicate to a
+# single entry before configuring. Dropping one spelling is equivalent to
+# keeping it: Windows matches the name case-insensitively.
+function Merge-DuplicateEnvironmentNames {
+    $guard = 0
+    while ($guard -lt 32) {
+        $guard++
+        $names = @([System.Environment]::GetEnvironmentVariables('Process').Keys)
+        $group = $names | Group-Object { $_.ToLowerInvariant() } |
+            Where-Object { $_.Count -gt 1 } | Select-Object -First 1
+        if (-not $group) { return }
+        $victim = $group.Group[-1]
+        [System.Environment]::SetEnvironmentVariable($victim, $null)
+        Write-Host ("Merged environment variable that differed only in case: {0}" -f
+            ($group.Group -join ' / '))
+    }
+}
+
+Merge-DuplicateEnvironmentNames
+
+# --- Toolchain discovery -------------------------------------------------
+# The Visual Studio installer ships a complete CMake distribution under
+# Common7\IDE\CommonExtensions; on machines that installed the IDE without a
+# standalone CMake it is the only CMake present. It also always knows the
+# generator name matching its own Visual Studio release.
+function Get-VisualStudioCMakePath {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} `
+        'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere)) { return $null }
+    foreach ($instance in @(& $vswhere -products * -property installationPath)) {
+        if (-not $instance) { continue }
+        $candidate = Join-Path $instance `
+            'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+    }
+    return $null
+}
+
+# Map a Visual Studio installation version to its CMake generator name.
+function Get-VisualStudioGeneratorName {
+    param([string]$InstallationVersion)
+    if ($InstallationVersion -notmatch '^(\d+)\.') { return $null }
+    switch ([int]$Matches[1]) {
+        18 { return 'Visual Studio 18 2026' }
+        17 { return 'Visual Studio 17 2022' }
+        16 { return 'Visual Studio 16 2019' }
+        15 { return 'Visual Studio 15 2017' }
+        14 { return 'Visual Studio 14 2015' }
+        default { return $null }
+    }
+}
+
+function Test-CMakeGenerator {
+    param([string]$Name)
+    if (-not $Name) { return $false }
+    return ((& cmake --help 2>&1 | Out-String) -match [regex]::Escape($Name))
+}
+
+# Pick the newest installed Visual Studio whose generator this CMake knows.
+# Returns $null when none matches, which happens when the CMake on PATH
+# predates the installed Visual Studio release (it then has no generator name
+# for it); the caller retries with the Visual Studio bundled CMake.
+function Resolve-VisualStudioGenerator {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} `
+        'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere)) { return $null }
+    $versions = @(& $vswhere -products * -format value `
+        -property installationVersion) | Where-Object { $_ -match '^\d+\.' }
+    $versions = $versions |
+        Sort-Object -Descending { [int](($_ -split '\.')[0]) }
+    foreach ($version in $versions) {
+        $name = Get-VisualStudioGeneratorName $version
+        if ($name -and (Test-CMakeGenerator $name)) { return $name }
+    }
+    return $null
+}
+
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
-    Write-Host 'Error: CMake was not found in PATH.'
-    exit 1
+    $bundledCmake = Get-VisualStudioCMakePath
+    if ($bundledCmake) {
+        $env:Path = "$(Split-Path -Parent $bundledCmake);$env:Path"
+        Write-Host "CMake is not on PATH; using the Visual Studio bundled CMake: $bundledCmake"
+    } else {
+        Write-Host 'Error: CMake was not found in PATH and no Visual Studio bundled CMake was located.'
+        Write-Host 'Install CMake (https://cmake.org/download/) or add the Visual Studio "Desktop development with C++" workload, then retry.'
+        exit 1
+    }
 }
 
 if ($Package -or $Target -contains 'package-installer') {
@@ -150,23 +242,32 @@ if ($SkipConfigure) {
     Write-BuildProgress 20 'Using existing CMake configuration.' -NewLine
 } else {
     Write-BuildProgress 5 'Configuring project...'
-    # Pick the generator from the newest installed Visual Studio: the classic
-    # default is VS 2022 ("Visual Studio 17 2022"); VS 18 (2026) needs its own
-    # generator name.
-    $generator = 'Visual Studio 17 2022'
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} `
-        'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (Test-Path -LiteralPath $vswhere) {
-        $instance = & $vswhere -latest -products * -format value `
-            -property installationVersion
-        if ($instance -match '^(\d+)\.' -and [int]$Matches[1] -ge 18) {
-            $generator = 'Visual Studio 18 2026'
+    # Match the generator to the installed Visual Studio release: VS 18 (2026)
+    # and VS 17 (2022) have distinct generator names, and a CMake older than
+    # the IDE does not know the newer name. When the CMake on PATH cannot
+    # drive any installed release, switch to the CMake bundled with Visual
+    # Studio, which always knows its own generator.
+    $generator = Resolve-VisualStudioGenerator
+    if (-not $generator) {
+        $bundledCmake = Get-VisualStudioCMakePath
+        $activeCmake = (Get-Command cmake).Source
+        if ($bundledCmake -and
+            (Split-Path -Parent $bundledCmake) -ne
+                (Split-Path -Parent $activeCmake)) {
+            $env:Path = "$(Split-Path -Parent $bundledCmake);$env:Path"
+            Write-Host "No generator matched the CMake on PATH; using $bundledCmake"
+            $generator = Resolve-VisualStudioGenerator
         }
     }
     # BONGOCAT_GENERATOR overrides the auto-picked generator (e.g. "Ninja");
     # a Ninja configure requires cl.exe/link.exe already on PATH, so this is
     # meant for shells launched from the VS developer prompt.
     if ($env:BONGOCAT_GENERATOR) { $generator = $env:BONGOCAT_GENERATOR }
+    if (-not $generator) {
+        Write-Host 'Error: no CMake generator matches the installed Visual Studio.'
+        Write-Host 'Upgrade CMake, or set BONGOCAT_GENERATOR to a generator this machine supports.'
+        exit 1
+    }
     $configureArgs = @(
         '-S', $root, '-B', $BuildDir,
         '-G', $generator,
@@ -306,7 +407,9 @@ if ($Package) {
     }
     $packageName = (Get-Content -LiteralPath $packageNameFile -Raw).Trim()
     $packageDist = Join-Path $BuildDir 'dist'
-    $portable = Join-Path $packageDist "$packageName-portable.exe"
+    # CPack's Windows generator is ZIP, so the portable artifact is an archive
+    # (see cmake/Packaging.cmake); only the installer is an executable.
+    $portable = Join-Path $packageDist "$packageName-portable.zip"
     $installer = Join-Path $packageDist "$packageName-setup.exe"
     if (-not (Test-Path -LiteralPath $portable) -or
         -not (Test-Path -LiteralPath $installer)) {

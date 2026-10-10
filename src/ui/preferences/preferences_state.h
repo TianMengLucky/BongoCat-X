@@ -201,6 +201,10 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
    page module within the source size policy. */
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
+/* Model-section rows of the cat settings page (gamepad four-hand mode and
+   multi-key display). */
+void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
+    BongoCatModelPreferences *model, struct nk_context *context);
 /* Render backend row of the general page (hot-switched via the app loop). */
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context);

@@ -1,6 +1,7 @@
 #include "overlay_internal.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "bongo_cat/rhi.h"
 
 static const char *vertex_source =
@@ -8,11 +9,16 @@ static const char *vertex_source =
     "layout(location=0) in vec2 pos; layout(location=1) in vec2 uv;\n"
     "out vec2 tex; uniform bool mirror; uniform bool vertical_flip;\n"
     "uniform sampler2D image; uniform int reference_width,reference_height;\n"
+    "uniform int backdrop_width,backdrop_height;\n"
     "void main(){vec2 p=pos;"
     "if(reference_width>0&&reference_height>0){"
     "vec2 extent=vec2(textureSize(image,0))/vec2(reference_width,reference_height);"
     "p=(p+vec2(1,-1))*extent+vec2(-1,1);}"
-    "if(mirror)p.x=-p.x;if(vertical_flip)p.y=-p.y;gl_Position=vec4(p,0,1);tex=uv;}";
+    "if(mirror)p.x=-p.x;if(vertical_flip)p.y=-p.y;gl_Position=vec4(p,0,1);tex=uv;"
+    "if(backdrop_width>0&&backdrop_height>0){"
+    "vec2 size=vec2(textureSize(image,0));"
+    "float ratio=(size.x/size.y)/(float(backdrop_width)/float(backdrop_height));"
+    "vec2 span=ratio>1.?vec2(1./ratio,1.):vec2(1.,ratio);tex=(uv-.5)*span+.5;}}";
 static const char *fragment_source =
     "#version 330 core\n"
     "in vec2 tex; out vec4 color; uniform sampler2D image;\n"
@@ -27,6 +33,10 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
     BongoCatOverlay *value = calloc(1, sizeof(*value));
     if (value && !bongo_cat_rhi_active_is_gl()) {
         value->native = true;
+        value->mver_pointer = bongo_cat_mver_pointer_overlay_create(error);
+        if (!value->mver_pointer) { free(value); return NULL; }
+        bongo_cat_mver_pointer_overlay_set_native_draw(value->mver_pointer,
+            bongo_cat_overlay_native_geometry, value);
         return value;
     }
     if (!value || !bongo_cat_gl_load(&value->gl, error)) {
@@ -42,6 +52,8 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
         "reference_width");
     value->reference_height_location = value->gl.uniform_location(value->program,
         "reference_height");
+    value->backdrop_width_location = value->gl.uniform_location(value->program, "backdrop_width");
+    value->backdrop_height_location = value->gl.uniform_location(value->program, "backdrop_height");
     value->erase_left_location = value->gl.uniform_location(value->program, "erase_left");
     value->erase_right_location = value->gl.uniform_location(value->program, "erase_right");
     const float vertices[] = {-1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0};
@@ -55,6 +67,8 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
     value->gl.enable_attribute(1);
     value->gl.attribute_pointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
         (const void *)(sizeof(float) * 2));
+    /* Failure keeps the original key sprites; the overlay still renders. */
+    bongo_cat_overlay_keys_program(value);
     value->mver_pointer = bongo_cat_mver_pointer_overlay_create(error);
     if (!value->mver_pointer) {
         bongo_cat_overlay_destroy(value);
@@ -71,12 +85,26 @@ void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *value, bool flipped) {
 
 void bongo_cat_overlay_destroy(BongoCatOverlay *value) {
     if (!value) return;
+    bongo_cat_overlay_set_custom_background(value, NULL, NULL);
     bongo_cat_mver_pointer_overlay_destroy(value->mver_pointer);
     bongo_cat_overlay_clear_textures(value);
     if (value->vbo) value->gl.delete_buffers(1, &value->vbo);
     if (value->vao) value->gl.delete_vertex_arrays(1, &value->vao);
     if (value->program) value->gl.delete_program(value->program);
+    if (value->keys_program) value->gl.delete_program(value->keys_program);
     free(value);
+}
+
+void bongo_cat_overlay_set_multi_key_display(BongoCatOverlay *value, bool enabled) {
+    if (!value || value->multi_key_display == enabled) return;
+    value->multi_key_display = enabled;
+    ++value->native_input_revision;
+    /* The host replays held input after toggling either way. Clear both
+       representations so a single-key sprite cannot survive beside a row. */
+    bongo_cat_overlay_keys_clear(value);
+    value->left = value->right = 0;
+    value->left_name[0] = value->right_name[0] = '\0';
+    value->left_path[0] = value->right_path[0] = '\0';
 }
 
 void bongo_cat_overlay_clear(BongoCatOverlay *value) {
@@ -96,7 +124,16 @@ bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *value) {
 }
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *value,
     float x_ratio, float y_ratio, bool left, bool right, bool side) {
-    if (bongo_cat_overlay_mver_pointer_enabled(value))
+    if (bongo_cat_overlay_mver_pointer_enabled(value)) {
+        float inputs[5] = {x_ratio, y_ratio, left ? 1.0f : 0.0f,
+            right ? 1.0f : 0.0f, side ? 1.0f : 0.0f};
+        unsigned char key[sizeof(inputs)];
+        memcpy(key, inputs, sizeof(key));
+        if (memcmp(key, value->native_pointer_key, sizeof(key))) {
+            memcpy(value->native_pointer_key, key, sizeof(key));
+            ++value->native_input_revision;
+        }
         bongo_cat_mver_pointer_overlay_set(value->mver_pointer, x_ratio,
             y_ratio, left, right, side);
+    }
 }

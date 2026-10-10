@@ -54,6 +54,10 @@ typedef struct BongoCatRhi {
     void *context; /* SDL GL context (OpenGL backend only). */
     void *impl;    /* Backend-private state. */
     BongoCatRhiPresentOps present;
+    /* Host-owned cached premultiplied foreground, separate from plugin ABI. */
+    unsigned char *foreground_pixels;
+    int foreground_width, foreground_height;
+    uint64_t foreground_revision;
 } BongoCatRhi;
 
 /* One-shot command buffers for bridge-side device work (texture uploads).
@@ -66,6 +70,9 @@ bool bongo_cat_rhi_submit_commands_checked(const BongoCatRhi *rhi, void *command
 bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi);
 /* Cached premultiplied RGBA canvas, top-down. NULL removes the background. */
 bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
+    int width, int height, int pitch, uint64_t revision);
+/* Foreground is composited after the model and before readback/presentation. */
+bool bongo_cat_rhi_set_foreground(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision);
 bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi);
 bool bongo_cat_rhi_live2d_supported(const BongoCatRhi *rhi);

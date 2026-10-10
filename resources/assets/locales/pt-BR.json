@@ -30,10 +30,21 @@
       },
       "title": "Preferências",
       "cat": {
+        "background": {
+          "title": "Imagem de fundo personalizada",
+          "help": "Preenche a janela com uma imagem centralizada e proporcional. Incompatível com fundo sólido; funciona em todos os backends.",
+          "image": "Imagem de fundo",
+          "selected": "Imagem salva nos dados do app. Escolha outro PNG, JPEG, WebP, BMP ou GIF (primeiro quadro), até 64 MB e 16 megapixels.",
+          "empty": "Escolha PNG, JPEG, WebP, BMP ou GIF (primeiro quadro), até 64 MB e 16 megapixels. O app salva uma cópia importada.",
+          "choose": "Escolher imagem",
+          "imported": "Imagem de fundo importada",
+          "failed": "Não foi possível carregar a imagem. Escolha PNG, JPEG, WebP, BMP ou GIF de até 64 MB e 16 megapixels."
+        },
         "title": "Preferências",
         "labels": {
           "modelSettings": "Modelo",
           "gamepadFourHands": "Modo de quatro mãos no controle",
+          "multiKeyDisplay": "Exibição de várias teclas",
           "dynamicTextureResolution": "Desativar resolução dinâmica de texturas",
           "renderQuality": "Qualidade do modelo (%)",
           "mirrorMode": "Modo Espelho",
@@ -46,7 +57,6 @@
           "windowSettings": "Janela",
           "passThrough": "Janela Transparente",
           "alwaysOnTop": "Sempre no Topo",
-          "keepInScreen": "Manter na Tela",
           "edgeSnap": "Encaixe nas bordas",
           "captureOnly": "Somente em programas de captura",
           "windowSize": "Tamanho da Janela",
@@ -66,22 +76,35 @@
           "maxFPS": "Taxa Máxima de Quadros"
         },
         "hints": {
-          "dynamicTextureResolution": "Ajusta automaticamente a resolução das texturas ao tamanho real de exibição, preservando os detalhes visuais e otimizando o uso da memória de vídeo. Em geral, não é recomendado ativar esta opção.",
-          "renderQuality": "Experimente diferentes níveis para encontrar o melhor equilíbrio visual e economizar memória.",
-          "hoverRequires": "Ative as opções [Passagem de cliques] e [Sempre no Topo] acima.",
+          "dynamicTextureResolution": "Ao ativar, deixa de adaptar as texturas à janela e usa a resolução da qualidade escolhida, que pode consumir mais memória de vídeo.",
+          "renderQuality": "Reduz a resolução das texturas para economizar memória de vídeo. Recarrega após o ajuste; clique duplo restaura o padrão.",
+          "hoverRequires": "Oculta ao passar o ponteiro e mostra ao afastá-lo. Ajuste a transição; requer [Janela Transparente] e [Sempre no Topo].",
           "hoverUnavailable": "Ocultar ao passar o mouse não está disponível no ambiente de desktop atual.",
-          "gamepadFourHands": "Mantém duas mãos extras visíveis no modo controle. A aparência depende do modelo",
-          "forceMouseInput": "Move o modelo com o movimento bruto do dispositivo para seguir o mouse mesmo que o jogo oculte o cursor",
-          "passThrough": "Também é possível desativar pelo clique direito no ícone da bandeja",
-          "alwaysOnTop": "Quando ativado, a janela sempre ficará acima de outros aplicativos.",
-          "keepInScreen": "Quando ativado, a janela permanece automaticamente dentro dos limites da tela.",
-          "captureOnly": "Invisível na área de trabalho, ainda visível no OBS",
-          "obsBackground": "A captura da janela está preta?",
+          "gamepadFourHands": "Mantém duas mãos extras visíveis no modo controle se o modelo as fornecer.",
+          "multiKeyDisplay": "Somente Mver: conecta as teclas pressionadas com + em um balão por lado. Os caracteres continuam legíveis ao espelhar; configure os recortes em hand-layout.json.",
+          "forceMouseInput": "Usa o movimento bruto do mouse no Windows, mesmo se o jogo ocultar ou travar o cursor.",
+          "passThrough": "Permite que os cliques alcancem as janelas atrás do pet. Também pode ser desativado pelo menu da bandeja.",
+          "alwaysOnTop": "Mantém o pet acima das outras janelas.",
+          "captureOnly": "Oculta o pet na área de trabalho do Windows, mantendo-o visível para programas de captura compatíveis.",
+          "obsBackground": "Adiciona uma cor sólida atrás do pet. Veja as instruções aqui se a captura do OBS ficar preta.",
           "obsBackgroundHelp": "OBS: ative esta opção, use o método compatível com o Windows 7 e remova o fundo com um filtro de chave de cor.",
-          "tightFrame": "Encolhe a janela automaticamente para o tamanho visível do mascote, reduzindo as margens transparentes.",
-          "windowSize": "Use a [roda do mouse] para ajustar o tamanho ou [mantenha o botão direito pressionado] e arraste para a direita para ampliar, para a esquerda para reduzir",
+          "tightFrame": "Ajusta a janela ao pet e ao fundo visíveis, reduzindo as margens transparentes.",
+          "windowSize": "Redimensione com a roda ou arrastando com o botão direito. Redefinir traz o pet de volta à tela; o ícone de tamanho restaura a escala padrão.",
           "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
-          "hideOnHover": "Com a passagem de cliques e Sempre no Topo ativados, o mascote se oculta imediatamente ao passar o mouse e reaparece ao afastá-lo."
+          "hideOnHover": "Com a passagem de cliques e Sempre no Topo ativados, o mascote se oculta imediatamente ao passar o mouse e reaparece ao afastá-lo.",
+          "edgeSnap": "Encaixa na borda da tela ao arrastar para perto dela.",
+          "windowCorners": "Arredonda os cantos da janela. Percentuais maiores aumentam o arredondamento; funciona em todos os backends.",
+          "opacity": "Ajusta a transparência da janela, também com Ctrl+roda.",
+          "randomExpression": "Escolhe uma expressão aleatória no intervalo definido. Use o botão de configurações para escolher as participantes.",
+          "randomMotion": "Reproduz um movimento aleatório no intervalo definido. Escolha os participantes nas configurações; cada um usa seu volume salvo.",
+          "sequentialModel": "Troca os modelos em ordem no intervalo definido. Use o botão de configurações para escolher os participantes.",
+          "mirrorMode": "Espelha o modelo horizontalmente. Os caracteres de teclas Mver compatíveis continuam legíveis.",
+          "verticalFlip": "Inverte o modelo verticalmente para exibi-lo de cabeça para baixo.",
+          "mouseMirror": "Inverte o rastreamento horizontal do mouse sem espelhar o modelo.",
+          "mouseVerticalFlip": "Inverte o rastreamento vertical do mouse sem espelhar o modelo.",
+          "mouseCentered": "Usa o centro da tela em vez da posição do pet como referência do mouse.",
+          "ignoreMouse": "Movimentos e botões do mouse deixam de controlar o modelo; teclado e controle continuam ativos.",
+          "maxFPS": "Limita os FPS do modelo. O controle vai até a frequência da tela; a entrada aceita até 360 FPS. Clique duplo restaura o padrão."
         }
       },
       "general": {
@@ -104,8 +127,8 @@
         "options": {
           "parallelRecording": "Gravação paralela de comandos",
           "bindless": "Bindless",
-          "asyncCompute": "Computação assíncrona",
           "largeAllocation": "Blocos grandes de memória",
+          "optimizationDisabled": "Desativado",
           "optimizationActive": "Ativado",
           "optimizationUnavailable": "Indisponível",
           "auto": "Sistema",
@@ -113,12 +136,12 @@
           "darkMode": "Escuro"
         },
         "hints": {
-          "largeRenderOptimization": "Solicita gravação paralela, Bindless, computação assíncrona e blocos grandes quando suportados. Pode usar mais memória; recarrega o motor e o modelo.",
+          "largeRenderOptimization": "Escolha otimizações opcionais de Vulkan/Metal. As mudanças recarregam o modelo; podem usar mais memória e dependem do renderizador.",
           "largeRenderUnavailable": "O motor do modelo atual não oferece essas otimizações; a renderização não muda.",
           "showTrayIcon": "Quando ativado, o ícone do aplicativo é exibido na bandeja do sistema.",
           "autostartFailed": "Não foi possível atualizar a inicialização automática",
-          "runAsAdmin": "Executar o aplicativo como administrador ajuda a capturar com mais estabilidade algumas teclas e eventos de entrada do sistema.",
-          "renderBackend": "Troca imediata sem reiniciar. Vulkan/Metal oferecem suporte experimental ao Live2D. Todos os motores suportam fundos de mesa e cantos arredondados; sobreposições de teclas, efeitos e ponteiro exigem OpenGL",
+          "runAsAdmin": "Melhora a captura em jogos Windows com privilégios elevados. Ao ativar solicita permissão e reinicia o aplicativo.",
+          "renderBackend": "Troca imediata; em caso de falha volta ao OpenGL. Vulkan/Metal experimental também suporta fundos, cantos e camadas de teclas, efeitos e ponteiro.",
           "renderBackendChanged": "Alternando o backend de renderização",
           "renderBackendFallback": "O renderizador selecionado está indisponível; OpenGL foi restaurado",
           "runAsAdminHelp": "Ao executar como administrador, o aplicativo consegue capturar com mais estabilidade algumas teclas e eventos de entrada do sistema e responder normalmente em jogos executados com privilégios de administrador.\n\nAo ativar: o aplicativo solicita permissão de administrador e reinicia; cada inicialização seguinte (incluída a inicialização com o sistema) também será como administrador. Se a inicialização com o sistema estiver ativada, o Windows mostra uma confirmação do Controle de Conta de Usuário (UAC) uma vez a cada login.\n\nAo desativar: os privilégios normais voltam a partir da próxima inicialização; o aplicativo em execução não é afetado.",
@@ -127,10 +150,17 @@
           "portableModeEnabled": "Modo portátil ativado; dados copiados. Reinicie para usar",
           "portableModeDisabled": "O local de dados do sistema será restaurado após reiniciar",
           "portableModeFailed": "Não foi possível alterar a configuração do modo portátil",
-          "inputMonitoringPermission": "Reinicie após autorizar.",
+          "inputMonitoringPermission": "Permita o teclado de outros apps em Monitoramento de Entrada do macOS e depois encerre completamente e reinicie o BongoCat.",
           "inputMonitoringPermissionGuide": "O Monitoramento de Entrada permite que o BongoCat veja teclas pressionadas em outros aplicativos; o mouse continua funcionando sem ele. O BongoCat cria o monitoramento ao iniciar, então uma mudança de permissão exige reiniciar.\n\nPassos:\n1. Abra Ajustes do Sistema → Privacidade e Segurança → Monitoramento de Entrada.\n2. Ative a entrada do BongoCat que já está na lista; não remova entradas existentes.\n3. Se o BongoCat não estiver na lista, clique em \"+\" e adicione a cópia que você executa (confira o local do aplicativo).\n4. Encerre o BongoCat por completo e inicie de novo para recriar o monitoramento.\n\nSe o teclado continuar sem resposta, você pode remover e adicionar de novo a entrada do BongoCat.",
           "administratorPermission": "Executar o aplicativo como administrador ajuda a capturar algumas teclas e eventos de entrada em nível de sistema com mais confiabilidade.",
-          "administratorPermissionGuide": "Para capturar algumas teclas e eventos de entrada em nível de sistema com mais confiabilidade, é recomendado executar o aplicativo como administrador.\n\nComo fazer:\n1. Feche o aplicativo primeiro.\n2. Encontre o exe do aplicativo ou o atalho no Explorador de Arquivos.\n3. Escolha como iniciar:\n   • Apenas desta vez: Clique com o botão direito e escolha \"Executar como administrador\".\n   • Sempre (padrão): Botão direito → Propriedades → aba Compatibilidade → marque \"Executar este programa como administrador\" → OK."
+          "administratorPermissionGuide": "Para capturar algumas teclas e eventos de entrada em nível de sistema com mais confiabilidade, é recomendado executar o aplicativo como administrador.\n\nComo fazer:\n1. Feche o aplicativo primeiro.\n2. Encontre o exe do aplicativo ou o atalho no Explorador de Arquivos.\n3. Escolha como iniciar:\n   • Apenas desta vez: Clique com o botão direito e escolha \"Executar como administrador\".\n   • Sempre (padrão): Botão direito → Propriedades → aba Compatibilidade → marque \"Executar este programa como administrador\" → OK.",
+          "launchOnStartup": "Inicia o BongoCat automaticamente ao entrar no sistema.",
+          "portableModeSummary": "Salva os dados junto ao executável. Ao ativar copia os dados existentes; reinicie para usar o local escolhido.",
+          "parallelRecording": "Grava comandos Vulkan em várias threads quando o modelo e o renderizador permitem.",
+          "bindless": "Usa uma tabela de texturas Vulkan quando disponível. Live2D tem limites de modelo e dispositivo; Inox2D ainda não implementa esta opção.",
+          "largeAllocation": "Agrupa recursos Vulkan ou compartilha buffers de vértices do Inox2D Metal. Live2D Metal reutiliza buffers automaticamente.",
+          "language": "Muda imediatamente o idioma da interface; os nomes dos modelos mantêm o texto original.",
+          "themeMode": "Segue a aparência do sistema ou escolhe tema claro ou escuro para as configurações."
         },
         "status": {
           "authorized": "Autorizado",
@@ -190,7 +220,12 @@
             "stopAllAudio": "Parar todos os áudios",
             "motionIndex": "Movimento {index}",
             "motionGroupIndex": "Grupo de Movimento {index}",
-            "expressionIndex": "Expressão {index}"
+            "expressionIndex": "Expressão {index}",
+            "motionVolume": "Volume"
+          },
+          "hints": {
+            "motionVolume": "Ajusta apenas o áudio deste movimento. 0% silencia; clique duas vezes no valor para restaurar 100%",
+            "motionVolumeSaveFailed": "Não foi possível salvar o volume: limite de configurações atingido"
           }
         }
       },
@@ -356,6 +391,7 @@
     "selected": "Selecionado",
     "import": "Importar",
     "importing": "Importando...",
-    "builtIn": "integrado"
+    "builtIn": "integrado",
+    "multiplePetsHint": "Selecione vários modelos para mostrar até oito pets. Desativar volta à seleção única."
   }
 }

@@ -245,7 +245,7 @@ static void gamepad_four_hands(struct nk_command_buffer *c, struct nk_rect b,
     dot(c, b, 3, 17, 3, color); dot(c, b, 15, 17, 3, color);
 }
 
-static void keep_in_screen(struct nk_command_buffer *c, struct nk_rect b,
+static void frame_bounds(struct nk_command_buffer *c, struct nk_rect b,
     struct nk_color color) {
     nk_stroke_rect(c, nk_rect(b.x + 1, b.y + 2, 16, 12), 2, 1.5f, color);
     line(c, b, 9, 14, 9, 16, color);
@@ -272,7 +272,7 @@ bool bongo_cat_pref_row_icon_draw(struct nk_command_buffer *canvas,
         ignore_mouse, force_mouse_input, texture_resolution,
         max_fps, render_quality, autostart, administrator, language, theme, shortcut_visibility,
         shortcut_preferences, shortcut_menu, hide_fade, gamepad_four_hands,
-        vertical_flip, mouse_vertical_flip, keep_in_screen, live2d_core};
+        vertical_flip, mouse_vertical_flip, frame_bounds, live2d_core};
     int index = icon - BONGO_CAT_PREF_ICON_MULTIPLE_MODELS;
     int count = (int)(sizeof(draws) / sizeof(draws[0]));
     if (index < 0 || index >= count) return false;

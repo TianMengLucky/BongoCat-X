@@ -284,6 +284,8 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", optional.message);
         bongo_cat_overlay_clear(app->overlay);
     }
+    if (app->overlay) bongo_cat_overlay_set_multi_key_display(app->overlay,
+        app->settings.model.multi_key_display);
     {
         /* The tight-window envelope must also cover the static overlay art:
            the vertex envelope only sees the Cubism pet, and cropping to it

@@ -247,6 +247,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->model.mouse_centered = true;
     config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
     config->model.dynamic_texture_resolution = true;
+    config->model.multi_key_display = true;
     config->model.render_quality_percent =
         BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
@@ -262,6 +263,9 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
         BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
     config->app.large_render_optimization = false;
+    config->app.render_parallel_recording = true;
+    config->app.render_bindless = true;
+    config->app.render_large_allocation = true;
     config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
     config->app.language = BONGO_CAT_LANG_EN_US;
@@ -284,6 +288,10 @@ float bongo_cat_settings_snap_render_quality(float percent) {
 
 void bongo_cat_settings_validate(BongoCatSettings *config) {
     if (!config) return;
+    config->window.custom_background_path[BONGO_CAT_PATH_CAP - 1] = 0;
+    if (!config->window.custom_background_path[0])
+        config->window.custom_background = false;
+    if (config->window.custom_background) config->window.obs_background = false;
     config->model.render_quality_percent =
         bongo_cat_settings_snap_render_quality(
             config->model.render_quality_percent);
@@ -318,6 +326,7 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     compact_removed_models(config);
     compact_hidden_models(config);
     compact_random_disabled(config);
+    bongo_cat_settings_validate_motion_volumes(config);
     validate_shortcuts(config);
     compact_behavior_overrides(config);
 }

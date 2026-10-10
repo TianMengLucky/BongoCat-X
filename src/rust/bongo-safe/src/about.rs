@@ -114,8 +114,9 @@ pub unsafe extern "C" fn bongo_safe_about_feed_parse(
         };
         match parse_feed(text, &mut state) {
             Ok(()) => {
-                *out_persons = publish(&state.people);
-                state.people.len() as c_int
+                let count = state.people.len() as c_int;
+                *out_persons = publish(state.people);
+                count
             }
             Err(_) => -1,
         }
@@ -144,12 +145,7 @@ pub unsafe extern "C" fn bongo_safe_free_persons(persons: *mut BongoSafePerson, 
                 drop(CString::from_raw(person.profile));
             }
         }
-        let bytes = count * std::mem::size_of::<BongoSafePerson>();
-        drop(std::vec::Vec::from_raw_parts(
-            persons.cast::<u8>(),
-            bytes,
-            bytes,
-        ));
+        drop(crate::reclaim_exact(persons, count));
     })
 }
 
@@ -244,7 +240,7 @@ fn decode_avatar(uri: &str, avatar_size: usize) -> Option<Vec<u8>> {
     limits.max_image_height = Some(MAX_DIMENSION as u32);
     limits.max_alloc = Some((MAX_PIXELS * 4) as u64);
     reader.limits(limits);
-    let decoded = reader.decode().ok()?.to_rgba8();
+    let decoded = reader.decode().ok()?.into_rgba8();
     let (width, height) = decoded.dimensions();
     if width == 0
         || height == 0
@@ -272,12 +268,10 @@ fn decode_avatar(uri: &str, avatar_size: usize) -> Option<Vec<u8>> {
             }
         }
     }
-    let mut exact = vec![0u8; pixels.len()];
-    exact.copy_from_slice(&pixels);
-    Some(exact)
+    Some(pixels)
 }
 
-fn publish(people: &[Draft]) -> *mut BongoSafePerson {
+fn publish(people: Vec<Draft>) -> *mut BongoSafePerson {
     let mut persons: Vec<BongoSafePerson> = Vec::with_capacity(people.len());
     for person in people {
         let name = match &person.name {
@@ -285,8 +279,8 @@ fn publish(people: &[Draft]) -> *mut BongoSafePerson {
             _ => CString::new("Contributor").unwrap(),
         };
         let profile = CString::new(person.profile.as_deref().unwrap_or("")).unwrap_or_default();
-        let pixels = match &person.pixels {
-            Some(pixels) => release_exact(pixels.clone()),
+        let pixels = match person.pixels {
+            Some(pixels) => release_exact(pixels),
             None => std::ptr::null_mut(),
         };
         persons.push(BongoSafePerson {
@@ -295,11 +289,8 @@ fn publish(people: &[Draft]) -> *mut BongoSafePerson {
             pixels,
         });
     }
-    let total = persons.len() * std::mem::size_of::<BongoSafePerson>();
-    let mut bytes = vec![0u8; total];
-    let source = unsafe { std::slice::from_raw_parts(persons.as_ptr().cast::<u8>(), total) };
-    bytes.copy_from_slice(source);
-    release_exact(bytes) as *mut BongoSafePerson
+    // Preserve the struct alignment and transfer the array without a byte copy.
+    release_exact(persons)
 }
 
 fn truncated(text: &str, limit: usize) -> CString {
@@ -434,6 +425,28 @@ mod tests {
             )
         };
         assert_eq!(count, -1);
+    }
+
+    #[test]
+    fn transferred_avatars_remain_owned_by_the_caller_after_shell_release() {
+        let mut pixels = Vec::with_capacity(128);
+        pixels.extend([9, 21, 43, 67]);
+        let people = publish(vec![Draft {
+            name: Some("Test".into()),
+            profile: None,
+            pixels: Some(pixels),
+        }]);
+        assert_eq!(
+            (people as usize) % std::mem::align_of::<BongoSafePerson>(),
+            0
+        );
+        let pixels = unsafe { (*people).pixels };
+        unsafe { bongo_safe_free_persons(people, 1) };
+        assert_eq!(
+            unsafe { std::slice::from_raw_parts(pixels, 4) },
+            [9, 21, 43, 67]
+        );
+        unsafe { bongo_safe_free_pixels(pixels, 4) };
     }
 
     #[test]

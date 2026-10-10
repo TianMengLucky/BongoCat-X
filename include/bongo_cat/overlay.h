@@ -32,6 +32,11 @@ bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *overlay);
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *overlay,
     float x_ratio, float y_ratio, bool left, bool right, bool side);
 void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *overlay, bool flipped);
+/* Join held-key characters with + inside one bubble beside the first hand.
+   Its frame mirrors while glyphs stay readable, also in single-key mode.
+   Requires Mver/OpenGL. */
+void bongo_cat_overlay_set_multi_key_display(BongoCatOverlay *overlay,
+    bool enabled);
 /* Opaque bounding box of the loaded background art, normalized UV with the
    origin at the top-left. False when no art is loaded or it is empty. */
 bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *overlay,
@@ -39,6 +44,9 @@ bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *overlay,
 bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *overlay,
     BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
     bool mirror, bool flip, bool opaque, uint32_t rgb);
+bool bongo_cat_overlay_set_custom_background(BongoCatOverlay *overlay,
+    const char *path, BongoCatError *error);
+void bongo_cat_overlay_draw_custom_background(BongoCatOverlay *overlay, int width, int height);
 void bongo_cat_overlay_draw_background(BongoCatOverlay *overlay, bool mirror);
 void bongo_cat_overlay_draw_pointer_before_keys(BongoCatOverlay *overlay);
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *overlay, bool mirror);

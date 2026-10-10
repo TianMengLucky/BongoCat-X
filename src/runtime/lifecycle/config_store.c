@@ -59,6 +59,12 @@ static uint64_t settings_hash(const BongoCatSettings *settings) {
     hash = hash_bytes(hash, settings->model_order,
         order_count * sizeof(settings->model_order[0]));
     HASH_FIELD(settings->extensions_json);
+    HASH_FIELD(settings->motion_volume_count);
+    size_t volume_count = settings->motion_volume_count;
+    if (volume_count > BONGO_CAT_BEHAVIOR_BINDING_CAP)
+        volume_count = BONGO_CAT_BEHAVIOR_BINDING_CAP;
+    hash = hash_bytes(hash, settings->motion_volumes,
+        volume_count * sizeof(settings->motion_volumes[0]));
 #undef HASH_FIELD
     return hash;
 }

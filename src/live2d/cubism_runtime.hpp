@@ -12,6 +12,7 @@ struct BongoCatModelRuntime {
     /* Device handles of the active frame backend, attached by the runtime
        after create and on hot switches (see docs/live2d-vulkan-metal.md). */
     BongoCatRhiDeviceInfo rhi_info = {};
+    uint32_t vulkan_features = 0;
 };
 
 #endif

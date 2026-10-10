@@ -5,6 +5,8 @@
 #include "preferences_notice.h"
 #include "runtime.h"
 #include "preferences_shortcut_clear.h"
+#include "preferences_controls.h"
+#include "ui_tooltip.h"
 #include "ui_animation.h"
 #include "ui_backend.h"
 #include "ui_icons.h"
@@ -153,14 +155,48 @@ static void draw_name(BongoCatPreferences *value, struct nk_context *context,
     }
 }
 
+static void motion_volume(BongoCatPreferences *value, struct nk_context *context,
+    struct nk_command_buffer *canvas, struct nk_rect bounds,
+    const BongoCatBehaviorEntry *entry, BongoCatUIPalette p,
+    float opacity, bool enabled) {
+    text(canvas, nk_rect(bounds.x + 2, bounds.y - 3, bounds.w, 17),
+        bongo_cat_i18n_get(value->app->i18n,
+            "pages.preference.model.behaviorModal.labels.motionVolume", "Volume"),
+        value->ui.caption_font, alpha(p.muted, opacity));
+    const BongoCatBehaviorCatalog *catalog = bongo_cat_preferences_behavior_catalog(value);
+    char id[64];
+    snprintf(id, sizeof(id), "motion-volume-%zu", (size_t)(entry - catalog->entries));
+    float percent = bongo_cat_settings_motion_volume(&value->app->settings, entry->id);
+    bool changed = bongo_cat_pref_control_slider_rect(context, id, 0.0f,
+        &percent, 100.0f, 1.0f, 100.0f, "%", 0.0f,
+        nk_rect(bounds.x, bounds.y + 15, bounds.w, 22), enabled, opacity);
+    if (changed) {
+        if (bongo_cat_settings_set_motion_volume(&value->app->settings, entry->id, percent))
+            bongo_cat_audio_set_motion_volume(value->app->audio, entry->id, percent / 100.0f);
+        else bongo_cat_preferences_notice_show(value->app,
+            bongo_cat_i18n_get(value->app->i18n,
+                "pages.preference.model.behaviorModal.hints.motionVolumeSaveFailed",
+                "Unable to save the motion volume: the settings limit was reached"), true);
+        value->render_dirty = true;
+    }
+    if (enabled && nk_input_is_mouse_hovering_rect(&context->input, bounds))
+        bongo_cat_ui_question_tooltip(context,
+            bongo_cat_i18n_get(value->app->i18n,
+                "pages.preference.model.behaviorModal.hints.motionVolume",
+                "Adjust this motion's audio only. 0% mutes it; double-click the value to restore 100%"), "");
+}
+
 void bongo_cat_preferences_behavior_row_draw(BongoCatPreferences *value,
     struct nk_context *context, struct nk_command_buffer *canvas,
     struct nk_rect row, const BongoCatBehaviorEntry *entry, BongoCatUIPalette p,
     float opacity, bool enabled) {
     struct nk_rect play = nk_rect(row.x + row.w - 52, row.y + 10, 36, 36);
     struct nk_rect shortcut_bounds = nk_rect(play.x - 188, row.y + 10, 180, 36);
+    bool has_audio = entry->kind == BONGO_CAT_BEHAVIOR_MOTION && entry->sound[0];
+    struct nk_rect volume = nk_rect(shortcut_bounds.x - 148, row.y + 9, 140, 36);
     struct nk_rect name = nk_rect(row.x + 8, row.y + 9,
-        NK_MAX(48.0f, shortcut_bounds.x - row.x - 16), 38);
+        NK_MAX(48.0f, (has_audio ? volume.x : shortcut_bounds.x) - row.x - 16), 38);
+    if (has_audio) motion_volume(value, context, canvas, volume, entry, p, opacity, enabled);
     BongoCatBehaviorShortcut *binding = binding_for(value->app,
         entry->id);
     draw_name(value, context, canvas, name, entry, binding, p, opacity, enabled);

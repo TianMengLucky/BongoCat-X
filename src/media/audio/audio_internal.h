@@ -19,6 +19,7 @@ typedef struct AudioVoice {
     float *samples;
     size_t sample_count;
     char path[BONGO_CAT_PATH_CAP];
+    char motion_id[BONGO_CAT_BEHAVIOR_ID_CAP];
     uint64_t used;
     uint64_t order;
     bool ready;

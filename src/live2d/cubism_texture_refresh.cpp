@@ -39,6 +39,7 @@ struct TextureRefresh {
 };
 
 void NativeModel::cancel_texture_refresh() {
+    cancel_native_texture_refresh(true);
     delete texture_refresh_;
     texture_refresh_ = nullptr;
     texture_refresh_pending_ = false;
@@ -108,10 +109,15 @@ double NativeModel::texture_storage_mib() const {
 }
 
 void NativeModel::schedule_texture_refresh() {
-    if (!dynamic_texture_resolution_ || textures_.empty()) return;
+    if (!dynamic_texture_resolution_ ||
+        (textures_.empty() && native_texture_info_.empty())) return;
     texture_refresh_pending_ = true;
     texture_resize_ns_ = SDL_GetTicksNS();
     texture_refresh_index_ = 0;
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL) {
+        cancel_native_texture_refresh(false);
+        return;
+    }
     if (!texture_refresh_) return;
     auto &refresh = *texture_refresh_;
     /* A preserved job may belong to a later atlas. Revisit earlier atlases
@@ -129,6 +135,7 @@ void NativeModel::schedule_texture_refresh() {
 }
 
 void NativeModel::cancel_texture_refresh_async() {
+    cancel_native_texture_refresh(false);
     if (!texture_refresh_ || texture_refresh_->finishing || texture_refresh_->cancelled) return;
     texture_refresh_->cancelled = true;
     texture_refresh_->cancelled_ns = SDL_GetTicksNS();
@@ -137,17 +144,22 @@ void NativeModel::cancel_texture_refresh_async() {
 }
 
 bool NativeModel::texture_refresh_busy() const {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL) return native_texture_refresh_busy();
     return texture_refresh_ && (texture_refresh_->finishing || texture_refresh_->cancelled ||
         (!texture_refresh_->paused_ns &&
             SDL_GetTicksNS() - texture_resize_ns_ >= kEnlargeSettleNs));
 }
 
 bool NativeModel::texture_refresh_pending(bool active) const {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return native_texture_refresh_ || (active && texture_refresh_pending_);
     return texture_refresh_ || (active && texture_refresh_pending_) ||
         texture_refresh_memory_.due(SDL_GetTicksNS());
 }
 
 bool NativeModel::texture_refresh_due(bool active, bool allow_start) const {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return native_texture_refresh_due(active, allow_start);
     const uint64_t now = SDL_GetTicksNS();
     if (texture_refresh_) {
         const auto &refresh = *texture_refresh_;
@@ -168,6 +180,8 @@ bool NativeModel::texture_refresh_due(bool active, bool allow_start) const {
 }
 
 bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
+        return refresh_native_texture_resolution(active, allow_start);
     if (!texture_refresh_due(active, allow_start)) return false;
     const uint64_t now = SDL_GetTicksNS();
     if (!texture_refresh_ && texture_refresh_memory_.due(now))

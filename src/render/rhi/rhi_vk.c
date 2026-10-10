@@ -11,6 +11,7 @@
 
 BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {
+    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.VulkanSampledImageDynamicIndexing", false);
     /* Initializes the volk table's global loader; the framework's Vulkan
        renderer sources call vk* through it (VK_NO_PROTOTYPES). */
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
@@ -168,11 +169,18 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     VkPhysicalDeviceVulkan13Features cubism_features = {0};
     bongo_cat_rhi_vk_cubism_features(vk, chosen, &cubism_features);
+    VkPhysicalDeviceFeatures2 optional_features = {0};
+    optional_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    vkGetPhysicalDeviceFeatures2(chosen, &optional_features);
+    VkPhysicalDeviceFeatures enabled_optional = {0};
+    enabled_optional.shaderSampledImageArrayDynamicIndexing =
+        optional_features.features.shaderSampledImageArrayDynamicIndexing;
 #endif
     VkDeviceCreateInfo device_info = {0};
     device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     device_info.pNext = &cubism_features;
+    device_info.pEnabledFeatures = &enabled_optional;
 #endif
     device_info.queueCreateInfoCount = 1;
     device_info.pQueueCreateInfos = &queue_info;
@@ -186,6 +194,8 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
     }
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     volkLoadDevice(vk->device);
+    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.VulkanSampledImageDynamicIndexing",
+        enabled_optional.shaderSampledImageArrayDynamicIndexing == VK_TRUE);
 #endif
     vk->vkGetDeviceQueue(vk->device, queue_family, 0, &vk->queue);
     if (!bongo_cat_rhi_vk_pick_depth_format(vk) ||

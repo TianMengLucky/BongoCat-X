@@ -20,6 +20,7 @@ typedef struct BongoCatImportJob {
     size_t count;
     char **paths;
     bool plugin_import;
+    bool background_import;
     char models_root[BONGO_CAT_PATH_CAP];
     char package_ids[BONGO_CAT_MODEL_CAP][BONGO_CAT_ID_CAP];
     bool package_refresh_requested[BONGO_CAT_MODEL_CAP];
@@ -69,6 +70,7 @@ struct BongoCatImportDialog {
     size_t total;
     int references;
     bool plugin_import;
+    bool background_import;
     bool active;
     bool open;
     bool busy;

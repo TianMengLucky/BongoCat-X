@@ -2,6 +2,7 @@
 #include "runtime.h"
 #include "preferences_overlay.h"
 #include "preferences_notice.h"
+#include "preferences_controls.h"
 #include "preferences_model_glyphs.h"
 #include "ui_animation.h"
 #include "ui_backend.h"
@@ -123,6 +124,7 @@ void bongo_cat_preferences_behavior_dialog_open_model(
     snprintf(value->behavior_model_id, sizeof(value->behavior_model_id), "%s", model->id);
     memset(value->behavior_scroll, 0, sizeof(value->behavior_scroll));
     bongo_cat_preferences_scrollbar_reset(&value->behavior_scrollbar);
+    if (value->ui_initialized) bongo_cat_pref_controls_reset(&value->ui.context);
     value->behavior_tab_transition_ns = 0;
     SDL_Log("Preferences behavior dialog opened with %llu behaviors",
         (unsigned long long)bongo_cat_preferences_behavior_catalog(value)->count);
@@ -144,6 +146,7 @@ void bongo_cat_preferences_behavior_dialog_close(
         return;
     value->behavior_dialog_closing_ns = SDL_GetTicksNS();
     bongo_cat_preferences_scrollbar_reset(&value->behavior_scrollbar);
+    if (value->ui_initialized) bongo_cat_pref_controls_reset(&value->ui.context);
     bongo_cat_preferences_behavior_rename_finish(value, true);
     bongo_cat_preferences_shortcut_cancel(value);
     value->render_dirty = true;
@@ -199,6 +202,7 @@ static void draw_segments(BongoCatPreferences *value,
         if (hover) bongo_cat_ui_cursor_hover_rect(context, button,
             BONGO_CAT_UI_CURSOR_POINTER);
         if (hit(context, button, enabled) && value->behavior_tab != i) {
+            bongo_cat_pref_controls_reset(context);
             value->behavior_tab = i;
             bongo_cat_preferences_scrollbar_reset(
                 &value->behavior_scrollbar);
@@ -263,12 +267,19 @@ void bongo_cat_preferences_behavior_dialog_draw(
     if (!bongo_cat_preferences_behavior_dialog_active(value)) return;
     if (!tab_available(value, value->behavior_tab))
         for (int i = 0; i < 3; ++i) if (tab_available(value, i)) {
+            bongo_cat_pref_controls_reset(context);
             value->behavior_tab = i; break;
         }
     bongo_cat_ui_cursor_reset(context);
     struct nk_rect region = nk_window_get_bounds(context);
     size_t count = row_count(value);
-    float width = NK_MIN(540.0f, region.w - 48.0f);
+    bool has_audio = false;
+    const BongoCatBehaviorCatalog *catalog = bongo_cat_preferences_behavior_catalog(value);
+    for (size_t i = 0; i < catalog->count; ++i)
+        if (matches(value, &catalog->entries[i], value->behavior_tab) &&
+            catalog->entries[i].kind == BONGO_CAT_BEHAVIOR_MOTION && catalog->entries[i].sound[0])
+            has_audio = true;
+    float width = NK_MIN(has_audio ? 660.0f : 540.0f, region.w - 48.0f);
     float height = NK_MIN(165.0f + count * 56.0f, region.h - 48.0f);
     BongoCatOverlayFrame frame = bongo_cat_preferences_overlay_frame(
         region, width, height, value->behavior_dialog_opened_ns,

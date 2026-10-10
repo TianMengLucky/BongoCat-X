@@ -96,6 +96,7 @@ void NativeModel::prepare_viewer_audit() {
     _motionManager->StopAllMotions();
     clear_motion_runs();
     std::fill(parameter_overrides_.begin(), parameter_overrides_.end(), 0);
+    parameter_override_indices_.clear();
     std::fill(parameter_override_values_.begin(),
         parameter_override_values_.end(), 0.0f);
     parameter_overrides_applied_ = false;
@@ -120,8 +121,11 @@ bool NativeModel::set_parameter(const char *id, float value) {
     Csm::CubismIdHandle handle = Csm::CubismFramework::GetIdManager()->GetId(id);
     int index = _model->GetParameterIndex(handle);
     if (index < 0 || index >= _model->GetParameterCount()) return false;
+    if (!parameter_overrides_[(size_t)index]) {
+        parameter_override_indices_.push_back(index);
+        parameter_overrides_[(size_t)index] = 1;
+    }
     parameter_override_values_[(size_t)index] = value;
-    parameter_overrides_[(size_t)index] = 1;
     if (parameter_overrides_applied_)
         _model->SetParameterValue(index, value);
     else apply_parameter_overrides();

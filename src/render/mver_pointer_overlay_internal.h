@@ -4,15 +4,20 @@
 #include "mver_pointer_overlay.h"
 #include "bongo_cat/gl_api.h"
 #include "bongo_cat/mver_pointer.h"
+#include "bongo_cat/image.h"
 
 typedef struct BongoCatPointerTexture {
     unsigned int id;
     int width;
     int height;
+    BongoCatImage image;
 } BongoCatPointerTexture;
 
 struct BongoCatMverPointerOverlay {
     BongoCatGL gl;
+    bool native;
+    BongoCatMverPointerNativeDraw native_draw;
+    void *native_userdata;
     unsigned int program;
     int textured_location;
     int image_location;
@@ -24,6 +29,8 @@ struct BongoCatMverPointerOverlay {
     BongoCatPointerTexture right;
     BongoCatPointerTexture side;
     BongoCatMverPointerConfig geometry;
+    BongoCatMverPointerGeometry cached_geometry;
+    float geometry_cache_key[6];
     int reference_width;
     int reference_height;
     float scale;
@@ -39,6 +46,11 @@ struct BongoCatMverPointerOverlay {
     bool left_down;
     bool right_down;
     bool side_down;
+    bool geometry_cache_valid;
+    bool geometry_cache_left_handed;
 };
+
+bool bongo_cat_mver_pointer_overlay_geometry(
+    BongoCatMverPointerOverlay *value, BongoCatMverPointerGeometry *output);
 
 #endif

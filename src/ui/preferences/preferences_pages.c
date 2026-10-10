@@ -10,11 +10,7 @@
 #include "bongo_cat/log.h"
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/tray.h"
-#include "portable_mode.h"
 #include "runtime.h"
-#ifdef _WIN32
-#include "windows_game_compatibility.h"
-#endif
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -41,14 +37,15 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     if (bongo_cat_pref_toggle(context, "pass-through", tr(app,
         "composables.useAppMenu.labels.passThrough", "Pass Through"), tr(app,
         "pages.preference.cat.hints.passThrough",
-        "You can also turn this off by right-clicking the tray icon"),
+        "Let clicks reach windows behind the pet. Change this from the tray menu if needed."),
         &window->pass_through)) {
         bongo_cat_window_mark_hit_dirty(app);
         bongo_cat_window_sync_click_through(app);
     }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ALWAYS_ON_TOP);
     if (bongo_cat_pref_toggle(context, "always-top", tr(app,
-        "composables.useAppMenu.labels.alwaysOnTop", "Always on Top"), "",
+        "composables.useAppMenu.labels.alwaysOnTop", "Always on Top"), tr(app, "pages.preference.cat.hints.alwaysOnTop",
+            "Keep the pet above other windows."),
         &window->always_on_top)) {
         bongo_cat_platform_set_always_on_top(&app->platform, window->always_on_top);
         bongo_cat_window_mark_hit_dirty(app);
@@ -71,20 +68,16 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
             BONGO_CAT_MAX_HIDE_FADE_SECONDS, 0.1f,
             BONGO_CAT_DEFAULT_HIDE_FADE_SECONDS, tr(app,
                 "pages.preference.cat.hints.hoverRequires",
-                "Requires both [Pass Through] and [Always on Top] above to be enabled."),
+                "Hide on hover and reappear when the pointer leaves. Set the fade time; requires [Pass Through] and [Always on Top]."),
             hover_available)) {
             window->hide_on_hover = hide_on_hover;
             bongo_cat_app_update_hover(app, SDL_GetTicksNS());
         }
     }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_KEEP_IN_SCREEN);
-    if (bongo_cat_pref_toggle(context, "keep-in-screen", tr(app,
-        "pages.preference.cat.labels.keepInScreen", "Keep on Screen"), "",
-        &window->keep_in_screen) && window->keep_in_screen)
-        bongo_cat_window_clamp_to_display(app);
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_KEEP_IN_SCREEN);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_FRAME_BOUNDS);
     bongo_cat_pref_toggle(context, "edge-snap", tr(app,
-        "pages.preference.cat.labels.edgeSnap", "Edge Snapping"), "",
+        "pages.preference.cat.labels.edgeSnap", "Edge Snapping"), tr(app, "pages.preference.cat.hints.edgeSnap",
+            "Snap to a screen edge when dragging near it."),
         &window->edge_snap);
     /* 只在录屏/直播软件里显示: 仅 Windows 有等价机制 (DWM 隐藏), 其它平台不显示
        这一项, 免得给用户一个点了没反应的开关。 */
@@ -92,7 +85,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SOLID_BACKGROUND);
         if (bongo_cat_pref_toggle(context, "capture-only", tr(app,
             "pages.preference.cat.labels.captureOnly", "Capture Only"), tr(app,
-            "pages.preference.cat.hints.captureOnly", "Hidden on the desktop, still visible in OBS"), &window->capture_only)) {
+            "pages.preference.cat.hints.captureOnly", "Hide the pet on the Windows desktop while keeping it visible to compatible recording software."), &window->capture_only)) {
             bongo_cat_window_apply_capture_only(app);
             app->dirty = true;
         }
@@ -100,10 +93,14 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SOLID_BACKGROUND);
     if (bongo_cat_pref_obs_background(context, "obs-background", tr(app,
         "pages.preference.cat.labels.obsBackground", "Solid Background"), tr(app,
-        "pages.preference.cat.hints.obsBackground", "Window capture is black?"), tr(app,
+        "pages.preference.cat.hints.obsBackground", "Add a solid color behind the pet. For a black OBS capture, see the instructions here."), tr(app,
         "pages.preference.cat.hints.obsBackgroundHelp", "OBS: enable this option, use the Windows 7 compatibility method, and remove the background with a color key filter."),
-        &window->obs_background, &window->obs_background_rgb))
+        &window->obs_background, &window->obs_background_rgb)) {
+        if (window->obs_background) window->custom_background = false;
         app->dirty = true;
+        bongo_cat_window_mark_hit_dirty(app);
+    }
+    bongo_cat_preferences_background_row(value, context);
     /* Repaint only after the dragged color settles (present pass); the pet
        itself recolors live. */
     if (window->obs_background && bongo_cat_pref_color_picker(context,
@@ -111,10 +108,10 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         app->dirty = true;
         value->color_picker_pending_ns = SDL_GetTicksNS();
     }
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_KEEP_IN_SCREEN);
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_FRAME_BOUNDS);
     if (bongo_cat_pref_toggle(context, "tight-frame", tr(app,
         "pages.preference.cat.labels.tightFrame", "Tight Frame"), tr(app,
-        "pages.preference.cat.hints.tightFrame", "Shrink the window to fit the visible pet edges"), &window->tight_frame)) {
+        "pages.preference.cat.hints.tightFrame", "Fit the window to the visible pet and background, reducing transparent margins."), &window->tight_frame)) {
         SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[tight] toggle -> %d", window->tight_frame ? 1 : 0);
         bongo_cat_model_runtime_set_tight_frame(app->model_runtime, window->tight_frame);
         app->frame_geometry_retry_ns = 0;
@@ -125,7 +122,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     bool restore_default = false;
     bool reset_position = bongo_cat_pref_float_action_default(context, "window-size",
         tr(app, "pages.preference.cat.labels.windowSize", "Window Size"), tr(app,
-        "pages.preference.cat.hints.windowSize", "[Scroll] to resize or [hold the right mouse button] and drag right to enlarge, left to shrink"),
+        "pages.preference.cat.hints.windowSize", "Resize with the wheel or right-button drag. Reset moves the pet back on screen; the size icon restores the default scale."),
         10.0f, &window_state->scale_percent, 500.0f, 1.0f, BONGO_CAT_DEFAULT_WINDOW_SCALE_PERCENT,
         tr(app, "pages.preference.cat.labels.resetPosition", "Reset"), tr(app,
         "pages.preference.cat.labels.restoreDefaultSize", "Restore Default Size"), &restore_default);
@@ -143,9 +140,10 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     /* Display the fraction of maximum rounding; keep saved radii in their
        original units (percent of the short edge) for existing settings. */
     float corner_roundness = window->corner_radius_percent * 2.0f;
-    if (bongo_cat_pref_toggle_float(context, "window-corners", tr(app,
+    if (bongo_cat_pref_toggle_float_detail(context, "window-corners", tr(app,
         "pages.preference.cat.labels.windowCorners", "Window Corners"), "%", &window->rounded_corners, 0.0f, &corner_roundness,
-        100.0f, 1.0f, BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT * 2.0f)) {
+        100.0f, 1.0f, BONGO_CAT_DEFAULT_WINDOW_CORNER_PERCENT * 2.0f, tr(app, "pages.preference.cat.hints.windowCorners",
+            "Round the window corners. Higher percentages make the corners rounder on all backends."), true)) {
         window->corner_radius_percent = corner_roundness * 0.5f;
         app->dirty = true;
         bongo_cat_window_mark_hit_dirty(app);
@@ -154,7 +152,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_OPACITY);
     bongo_cat_pref_slider(context, "opacity", tr(app,
         "pages.preference.cat.labels.opacity", "Opacity"), tr(app,
-        "composables.useAppMenu.labels.wheelOpacityHint", "Ctrl+Wheel: opacity"),
+        "pages.preference.cat.hints.opacity", "Set window transparency. Ctrl+wheel also adjusts it."),
         10.0f, &window_state->opacity_percent, 100.0f, 1.0f,
         BONGO_CAT_DEFAULT_WINDOW_OPACITY_PERCENT);
     if (old_opacity != window_state->opacity_percent)
@@ -169,14 +167,16 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.randomExpression", "Random Expressions"),
         tr(app, "pages.preference.cat.labels.secondsUnit", "s"),
         &window->random_expression, 1.0f, &window->random_expression_interval_seconds,
-        3600.0f, 1.0f, BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS))
+        3600.0f, 1.0f, BONGO_CAT_DEFAULT_RANDOM_EXPRESSION_SECONDS, tr(app, "pages.preference.cat.hints.randomExpression",
+            "Pick a random expression at the set interval. Use the settings button to choose participating expressions.")))
         bongo_cat_preferences_random_dialog_open(value, BONGO_CAT_BEHAVIOR_EXPRESSION);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RANDOM_MOTION);
     if (bongo_cat_pref_toggle_float_config(context, "random-motion", tr(app,
         "pages.preference.cat.labels.randomMotion", "Random Motions"),
         tr(app, "pages.preference.cat.labels.secondsUnit", "s"),
         &window->random_motion, 1.0f, &window->random_motion_interval_seconds,
-        3600.0f, 1.0f, BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS))
+        3600.0f, 1.0f, BONGO_CAT_DEFAULT_RANDOM_MOTION_SECONDS, tr(app, "pages.preference.cat.hints.randomMotion",
+            "Play a random motion at the set interval. Choose participating motions with the settings button; each keeps its saved volume.")))
         bongo_cat_preferences_random_dialog_open(value, BONGO_CAT_BEHAVIOR_MOTION);
     bongo_cat_preferences_sequential_model_pref_row(value, context);
 
@@ -184,55 +184,56 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     bongo_cat_pref_section_icon(context, tr(app,
         "pages.preference.cat.labels.modelSettings", "Model"),
         BONGO_CAT_PREF_ICON_SECTION_MODEL);
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
-    if (bongo_cat_pref_toggle(context, "gamepad-four-hands", tr(app,
-        "pages.preference.cat.labels.gamepadFourHands", "Gamepad Four-Hand Mode"), tr(app,
-        "pages.preference.cat.hints.gamepadFourHands", "Keep two extra hands visible in gamepad mode. Appearance depends on the model"),
-        &model->gamepad_four_hands))
-        bongo_cat_app_refresh_hands(app);
+    bongo_cat_preferences_model_hands_rows(app, model, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MIRROR);
     if (bongo_cat_pref_toggle(context, "mirror", tr(app,
-        "pages.preference.cat.labels.mirrorMode", "Mirror Mode"), "", &model->mirror)) {
+        "pages.preference.cat.labels.mirrorMode", "Mirror Mode"), tr(app, "pages.preference.cat.hints.mirrorMode",
+            "Flip the model horizontally. Compatible Mver key characters stay readable."), &model->mirror)) {
         app->model_pointer_anchor_ready = false;
         app->pointer_known = false;
         app->dirty = true;
     }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_VERTICAL_FLIP);
     if (bongo_cat_pref_toggle(context, "vertical-flip", tr(app,
-        "pages.preference.cat.labels.verticalFlip", "Hang Upside Down"), "",
+        "pages.preference.cat.labels.verticalFlip", "Hang Upside Down"), tr(app, "pages.preference.cat.hints.verticalFlip",
+            "Flip the model vertically to hang it upside down."),
         &model->vertical_flip))
         bongo_cat_app_reset_pointer_tracking(app);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_MIRROR);
     if (bongo_cat_pref_toggle(context, "mouse-mirror", tr(app,
-        "pages.preference.cat.labels.mouseMirror", "Mouse Horizontal Flip"), "",
+        "pages.preference.cat.labels.mouseMirror", "Mouse Horizontal Flip"), tr(app, "pages.preference.cat.hints.mouseMirror",
+            "Reverse horizontal mouse tracking without flipping the model."),
         &model->mouse_mirror)) {
         app->pointer_known = false;
         app->dirty = true;
     }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_VERTICAL_FLIP);
     if (bongo_cat_pref_toggle(context, "mouse-vertical-flip", tr(app,
-        "pages.preference.cat.labels.mouseVerticalFlip", "Mouse Vertical Flip"), "",
+        "pages.preference.cat.labels.mouseVerticalFlip", "Mouse Vertical Flip"), tr(app, "pages.preference.cat.hints.mouseVerticalFlip",
+            "Reverse vertical mouse tracking without flipping the model."),
         &model->mouse_vertical_flip))
         bongo_cat_app_reset_pointer_tracking(app);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_CENTERED);
     bool disable_mouse_centered = !model->mouse_centered;
     if (bongo_cat_pref_toggle(context, "mouse-centered", tr(app,
         "pages.preference.cat.labels.mouseCentered",
-        "Disable Mouse Centering on Desktop Pet"), "", &disable_mouse_centered)) {
+        "Disable Mouse Centering on Desktop Pet"), tr(app, "pages.preference.cat.hints.mouseCentered",
+            "Use the screen center instead of the pet as the mouse-tracking reference."), &disable_mouse_centered)) {
         model->mouse_centered = !disable_mouse_centered;
         bongo_cat_app_reset_pointer_tracking(app);
     }
     bongo_cat_preferences_mouse_input_rows(app, model, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MAX_FPS);
     model->max_fps = bongo_cat_pref_fps(context, "max-fps", tr(app,
-        "pages.preference.cat.labels.maxFPS", "Max Frame Rate"), model->max_fps,
+        "pages.preference.cat.labels.maxFPS", "Max Frame Rate"), tr(app, "pages.preference.cat.hints.maxFPS",
+            "Limit model frame rate. Drag up to the display rate, type up to 360 FPS, or double-click to restore the default."), model->max_fps,
         app->startup_display_fps);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
     float next_quality = bongo_cat_pref_render_quality(context, "render-quality",
         tr(app, "pages.preference.cat.labels.renderQuality",
             "Model Quality (%)"),
         tr(app, "pages.preference.cat.hints.renderQuality",
-            "Try to find a visual balance and save memory."),
+            "Lower texture resolution to save video memory. Changes settle before textures reload; double-click restores the default."),
         model->render_quality_percent);
     /* Reload after 300 ms without change; per-frame reloads stutter the UI. */
     static float quality_reload_from = 0.0f;
@@ -266,8 +267,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.dynamicTextureResolution",
         "Disable Dynamic Texture Resolution"), tr(app,
         "pages.preference.cat.hints.dynamicTextureResolution",
-        "Dynamically adjusts texture resolution to the actual display size, preserving visual detail while "
-        "optimizing video memory usage. Enabling this option is generally not recommended."),
+        "When enabled, stop adapting textures to window size and use the quality-selected resolution, which may use more video memory."),
         &disable_dynamic_texture_resolution)) {
         model->dynamic_texture_resolution = !disable_dynamic_texture_resolution;
         SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
@@ -291,198 +291,9 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
     }
 }
 
-static void update_autostart(BongoCatApp *app, bool old_value) {
-    BongoCatError error = {0};
-    if (bongo_cat_platform_set_autostart(app->settings.app.autostart,
-        false, &error) == BONGO_CAT_OK) return;
-    app->settings.app.autostart = old_value;
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", error.message);
-    char message[1024];
-    snprintf(message, sizeof(message), "%s\n%s", tr(app,
-        "pages.preference.general.hints.autostartFailed",
-        "Unable to update launch-on-startup settings"), error.message);
-    bongo_cat_preferences_notice_show(app, message, true);
-}
-
-#ifdef __APPLE__
-/* System Settings keeps Input Monitoring under Privacy & Security. */
-#define BONGO_CAT_INPUT_MONITORING_SETTINGS_URI \
-    "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
-
-void bongo_cat_preferences_input_monitoring_refresh(BongoCatPreferences *value) {
-    if (!value) return;
-    /* The refresh points are user actions, not frames: one read here. */
-    bool authorized = bongo_cat_platform_input_monitoring_authorized();
-    /* A button drawn from the old reading stays on screen until something
-       repaints, so a reading that changed - or arrives for the first time -
-       schedules the next frame; an unchanged one must not, or every refresh
-       point would keep the window rendering. */
-    if (value->input_monitoring_valid &&
-        value->input_monitoring_authorized == authorized) return;
-    value->input_monitoring_authorized = authorized;
-    value->input_monitoring_valid = true;
-    value->render_dirty = true;
-}
-
-static void enable_input_monitoring(BongoCatApp *app) {
-    BongoCatPreferences *value = app->preferences;
-    if (!value) return;
-    /* The permission can change while the page is open, so the button reads it
-       once more before acting: an already granted permission hides the button
-       instead of asking again or sending the user to System Settings. */
-    bongo_cat_preferences_input_monitoring_refresh(value);
-    if (value->input_monitoring_authorized) return;
-    /* The system prompt belongs to this button and to a missing permission; a
-       refusal is an answer, not a failure. */
-    (void)bongo_cat_platform_input_monitoring_request();
-    /* SDL_OpenURL is the whole entry point, so a failure is where the path has
-       to be spelled out: the item itself only says when to restart. */
-    if (!SDL_OpenURL(BONGO_CAT_INPUT_MONITORING_SETTINGS_URI))
-        bongo_cat_preferences_notice_show(app, tr(app,
-            "pages.preference.general.status.openSettingsFailed",
-            "Cannot open System Settings. Open Privacy & Security → Input Monitoring."), true);
-    bongo_cat_preferences_input_monitoring_refresh(value);
-}
-
-static void input_monitoring_section(BongoCatApp *app,
-    struct nk_context *context) {
-    /* The page is drawn through the preferences that hold the cached reading; a
-       page drawn before the first refresh initializes it once, never per frame. */
-    BongoCatPreferences *value = app->preferences;
-    if (!value) return;
-    if (!value->input_monitoring_valid)
-        bongo_cat_preferences_input_monitoring_refresh(value);
-    bongo_cat_pref_section_icon(context, tr(app,
-        "pages.preference.general.labels.permissionsSettings",
-        "Permissions Settings"), BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
-    const char *title = tr(app,
-        "pages.preference.general.labels.inputMonitoringPermission",
-        "Input Monitoring Permission");
-    /* Granted is a reading without an action; only a missing permission offers
-       the button, and nothing here asks for authorization twice. */
-    if (value->input_monitoring_authorized) {
-        bongo_cat_pref_status(context, "input-monitoring", title, tr(app,
-            "pages.preference.general.status.authorized", "Authorized"));
-        return;
-    }
-    if (bongo_cat_pref_button(context, "input-monitoring", title, tr(app,
-        "pages.preference.general.hints.inputMonitoringPermission",
-        "Restart after granting it."), tr(app,
-        "pages.preference.general.status.authorize", "Go to Enable")))
-        enable_input_monitoring(app);
-}
-#endif
-
-static void page_general(BongoCatApp *app, struct nk_context *context) {
-    BongoCatApplicationPreferences *options = &app->settings.app;
-    // Keep each option in its own native language so the list is recognizable
-    // regardless of the language currently used by the settings window. The
-    // names come from the i18n core so the font glyph ranges cover them.
-    const char *ui_languages[] = {
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_ZH_CN),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_ZH_HANT),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_EN_US),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_FR_FR),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_DE_DE),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_JA_JP),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_KO_KR),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_PT_BR),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_RU_RU),
-        bongo_cat_ui_language_name(BONGO_CAT_LANG_ES_ES)};
-    bongo_cat_pref_section_icon(context, tr(app,
-        "pages.preference.general.labels.appSettings", "Application"),
-        BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
-    bool old_autostart = options->autostart;
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);
-    if (bongo_cat_pref_toggle(context, "autostart", tr(app,
-        "pages.preference.general.labels.launchOnStartup", "Launch on Startup"), "",
-        &options->autostart)) update_autostart(app, old_autostart);
-#ifdef _WIN32
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ADMINISTRATOR);
-    if (bongo_cat_pref_toggle_help(context, "run-as-admin",
-        tr(app, "pages.preference.general.labels.runAsAdmin",
-            "Run as Administrator"),
-        tr(app, "pages.preference.general.hints.runAsAdmin",
-            "Running as administrator helps capture some system-level keys and input events more reliably."),
-        tr(app, "pages.preference.general.hints.runAsAdminHelp",
-            "When enabled, the app asks for administrator permission and restarts itself; every later launch "
-            "(including launch-on-startup) also runs as administrator. Disabling restores normal privileges from the next launch on."),
-        &options->run_as_admin)) {
-        BongoCatError admin_error = {0};
-        if (!bongo_cat_windows_game_compatibility_set(app,
-                options->run_as_admin, &admin_error)) {
-            char message[1024];
-            snprintf(message, sizeof(message), "%s\n%s", tr(app,
-                "pages.preference.general.hints.runAsAdminFailed",
-                "Unable to change the run-as-administrator setting."),
-                admin_error.message);
-            bongo_cat_preferences_notice_show(app, message, true);
-        }
-    }
-#endif
-    /* Portable storage lives beside the executable; the switch only flips
-       the marker, the new location is used from the next launch on. */
-    bool portable = bongo_cat_portable_mode_active();
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
-    if (bongo_cat_pref_toggle_help(context, "portable-mode",
-        tr(app, "pages.preference.general.labels.portableMode",
-            "Portable Mode"), "",
-        tr(app, "pages.preference.general.hints.portableMode",
-            "Store settings and data in the application folder instead of the system profile. Takes effect "
-            "after a restart; existing data is not moved automatically. The switch itself is stored in BongoCat.ini beside the executable."),
-        &portable)) {
-        BongoCatError portable_error = {0};
-        if (bongo_cat_portable_mode_set(portable, app, &portable_error))
-            bongo_cat_preferences_notice_show(app, tr(app, portable ?
-                "pages.preference.general.hints.portableModeEnabled" :
-                "pages.preference.general.hints.portableModeDisabled",
-                portable ?
-                "Portable mode will be used after a restart" : "The system data location will be used after a restart"),
-                false);
-        else {
-            char message[1024];
-            snprintf(message, sizeof(message), "%s\n%s", tr(app,
-                "pages.preference.general.hints.portableModeFailed", "Unable to change the portable mode setting."),
-                portable_error.message[0] ? portable_error.message :
-                "unknown error");
-            bongo_cat_preferences_notice_show(app, message, true);
-        }
-    }
-    bongo_cat_preferences_render_backend_row(app, options, context);
-    bongo_cat_preferences_large_render_row(app, options, context);
-    section_gap(context, 7);
-    bongo_cat_pref_section_icon(context, tr(app,
-        "pages.preference.general.labels.appearanceSettings", "Appearance"),
-        BONGO_CAT_PREF_ICON_SECTION_APPEARANCE);
-    section_gap(context, 6);
-    const int language_to_ui[] = {2, 0, 1, 3, 4, 5, 6, 7, 8, 9};
-    const BongoCatLanguage ui_to_language[] = {
-        BONGO_CAT_LANG_ZH_CN, BONGO_CAT_LANG_ZH_HANT, BONGO_CAT_LANG_EN_US, BONGO_CAT_LANG_FR_FR,
-        BONGO_CAT_LANG_DE_DE, BONGO_CAT_LANG_JA_JP, BONGO_CAT_LANG_KO_KR, BONGO_CAT_LANG_PT_BR,
-        BONGO_CAT_LANG_RU_RU, BONGO_CAT_LANG_ES_ES};
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_LANGUAGE);
-    int selected = bongo_cat_pref_combo(context,
-        "language", tr(app, "pages.preference.general.labels.language",
-        "Language"), "", ui_languages, BONGO_CAT_LANG_COUNT,
-        language_to_ui[options->language]);
-    options->language = ui_to_language[selected];
-    const char *themes[] = {
-        tr(app, "pages.preference.general.options.auto", "System"),
-        tr(app, "pages.preference.general.options.lightMode", "Light"),
-        tr(app, "pages.preference.general.options.darkMode", "Dark")};
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_THEME);
-    options->theme = (BongoCatTheme)bongo_cat_pref_theme(context,
-        "theme", tr(app, "pages.preference.general.labels.themeMode",
-        "Theme"), themes, options->theme);
-#ifdef __APPLE__
-    section_gap(context, 7);
-    input_monitoring_section(app, context);
-#endif
-}
-
 void bongo_cat_preferences_page_settings(BongoCatPreferences *value,
     struct nk_context *context) {
     page_display(value, context);
     section_gap(context, 10);
-    page_general(value->app, context);
+    bongo_cat_preferences_page_general(value->app, context);
 }

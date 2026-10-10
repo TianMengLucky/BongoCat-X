@@ -1,4 +1,5 @@
 if(BUILD_TESTING)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/MverCacheTests.cmake")
   if(TARGET bongo_inox2d-shared)
     add_executable(bongo_cat_model_plugin_tests tests/model_import/test_model_plugins.c)
     target_include_directories(bongo_cat_model_plugin_tests PRIVATE tests/support)
@@ -80,6 +81,9 @@ if(BUILD_TESTING)
     target_link_libraries(bongo_cat_window_frame_tests PRIVATE m)
   endif()
   add_test(NAME window-motion-frame COMMAND bongo_cat_window_frame_tests)
+  include(cmake/StreamingTests.cmake)
+  add_test(NAME cubism-vulkan-vertex-upload COMMAND ${CMAKE_COMMAND} "-DSDK=${BONGO_CAT_CUBISM_SDK}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismVulkanVertexUpload.cmake")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubismOptimizationTests.cmake")
   add_test(NAME cubism-texture-sampling COMMAND ${CMAKE_COMMAND}
     "-DROOT=${CMAKE_CURRENT_SOURCE_DIR}"
     "-DSDK=${BONGO_CAT_CUBISM_SDK}"
@@ -95,14 +99,12 @@ if(BUILD_TESTING)
       /experimental:c11atomics)
   endif()
   add_test(NAME multi-pet-shortcuts COMMAND bongo_cat_multi_pet_shortcut_tests)
-
   add_executable(bongo_cat_input_concurrent_tests tests/core/test_input_concurrent.c)
   target_include_directories(bongo_cat_input_concurrent_tests PRIVATE tests/support)
   target_link_libraries(bongo_cat_input_concurrent_tests PRIVATE
     bongo_cat_core SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME input-concurrent COMMAND bongo_cat_input_concurrent_tests)
   set_tests_properties(input-concurrent PROPERTIES TIMEOUT 30)
-
   add_executable(bongo_cat_safe_ffi_tests tests/core/test_safe_ffi.c)
   target_include_directories(bongo_cat_safe_ffi_tests PRIVATE tests/support)
   target_link_libraries(bongo_cat_safe_ffi_tests PRIVATE
@@ -234,6 +236,22 @@ if(BUILD_TESTING)
     ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
   target_link_libraries(bongo_cat_ui_tests PRIVATE bongo_cat_warnings)
   add_test(NAME ui COMMAND bongo_cat_ui_tests)
+
+  # The radial menu's input contract lives in a pure state machine, so it can
+  # be driven with synthetic SDL events and no window or GL context.
+  add_executable(bongo_cat_dial_input_tests
+    tests/ui/test_dial_input.c
+    src/ui/dial/dial_input.c
+    src/ui/dial/dial_items.c
+    src/ui/dial/dial_geometry.c)
+  target_include_directories(bongo_cat_dial_input_tests PRIVATE
+    include src/ui/dial src/ui/backend tests/support
+    "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
+  target_include_directories(bongo_cat_dial_input_tests SYSTEM PRIVATE
+    ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
+  target_link_libraries(bongo_cat_dial_input_tests PRIVATE
+    SDL3::SDL3-static bongo_cat_warnings)
+  add_test(NAME dial-input COMMAND bongo_cat_dial_input_tests)
 
   if(APPLE)
     # The refresh helper runs the real page code with the platform read replaced

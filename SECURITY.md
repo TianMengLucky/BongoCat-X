@@ -44,13 +44,29 @@ Wayland session. Restart without that variable to disable it. This opt-in
 selects evdev for the entire session; unreadable devices do not trigger
 automatic backend switching. Window placement still depends on the compositor.
 
-The evdev backend opens existing input event devices read-only and never
-changes permissions, installs udev rules, requests root, grabs devices, or
-injects input. Do not run BongoCat as root or add your account to the
-`input` group just to enable this feature. Broad input-group membership or
-generic udev rules can also grant other processes under your account access
-to your keyboard. Device access must be managed separately by your system
-administrator with the narrowest permissions appropriate for the machine.
+Before SDL, configuration, models, or plugins initialize, the evdev bootstrap
+tries to open existing keyboard and pointer event devices as the current user.
+On permission denial it restarts through a trusted absolute sudo executable
+(default `/usr/bin/sudo`, configurable with `BONGO_CAT_SUDO_EXECUTABLE`). Sudo
+may ask for authentication. Automatic elevation requires a root-owned BongoCat
+executable and sudo binary whose parent directories are also root-owned and
+not writable by group or other users; writable development/portable installs
+must use separately administered device permissions instead.
+
+The elevated phase only opens read-only, nonblocking, no-follow input devices,
+clears supplementary groups, restores the invoking user's identity and home,
+verifies the privilege drop, and re-executes `/proc/self/exe` as that user.
+Normal SDL, configuration, UI, model and plugin code runs after the drop.
+Inherited descriptors are checked against character-device nodes, read-only
+and nonblocking flags, and marked close-on-exec before normal initialization.
+Failure to authenticate, open devices, or drop privilege stops startup.
+Only devices present at startup are monitored; hot-plug requires a restart.
+
+The backend does not change device permissions, install udev rules, grab
+devices, or inject input. Do not launch BongoCat directly as root or add your
+account to the `input` group. Broad group membership or generic udev rules
+can grant other processes under your account access to your keyboard. Restart
+without `BONGOCAT_ENABLE_EVDEV=1` to avoid the bootstrap and evdev listener.
 
 Raw device input is more sensitive than compositor-mediated input: it can
 include keys entered in password fields, and this backend does not detect

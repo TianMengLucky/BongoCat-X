@@ -54,6 +54,7 @@ int main() {
     const GLushort quad_indices[] = {0,1,2, 2,3,0};
     const GLfloat triangle_uv[] = {1,0, 1,0, 1,0};
     const GLfloat quad_uv[] = {1,0, 1,0, 1,0, 1,0};
+    const GLfloat green_uv[] = {0,1, 0,1, 0,1};
     GLuint host_vao, host_buffers[2];
     glGenVertexArrays(1, &host_vao);
     glGenBuffers(2, host_buffers);
@@ -71,6 +72,10 @@ int main() {
             }
             retained_vao = outer.vao;
             retained_buffer = outer.buffers[0];
+            bongo_cat::CoreProfileBinding::prepare_begin(7, 9);
+            bongo_cat::CoreProfileBinding::prepare_mesh(triangle, triangle_uv, 3, triangle_indices, 3);
+            bongo_cat::CoreProfileBinding::prepare_mesh(quad, quad_uv, 4, quad_indices, 6);
+            bongo_cat::CoreProfileBinding::prepare_end();
             glEnableVertexAttribArray(3);
             glEnableVertexAttribArray(7);
             bongo_cat::CoreProfileBinding::attribute(0, 3, triangle, sizeof(triangle));
@@ -98,6 +103,15 @@ int main() {
             unsigned char pixel[4] = {};
             glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
             CHECK(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0);
+            bongo_cat::CoreProfileBinding::attribute(1, 7, green_uv, sizeof(green_uv));
+            bongo_cat::CoreProfileBinding::draw(3, triangle_indices);
+            glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+            CHECK(pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0);
+            bongo_cat::CoreProfileBinding::attribute(0, 3, quad, sizeof(quad));
+            bongo_cat::CoreProfileBinding::attribute(1, 7, quad_uv, sizeof(quad_uv));
+            bongo_cat::CoreProfileBinding::draw(6, quad_indices);
+            glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+            CHECK(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0);
         }
         GLint current = -1;
         glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current);
@@ -109,11 +123,16 @@ int main() {
         GLuint vao = outer.vao;
         GLuint buffers[] = {outer.buffers[0], outer.buffers[1], outer.buffers[2],
             inner.buffers[0], inner.buffers[1], inner.buffers[2]};
-        for (GLuint buffer : buffers) CHECK(glIsBuffer(buffer));
+        GLuint arenas[] = {outer.arena[0], outer.arena[1], outer.arena[2]};
+        for (GLuint buffer : arenas) CHECK(glIsBuffer(buffer));
         outer.release();
         inner.release();
+        CHECK(outer.positions.capacity() == 0 && outer.uv.capacity() == 0);
+        CHECK(outer.indices.capacity() == 0);
+        for (const auto &ranges : outer.ranges) CHECK(ranges.empty());
         CHECK(!glIsVertexArray(vao));
         for (GLuint buffer : buffers) CHECK(!glIsBuffer(buffer));
+        for (GLuint buffer : arenas) CHECK(!glIsBuffer(buffer));
         outer.release();
         CHECK(outer.vao == 0 && outer.buffers[0] == 0);
         CHECK(glGetError() == GL_NO_ERROR);

@@ -14,9 +14,16 @@ extern "C" {
 #define BONGO_CAT_PLUGIN_OPTIMIZE_SYMBOL "bongo_cat_model_plugin_optimize_v1"
 #define BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING (1u << 0)
 #define BONGO_CAT_OPTIMIZE_BINDLESS (1u << 1)
-#define BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE (1u << 2)
+#define BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE (1u << 2) /* Reserved v1 bit; no longer requested. */
 #define BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION (1u << 3)
-#define BONGO_CAT_OPTIMIZE_ALL 15u
+#define BONGO_CAT_OPTIMIZE_ALL 11u
+/* Additive device-feature handoff. Old hosts omit it, so new plugins must
+   default to no enabled optional device features. Never infer enablement
+   from physical-device support alone. Called before optimize_v1. */
+#define BONGO_CAT_PLUGIN_VULKAN_FEATURES_SYMBOL "bongo_cat_model_plugin_vulkan_features_v1"
+#define BONGO_CAT_VULKAN_SAMPLED_IMAGE_DYNAMIC_INDEXING (1u << 0)
+typedef void (*BongoCatModelPluginVulkanFeatures)(BongoCatModelRuntime *instance,
+    uint32_t enabled_features);
 typedef uint32_t (*BongoCatModelPluginOptimize)(BongoCatModelRuntime *instance,
     uint32_t requested, uint32_t graphics_backend);
 uint32_t bongo_cat_model_runtime_optimizations(const BongoCatModelRuntime *runtime);

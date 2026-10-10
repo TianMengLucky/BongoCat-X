@@ -1,6 +1,6 @@
 #include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
-
+#include "cubism_gl_state.hpp"
 #include <algorithm>
 #include <cmath>
 #include "bongo_cat/model_memory.h"
@@ -8,7 +8,6 @@
 #include "cubism_target_bindings.hpp"
 #include "bongo_cat/gl_api.h"
 #include "model_frame_policy.h"
-
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
@@ -253,27 +252,7 @@ void NativeModel::update_tight_frame(Csm::CubismMatrix44 &projection) {
                     required_frame_.bottom = next_edges[1];
                     required_frame_.left = next_edges[2];
                     required_frame_.right = next_edges[3];
-                /* Rebase this frame's remap onto the new crop:
-                   R_new ∘ R_old⁻¹ (both affine, applied in place). */
-                float old_span_x = span_x, old_span_y = span_y;
-                float old_center_x = center_x, old_center_y = center_y;
-                span_x = 1.0f + required_frame_.left +
-                    required_frame_.right;
-                span_y = 1.0f + required_frame_.top +
-                    required_frame_.bottom;
-                center_x = required_frame_.right -
-                    required_frame_.left;
-                center_y = required_frame_.top -
-                    required_frame_.bottom;
-                float scale_x = old_span_x / span_x;
-                float scale_y = old_span_y / span_y;
-                float *m = projection.GetArray();
-                m[0] *= scale_x; m[4] *= scale_x;
-                m[12] = m[12] * scale_x +
-                    (old_center_x - center_x) / span_x;
-                m[1] *= scale_y; m[5] *= scale_y;
-                m[13] = m[13] * scale_y +
-                    (old_center_y - center_y) / span_y;
+                    /* Draw with frame_: the new target is not allocated yet. */
                 }
             }
         }
@@ -307,9 +286,7 @@ void NativeModel::draw() {
 #endif
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
-#ifdef CSM_TARGET_MAC_GL
     CoreProfileBinding binding(core_buffers_);
-#endif
     const bool first_frame = trim_offscreen_pool_;
     const bool resources_changed = first_frame ||
         width_ != mask_last_width_ || height_ != mask_last_height_;
@@ -368,6 +345,8 @@ void NativeModel::draw() {
     renderer->SetModelColor(1.0f, 1.0f, 1.0f, _model->GetModelOpacity());
     {
         DrawFrame frame(manager);
+        GLStateScope state_scope;
+        prepare_gl_geometry();
         renderer->DrawModel();
     }
     if (trim_offscreen_pool_) {
@@ -406,21 +385,24 @@ void NativeModel::release_renderer() {
 #endif
     DeleteRenderer();
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    vulkan_geometry_.reset();
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_VULKAN && rhi_info_.vulkan_device)
         Csm::Rendering::CubismDeviceInfo_Vulkan::ReleaseDeviceInfo((VkDevice)rhi_info_.vulkan_device);
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
+    metal_geometry_.reset();
     if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_METAL && rhi_info_.metal_device)
         release_metal_device(rhi_info_.metal_device);
 #endif
-#ifdef CSM_TARGET_MAC_GL
     if (rhi_info_.backend == BONGO_CAT_RHI_OPENGL) core_buffers_.release();
-#endif
     renderer_width_ = 0;
     renderer_height_ = 0;
     mask_texture_limit_ = 0;
-    drawable_masks_ = {};
-    offscreen_masks_ = {};
+    // Sizes belong to the renderer; immutable layouts belong to the model.
+    drawable_masks_.size = {};
+    offscreen_masks_.size = {};
     mask_update_failed_ = false;
     mask_last_width_ = mask_last_height_ = 0;
     visual_state_ready_ = false;
@@ -452,9 +434,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
             "Cannot clear the OpenGL error state before creating the Live2D renderer");
         return false;
     }
-#ifdef CSM_TARGET_MAC_GL
     CoreProfileBinding binding(core_buffers_);
-#endif
     const int buffer_count = prepare_mask_layout();
     TargetBindings bindings;
     CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_,

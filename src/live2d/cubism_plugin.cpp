@@ -1,4 +1,6 @@
+#include <GL/glew.h>
 #include "bongo_cat/model_plugin_host.h"
+#include "cubism_runtime.hpp"
 #include <cstdio>
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
 namespace bongo_cat {
@@ -32,6 +34,10 @@ extern "C" FILE *bongo_cat_file_open(const char *path, const char *mode) {
 #else
 #define PLUGIN_EXPORT __attribute__((visibility("default")))
 #endif
+extern "C" PLUGIN_EXPORT void bongo_cat_model_plugin_vulkan_features_v1(
+    BongoCatModelRuntime *runtime, uint32_t enabled) {
+    if (runtime && !runtime->model) runtime->vulkan_features = enabled;
+}
 extern "C" PLUGIN_EXPORT uint32_t bongo_cat_model_plugin_optimize_v1(
     BongoCatModelRuntime *runtime, uint32_t requested, uint32_t backend) {
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN

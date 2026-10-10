@@ -63,6 +63,8 @@ Desktop.ini
 /docs/*
 !/docs/
 !/docs/model-plugins.md
+!/docs/hand-layout.md
+!/docs/hand-layout.example.json
 !/docs/README.en-US.md
 !/docs/README.zh-Hant.md
 !/docs/README.fr-FR.md

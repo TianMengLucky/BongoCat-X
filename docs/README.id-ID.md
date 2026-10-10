@@ -61,7 +61,9 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+
+  **Baru di 2.1.2:** gelembung banyak tombol dengan karakter tetap terbaca saat dicerminkan, volume per gerakan, latar gambar khusus, serta lapisan tombol, efek, dan penunjuk pada Vulkan / Metal. Setiap opsi pengaturan kini dijelaskan; opsi tetap di dalam layar dihapus. Optimasi opsional menampilkan ketersediaannya; peningkatan kinerja belum diukur. Lihat [catatan perubahan](../CHANGELOG.md) dan [panduan potongan gambar tangan](hand-layout.md).
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -390,9 +392,9 @@ penggunaan.
 
 ### 🖼️ Bagaimana progres dukungan Vulkan / Metal?
 
-Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk dan pembaruan tekstur dinamis asinkron memerlukan OpenGL. Tekstur native menerapkan batas kualitas/ukuran saat dimuat. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan.
+Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk kini mendukung semua backend. Live2D mendukung resolusi tekstur dinamis pada OpenGL, Vulkan dan Metal, dengan dekode/penskalaan di latar belakang dan unggahan GPU native sinkron. Menonaktifkannya memuat ulang tekstur sesuai kualitas yang dipilih. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan. Overlay memakai render perangkat lunak SDL, disimpan sampai input berubah, lalu digabung ke frame native yang selesai dan diunggah kembali ke GPU; performa belum diukur.
 
-Optimasi rendering besar nonaktif secara bawaan dan menampilkan fitur yang aktif; pergantian memuat ulang model. Inox2D Vulkan mendukung perekaman perintah paralel dan blok memori besar; Live2D Vulkan mendukung alokasi besar melalui VMA. Adegan kecil memakai perekaman serial. Bindless, komputasi asinkron, dan perekaman paralel Live2D belum diimplementasikan. OpenGL / Metal tidak menyediakan fitur ini. Pool besar dapat memakai lebih banyak memori.
+Optimasi Rendering Besar tersedia pada Vulkan / Metal dan nonaktif secara default. Vulkan menyediakan tiga opsi; Metal hanya alokasi besar. Inox2D Metal menggabungkan vertex setiap frame; opsi ini tidak tersedia pada Live2D Metal. Tiga subopsi disimpan terpisah; perubahan memuat ulang model. Inox2D Vulkan mendukung perekaman paralel dan blok memori besar. Live2D Vulkan mendukung VMA serta perekaman paralel untuk pencampuran biasa tanpa node offscreen atau mask presisi tinggi. Live2D memerlukan 128 Drawable untuk buffer sekunder dan 128 snapshot yang dapat digambar untuk memakai hingga empat thread; model lain tetap memakai jalur serial SDK. Live2D Vulkan Bindless memakai tabel hingga 64 tekstur atlas untuk pencampuran biasa tanpa node offscreen, dengan jalur cadangan jika fitur perangkat atau kapasitas tidak mencukupi. Inox2D Bindless belum diimplementasikan. Pool besar dapat memakai lebih banyak memori; peningkatan kinerja belum diukur.
 
 Build SDK memakai `BONGO_CAT_CUBISM_VULKAN=ON` pada Windows / Linux x64 (`glslangValidator` atau `glslang`, paket Linux `glslang-tools`; Vulkan 1.3 saat dijalankan) dan `BONGO_CAT_CUBISM_METAL=ON` pada macOS (alat Metal Xcode). Pakai `OFF` untuk menonaktifkan ekstensi terkait. Sumber Metal dan `.metallib` hanya masuk macOS; Vulkan dan `.spv` hanya Windows / Linux x64, termasuk variasi blending. Build diagnostik tanpa SDK mengabaikan sumber daya Live2D ini. GitHub Actions menyiapkan alat dan memeriksa sumber daya per platform. Pemeriksaan statis telah dijalankan; build dan GPU belum diverifikasi. Lihat [integrasi dan validasi](live2d-vulkan-metal.md).
 
@@ -430,3 +432,19 @@ Rilis portabel Windows berbentuk arsip ZIP. Simpan folder hasil ekstraksi `plugi
 Setiap push ke `dev` yang mengubah kode, aset, atau konfigurasi build menerbitkan prarilis GitHub. Perubahan dokumentasi saja dilewati; tidak ada pemicu terjadwal. Semua platform membangun commit yang didorong. Prarilis tidak menggantikan rilis stabil terbaru.
 
 Prarilis nightly memakai kembali [halaman nightly](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), memperbarui tag dan mengganti berkas bernama tetap. Platform yang gagal tetap menyimpan berkas sebelumnya.
+
+### Linux Wayland / evdev
+
+Input evdev eksperimental di Linux Wayland diaktifkan dengan `BONGOCAT_ENABLE_EVDEV=1`. Perangkat dibuka hanya untuk dibaca sebagai pengguna biasa terlebih dahulu. Jika izin ditolak, instalasi terlindungi meminta autentikasi melalui `/usr/bin/sudo`, membuka perangkat, lalu segera menurunkan hak akses dan menjalankan ulang sebelum inisialisasi SDL, pengaturan, dan model. Program, sudo, serta direktori induk harus dimiliki root dan tidak boleh ditulis oleh grup atau pengguna lain. Instalasi pengembangan dan portabel memerlukan izin perangkat yang dikelola terpisah. Jalur sudo dapat diatur melalui `BONGO_CAT_SUDO_EXECUTABLE`. Kegagalan menghentikan startup; izin permanen tidak diubah. Hanya perangkat saat startup yang dipantau; perangkat baru memerlukan restart. Jangan jalankan langsung sebagai root atau bergabung dengan grup `input`. Input mentah dapat mencakup kata sandi dan tidak berhenti saat layar terkunci, sesi berganti, atau pet disembunyikan.
+
+[SECURITY.md](../SECURITY.md#linux-input)
+
+Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG, JPEG, WebP, BMP, atau GIF (bingkai pertama). Gambar memenuhi jendela di tengah dengan rasio aspek tetap; latar gambar dan latar warna solid saling menonaktifkan. Salinan disimpan di direktori data aplikasi sehingga pemindahan berkas asli tidak memengaruhinya. Batas: 64 MB dan 16 megapiksel. Mendukung OpenGL, Vulkan, dan Metal.
+
+Live2D otomatis menggunakan kembali buffer geometri dan status render berulang. Streaming OpenGL, unggahan berkelompok dan cache pipeline Vulkan, slot buffer bersama Metal, serta mask native adaptif tidak memerlukan sakelar tambahan. Kinerja dan perilaku platform masih perlu diukur.
+
+### Beberapa tombol dan karakter yang terbaca dalam mode cermin
+
+Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).
+
+Dialog aksi memeriksa referensi `Sound` dan keberadaan file audio, lalu menampilkan kontrol volume tersendiri di samping gerakan dengan audio. Atur 0–100% dengan menyeret atau mengetik; klik ganda mengembalikan 100% dan 0% membisukan. Nilai disimpan per model dan gerakan serta berlaku pada dialog, pintasan, gerakan acak, dan menu konteks, termasuk saat audio diputar. Gerakan lain yang memakai file sama mempertahankan volumenya sendiri.

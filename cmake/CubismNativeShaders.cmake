@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 # Both SDK renderers require all 79 authored color/alpha blend combinations.
 function(bongo_cat_compile_native_shaders backend input output)
   file(MAKE_DIRECTORY "${output}" "${CMAKE_BINARY_DIR}/native-shader-intermediates")
@@ -62,7 +63,7 @@ function(bongo_cat_compile_native_shaders backend input output)
           set(_bongo_preambled
             "#extension GL_GOOGLE_include_directive : enable\n${_bongo_shader_text}")
         endif()
-        file(WRITE "${_bongo_preamble_src}" "${_bongo_preambled}")
+        bongo_cat_write_if_different("${_bongo_preamble_src}" "${_bongo_preambled}")
         set(_bongo_compile_src "${_bongo_preamble_src}")
         set(_bongo_preamble_dep "${_bongo_preamble_src}")
         list(APPEND _bongo_shader_preamble_args "-I${input}")
@@ -96,6 +97,14 @@ function(bongo_cat_compile_native_shaders backend input output)
         add_custom_command(OUTPUT "${binary}"
           COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" -V ${_bongo_shader_preamble_args} ${defines} "${_bongo_compile_src}" -o "${binary}"
           DEPENDS "${shader}" ${includes} ${_bongo_preamble_dep} VERBATIM)
+        if(shader MATCHES "\\.frag$")
+          set(bindless_binary "${output}/${name}_Bindless.spv")
+          add_custom_command(OUTPUT "${bindless_binary}"
+            COMMAND "${BONGO_CAT_GLSLANG_VALIDATOR}" -V ${_bongo_shader_preamble_args}
+              ${defines} -DBONGO_CAT_BINDLESS=1 "${_bongo_compile_src}" -o "${bindless_binary}"
+            DEPENDS "${shader}" ${includes} ${_bongo_preamble_dep} VERBATIM)
+          list(APPEND binaries "${bindless_binary}")
+        endif()
       else()
         set(air "${CMAKE_BINARY_DIR}/native-shader-intermediates/${name}.air")
         add_custom_command(OUTPUT "${binary}"

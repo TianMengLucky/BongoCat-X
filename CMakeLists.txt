@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.1.1")
+set(BONGO_CAT_VERSION "2.1.2")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
@@ -66,6 +66,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     set(BONGO_CAT_LIVE2D_SOURCES
       src/live2d/cubism_bridge.cpp src/live2d/cubism_bridge_load.cpp
       src/live2d/cubism_native_textures.cpp
+      src/live2d/cubism_native_texture_refresh.cpp
       src/live2d/cubism_renderer_factory.cpp
       src/live2d/cubism_render_resources.cpp
       src/live2d/cubism_bridge_visual.cpp
@@ -75,6 +76,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       src/live2d/cubism_texture_refresh.cpp
       src/live2d/cubism_texture_refresh_memory.cpp
       src/live2d/cubism_model_renderer.cpp
+      src/live2d/cubism_gl_geometry.cpp
       src/live2d/cubism_model_masks.cpp
       src/live2d/cubism_model_projection.cpp
       src/live2d/cubism_model_textures.cpp
@@ -127,7 +129,7 @@ endif()
 include(cmake/ModelPlugins.cmake)
 add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
-  src/core/config_file.c
+  src/core/config_file.c src/core/config_motion_volume.c
   src/core/error.c
   src/core/file.c src/core/i18n.c src/core/json_dom_io.c
   src/core/input_state.c src/core/mver_pointer.c
@@ -216,6 +218,7 @@ if(BONGO_CAT_PCH)
   set_source_files_properties(
     src/platform/linux/linux.c
     src/platform/linux/linux_evdev_devices.c
+    src/platform/linux/linux_evdev_probe.c
     src/platform/posix/posix_live2d_sdk.c
     src/ui/rendering/ui_font_atlas_sources.c
     PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
@@ -224,6 +227,16 @@ endif()
 include(cmake/PlatformRuntime.cmake)
 
 add_executable(bongo_cat src/main.c)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_sources(bongo_cat PRIVATE src/platform/linux/linux_evdev_bootstrap.c)
+  set(BONGO_CAT_SUDO_EXECUTABLE "/usr/bin/sudo" CACHE FILEPATH
+    "Absolute path to the trusted sudo executable")
+  if(NOT IS_ABSOLUTE "${BONGO_CAT_SUDO_EXECUTABLE}")
+    message(FATAL_ERROR "BONGO_CAT_SUDO_EXECUTABLE must be an absolute path")
+  endif()
+  target_compile_definitions(bongo_cat PRIVATE
+    BONGO_CAT_SUDO_EXECUTABLE="${BONGO_CAT_SUDO_EXECUTABLE}")
+endif()
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
 if(NOT APPLE)
   # The Metal implementation is rhi_metal.m (Apple only); the dispatcher

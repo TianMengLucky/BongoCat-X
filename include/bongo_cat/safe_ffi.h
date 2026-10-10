@@ -37,7 +37,8 @@ unsigned char *bongo_safe_image_decode(const unsigned char *data, size_t size,
 /* Header-only dimensions for the same formats. */
 bool bongo_safe_image_info(const unsigned char *data, size_t size, int *width,
     int *height);
-void bongo_safe_free_pixels(unsigned char *pixels, size_t pixel_count);
+/* byte_count is width * height * 4, including every RGBA component. */
+void bongo_safe_free_pixels(unsigned char *pixels, size_t byte_count);
 
 /* --- about-page contributor feed --- */
 
@@ -101,6 +102,33 @@ bool bongo_safe_expression_parse(const unsigned char *data, size_t size,
 void bongo_safe_free_expression(BongoSafeExpression *expression);
 
 void bongo_safe_free_string(char *text);
+
+/* --- Mver hand-layout files (resources/<group>/hand-layout.json) --- */
+
+/* Source-sprite regions in image pixels with a top-left origin. */
+typedef struct BongoSafeHandRect {
+    int x;
+    int y;
+    int width;
+    int height;
+} BongoSafeHandRect;
+
+/* Multi-key display layout. The caller pre-fills its defaults; fields absent
+   from the document keep those values. */
+typedef struct BongoSafeHandLayout {
+    BongoSafeHandRect hand;   /* hand art inside a key sprite */
+    BongoSafeHandRect bubble; /* shared frame, including its tail */
+    BongoSafeHandRect characters; /* glyph region inside the bubble */
+    int gap;                  /* spacing around the plus separator */
+    int max_keys;             /* simultaneous keys kept per side */
+} BongoSafeHandLayout;
+
+/* Parses a hand-layout.json document into the caller's struct. The size
+   argument must equal sizeof(BongoSafeHandLayout); a mismatch returns -1 so
+   ABI drift fails loudly. Returns a BongoCatResult code (0 = OK) and writes
+   a diagnostic into message on failure. */
+int bongo_safe_hand_layout_parse(const unsigned char *bytes, size_t size,
+    void *layout, size_t layout_size, char *message, size_t message_capacity);
 
 /* --- configuration JSON (bongocat/settings & bongocat/session) --- */
 

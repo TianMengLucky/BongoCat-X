@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "bongo_cat/file.h"
+#include "bongo_cat/overlay.h"
 #include "bongo_cat/path.h"
 
 #include <stdio.h>
@@ -170,6 +171,7 @@ static void reload_secondary_settings(BongoCatApp *app) {
         settings.model.gamepad_four_hands != app->settings.model.gamepad_four_hands ||
         settings.model.dynamic_texture_resolution !=
             app->settings.model.dynamic_texture_resolution ||
+        settings.model.multi_key_display != app->settings.model.multi_key_display ||
         settings.model.render_quality_percent !=
             app->settings.model.render_quality_percent ||
         settings.model.max_fps != app->settings.model.max_fps;
@@ -180,11 +182,16 @@ static void reload_secondary_settings(BongoCatApp *app) {
             app->settings.model.render_quality_percent;
     bool hands_changed = settings.model.gamepad_four_hands !=
         app->settings.model.gamepad_four_hands;
+    bool multi_key_changed = settings.model.multi_key_display !=
+        app->settings.model.multi_key_display;
     bool window_changed =
         settings.window.pass_through != app->settings.window.pass_through ||
         settings.window.always_on_top != app->settings.window.always_on_top ||
         settings.window.hide_on_hover != app->settings.window.hide_on_hover ||
         settings.window.obs_background != app->settings.window.obs_background ||
+        settings.window.custom_background != app->settings.window.custom_background ||
+        strcmp(settings.window.custom_background_path,
+            app->settings.window.custom_background_path) != 0 ||
         settings.window.random_expression != app->settings.window.random_expression ||
         settings.window.random_motion != app->settings.window.random_motion ||
         settings.window.rounded_corners != app->settings.window.rounded_corners ||
@@ -204,6 +211,11 @@ static void reload_secondary_settings(BongoCatApp *app) {
     app->settings = settings;
     if (pointer_orientation_changed) bongo_cat_app_reset_pointer_tracking(app);
     if (hands_changed) bongo_cat_app_refresh_hands(app);
+    if (multi_key_changed) {
+        bongo_cat_overlay_set_multi_key_display(app->overlay,
+            settings.model.multi_key_display);
+        bongo_cat_app_reapply_input(app);
+    }
     if (texture_resolution_changed && app->loaded_model[0]) {
         BongoCatError reload_error = {0};
         bool reused = settings.model.dynamic_texture_resolution ==

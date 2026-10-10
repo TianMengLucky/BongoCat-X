@@ -2,7 +2,7 @@
 #include "bongo_cat/resource_trace.h"
 
 void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app, bool allow_start) {
-    if (!app || !app->running || !app->window || !app->gl_context ||
+    if (!app || !app->running || !app->window ||
         app->loading_model[0]) return;
     bongo_cat_resource_trace_resize_observe(app->session.window.width,
         app->session.window.height,
@@ -22,8 +22,8 @@ void bongo_cat_app_refresh_texture_resolution(BongoCatApp *app, bool allow_start
     if (!bongo_cat_model_runtime_texture_refresh_due(app->model_runtime, active, allow_start)) return;
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool switch_context = previous_window != app->window ||
-        previous_context != app->gl_context;
+    bool switch_context = bongo_cat_rhi_is_gl(&app->rhi) &&
+        (previous_window != app->window || previous_context != app->gl_context);
     if (switch_context && !SDL_GL_MakeCurrent(app->window, app->gl_context)) return;
     const char *previous_phase = bongo_cat_diagnostics_phase("texture-refresh");
     if (bongo_cat_model_runtime_refresh_textures(app->model_runtime, active, allow_start)) {

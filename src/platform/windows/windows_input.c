@@ -146,9 +146,10 @@ static DWORD WINAPI input_thread(void *context) {
         state->diagnostic_ms = GetTickCount64();
     }
     SetEvent(state->ready);
-    ULONGLONG last_check = GetTickCount64(), last_wake = 0;
+    ULONGLONG last_check = GetTickCount64(), last_wake = 0, last_reconcile = 0;
     while (state->registered) {
-        DWORD timeout = state->wake_pending || state->retry_events ? 8 : 1000;
+        DWORD timeout = state->wake_pending || state->retry_events ? 8 :
+            state->keys_down ? 100 : 1000;
         DWORD wait = MsgWaitForMultipleObjectsEx(1, &state->stop, timeout,
             QS_ALLINPUT, MWMO_INPUTAVAILABLE);
         if (wait == WAIT_OBJECT_0) break;
@@ -162,6 +163,10 @@ static DWORD WINAPI input_thread(void *context) {
         if (now - last_check >= 1000) {
             check_receiver(state);
             last_check = now;
+        }
+        if (now - last_reconcile >= 100) {
+            bongo_cat_windows_input_reconcile_keys(state, now);
+            last_reconcile = now;
         }
         if (now - state->diagnostic_ms >= 10000) {
             log_receiver(state, "periodic");

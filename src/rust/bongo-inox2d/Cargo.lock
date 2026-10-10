@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-inox2d"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "ash",
  "bongo-safe",
@@ -98,7 +98,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "base64",
  "image",

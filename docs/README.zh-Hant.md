@@ -60,7 +60,9 @@
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+
+  **2.1.2 更新**：新增多按鍵氣泡、鏡像時保持字元可讀、動作獨立音量及自訂圖片背景；Vulkan / Metal 也可顯示按鍵、特效與指標。設定頁補齊各選項說明，並移除「保持在螢幕內」。繪圖最佳化依後端顯示可用狀態，效能收益仍待實測。詳見[更新日誌](../CHANGELOG.md)和[手部裁切設定](hand-layout.md)。
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 
@@ -292,9 +294,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 支援進度如何？
 
-設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層和非同步動態紋理更新目前需要 OpenGL；原生紋理在載入時套用畫質 / 顯示尺寸限制。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
+設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 特效 / 指標覆蓋層已支援所有後端；Live2D 的 OpenGL / Vulkan / Metal 均支援動態紋理解析度，原生後端在背景解碼和縮放、主執行緒同步上傳。關閉後按畫質比例重新載入紋理。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。 覆蓋層複用 SDL 軟體繪製並按輸入變化快取，在原生幀完成後合成並傳回 GPU；效能仍待實測。
 
-「大型渲染最佳化」預設關閉，依模型插件與後端能力啟用並顯示實際狀態，切換時重新載入模型。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 大區塊配置。小場景維持單執行緒；Bindless、非同步運算與 Live2D 多執行緒錄製尚未實作。OpenGL / Metal 顯示無可用項目。較大的池可能增加記憶體用量。
+「大型算繪最佳化」在 Vulkan / Metal 後端顯示，預設關閉；Vulkan 提供三個獨立子項，Metal 僅提供大塊記憶體配置。Inox2D Metal 啟用後合併整幀頂點，Live2D Metal 顯示不可用。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
 
 含 SDK 的 Windows / Linux x64 建置預設 `BONGO_CAT_CUBISM_VULKAN=ON`，需要 `glslangValidator` 或 `glslang`（Linux 安裝 `glslang-tools`），執行需要 Vulkan 1.3；macOS 預設 `BONGO_CAT_CUBISM_METAL=ON`，需要 Xcode Metal 工具。設為 `OFF` 可建置 OpenGL 版本。Metal 原始碼與 `.metallib` 僅進入 macOS，Vulkan 原始碼與 `.spv` 僅進入 Windows / Linux x64，包含混合模式變體；無 SDK 的診斷建置不打包原生 Live2D 資源。GitHub Actions 按平台準備工具並檢查資源。本輪完成靜態檢查，尚未建置或進行 GPU 實測，詳見 [整合進度與驗證](live2d-vulkan-metal.md)。
 
@@ -332,3 +334,19 @@ Windows 可攜版以 ZIP 壓縮檔發佈，解壓後請將 `plugins` 資料夾�
 `dev` 每次推送程式碼、資源或建置設定更新時，發佈 GitHub 夜間預發佈版本。僅修改文件時略過，沒有定時觸發。所有平台使用此次推送的提交；夜間版不取代最新正式版。
 
 夜間預發佈固定使用 [nightly 發佈頁](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)，更新同一標籤並替換固定名稱的附件，不再為每次建置建立新版本；建置失敗的平台保留上次產物。
+
+### Linux Wayland / evdev
+
+Linux Wayland 的實驗性 evdev 輸入可用 `BONGOCAT_ENABLE_EVDEV=1` 啟用。先嘗試一般使用者的唯讀存取；權限不足時，受保護的安裝會透過 `/usr/bin/sudo` 請求認證，開啟裝置後立即降權並重新執行，再初始化 SDL、設定及模型。自動提權要求程式、sudo 及父目錄歸 root 所有且群組與其他使用者不可寫；開發與可攜安裝需要管理員另行授權。可信 sudo 路徑可用 `BONGO_CAT_SUDO_EXECUTABLE` 設定。失敗會停止啟動，不修改永久權限；僅監聽啟動時已有的裝置，熱插拔需要重啟。不要直接以 root 執行或加入 `input` 群組。原始輸入可能包含密碼，鎖屏及切換工作階段不會自動暫停；隱藏寵物也不會停止監聽。
+
+[SECURITY.md](../SECURITY.md#linux-input)
+
+在「偏好設定 → 偏好 → 視窗」啟用「自訂圖片背景」，點選「選擇圖片」匯入 PNG、JPEG、WebP、BMP 或 GIF（靜態首幀）。圖片保持比例、置中填滿視窗，與「純色背景」互斥。圖片儲存在應用程式資料目錄，移動原始檔不影響使用；上限為 64 MB、1600 萬像素，支援 OpenGL、Vulkan 和 Metal。
+
+Live2D 自動重用幾何緩衝與連續重複的渲染狀態；OpenGL 動態上傳、Vulkan 上傳批次與管線快取、Metal 共用緩衝槽及原生動態遮罩無需額外開關。新增路徑的效能與平台行為待實測。
+
+### 多按鍵顯示與字元裁剪
+
+Mver (OpenGL/Vulkan/Metal) 可分別裁剪手部、氣泡外框和字元，將按住的按鍵以加號連接在同一個氣泡中。外框和尾巴隨模型鏡像，字元保持可讀，單鍵模式也生效。在手部圖片資料夾的 `hand-layout.json` 中設定三個裁剪區域、加號兩側間距和每側顯示數量，修改後重新啟動應用程式。詳見[設定說明與範例](hand-layout.md)。
+
+動作彈窗會檢查動作的 `Sound` 引用及音訊檔案是否存在，僅在帶音訊的動作旁顯示獨立音量控制項。範圍為 0–100%，可拖曳、輸入數值或按兩下恢復 100%；0% 靜音。設定按模型與動作儲存，套用至彈窗播放、快捷鍵、隨機動作及右鍵選單，播放中也可調整；共用同一音訊檔案的其他動作保留各自的音量。

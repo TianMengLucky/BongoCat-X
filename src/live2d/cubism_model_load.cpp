@@ -181,10 +181,14 @@ bool NativeModel::load_model(BongoCatError *error) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM, "Cubism rejected moc3: %s", name);
         return false;
     }
+    mask_buffer_count_ = 0;
+    drawable_masks_ = {};
+    offscreen_masks_ = {};
     const size_t parameter_count = (size_t)_model->GetParameterCount();
     parameter_override_values_.assign(parameter_count, 0.0f);
     parameter_baseline_values_.resize(parameter_count);
     parameter_overrides_.assign(parameter_count, 0);
+    parameter_override_indices_.clear();
     for (size_t i = 0; i < parameter_count; ++i)
         parameter_baseline_values_[i] = _model->GetParameterValue((int)i);
     parameter_overrides_applied_ = false;

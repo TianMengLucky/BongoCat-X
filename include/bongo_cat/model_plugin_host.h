@@ -74,7 +74,7 @@ typedef struct BongoCatModelPluginHost {
     BongoCatResult (*bongo_cat_sha256_file)(const char *path, char output[65], BongoCatError *error);
     bool (*bongo_safe_expression_parse)(const unsigned char *data, size_t size, BongoSafeExpression **out_expression);
     void (*bongo_safe_free_expression)(BongoSafeExpression *expression);
-    void (*bongo_safe_free_pixels)(unsigned char *pixels, size_t pixel_count);
+    void (*bongo_safe_free_pixels)(unsigned char *pixels, size_t byte_count);
     unsigned char * (*bongo_safe_image_decode)(const unsigned char *data, size_t size, int *width, int *height);
     BongoJsonValue * (*bongo_json_arr_get)(const BongoJsonValue *value, size_t index);
     size_t (*bongo_json_arr_size)(const BongoJsonValue *value);

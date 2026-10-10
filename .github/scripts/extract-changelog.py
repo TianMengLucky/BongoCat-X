@@ -90,7 +90,8 @@ def main() -> None:
         "repository is not affiliated with and does not distribute it.\n")
 
     pathlib.Path(args.output).write_text(body, encoding="utf-8")
-    print(f"release notes written from section [{heading}] -> {args.output}")
+    # Windows CI stdout may use CP1252; keep diagnostics ASCII-safe.
+    print(f"release notes written from section [{heading!a}] -> {args.output!a}")
 
 
 if __name__ == "__main__":

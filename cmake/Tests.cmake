@@ -235,6 +235,22 @@ if(BUILD_TESTING)
   target_link_libraries(bongo_cat_ui_tests PRIVATE bongo_cat_warnings)
   add_test(NAME ui COMMAND bongo_cat_ui_tests)
 
+  # The radial menu's input contract lives in a pure state machine, so it can
+  # be driven with synthetic SDL events and no window or GL context.
+  add_executable(bongo_cat_dial_input_tests
+    tests/ui/test_dial_input.c
+    src/ui/dial/dial_input.c
+    src/ui/dial/dial_items.c
+    src/ui/dial/dial_geometry.c)
+  target_include_directories(bongo_cat_dial_input_tests PRIVATE
+    include src/ui/dial src/ui/backend tests/support
+    "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
+  target_include_directories(bongo_cat_dial_input_tests SYSTEM PRIVATE
+    ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
+  target_link_libraries(bongo_cat_dial_input_tests PRIVATE
+    SDL3::SDL3-static bongo_cat_warnings)
+  add_test(NAME dial-input COMMAND bongo_cat_dial_input_tests)
+
   if(APPLE)
     # The refresh helper runs the real page code with the platform read replaced
     # per target, so the repaint decision is tested without touching TCC.

@@ -1,5 +1,6 @@
 #include "mver_pointer_overlay_internal.h"
 
+#include <math.h>
 #include <string.h>
 
 bool bongo_cat_mver_pointer_overlay_geometry(
@@ -8,11 +9,20 @@ bool bongo_cat_mver_pointer_overlay_geometry(
     const float key[] = {value->x_ratio, value->y_ratio,
         value->geometry.offset_x, value->geometry.offset_y,
         value->geometry.hand_offset_x, value->geometry.hand_offset_y};
-    /* Compare complete input representations, including signed zero. Recheck
-       on both draw phases: the pointer anchor can change between them. */
+    /* Preserve signed-zero changes and reject NaN cache hits. Recheck on
+       both draw phases: the pointer anchor can change between them. */
+    bool key_matches = true;
+    for (size_t i = 0; i < sizeof(key) / sizeof(key[0]); ++i) {
+        const float cached = value->geometry_cache_key[i];
+        if (cached != key[i] ||
+            !!signbit(cached) != !!signbit(key[i])) {
+            key_matches = false;
+            break;
+        }
+    }
     if (value->geometry_cache_valid &&
         value->geometry_cache_left_handed == value->left_handed &&
-        memcmp(value->geometry_cache_key, key, sizeof(key)) == 0) {
+        key_matches) {
         *output = value->cached_geometry;
         return true;
     }

@@ -32,11 +32,17 @@
 
 <p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
 
+## 💬 Comunidade QQ
+
+Escaneie o código QR com o QQ ou procure o grupo **211957388** para participar da comunidade **BongoCat-X**.
+
+<p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 Download
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   Baixe a versão mais recente nas [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -268,7 +274,9 @@ Não. O BongoCat processa entradas de teclado e mouse localmente para impulsiona
 
 ### 🖼️ Qual é o progresso do suporte a Vulkan / Metal?
 
-Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro, cantos arredondados e atualização dinâmica assíncrona de texturas exigem OpenGL. Texturas nativas aplicam limites de qualidade/tamanho ao carregar. Os backends nativos armazenam o fundo estático da mesa em cache e o incluem nos limites do quadro ajustado.
+Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro e atualização dinâmica assíncrona de texturas exigem OpenGL. Texturas nativas aplicam limites de qualidade/tamanho ao carregar. Os backends nativos armazenam o fundo de mesa em cache, o incluem no quadro ajustado e arredondam os quatro cantos na GPU sem outra textura de tela inteira.
+
+A otimização de renderização grande vem desativada e mostra as funções ativadas; a troca recarrega o modelo. Inox2D Vulkan oferece gravação paralela e blocos grandes; Live2D Vulkan oferece alocações grandes com VMA. Cenas pequenas usam gravação serial. Bindless, computação assíncrona e gravação paralela de Live2D não estão implementados. OpenGL / Metal não oferecem essas funções. Pools maiores podem usar mais memória.
 
 Compilações com SDK usam `BONGO_CAT_CUBISM_VULKAN=ON` no Windows / Linux x64 (`glslangValidator` ou `glslang`, pacote Linux `glslang-tools`; Vulkan 1.3 na execução) e `BONGO_CAT_CUBISM_METAL=ON` no macOS (ferramentas Metal do Xcode). Use `OFF` para desativar a extensão. Fontes Metal e `.metallib` entram apenas no macOS; Vulkan e `.spv` apenas no Windows / Linux x64, incluindo variantes de mistura. Compilações de diagnóstico sem SDK omitem esses recursos Live2D. GitHub Actions prepara as ferramentas e verifica recursos por plataforma. Verificações estáticas foram executadas; compilação e GPU ainda não foram validadas. Veja [integração e validação](live2d-vulkan-metal.md).
 
@@ -298,3 +306,5 @@ Preferências → Plugins permite instalar, ativar e remover renderizadores loca
 As versões portáteis para Windows são arquivos ZIP. Mantenha a pasta extraída `plugins` ao lado do executável. Veja [Plugins de renderização](model-plugins.md) para empacotamento, dependências offline, ABI, mapeamento de parâmetros e limites de compatibilidade.
 
 Cada push para `dev` que altera código, recursos ou configuração de compilação publica uma versão de pré-lançamento no GitHub. Alterações apenas na documentação são ignoradas; não há execução agendada. Todas as plataformas usam o commit enviado. A versão estável mais recente não é substituída.
+
+As prévias noturnas reutilizam a [página nightly](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), atualizam a tag e substituem arquivos com nomes fixos. Plataformas com falha mantêm seus arquivos anteriores.

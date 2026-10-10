@@ -15,6 +15,7 @@ void bongo_cat_about_text(BongoCatPreferences *value, struct nk_context *context
 
 /* Page sections and their UI helpers. */
 void bongo_cat_preferences_about_hero(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_about_community(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_about_contributors(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_about_ensure_event(BongoCatPreferences *value);
 

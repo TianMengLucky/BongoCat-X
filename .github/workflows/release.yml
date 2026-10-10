@@ -64,15 +64,43 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source commit' }
           $nightly = $env:GITHUB_REF_TYPE -ne 'tag'
           $tag = if ($nightly) {
-            "nightly-dev-$([DateTime]::UtcNow.ToString('yyyyMMdd'))-$env:GITHUB_RUN_ID"
+            "nightly"
           } else { $env:GITHUB_REF_NAME }
           @("version=$version", "sha=$sha", "tag=$tag",
             "prerelease=$($nightly.ToString().ToLowerInvariant())") |
             Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8
 
+  prepare-release:
+    name: Prepare rolling nightly release
+    needs: version-check
+    if: github.repository == 'TianMengLucky/BongoCat-X'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Update nightly tag and reuse release page
+        if: needs.version-check.outputs.prerelease == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.version-check.outputs.sha }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/nightly" >/dev/null 2>&1; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/nightly" \
+              -f sha="$RELEASE_SHA" -F force=true
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref=refs/tags/nightly -f sha="$RELEASE_SHA"
+          fi
+          if ! gh release view nightly --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create nightly --repo "$GITHUB_REPOSITORY" \
+              --title 'BongoCat dev Nightly' --prerelease --latest=false \
+              --notes 'Rolling development build. Assets are replaced as platforms finish.'
+          fi
+
   build:
     name: build / ${{ matrix.platform }}
-    needs: version-check
+    needs: [version-check, prepare-release]
     if: github.repository == 'TianMengLucky/BongoCat-X'
     runs-on: ${{ matrix.os }}
     permissions:
@@ -122,6 +150,7 @@ jobs:
       # failing platform can be rebuilt alone without re-running the rest.
       # Runs before any dependency installation so skipped platforms exit fast.
       - name: Skip platforms already published
+        if: needs.version-check.outputs.prerelease != 'true'
         id: skip-check
         shell: pwsh
         env:
@@ -449,6 +478,14 @@ jobs:
             Copy-Item -LiteralPath $appimage.FullName, "$($appimage.FullName).sha256" -Destination release-output
           }
 
+      - name: Give nightly assets stable names
+        if: steps.skip-check.outputs.skip != 'true' &&
+          needs.version-check.outputs.prerelease == 'true'
+        shell: bash
+        run: |
+          python3 .github/scripts/nightly-assets.py --directory release-output \
+            --version '${{ needs.version-check.outputs.version }}'
+
       - name: Upload packaged release
         if: steps.skip-check.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
@@ -486,7 +523,7 @@ jobs:
         run: |
           python3 .github/scripts/extract-changelog.py \
             --tag "$RELEASE_TAG" \
-            --artifact-version '${{ needs.version-check.outputs.version }}' \
+            --artifact-version '${{ needs.version-check.outputs.prerelease == 'true' && 'nightly' || needs.version-check.outputs.version }}' \
             --repository "$GITHUB_REPOSITORY" \
             --output release-notes.md
           if [ '${{ needs.version-check.outputs.prerelease }}' = 'true' ]; then
@@ -500,12 +537,12 @@ jobs:
           steps.skip-check.outputs.skip != 'true'
         uses: softprops/action-gh-release@v3
         with:
-          name: ${{ needs.version-check.outputs.prerelease == 'true' && format('BongoCat dev Nightly {0}', needs.version-check.outputs.tag) || format('BongoCat v{0}', steps.version.outputs.version) }}
+          name: ${{ needs.version-check.outputs.prerelease == 'true' && 'BongoCat dev Nightly' || format('BongoCat v{0}', steps.version.outputs.version) }}
           tag_name: ${{ needs.version-check.outputs.tag }}
           target_commitish: ${{ needs.version-check.outputs.sha }}
           prerelease: ${{ needs.version-check.outputs.prerelease == 'true' }}
           body_path: release-notes.md
-          generate_release_notes: true
+          generate_release_notes: ${{ needs.version-check.outputs.prerelease != 'true' }}
           fail_on_unmatched_files: true
           overwrite_files: true
           make_latest: ${{ needs.version-check.outputs.prerelease == 'true' && 'false' || 'true' }}

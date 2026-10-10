@@ -48,13 +48,19 @@
     <img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400">
   </p>
 
+## 💬 QQ 交流群
+
+使用 QQ 掃描下方 QR Code，或搜尋群號 **211957388**，加入 **BongoCat-X** 交流群。
+
+<p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 下載
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self" >
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 
@@ -286,7 +292,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 支援進度如何？
 
-設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層、圓角遮罩和非同步動態紋理更新目前需要 OpenGL；原生紋理在載入時套用畫質 / 顯示尺寸限制。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍。
+設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層和非同步動態紋理更新目前需要 OpenGL；原生紋理在載入時套用畫質 / 顯示尺寸限制。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
+
+「大型渲染最佳化」預設關閉，依模型插件與後端能力啟用並顯示實際狀態，切換時重新載入模型。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 大區塊配置。小場景維持單執行緒；Bindless、非同步運算與 Live2D 多執行緒錄製尚未實作。OpenGL / Metal 顯示無可用項目。較大的池可能增加記憶體用量。
 
 含 SDK 的 Windows / Linux x64 建置預設 `BONGO_CAT_CUBISM_VULKAN=ON`，需要 `glslangValidator` 或 `glslang`（Linux 安裝 `glslang-tools`），執行需要 Vulkan 1.3；macOS 預設 `BONGO_CAT_CUBISM_METAL=ON`，需要 Xcode Metal 工具。設為 `OFF` 可建置 OpenGL 版本。Metal 原始碼與 `.metallib` 僅進入 macOS，Vulkan 原始碼與 `.spv` 僅進入 Windows / Linux x64，包含混合模式變體；無 SDK 的診斷建置不打包原生 Live2D 資源。GitHub Actions 按平台準備工具並檢查資源。本輪完成靜態檢查，尚未建置或進行 GPU 實測，詳見 [整合進度與驗證](live2d-vulkan-metal.md)。
 
@@ -322,3 +330,5 @@ Copyright © 2026 - **BongoCat**\
 Windows 可攜版以 ZIP 壓縮檔發佈，解壓後請將 `plugins` 資料夾保留在執行檔旁。封裝、離線依賴、外掛 ABI、參數綁定與相容性限制，請參閱[動態渲染外掛](model-plugins.md)。
 
 `dev` 每次推送程式碼、資源或建置設定更新時，發佈 GitHub 夜間預發佈版本。僅修改文件時略過，沒有定時觸發。所有平台使用此次推送的提交；夜間版不取代最新正式版。
+
+夜間預發佈固定使用 [nightly 發佈頁](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)，更新同一標籤並替換固定名稱的附件，不再為每次建置建立新版本；建置失敗的平台保留上次產物。

@@ -83,6 +83,11 @@ function(bongo_cat_stage_model_plugins target)
           "$<TARGET_FILE:${plugin}>" "${destination}"
         VERBATIM)
       if(APPLE)
+        # Sign nested binaries before the final bundle signature is sealed.
+        add_custom_command(TARGET ${target} POST_BUILD
+          COMMAND /usr/bin/codesign --force --sign -
+            "${destination}/$<TARGET_FILE_NAME:${plugin}>"
+          VERBATIM)
         install(FILES "$<TARGET_FILE:${plugin}>"
           DESTINATION "BongoCat.app/Contents/PlugIns" COMPONENT Runtime)
       else()

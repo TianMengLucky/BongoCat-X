@@ -3,7 +3,7 @@ use crate::abi::RhiInfo;
 use ash::{vk, vk::Handle};
 use gpu_allocator::{
     vulkan::{Allocation, AllocationCreateDesc, AllocationScheme, Allocator, AllocatorCreateDesc},
-    MemoryLocation,
+    AllocationSizes, MemoryLocation,
 };
 use std::{cell::RefCell, rc::Rc};
 pub struct Gpu {
@@ -14,7 +14,7 @@ pub struct Gpu {
     _entry: ash::Entry,
 }
 impl Gpu {
-    pub unsafe fn new(info: RhiInfo) -> Result<Rc<Self>, String> {
+    pub unsafe fn new(info: RhiInfo, large_allocation: bool) -> Result<Rc<Self>, String> {
         if info.vulkan_instance.is_null()
             || info.vulkan_device.is_null()
             || info.rhi_handle.is_null()
@@ -38,7 +38,13 @@ impl Gpu {
             ),
             debug_settings: Default::default(),
             buffer_device_address: false,
-            allocation_sizes: Default::default(),
+            // Small pets avoid the library's 256/64 MiB default pools. Larger
+            // pools reduce driver allocations for many meshes/textures.
+            allocation_sizes: if large_allocation {
+                AllocationSizes::new(64 * 1024 * 1024, 16 * 1024 * 1024)
+            } else {
+                AllocationSizes::new(16 * 1024 * 1024, 8 * 1024 * 1024)
+            },
         })
         .map_err(|e| e.to_string())?;
         Ok(Rc::new(Self {

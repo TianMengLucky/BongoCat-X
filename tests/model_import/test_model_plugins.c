@@ -53,6 +53,12 @@ int main(int argc, char **argv) {
     CHECK(engine == inox);
     bongo_cat_model_plugin_info(inox, &info);
     CHECK(info.installed && info.enabled && info.managed && !info.active);
+    CHECK(bongo_cat_file_remove(info.path));
+    bongo_cat_model_plugin_info(inox, &info);
+    CHECK(!info.installed && !info.enabled && !info.active);
+    CHECK(bongo_cat_model_plugin_install(argv[1], &engine, &error));
+    bongo_cat_model_plugin_info(inox, &info);
+    CHECK(info.installed && info.enabled);
     SDL_SharedObject *library = SDL_LoadObject(info.path);
     CHECK(library != NULL);
     if (library) {

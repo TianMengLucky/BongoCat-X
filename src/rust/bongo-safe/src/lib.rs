@@ -13,6 +13,7 @@
 mod about;
 mod audio;
 mod config;
+mod corners;
 mod expression;
 mod image;
 pub mod inochi;

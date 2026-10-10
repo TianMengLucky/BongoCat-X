@@ -57,6 +57,17 @@ bool bongo_cat_rhi_vk_load_instance_fns(BongoCatRhiVk *vk) {
     BONGO_CAT_VK_LOAD(vkDestroyDevice);
     BONGO_CAT_VK_LOAD(vkDeviceWaitIdle);
     BONGO_CAT_VK_LOAD(vkGetDeviceQueue);
+    BONGO_CAT_VK_LOAD(vkCreateShaderModule);
+    BONGO_CAT_VK_LOAD(vkDestroyShaderModule);
+    BONGO_CAT_VK_LOAD(vkCreatePipelineLayout);
+    BONGO_CAT_VK_LOAD(vkDestroyPipelineLayout);
+    BONGO_CAT_VK_LOAD(vkCreateGraphicsPipelines);
+    BONGO_CAT_VK_LOAD(vkDestroyPipeline);
+    BONGO_CAT_VK_LOAD(vkCmdBindPipeline);
+    BONGO_CAT_VK_LOAD(vkCmdPushConstants);
+    BONGO_CAT_VK_LOAD(vkCmdDraw);
+    BONGO_CAT_VK_LOAD(vkCmdSetViewport);
+    BONGO_CAT_VK_LOAD(vkCmdSetScissor);
     BONGO_CAT_VK_LOAD(vkCreateSwapchainKHR);
     BONGO_CAT_VK_LOAD(vkDestroySwapchainKHR);
     BONGO_CAT_VK_LOAD(vkGetSwapchainImagesKHR);

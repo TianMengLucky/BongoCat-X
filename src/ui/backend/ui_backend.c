@@ -242,6 +242,11 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
     ui->gl.bind_vertex_array(ui->vao);
     const struct nk_draw_command *command;
     size_t offset = 0;
+    /* Cache only within this pass: plugins and other GL contexts can mutate
+       state between frames. Never query driver state for each command. */
+    bool state_valid = false;
+    GLuint bound_texture = 0;
+    GLint clip[4] = {0};
     float sx = pixel_width / width, sy = pixel_height / height;
     ui->last_draw_commands = 0;
     ui->last_draw_elements = 0;
@@ -249,10 +254,19 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
         if (!command->elem_count) continue;
         ui->last_draw_commands++;
         ui->last_draw_elements += command->elem_count;
-        glBindTexture(GL_TEXTURE_2D, (GLuint)command->texture.id);
-        glScissor((GLint)(command->clip_rect.x * sx),
+        GLuint texture = (GLuint)command->texture.id;
+        if (!state_valid || texture != bound_texture) {
+            glBindTexture(GL_TEXTURE_2D, texture);
+            bound_texture = texture;
+        }
+        GLint next_clip[4] = {(GLint)(command->clip_rect.x * sx),
             (GLint)((height - command->clip_rect.y - command->clip_rect.h) * sy),
-            (GLsizei)(command->clip_rect.w * sx), (GLsizei)(command->clip_rect.h * sy));
+            (GLint)(command->clip_rect.w * sx), (GLint)(command->clip_rect.h * sy)};
+        if (!state_valid || memcmp(clip, next_clip, sizeof(clip))) {
+            glScissor(next_clip[0], next_clip[1], next_clip[2], next_clip[3]);
+            memcpy(clip, next_clip, sizeof(clip));
+        }
+        state_valid = true;
         glDrawElements(GL_TRIANGLES, (GLsizei)command->elem_count,
             sizeof(nk_draw_index) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
             (const void *)(uintptr_t)offset);

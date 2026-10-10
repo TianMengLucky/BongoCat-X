@@ -6,6 +6,7 @@ struct BongoCatModelRuntime {
     BongoCatModelRuntime *instance;
     SDL_SharedObject *library;
     BongoCatModelEngine engine;
+    uint32_t optimizations;
     BongoCatRhiDeviceInfo rhi;
     int width, height;
     char asset_root[BONGO_CAT_PATH_CAP];

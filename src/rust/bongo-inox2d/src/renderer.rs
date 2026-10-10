@@ -28,9 +28,17 @@ impl Renderer {
         model: &Model,
         hidden: HashSet<u32>,
         _quality: f32,
+        large_allocation: bool,
+        parallel_recording: bool,
     ) -> Result<Self, String> {
         if backend != 0 {
-            return Ok(Self::Native(NativeGpu::new(backend, model, hidden)?));
+            return Ok(Self::Native(NativeGpu::new(
+                backend,
+                model,
+                hidden,
+                large_allocation,
+                parallel_recording,
+            )?));
         }
         let loader = crate::host()
             .gl_proc

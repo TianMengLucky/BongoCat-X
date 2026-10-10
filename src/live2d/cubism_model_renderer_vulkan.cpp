@@ -1,16 +1,31 @@
 #include "cubism_plugin_services.hpp"
-#include "cubism_model.hpp"
+#include "cubism_runtime.hpp"
 #include <Rendering/Vulkan/CubismClass_Vulkan.hpp>
+#include "cubism_vulkan_memory.hpp"
 #include <exception>
 #include <stdexcept>
 
 namespace bongo_cat {
+uint32_t configure_vulkan_optimization(BongoCatModelRuntime *runtime,
+    uint32_t requested, uint32_t backend) {
+    if (!runtime || runtime->model) return 0;
+    const auto &info = runtime->rhi_info;
+    const bool enabled = backend == BONGO_CAT_RHI_VULKAN &&
+        info.backend == BONGO_CAT_RHI_VULKAN &&
+        (requested & BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION) != 0;
+    if (!bongo_cat::vulkan_memory_configure((VkInstance)info.vulkan_instance,
+            (VkPhysicalDevice)info.vulkan_physical_device,
+            (VkDevice)info.vulkan_device, enabled)) return 0;
+    return enabled ? BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION : 0;
+}
+
 void release_vulkan_device() {
     class RendererAccess : public Csm::Rendering::CubismRenderer_Vulkan {
     public:
         using CubismRenderer_Vulkan::DoStaticRelease;
     };
     RendererAccess::DoStaticRelease();
+    vulkan_memory_release();
 }
 
 Csm::Rendering::CubismRenderer *create_vulkan_renderer(

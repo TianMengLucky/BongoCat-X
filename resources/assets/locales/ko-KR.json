@@ -87,6 +87,7 @@
       "general": {
         "title": "일반",
         "labels": {
+          "largeRenderOptimization": "대규모 렌더링 최적화",
           "appSettings": "앱",
           "launchOnStartup": "시작할 때 실행",
           "portableMode": "포터블 모드",
@@ -101,15 +102,23 @@
           "administratorPermission": "관리자"
         },
         "options": {
+          "parallelRecording": "병렬 명령 기록",
+          "bindless": "Bindless",
+          "asyncCompute": "비동기 연산",
+          "largeAllocation": "대용량 메모리 블록",
+          "optimizationActive": "활성화됨",
+          "optimizationUnavailable": "사용 불가",
           "auto": "시스템",
           "lightMode": "라이트",
           "darkMode": "다크"
         },
         "hints": {
+          "largeRenderOptimization": "지원되는 병렬 기록, Bindless, 비동기 연산 및 대용량 메모리 블록을 활성화합니다. 메모리 사용량이 늘 수 있으며 전환 시 다시 로드합니다.",
+          "largeRenderUnavailable": "현재 모델 렌더러는 이 최적화를 지원하지 않아 렌더링에 영향을 주지 않습니다.",
           "showTrayIcon": "활성화하면 시스템 트레이에 앱 아이콘이 표시됩니다.",
           "autostartFailed": "시작 프로그램 설정을 변경할 수 없습니다",
           "runAsAdmin": "앱을 관리자 권한으로 실행하면 일부 시스템 수준의 키와 입력 이벤트를 더 안정적으로 받을 수 있습니다.",
-          "renderBackend": "재시작 없이 즉시 전환합니다. Vulkan/Metal의 Live2D 지원은 실험적입니다. 2D 오버레이와 둥근 모서리는 현재 OpenGL이 필요합니다",
+          "renderBackend": "재시작 없이 즉시 전환됩니다. Vulkan/Metal의 Live2D 지원은 실험적입니다. 모든 백엔드가 책상 배경과 둥근 모서리를 지원하며 키·효과·포인터 오버레이는 OpenGL이 필요합니다",
           "renderBackendChanged": "렌더 백엔드를 전환하는 중",
           "renderBackendFallback": "선택한 렌더러를 사용할 수 없어 OpenGL로 복원했습니다",
           "runAsAdminHelp": "관리자 권한으로 실행하면 앱이 일부 시스템 수준의 키와 입력 이벤트를 더 안정적으로 받을 수 있고, 관리자 권한으로 실행되는 게임에서도 정상적으로 반응할 수 있습니다.\n\n켜면: 앱이 관리자 권한을 요청하고 자동으로 다시 시작합니다. 이후 모든 시작(부팅 시 자동 시작 포함)도 관리자 권한으로 실행됩니다. 부팅 시 자동 시작도 켜져 있다면, 로그인할 때마다 사용자 계정 컨트롤(UAC) 확인이 한 번 표시됩니다.\n\n끄면: 다음 시작부터 일반 권한으로 돌아가며, 실행 중인 앱에는 영향을 주지 않습니다.",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "QQ로 QR 코드를 스캔하거나 그룹 번호 211957388을 검색하여 참여하세요.",
+      "qqCopy": "그룹 번호 복사",
+      "qqCopied": "그룹 번호를 복사했습니다",
+      "qqCopyFailed": "그룹 번호를 복사할 수 없습니다"
     },
     "multiplePets": "여러 개 동시에 표시",
     "multiplePetsLimit": "데스크톱 펫은 한 번에 최대 8개까지 표시할 수 있습니다",

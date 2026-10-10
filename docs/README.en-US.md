@@ -48,9 +48,15 @@
     <img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400">
   </p>
 
+## 💬 QQ community
+
+Scan the QR code with QQ or search for group **211957388** to join the **BongoCat-X** community.
+
+<p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 Download
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -397,7 +403,9 @@ always-on-top support still depend on the compositor.
 
 ### 🖼️ What is the Vulkan / Metal support status?
 
-Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays, rounded-corner masks and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded. Native backends cache static desk backgrounds and include them in the tight-frame bounds.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture.
+
+Large Rendering Optimization is off by default and displays the enabled features; switching reloads the model. Inox2D Vulkan supports parallel command recording and large memory blocks; Live2D Vulkan supports large allocations through VMA. Small scenes use serial recording. Bindless, async compute and Live2D parallel recording are not implemented. OpenGL / Metal have no available features. Larger pools may use more memory.
 
 SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Windows builds and GPU regression tests pass. Metal Rust APIs pass cross-target type checking; macOS GPU validation is pending. See [integration status and validation](live2d-vulkan-metal.md).
 
@@ -427,3 +435,5 @@ Preferences → Plugins manages local renderer installation, activation and remo
 Windows portable releases are ZIP archives. Keep the extracted `plugins` directory beside the executable. See [Dynamic renderer plugins](model-plugins.md) for packaging, offline dependency paths, plugin ABI, parameter bindings and Inox2D compatibility limits.
 
 Each `dev` push that changes code, assets or build configuration publishes a GitHub nightly prerelease. Documentation-only pushes are skipped; there is no scheduled trigger. All platforms build the pushed commit. Nightlies do not replace the latest stable release.
+
+Nightly prereleases reuse the [nightly release page](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), update its tag and replace assets with stable names instead of creating a release for each build. Failed platforms retain their previous assets.

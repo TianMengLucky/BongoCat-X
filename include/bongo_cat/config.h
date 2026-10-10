@@ -119,6 +119,7 @@ typedef struct BongoCatApplicationPreferences {
     /* Relaunch elevated; the registry autostart entry is independent of it. */
     bool run_as_admin;
     bool tray_visible;
+    bool large_render_optimization;
     BongoCatTheme theme;
     BongoCatLanguage language;
     BongoCatRenderBackend render_backend;

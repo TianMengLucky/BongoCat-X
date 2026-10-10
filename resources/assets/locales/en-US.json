@@ -87,6 +87,7 @@
       "general": {
         "title": "General",
         "labels": {
+          "largeRenderOptimization": "Large Rendering Optimization",
           "appSettings": "Application",
           "launchOnStartup": "Launch on Startup",
           "portableMode": "Portable Mode",
@@ -101,15 +102,23 @@
           "administratorPermission": "Administrator"
         },
         "options": {
+          "parallelRecording": "Parallel command recording",
+          "bindless": "Bindless",
+          "asyncCompute": "Async compute",
+          "largeAllocation": "Large memory blocks",
+          "optimizationActive": "Enabled",
+          "optimizationUnavailable": "Unavailable",
           "auto": "System",
           "lightMode": "Light",
           "darkMode": "Dark"
         },
         "hints": {
+          "largeRenderOptimization": "Request parallel recording, Bindless, async compute and large memory blocks where supported. May use more memory; reloads the renderer and model.",
+          "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",
           "autostartFailed": "Unable to update launch-on-startup settings",
           "runAsAdmin": "Running the app as administrator helps capture some system-level keys and input events more reliably.",
-          "renderBackend": "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally; 2D overlays and rounded corners currently require OpenGL",
+          "renderBackend": "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally. All backends support desk backgrounds and rounded corners; key/effect/pointer overlays require OpenGL",
           "renderBackendChanged": "Switching the render backend",
           "renderBackendFallback": "The selected renderer failed; restored OpenGL",
           "runAsAdminHelp": "Running as administrator lets the app capture some system-level keys and input events more reliably, and stay responsive in games that run with administrator privileges.\n\nWhen enabled: the app asks for administrator permission and restarts itself; every later launch (including launch-on-startup) also runs as administrator. With launch-on-startup enabled, Windows shows a User Account Control confirmation once at each sign-in.\n\nWhen disabled: normal privileges are restored from the next launch on; the running app is not affected.",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "Scan with QQ or search for group 211957388 to join.",
+      "qqCopy": "Copy group number",
+      "qqCopied": "Group number copied",
+      "qqCopyFailed": "Unable to copy group number"
     },
     "multiplePets": "Display multiple",
     "multiplePetsLimit": "Up to 8 desktop pets can be displayed at once",

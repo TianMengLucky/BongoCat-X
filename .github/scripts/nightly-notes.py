@@ -13,7 +13,9 @@ def main():
     header = (
         "## dev 夜间预发布 / Development nightly prerelease\n\n"
         "此版本来自 `dev`，用于测试开发中的功能。正式发布频道保持独立。\n"
-        "Built from `dev` for testing features in development.\n\n"
+        "Built from `dev` for testing features in development.\n"
+        "固定复用此发布页，附件会随各平台构建完成而替换；失败的平台保留上次产物。\n"
+        "This page is reused; assets are replaced as platforms finish. Failed platforms retain their previous assets.\n\n"
         f"- Source: [`{args.sha[:12]}`](https://github.com/{args.repository}/commit/{args.sha})\n"
         f"- Build: [Actions run](https://github.com/{args.repository}/actions/runs/{args.run_id})\n\n"
     )

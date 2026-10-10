@@ -389,7 +389,7 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
     int next = bongo_cat_pref_combo(context, "render-backend", tr(app,
         "pages.preference.general.labels.renderBackend", "Render Backend"),
         tr(app, "pages.preference.general.hints.renderBackend",
-            "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally; 2D overlays and rounded corners currently require OpenGL"),
+            "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally. All backends support desk backgrounds and rounded corners; key/effect/pointer overlays require OpenGL"),
         items, count, selected);
     if (values[next] != options->render_backend) {
         options->render_backend = values[next];
@@ -397,5 +397,38 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
         bongo_cat_preferences_notice_show(app, tr(app,
             "pages.preference.general.hints.renderBackendChanged",
             "Switching the render backend"), false);
+    }
+}
+
+void bongo_cat_preferences_large_render_row(BongoCatApp *app,
+    BongoCatApplicationPreferences *options, struct nk_context *context) {
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
+    if (bongo_cat_pref_toggle(context, "large-render-optimization", tr(app,
+        "pages.preference.general.labels.largeRenderOptimization", "Large Rendering Optimization"),
+        tr(app, "pages.preference.general.hints.largeRenderOptimization",
+            "Request parallel recording, Bindless, async compute and large memory blocks where supported. May use more memory; reloads the renderer and model."),
+        &options->large_render_optimization)) app->render_backend_swap_pending = true;
+    if (!options->large_render_optimization) return;
+    uint32_t active = bongo_cat_model_runtime_optimizations(app->model_runtime);
+    if (!active) {
+        nk_layout_row_dynamic(context, 36, 1);
+        nk_label_wrap(context, tr(app, "pages.preference.general.hints.largeRenderUnavailable",
+            "The current model renderer provides none of these optimizations."));
+        return;
+    }
+    const uint32_t bits[] = {BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING, BONGO_CAT_OPTIMIZE_BINDLESS,
+        BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE, BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION};
+    const char *keys[] = {"pages.preference.general.options.parallelRecording",
+        "pages.preference.general.options.bindless", "pages.preference.general.options.asyncCompute",
+        "pages.preference.general.options.largeAllocation"};
+    const char *fallbacks[] = {"Parallel command recording", "Bindless", "Async compute", "Large memory blocks"};
+    for (size_t i = 0; i < SDL_arraysize(bits); ++i) {
+        char status[256];
+        snprintf(status, sizeof(status), "%s: %s", tr(app, keys[i], fallbacks[i]),
+            tr(app, active & bits[i] ? "pages.preference.general.options.optimizationActive" :
+                "pages.preference.general.options.optimizationUnavailable",
+                active & bits[i] ? "Enabled" : "Unavailable"));
+        nk_layout_row_dynamic(context, 24, 1);
+        nk_label(context, status, NK_TEXT_LEFT);
     }
 }

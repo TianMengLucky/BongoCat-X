@@ -8,6 +8,18 @@ extern "C" {
 #endif
 #define BONGO_CAT_MODEL_PLUGIN_ABI 1u
 #define BONGO_CAT_MODEL_PLUGIN_SYMBOL "bongo_cat_model_plugin_query"
+/* Optional, additive extension: legacy plugin descriptor/host ABI stays v1.
+   Called on the owning thread, after set_rhi_info and before load. A plugin
+   returns ONLY requested features it actually enables. Missing = none. */
+#define BONGO_CAT_PLUGIN_OPTIMIZE_SYMBOL "bongo_cat_model_plugin_optimize_v1"
+#define BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING (1u << 0)
+#define BONGO_CAT_OPTIMIZE_BINDLESS (1u << 1)
+#define BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE (1u << 2)
+#define BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION (1u << 3)
+#define BONGO_CAT_OPTIMIZE_ALL 15u
+typedef uint32_t (*BongoCatModelPluginOptimize)(BongoCatModelRuntime *instance,
+    uint32_t requested, uint32_t graphics_backend);
+uint32_t bongo_cat_model_runtime_optimizations(const BongoCatModelRuntime *runtime);
 #define BONGO_CAT_PLUGIN_REQUIRES_CORE 1u
 #define BONGO_CAT_PLUGIN_OPENGL (1u << 0)
 #define BONGO_CAT_PLUGIN_VULKAN (1u << 1)

@@ -36,6 +36,8 @@ bool bongo_cat_app_render_native(BongoCatApp *app, bool present) {
         app->settings.window.obs_background_rgb)) goto failed;
     app->rhi.present.draw_frame = draw_model;
     app->rhi.present.hook_user = app;
+    /* Cover captures retain square model pixels, like the OpenGL path. */
+    bongo_cat_window_mask_corners(app, present ? width : 0, present ? height : 0);
     if (!bongo_cat_rhi_render_frame(&app->rhi)) goto failed;
     app->render_retry_ns = 0;
     if (cover) {

@@ -32,11 +32,17 @@
 
 <p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
 
+## 💬 QQ 커뮤니티
+
+QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 **BongoCat-X** 커뮤니티에 참여하세요.
+
+<p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 다운로드
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -265,7 +271,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 지원은 어디까지 진행되었나요?
 
-설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이, 둥근 모서리와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다. 네이티브 백엔드는 정적인 책상 배경을 캐시하고 밀착 프레임 경계에 포함합니다.
+설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다. 네이티브 백엔드는 책상 배경을 캐시하고 밀착 프레임 경계에 포함하며, 추가 전체 화면 텍스처 없이 GPU에서 네 모서리를 둥글게 처리합니다.
+
+대규모 렌더링 최적화는 기본적으로 꺼져 있으며 활성 기능을 표시합니다. 전환 시 모델을 다시 로드합니다. Inox2D Vulkan은 병렬 명령 기록과 대용량 메모리 블록을, Live2D Vulkan은 VMA 대용량 할당을 지원합니다. 작은 장면은 단일 스레드로 기록합니다. Bindless, 비동기 연산 및 Live2D 병렬 기록은 아직 구현되지 않았습니다. OpenGL / Metal에는 해당 기능이 없습니다. 큰 풀은 메모리를 더 사용할 수 있습니다.
 
 SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용합니다(`glslangValidator` 또는 `glslang`, Linux 패키지 `glslang-tools`; 실행 시 Vulkan 1.3 필요). macOS는 `BONGO_CAT_CUBISM_METAL=ON`과 Xcode Metal 도구를 사용합니다. `OFF`로 해당 확장을 제외할 수 있습니다. Metal 소스와 `.metallib`는 macOS에만, Vulkan 소스와 `.spv`는 Windows / Linux x64에만 혼합 모드 변형과 함께 포함됩니다. SDK 없는 진단 빌드는 이 Live2D 리소스를 제외합니다. GitHub Actions는 플랫폼별 도구를 준비하고 리소스를 확인합니다. 정적 검사를 수행했지만 빌드와 GPU 동작은 아직 검증하지 않았습니다. [통합 현황과 검증](live2d-vulkan-metal.md)을 참조하세요.
 
@@ -295,3 +303,5 @@ Made with ❤️ & ⌨️
 Windows 휴대용 배포판은 ZIP 파일입니다. 압축을 푼 `plugins` 폴더를 실행 파일 옆에 두세요. 패키징, 오프라인 의존성, 플러그인 ABI, 매개변수 연결 및 호환성 제한은 [렌더러 플러그인](model-plugins.md)을 참고하세요.
 
 코드, 리소스 또는 빌드 설정을 변경하는 `dev` 푸시마다 GitHub 사전 릴리스가 게시됩니다. 문서만 변경하면 건너뛰며 예약 실행은 없습니다. 모든 플랫폼은 푸시된 커밋을 빌드합니다. 최신 안정 버전은 유지됩니다.
+
+야간 사전 릴리스는 [nightly 릴리스 페이지](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)를 재사용하고 태그를 갱신하며 고정된 이름의 파일을 교체합니다. 빌드에 실패한 플랫폼은 이전 파일을 유지합니다.

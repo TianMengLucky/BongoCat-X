@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-inox2d"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "ash",
  "bongo-safe",
@@ -98,13 +98,14 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "base64",
  "image",
  "inox2d",
  "json5",
  "jsonc-parser",
+ "naga",
  "roxmltree",
  "serde",
  "serde_json",

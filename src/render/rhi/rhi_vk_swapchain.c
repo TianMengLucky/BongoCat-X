@@ -7,6 +7,7 @@
 static bool create_render_pass(BongoCatRhiVk *vk, BongoCatError *error);
 
 void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
+    bongo_cat_rhi_vk_release_corner_framebuffers(vk);
     if (vk->framebuffers) {
         for (uint32_t i = 0; i < vk->image_count; ++i)
             if (vk->framebuffers[i])

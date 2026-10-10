@@ -26,10 +26,14 @@ if(BONGO_CAT_FETCH_DEPS)
   set(SDL_TESTS OFF CACHE BOOL "" FORCE)
   set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
-  set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+  # SDL's software renderer composites native 2D overlays; RHI owns the device.
+  set(SDL_RENDER ON CACHE BOOL "" FORCE)
+  foreach(SDL_RENDER_DRIVER D3D D3D11 D3D12 OPENGL OPENGLES2 VULKAN METAL GPU)
+    set(SDL_RENDER_${SDL_RENDER_DRIVER} OFF CACHE BOOL "" FORCE)
+  endforeach()
   set(SDL_GPU OFF CACHE BOOL "" FORCE)
   # Keep SDL's window integration for all supported graphics backends;
-  # rendering itself stays in the RHI, not SDL_Renderer or SDL_GPU.
+  # graphics devices and presentation stay in the RHI.
   set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
   set(SDL_VULKAN ${BONGO_CAT_PLATFORM_VULKAN} CACHE BOOL "" FORCE)
   set(SDL_METAL ${APPLE} CACHE BOOL "" FORCE)

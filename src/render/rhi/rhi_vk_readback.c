@@ -24,7 +24,7 @@ static bool allocate_readback(BongoCatRhiVk *vk, VkDeviceSize bytes) {
     VkBufferCreateInfo buffer = {0};
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer.size = bytes;
-    buffer.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     if (vk->vkCreateBuffer(vk->device, &buffer, NULL, &vk->readback_buffer) !=
         VK_SUCCESS) goto failed;
@@ -110,6 +110,39 @@ bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk) {
     vk->frame_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     vk->pixels_valid = true;
     return true;
+}
+
+bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk) {
+    VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
+    if (!command) return false;
+    VkBufferMemoryBarrier host = {0};
+    host.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    host.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+    host.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    host.srcQueueFamilyIndex = host.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    host.buffer = vk->readback_buffer; host.size = vk->readback_size;
+    VkImageMemoryBarrier barrier = {0};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = vk->frame_layout;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.srcQueueFamilyIndex = barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = vk->current_image;
+    barrier.subresourceRange = (VkImageSubresourceRange){VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_HOST_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 1, &host, 1, &barrier);
+    VkBufferImageCopy region = {0};
+    region.imageSubresource = (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageExtent = (VkExtent3D){vk->extent.width, vk->extent.height, 1};
+    vk->vkCmdCopyBufferToImage(command, vk->readback_buffer, vk->current_image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = 0;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+    return bongo_cat_rhi_vk_submit_commands(vk->owner, command);
 }
 
 bool bongo_cat_rhi_vk_read_bgra(int width, int height, void *pixels, void *user) {

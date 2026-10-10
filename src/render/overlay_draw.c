@@ -69,6 +69,8 @@ void bongo_cat_overlay_draw_keys(BongoCatOverlay *value, bool mirror) {
     if (value->composed_cover) return;
     draw(value, value->left, mirror, true);
     draw(value, value->right, mirror, true);
+    if (bongo_cat_overlay_keys_enabled(value))
+        bongo_cat_overlay_keys_draw(value, mirror);
 #else
     (void)mirror;
 #endif

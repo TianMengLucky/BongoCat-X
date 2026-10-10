@@ -27,7 +27,7 @@ bool bongo_cat_pref_toggle_float_detail(struct nk_context *context, const char *
    clicked. The button shares the numeric field's visibility. */
 bool bongo_cat_pref_toggle_float_config(struct nk_context *context, const char *id,
     const char *title, const char *unit, bool *enabled, float minimum, float *value,
-    float maximum, float step, float default_value);
+    float maximum, float step, float default_value, const char *detail);
 bool bongo_cat_pref_obs_background(struct nk_context *context, const char *id,
     const char *title, const char *question, const char *reply, bool *enabled,
     uint32_t *rgb);

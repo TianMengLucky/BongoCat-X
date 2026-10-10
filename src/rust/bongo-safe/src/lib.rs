@@ -15,6 +15,7 @@ mod audio;
 mod config;
 mod corners;
 mod expression;
+mod hand_layout;
 mod image;
 pub mod inochi;
 mod json_dom;

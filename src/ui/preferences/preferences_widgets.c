@@ -10,36 +10,12 @@
 static struct nk_context *section_context;
 static bool section_first;
 static const float description_line_height = 19.0f;
-static bool has_line_break(const char *text) {
-    if (!text) return false;
-    while (*text) {
-        if (*text++ == '\n') return true;
-    }
-    return false;
-}
-static int wrapped_line_count(const struct nk_user_font *font,
-    const char *text, int length, float width) {
-    if (length <= 0) return 1;
-    float measured = font->width(font->userdata, font->height, text, length);
-    return (int)(measured / width) + 1;
-}
 int bongo_cat_pref_detail_lines(const struct nk_context *context,
     const char *text) {
-    if (!text || !text[0]) return 0;
-    const struct nk_user_font *font = bongo_cat_ui_caption_font(context);
-    float width = nk_window_get_content_region(context).w -
-        (has_line_break(text) ? 30.0f : 310.0f);
-    if (width < 220.0f) width = 220.0f;
-    int lines = 0;
-    const char *segment = text;
-    for (;;) {
-        const char *end = segment;
-        while (*end && *end != '\n') ++end;
-        lines += wrapped_line_count(font, segment, (int)(end - segment), width);
-        if (!*end) break;
-        segment = end + 1;
-    }
-    return NK_CLAMP(1, lines, 3);
+    float width = NK_MAX(1.0f,
+        nk_window_get_content_region(context).w - 26.0f - 33.0f);
+    return bongo_cat_pref_detail_text(context,
+        text, nk_rect(0, 0, width, 0), false);
 }
 static void restore_style(struct nk_context *context, const FormStyle *saved) {
     context->style.window.fixed_background = saved->background;
@@ -89,42 +65,12 @@ static void form_title(struct nk_context *context, const char *title) {
 void bongo_cat_pref_description(struct nk_context *context, const char *text,
     int lines) {
     if (!lines) return;
-    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
-    float available = nk_window_get_content_region(context).w;
-    bool multiline = has_line_break(text);
-    float left = multiline ? available : left_width(context);
-    float wrap_width = available - (multiline ? 10.0f : 310.0f);
-    if (wrap_width < 220.0f) wrap_width = 220.0f;
-    const struct nk_user_font *font = bongo_cat_ui_caption_font(context);
-    nk_style_push_font(context, bongo_cat_ui_caption_font(context));
-    struct nk_vec2 text_padding = context->style.text.padding;
-    float row_spacing = context->style.window.spacing.y;
-    context->style.text.padding.x += 5.0f;
-    context->style.window.spacing.y = 0;
-    const char *segment = text;
-    int remaining = lines;
-    while (remaining > 0) {
-        const char *end = segment;
-        while (*end && *end != '\n') ++end;
-        int segment_lines = wrapped_line_count(font, segment,
-            (int)(end - segment), wrap_width);
-        segment_lines = NK_MIN(segment_lines, remaining);
-        nk_layout_row_begin(context, NK_STATIC,
-            description_line_height * segment_lines, multiline ? 1 : 2);
-        nk_layout_row_push(context, left);
-        nk_text_wrap_colored(context, segment, (int)(end - segment), p.muted);
-        if (!multiline) {
-            nk_layout_row_push(context, NK_MAX(1.0f, available - left - 8.0f));
-            nk_spacing(context, 1);
-        }
-        nk_layout_row_end(context);
-        remaining -= segment_lines;
-        if (!*end) break;
-        segment = end + 1;
-    }
-    context->style.window.spacing.y = row_spacing;
-    context->style.text.padding = text_padding;
-    nk_style_pop_font(context);
+    nk_layout_row_dynamic(context, description_line_height * lines, 1);
+    struct nk_rect bounds;
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
+    bounds.x += 33.0f;
+    bounds.w = NK_MAX(1.0f, bounds.w - 33.0f);
+    bongo_cat_pref_detail_text(context, text, bounds, true);
 }
 static bool secondary_button(struct nk_context *context, const char *label) {
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
@@ -231,7 +177,7 @@ bool bongo_cat_pref_toggle_help(struct nk_context *context, const char *id,
 bool bongo_cat_pref_obs_background(struct nk_context *context, const char *id,
     const char *title, const char *question, const char *reply, bool *enabled,
     uint32_t *rgb) {
-    int lines = question && question[0] ? 1 : 0; FormStyle saved;
+    int lines = bongo_cat_pref_detail_lines(context, question); FormStyle saved;
     if (!form_begin(context, id, lines, &saved)) return false;
     bongo_cat_pref_form_title_sized(context, title, 230.0f);
     bool changed = bongo_cat_pref_control_obs_background(context, id, enabled, rgb);

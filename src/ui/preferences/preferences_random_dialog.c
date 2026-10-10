@@ -333,6 +333,7 @@ void bongo_cat_preferences_sequential_model_pref_row(
         tr(value, "pages.preference.cat.labels.secondsUnit", "s"),
         &app->settings.window.sequential_model, 1.0f,
         &app->settings.window.sequential_model_interval_seconds, 3600.0f, 1.0f,
-        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS))
+        BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS, tr(value, "pages.preference.cat.hints.sequentialModel",
+            "Switch models in order at the set interval. Use the settings button to choose participating models.")))
         bongo_cat_preferences_sequential_model_dialog_open(value);
 }

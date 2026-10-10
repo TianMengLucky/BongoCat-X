@@ -1,6 +1,7 @@
 #include "overlay_internal.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "bongo_cat/rhi.h"
 
 static const char *vertex_source =
@@ -32,6 +33,10 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
     BongoCatOverlay *value = calloc(1, sizeof(*value));
     if (value && !bongo_cat_rhi_active_is_gl()) {
         value->native = true;
+        value->mver_pointer = bongo_cat_mver_pointer_overlay_create(error);
+        if (!value->mver_pointer) { free(value); return NULL; }
+        bongo_cat_mver_pointer_overlay_set_native_draw(value->mver_pointer,
+            bongo_cat_overlay_native_geometry, value);
         return value;
     }
     if (!value || !bongo_cat_gl_load(&value->gl, error)) {
@@ -62,6 +67,8 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
     value->gl.enable_attribute(1);
     value->gl.attribute_pointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
         (const void *)(sizeof(float) * 2));
+    /* Failure keeps the original key sprites; the overlay still renders. */
+    bongo_cat_overlay_keys_program(value);
     value->mver_pointer = bongo_cat_mver_pointer_overlay_create(error);
     if (!value->mver_pointer) {
         bongo_cat_overlay_destroy(value);
@@ -84,7 +91,20 @@ void bongo_cat_overlay_destroy(BongoCatOverlay *value) {
     if (value->vbo) value->gl.delete_buffers(1, &value->vbo);
     if (value->vao) value->gl.delete_vertex_arrays(1, &value->vao);
     if (value->program) value->gl.delete_program(value->program);
+    if (value->keys_program) value->gl.delete_program(value->keys_program);
     free(value);
+}
+
+void bongo_cat_overlay_set_multi_key_display(BongoCatOverlay *value, bool enabled) {
+    if (!value || value->multi_key_display == enabled) return;
+    value->multi_key_display = enabled;
+    ++value->native_input_revision;
+    /* The host replays held input after toggling either way. Clear both
+       representations so a single-key sprite cannot survive beside a row. */
+    bongo_cat_overlay_keys_clear(value);
+    value->left = value->right = 0;
+    value->left_name[0] = value->right_name[0] = '\0';
+    value->left_path[0] = value->right_path[0] = '\0';
 }
 
 void bongo_cat_overlay_clear(BongoCatOverlay *value) {
@@ -104,7 +124,14 @@ bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *value) {
 }
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *value,
     float x_ratio, float y_ratio, bool left, bool right, bool side) {
-    if (bongo_cat_overlay_mver_pointer_enabled(value))
+    if (bongo_cat_overlay_mver_pointer_enabled(value)) {
+        float key[5] = {x_ratio, y_ratio, left ? 1.0f : 0.0f,
+            right ? 1.0f : 0.0f, side ? 1.0f : 0.0f};
+        if (memcmp(key, value->native_pointer_key, sizeof(key))) {
+            memcpy(value->native_pointer_key, key, sizeof(key));
+            ++value->native_input_revision;
+        }
         bongo_cat_mver_pointer_overlay_set(value->mver_pointer, x_ratio,
             y_ratio, left, right, side);
+    }
 }

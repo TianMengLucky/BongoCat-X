@@ -247,6 +247,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->model.mouse_centered = true;
     config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
     config->model.dynamic_texture_resolution = true;
+    config->model.multi_key_display = true;
     config->model.render_quality_percent =
         BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
@@ -325,6 +326,7 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     compact_removed_models(config);
     compact_hidden_models(config);
     compact_random_disabled(config);
+    bongo_cat_settings_validate_motion_volumes(config);
     validate_shortcuts(config);
     compact_behavior_overrides(config);
 }

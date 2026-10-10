@@ -55,6 +55,41 @@ static int held_slot(WindowsInputState *state, const char *name) {
     return available;
 }
 
+static unsigned virtual_key(const RAWKEYBOARD *key) {
+    switch (key->VKey) {
+    case VK_SHIFT: return key->MakeCode == 0x36 ? VK_RSHIFT : VK_LSHIFT;
+    case VK_CONTROL: return key->Flags & RI_KEY_E0 ? VK_RCONTROL : VK_LCONTROL;
+    case VK_MENU: return key->Flags & RI_KEY_E0 ? VK_RMENU : VK_LMENU;
+    default: return key->VKey;
+    }
+}
+
+/* Raw Input can miss a break when the shell takes a Win-key combination.
+   Only reconcile tracked keys. Require two up observations plus a press
+   grace period; never synthesize presses from the system snapshot. */
+void bongo_cat_windows_input_reconcile_keys(WindowsInputState *state, ULONGLONG now) {
+    state->keys_down = false;
+    if (state->desktop_unavailable) return;
+    for (unsigned slot = 0; slot < BONGO_CAT_WINDOWS_RAW_HELD_LIMIT; ++slot) {
+        WindowsRawHeld *held = &state->keys[slot];
+        if (!held->references) continue;
+        state->keys_down = true;
+        if (bongo_cat_windows_key_down(held->virtual_key)) {
+            held->up_ms = 0;
+            continue;
+        }
+        if (now - held->pressed_ms < 100) continue;
+        if (!held->up_ms) { held->up_ms = now; continue; }
+        if (now - held->up_ms < 100) continue;
+        for (WindowsRawDevice *device = state->devices; device; device = device->next)
+            for (unsigned i = 0; i < BONGO_CAT_WINDOWS_RAW_KEY_COUNT; ++i)
+                if (device->keys[i] == slot + 1) device->keys[i] = 0;
+        held->references = 0;
+        held->up_ms = 0;
+        publish(state, held, false);
+    }
+}
+
 void bongo_cat_windows_input_key(WindowsInputState *state,
     WindowsRawDevice *device, const RAWKEYBOARD *key) {
     if ((key->Flags & RI_KEY_E0) &&
@@ -89,7 +124,12 @@ void bongo_cat_windows_input_key(WindowsInputState *state,
         if (found < 0) { state->diagnostic_filtered_keys++; return; }
         slot = (unsigned)found + 1;
         device->keys[index] = (unsigned short)slot;
-        state->keys[slot - 1].references++;
+        WindowsRawHeld *held = &state->keys[slot - 1];
+        held->references++;
+        held->virtual_key = virtual_key(key);
+        held->pressed_ms = GetTickCount64();
+        held->up_ms = 0;
+        state->keys_down = true;
     } else {
         device->keys[index] = 0;
         state->keys[slot - 1].references--;

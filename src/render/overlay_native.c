@@ -7,7 +7,9 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
     BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
     bool mirror, bool flip, bool opaque, uint32_t rgb) {
     if (!value || (!value->native_background.surface && !value->custom_background.surface))
-        return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0);
+        return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0) &&
+            bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height,
+                x, y, cw, ch, mirror, flip);
     const int geometry[6] = {width, height, x, y, cw, ch};
     if (!value->native_canvas || memcmp(geometry, value->native_geometry,
         sizeof(geometry)) || value->native_mirror != mirror ||
@@ -65,5 +67,7 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
     }
     SDL_Surface *canvas = value->native_canvas;
     return bongo_cat_rhi_set_background(rhi, canvas->pixels, canvas->w,
-        canvas->h, canvas->pitch, value->native_revision);
+        canvas->h, canvas->pitch, value->native_revision) &&
+        bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height,
+            x, y, cw, ch, mirror, flip);
 }

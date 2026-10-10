@@ -129,7 +129,7 @@ endif()
 include(cmake/ModelPlugins.cmake)
 add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
-  src/core/config_file.c
+  src/core/config_file.c src/core/config_motion_volume.c
   src/core/error.c
   src/core/file.c src/core/i18n.c src/core/json_dom_io.c
   src/core/input_state.c src/core/mver_pointer.c

@@ -32,10 +32,10 @@
       "cat": {
         "background": {
           "title": "Custom Image Background",
-          "help": "Fill the window with an image, preserving its aspect ratio. Mutually exclusive with Solid Background.",
+          "help": "Fill the window with a centered image, preserving its proportions. Mutually exclusive with Solid Background; works on all backends.",
           "image": "Background Image",
-          "selected": "An image has been imported",
-          "empty": "No image selected",
+          "selected": "An image is stored in app data. Choose another PNG, JPEG, WebP, BMP or GIF (first frame), up to 64 MB and 16 megapixels.",
+          "empty": "Choose a PNG, JPEG, WebP, BMP or GIF (first frame), up to 64 MB and 16 megapixels. The app keeps an imported copy.",
           "choose": "Choose Image",
           "imported": "Background image imported",
           "failed": "Cannot load this image. Choose PNG, JPEG, WebP, BMP or GIF up to 64 MB and 16 megapixels."
@@ -44,6 +44,7 @@
         "labels": {
           "modelSettings": "Model",
           "gamepadFourHands": "Gamepad Four-Hand Mode",
+          "multiKeyDisplay": "Multi-Key Display",
           "dynamicTextureResolution": "Disable Dynamic Texture Resolution",
           "renderQuality": "Model Quality (%)",
           "mirrorMode": "Mirror Mode",
@@ -56,7 +57,6 @@
           "windowSettings": "Window",
           "passThrough": "Pass Through",
           "alwaysOnTop": "Always on Top",
-          "keepInScreen": "Keep on Screen",
           "edgeSnap": "Edge Snapping",
           "captureOnly": "Capture Only",
           "windowSize": "Window Size",
@@ -76,22 +76,35 @@
           "maxFPS": "Max Frame Rate"
         },
         "hints": {
-          "dynamicTextureResolution": "Dynamically adjusts texture resolution to the actual display size, preserving visual detail while optimizing video memory usage. Enabling this option is generally not recommended.",
-          "renderQuality": "Try different levels to find the best visual balance and save memory.",
-          "hoverRequires": "Requires both [Pass Through] and [Always on Top] above to be enabled.",
+          "dynamicTextureResolution": "When enabled, stop adapting textures to window size and use the quality-selected resolution, which may use more video memory.",
+          "renderQuality": "Lower texture resolution to save video memory. Changes settle before textures reload; double-click restores the default.",
+          "hoverRequires": "Hide on hover and reappear when the pointer leaves. Set the fade time; requires [Pass Through] and [Always on Top].",
           "hoverUnavailable": "Hover hiding is unavailable in the current desktop environment.",
-          "gamepadFourHands": "Keep two extra hands visible in gamepad mode. Appearance depends on the model",
-          "forceMouseInput": "Drive the model with raw device motion so it keeps following the mouse when a game hides the cursor",
-          "passThrough": "You can also turn this off by right-clicking the tray icon",
-          "alwaysOnTop": "When enabled, the window stays above all other windows.",
-          "keepInScreen": "When enabled, the window automatically stays within the screen boundaries.",
-          "captureOnly": "Hidden on the desktop, still visible in OBS",
-          "obsBackground": "Window capture is black?",
+          "gamepadFourHands": "Keep two extra hands visible in gamepad mode, if the model supplies them.",
+          "multiKeyDisplay": "Mver only: join held keys with + in one bubble per side. Mirrored characters stay readable; configure crops in hand-layout.json.",
+          "forceMouseInput": "Use raw mouse motion on Windows to follow a hidden or locked game cursor.",
+          "passThrough": "Let clicks reach windows behind the pet. Change this from the tray menu if needed.",
+          "alwaysOnTop": "Keep the pet above other windows.",
+          "captureOnly": "Hide the pet on the Windows desktop while keeping it visible to compatible recording software.",
+          "obsBackground": "Add a solid color behind the pet. For a black OBS capture, see the instructions here.",
           "obsBackgroundHelp": "OBS: enable this option, use the Windows 7 compatibility method, and remove the background with a color key filter.",
-          "tightFrame": "Shrink the window to fit the visible pet edges",
-          "windowSize": "[Scroll] to resize or [hold the right mouse button] and drag right to enlarge, left to shrink",
+          "tightFrame": "Fit the window to the visible pet and background, reducing transparent margins.",
+          "windowSize": "Resize with the wheel or right-button drag. Reset moves the pet back on screen; the size icon restores the default scale.",
           "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
-          "hideOnHover": "With Pass Through and Always on Top enabled, hide the pet immediately on hover and show it again when the pointer leaves."
+          "hideOnHover": "With Pass Through and Always on Top enabled, hide the pet immediately on hover and show it again when the pointer leaves.",
+          "edgeSnap": "Snap to a screen edge when dragging near it.",
+          "windowCorners": "Round the window corners. Higher percentages make the corners rounder on all backends.",
+          "opacity": "Set window transparency. Ctrl+wheel also adjusts it.",
+          "randomExpression": "Pick a random expression at the set interval. Use the settings button to choose participating expressions.",
+          "randomMotion": "Play a random motion at the set interval. Choose participating motions with the settings button; each keeps its saved volume.",
+          "sequentialModel": "Switch models in order at the set interval. Use the settings button to choose participating models.",
+          "mirrorMode": "Flip the model horizontally. Compatible Mver key characters stay readable.",
+          "verticalFlip": "Flip the model vertically to hang it upside down.",
+          "mouseMirror": "Reverse horizontal mouse tracking without flipping the model.",
+          "mouseVerticalFlip": "Reverse vertical mouse tracking without flipping the model.",
+          "mouseCentered": "Use the screen center instead of the pet as the mouse-tracking reference.",
+          "ignoreMouse": "Stop mouse movement and buttons from driving the model; keyboard and gamepad input remain active.",
+          "maxFPS": "Limit model frame rate. Drag up to the display rate, type up to 360 FPS, or double-click to restore the default."
         }
       },
       "general": {
@@ -123,12 +136,12 @@
           "darkMode": "Dark"
         },
         "hints": {
-          "largeRenderOptimization": "Select optimizations supported by the current backend. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model.",
+          "largeRenderOptimization": "Choose optional Vulkan/Metal optimizations. Changes reload the model; memory use may increase and support depends on the renderer.",
           "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",
           "autostartFailed": "Unable to update launch-on-startup settings",
-          "runAsAdmin": "Running the app as administrator helps capture some system-level keys and input events more reliably.",
-          "renderBackend": "Switch immediately without restarting. Vulkan/Metal support Live2D experimentally. All backends support desk backgrounds and rounded corners; key/effect/pointer overlays require OpenGL",
+          "runAsAdmin": "Improve input capture in elevated Windows games. Enabling requests permission and restarts the app.",
+          "renderBackend": "Switch immediately; failure restores OpenGL. Experimental Vulkan/Metal also support backgrounds, corners and key/effect/pointer overlays.",
           "renderBackendChanged": "Switching the render backend",
           "renderBackendFallback": "The selected renderer failed; restored OpenGL",
           "runAsAdminHelp": "Running as administrator lets the app capture some system-level keys and input events more reliably, and stay responsive in games that run with administrator privileges.\n\nWhen enabled: the app asks for administrator permission and restarts itself; every later launch (including launch-on-startup) also runs as administrator. With launch-on-startup enabled, Windows shows a User Account Control confirmation once at each sign-in.\n\nWhen disabled: normal privileges are restored from the next launch on; the running app is not affected.",
@@ -137,10 +150,17 @@
           "portableModeEnabled": "Portable mode enabled; data copied. Restart to use it",
           "portableModeDisabled": "The system data location will be used after a restart",
           "portableModeFailed": "Unable to change the portable mode setting",
-          "inputMonitoringPermission": "Restart after granting it.",
+          "inputMonitoringPermission": "Allow keyboard input from other apps in macOS Input Monitoring, then quit and restart BongoCat.",
           "inputMonitoringPermissionGuide": "Input Monitoring lets BongoCat see keys pressed in other apps; the mouse keeps working without it. BongoCat builds the listener when it starts, so a permission change needs a restart.\n\nSteps:\n1. Open System Settings → Privacy & Security → Input Monitoring.\n2. Turn on the BongoCat entry that is already listed; do not remove existing entries.\n3. If BongoCat is not listed, click the \"+\" button and add the copy you are running (check the app location).\n4. Quit BongoCat completely and start it again, so it rebuilds the listener.\n\nIf the keyboard still stays silent, you can remove and re-add the BongoCat entry yourself.",
           "administratorPermission": "Running the app as administrator helps capture some system-level keys and input events more reliably.",
-          "administratorPermissionGuide": "To capture some system-level keys and input events more reliably, it is recommended to run the app as administrator.\n\nHow to do it:\n1. Exit the app first.\n2. Find the app exe or its shortcut in File Explorer.\n3. Choose how to launch:\n   • One-time: Right-click and choose \"Run as administrator\".\n   • Always (default): Right-click → Properties → Compatibility tab → check \"Run this program as an administrator\" → OK."
+          "administratorPermissionGuide": "To capture some system-level keys and input events more reliably, it is recommended to run the app as administrator.\n\nHow to do it:\n1. Exit the app first.\n2. Find the app exe or its shortcut in File Explorer.\n3. Choose how to launch:\n   • One-time: Right-click and choose \"Run as administrator\".\n   • Always (default): Right-click → Properties → Compatibility tab → check \"Run this program as an administrator\" → OK.",
+          "launchOnStartup": "Start BongoCat automatically when you sign in.",
+          "portableModeSummary": "Store data beside the executable. Enabling copies existing data; restart to use the selected location.",
+          "parallelRecording": "Record Vulkan commands on several threads when the model and renderer support it.",
+          "bindless": "Use a Vulkan texture table when supported. Live2D has model/device limits; Inox2D does not implement this option.",
+          "largeAllocation": "Pool Vulkan resources or share Inox2D Metal vertex buffers. Live2D Metal handles buffer reuse automatically.",
+          "language": "Change the interface language immediately; model names are kept as authored.",
+          "themeMode": "Follow the system appearance or choose a light or dark settings window."
         },
         "status": {
           "authorized": "Authorized",
@@ -200,7 +220,12 @@
             "stopAllAudio": "Stop all audio",
             "motionIndex": "Motion {index}",
             "motionGroupIndex": "Motion Group {index}",
-            "expressionIndex": "Expression {index}"
+            "expressionIndex": "Expression {index}",
+            "motionVolume": "Volume"
+          },
+          "hints": {
+            "motionVolume": "Adjust this motion’s audio only. 0% mutes it; double-click the value to restore 100%",
+            "motionVolumeSaveFailed": "Unable to save the motion volume: the settings limit was reached"
           }
         }
       },
@@ -366,6 +391,7 @@
     "selected": "Selected",
     "import": "Import",
     "importing": "Importing...",
-    "builtIn": "built-in"
+    "builtIn": "built-in",
+    "multiplePetsHint": "Select several models to display up to eight pets. Disable to return to a single selection."
   }
 }

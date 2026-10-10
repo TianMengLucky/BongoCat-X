@@ -61,6 +61,10 @@ typedef struct BongoCatModelPreferences {
     bool force_mouse_input;
     bool gamepad_four_hands;
     bool dynamic_texture_resolution;
+    /* Join simultaneously held key characters with + inside one bubble (Mver
+       models on OpenGL; crop regions come from the model's
+       resources/<group>/hand-layout.json). */
+    bool multi_key_display;
     /* Approximate texture-memory budget: 0.1, 1, then 10 to 100 percent. */
     float render_quality_percent;
     int max_fps;
@@ -70,7 +74,7 @@ typedef struct BongoCatWindowPreferences {
     bool pass_through;
     bool always_on_top;
     bool hide_on_hover;
-    bool keep_in_screen;
+    bool reserved_keep_on_screen; /* Reserved for the removed preference ABI. */
     bool edge_snap;
     /*
      * 只在录屏/直播软件里可见: 桌面上看不见这个窗口, 但 OBS 之类的采集
@@ -148,6 +152,11 @@ typedef struct BongoCatBehaviorShortcut {
     bool shortcut_external;
 } BongoCatBehaviorShortcut;
 
+typedef struct BongoCatMotionVolume {
+    char id[BONGO_CAT_BEHAVIOR_ID_CAP];
+    float percent; /* 0..100; unlisted motions use 100. */
+} BongoCatMotionVolume;
+
 typedef struct BongoCatModelLabel {
     char id[BONGO_CAT_ID_CAP];
     char label[BONGO_CAT_ID_CAP];
@@ -187,6 +196,8 @@ typedef struct BongoCatSettings {
     BongoCatRemovedModel model_order[BONGO_CAT_MODEL_CAP];
     size_t model_order_count;
     char extensions_json[BONGO_CAT_SETTINGS_EXTENSIONS_CAP];
+    BongoCatMotionVolume motion_volumes[BONGO_CAT_BEHAVIOR_BINDING_CAP];
+    size_t motion_volume_count;
 } BongoCatSettings;
 
 typedef struct BongoCatSessionState {
@@ -210,6 +221,11 @@ void bongo_cat_settings_validate(BongoCatSettings *settings);
 /* Snaps a render quality percent to the nearest valid level
    (0.1, 1, 10, 20, ... 100). */
 float bongo_cat_settings_snap_render_quality(float percent);
+float bongo_cat_settings_motion_volume(const BongoCatSettings *settings,
+    const char *behavior_id);
+bool bongo_cat_settings_set_motion_volume(BongoCatSettings *settings,
+    const char *behavior_id, float percent);
+void bongo_cat_settings_validate_motion_volumes(BongoCatSettings *settings);
 void bongo_cat_session_defaults(BongoCatSessionState *session);
 void bongo_cat_session_validate(BongoCatSessionState *session);
 bool bongo_cat_session_model_active(const BongoCatSessionState *session,

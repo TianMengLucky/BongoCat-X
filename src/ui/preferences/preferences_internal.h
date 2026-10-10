@@ -12,6 +12,7 @@ void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_co
 void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path);
 void bongo_cat_preferences_background_import(BongoCatApp *app, const char *path);
 void bongo_cat_preferences_background_row(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *context);
 void bongo_cat_preferences_page_settings(BongoCatPreferences *value,
     struct nk_context *context);
 void bongo_cat_preferences_page_model(BongoCatPreferences *value,

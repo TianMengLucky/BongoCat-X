@@ -32,10 +32,10 @@
       "cat": {
         "background": {
           "title": "Imagen de fondo personalizada",
-          "help": "Llena la ventana con una imagen centrada, conservando sus proporciones. Incompatible con el fondo de color sólido.",
+          "help": "Llena la ventana con una imagen centrada y proporcional. Incompatible con el fondo sólido; funciona con todos los motores gráficos.",
           "image": "Imagen de fondo",
-          "selected": "Se ha importado una imagen",
-          "empty": "Ninguna imagen seleccionada",
+          "selected": "Imagen guardada en los datos de la aplicación. Elige otro PNG, JPEG, WebP, BMP o GIF (primer fotograma), hasta 64 MB y 16 megapíxeles.",
+          "empty": "Elige PNG, JPEG, WebP, BMP o GIF (primer fotograma), hasta 64 MB y 16 megapíxeles. La aplicación guarda una copia importada.",
           "choose": "Elegir imagen",
           "imported": "Imagen de fondo importada",
           "failed": "No se puede cargar la imagen. Elige PNG, JPEG, WebP, BMP o GIF de hasta 64 MB y 16 megapíxeles."
@@ -44,6 +44,7 @@
         "labels": {
           "modelSettings": "Modelo",
           "gamepadFourHands": "Modo de cuatro manos con mando",
+          "multiKeyDisplay": "Visualización de varias teclas",
           "dynamicTextureResolution": "Desactivar la resolución dinámica de texturas",
           "renderQuality": "Calidad del modelo (%)",
           "mirrorMode": "Modo espejo",
@@ -56,7 +57,6 @@
           "windowSettings": "Ventana",
           "passThrough": "Dejar pasar clics",
           "alwaysOnTop": "Siempre visible",
-          "keepInScreen": "Mantener en pantalla",
           "edgeSnap": "Ajuste a los bordes",
           "captureOnly": "Solo en programas de grabación",
           "windowSize": "Tamaño de la ventana",
@@ -76,22 +76,35 @@
           "maxFPS": "Frecuencia máxima de fotogramas"
         },
         "hints": {
-          "dynamicTextureResolution": "Ajusta automáticamente la resolución de las texturas al tamaño real de visualización, conservando los detalles de la imagen y optimizando el uso de la memoria de vídeo. Por lo general, no se recomienda activar esta opción.",
-          "renderQuality": "Prueba distintos niveles para encontrar el mejor equilibrio visual y ahorrar memoria.",
-          "hoverRequires": "Requiere activar las opciones [Paso de clics] y [Siempre visible] de arriba.",
+          "dynamicTextureResolution": "Al activar, deja de adaptar las texturas al tamaño de ventana y usa la resolución de calidad elegida, que puede consumir más memoria gráfica.",
+          "renderQuality": "Reduce la resolución de las texturas para ahorrar memoria gráfica. Se recargan al terminar el ajuste; doble clic restaura el valor predeterminado.",
+          "hoverRequires": "Oculta al pasar el puntero y muestra al retirarlo. Ajusta el fundido; requiere [Dejar pasar clics] y [Siempre visible].",
           "hoverUnavailable": "Ocultar al pasar el cursor no está disponible en el entorno de escritorio actual.",
-          "gamepadFourHands": "Muestra siempre dos manos adicionales en el modo mando. El aspecto depende del modelo",
-          "forceMouseInput": "Mueve el modelo con el movimiento bruto del dispositivo para seguir al ratón aunque el juego oculte el cursor",
-          "passThrough": "También puedes desactivarlo con un clic derecho en el icono de la bandeja",
-          "alwaysOnTop": "Al activarlo, la ventana permanece por encima de las demás.",
-          "keepInScreen": "Al activarlo, la ventana se mantiene automáticamente dentro de los límites de la pantalla.",
-          "captureOnly": "Invisible en el escritorio, sigue visible en OBS",
-          "obsBackground": "¿La captura de ventana aparece en negro?",
+          "gamepadFourHands": "Muestra dos manos adicionales en modo mando si el modelo dispone de ellas.",
+          "multiKeyDisplay": "Solo Mver: une las teclas pulsadas con + en una burbuja por lado. Los caracteres siguen siendo legibles al reflejar; configura los recortes en hand-layout.json.",
+          "forceMouseInput": "Usa el movimiento bruto del ratón en Windows incluso si el juego oculta o bloquea el cursor.",
+          "passThrough": "Deja pasar los clics a las ventanas detrás de la mascota. Puedes desactivarlo desde la bandeja.",
+          "alwaysOnTop": "Mantiene la mascota por encima de otras ventanas.",
+          "captureOnly": "Oculta la mascota en el escritorio de Windows, pero la mantiene visible para programas de captura compatibles.",
+          "obsBackground": "Añade un color sólido detrás de la mascota. Consulta las instrucciones si OBS captura una pantalla negra.",
           "obsBackgroundHelp": "OBS: activa esta opción, usa el método compatible con Windows 7 y elimina el fondo con un filtro de clave de color.",
-          "tightFrame": "Reduce la ventana al borde visible de la mascota",
-          "windowSize": "Usa la [rueda] para cambiar el tamaño o [mantén pulsado el botón derecho] y arrastra a la derecha para ampliar o a la izquierda para reducir",
+          "tightFrame": "Ajusta la ventana a la mascota y al fondo visibles, reduciendo los márgenes transparentes.",
+          "windowSize": "Cambia el tamaño con la rueda o arrastrando con el botón derecho. Restablecer devuelve la mascota a la pantalla; el icono de tamaño restaura la escala.",
           "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
-          "hideOnHover": "Con el paso de clics y Siempre visible activados, la mascota se oculta inmediatamente al pasar el ratón y reaparece al retirarlo."
+          "hideOnHover": "Con el paso de clics y Siempre visible activados, la mascota se oculta inmediatamente al pasar el ratón y reaparece al retirarlo.",
+          "edgeSnap": "Se acopla al borde de la pantalla al arrastrar cerca de él.",
+          "windowCorners": "Redondea las esquinas. Un porcentaje mayor produce más redondeo; funciona con todos los motores gráficos.",
+          "opacity": "Ajusta la transparencia de la ventana, también con Ctrl+rueda.",
+          "randomExpression": "Elige una expresión aleatoria en el intervalo indicado. Usa el botón de ajustes para seleccionar las expresiones participantes.",
+          "randomMotion": "Reproduce un movimiento aleatorio en el intervalo indicado. Selecciona los participantes en ajustes; cada uno conserva su volumen.",
+          "sequentialModel": "Cambia los modelos por orden en el intervalo indicado. El botón de ajustes permite elegir los participantes.",
+          "mirrorMode": "Refleja el modelo horizontalmente. Los caracteres de teclas Mver compatibles siguen siendo legibles.",
+          "verticalFlip": "Invierte el modelo verticalmente para mostrarlo boca abajo.",
+          "mouseMirror": "Invierte el seguimiento horizontal del ratón sin reflejar el modelo.",
+          "mouseVerticalFlip": "Invierte el seguimiento vertical del ratón sin reflejar el modelo.",
+          "mouseCentered": "Usa el centro de la pantalla en lugar de la mascota como referencia del ratón.",
+          "ignoreMouse": "El movimiento y los botones del ratón dejan de controlar el modelo; el teclado y el mando siguen activos.",
+          "maxFPS": "Limita los FPS del modelo. El deslizador llega a la frecuencia de pantalla; admite hasta 360 FPS por escrito. Doble clic restaura el valor predeterminado."
         }
       },
       "general": {
@@ -123,12 +136,12 @@
           "darkMode": "Oscuro"
         },
         "hints": {
-          "largeRenderOptimization": "Selecciona optimizaciones compatibles con el motor actual. Las solicitudes no compatibles aparecen como no disponibles. Puede usar más memoria; los cambios recargan el renderizador y el modelo.",
+          "largeRenderOptimization": "Elige optimizaciones opcionales de Vulkan/Metal. Los cambios recargan el modelo; pueden usar más memoria y dependen del renderizador.",
           "largeRenderUnavailable": "El motor del modelo actual no ofrece estas optimizaciones; el renderizado no cambia.",
           "showTrayIcon": "Al activarlo, el icono de la aplicación aparece en la bandeja del sistema.",
           "autostartFailed": "No se pudo actualizar la configuración de inicio automático",
-          "runAsAdmin": "Ejecutar la aplicación como administrador ayuda a capturar con más fiabilidad algunas teclas y eventos de entrada de nivel de sistema.",
-          "renderBackend": "Cambio inmediato sin reiniciar. Vulkan/Metal admiten Live2D de forma experimental. Todos los motores admiten fondos de escritorio y esquinas redondeadas; las superposiciones de teclas, efectos y puntero requieren OpenGL",
+          "runAsAdmin": "Mejora la captura de entrada en juegos Windows con privilegios elevados. Al activar solicita permiso y reinicia la aplicación.",
+          "renderBackend": "Cambio inmediato; si falla vuelve a OpenGL. Vulkan/Metal experimental también admite fondos, esquinas y capas de teclas, efectos y puntero.",
           "renderBackendChanged": "Cambiando el backend de renderizado",
           "renderBackendFallback": "El renderizador seleccionado no está disponible; se restauró OpenGL",
           "runAsAdminHelp": "Al ejecutarse como administrador, la aplicación puede capturar con más fiabilidad algunas teclas y eventos de entrada de nivel de sistema, y responder con normalidad en juegos que se ejecutan con privilegios de administrador.\n\nAl activarla: la aplicación pide permiso de administrador y se reinicia; cada inicio posterior (incluido el inicio automático) también se ejecutará como administrador. Si el inicio automático está activado, Windows muestra una confirmación de Control de cuentas de usuario (UAC) una vez en cada inicio de sesión.\n\nAl desactivarla: los privilegios normales se restablecen a partir del siguiente inicio; la aplicación en ejecución no se ve afectada.",
@@ -137,10 +150,17 @@
           "portableModeEnabled": "Modo portátil activado; datos copiados. Reinicia para usarlo",
           "portableModeDisabled": "La ubicación de datos del sistema se restaurará después de reiniciar",
           "portableModeFailed": "No se puede cambiar la configuración del modo portátil",
-          "inputMonitoringPermission": "Reinicie tras autorizar.",
+          "inputMonitoringPermission": "Permite el teclado de otras aplicaciones en Monitorización de entrada de macOS y luego cierra por completo y reinicia BongoCat.",
           "inputMonitoringPermissionGuide": "La Supervisión de entrada permite que BongoCat vea las teclas pulsadas en otras aplicaciones; el ratón sigue funcionando sin ella. BongoCat crea la escucha al iniciarse, así que un cambio de permiso requiere reiniciar.\n\nPasos:\n1. Abra Ajustes del Sistema → Privacidad y seguridad → Supervisión de entrada.\n2. Active la entrada de BongoCat que ya aparece en la lista; no elimine entradas existentes.\n3. Si BongoCat no está en la lista, pulse \"+\" y añada la copia que está ejecutando (compruebe la ubicación de la aplicación).\n4. Cierre BongoCat por completo y vuelva a iniciarlo para que reconstruya la escucha.\n\nSi el teclado sigue sin responder, puede eliminar y volver a añadir la entrada de BongoCat.",
           "administratorPermission": "Ejecutar la aplicación como administrador ayuda a capturar con mayor fiabilidad algunas teclas del sistema y eventos de entrada.",
-          "administratorPermissionGuide": "Para capturar con mayor fiabilidad algunas teclas del sistema y eventos de entrada, se recomienda ejecutar la aplicación como administrador.\n\nCómo hacerlo:\n1. Cierre primero la aplicación.\n2. Busque el archivo exe o su acceso directo en el Explorador de archivos.\n3. Elija cómo iniciarla:\n   - Una vez: haga clic con el botón derecho y elija \"Ejecutar como administrador\".\n   - Siempre: clic derecho > Propiedades > Compatibilidad > marque \"Ejecutar este programa como administrador\" > Aceptar."
+          "administratorPermissionGuide": "Para capturar con mayor fiabilidad algunas teclas del sistema y eventos de entrada, se recomienda ejecutar la aplicación como administrador.\n\nCómo hacerlo:\n1. Cierre primero la aplicación.\n2. Busque el archivo exe o su acceso directo en el Explorador de archivos.\n3. Elija cómo iniciarla:\n   - Una vez: haga clic con el botón derecho y elija \"Ejecutar como administrador\".\n   - Siempre: clic derecho > Propiedades > Compatibilidad > marque \"Ejecutar este programa como administrador\" > Aceptar.",
+          "launchOnStartup": "Inicia BongoCat automáticamente al iniciar sesión.",
+          "portableModeSummary": "Guarda datos junto al ejecutable. Al activar copia los datos existentes; reinicia para usar la ubicación elegida.",
+          "parallelRecording": "Registra comandos Vulkan en varios hilos si el modelo y el renderizador lo permiten.",
+          "bindless": "Usa una tabla de texturas Vulkan si está disponible. Live2D tiene límites de modelo y dispositivo; Inox2D aún no implementa esta opción.",
+          "largeAllocation": "Agrupa recursos Vulkan o comparte búferes de vértices de Inox2D Metal. Live2D Metal reutiliza los búferes automáticamente.",
+          "language": "Cambia inmediatamente el idioma de la interfaz; los nombres de modelos conservan el texto original.",
+          "themeMode": "Sigue la apariencia del sistema o elige un tema claro u oscuro para los ajustes."
         },
         "status": {
           "authorized": "Autorizado",
@@ -200,7 +220,12 @@
             "stopAllAudio": "Detener todo el audio",
             "motionIndex": "Movimiento {index}",
             "motionGroupIndex": "Grupo de movimientos {index}",
-            "expressionIndex": "Expresión {index}"
+            "expressionIndex": "Expresión {index}",
+            "motionVolume": "Volumen"
+          },
+          "hints": {
+            "motionVolume": "Ajusta solo el audio de este movimiento. 0% lo silencia; haz doble clic en el valor para restablecer el 100%",
+            "motionVolumeSaveFailed": "No se puede guardar el volumen: se alcanzó el límite de ajustes"
           }
         }
       },
@@ -366,6 +391,7 @@
     "selected": "Seleccionado",
     "import": "Importar",
     "importing": "Importando...",
-    "builtIn": "integrado"
+    "builtIn": "integrado",
+    "multiplePetsHint": "Selecciona varios modelos para mostrar hasta ocho mascotas. Al desactivar vuelve a selección única."
   }
 }

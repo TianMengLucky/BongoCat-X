@@ -58,6 +58,8 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 - GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
 
+  **What’s new in 2.1.2:** multi-key bubbles with readable mirrored characters, per-motion volume, custom image backgrounds, and key/effect/pointer overlays on Vulkan / Metal. Settings now explain each option; Keep on Screen has been removed. Optional renderer optimizations show their availability, with performance gains still unmeasured. See the [changelog](../CHANGELOG.md) and [hand layout guide](hand-layout.md).
+
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
   > [!IMPORTANT]
@@ -411,7 +413,7 @@ always-on-top support still depend on the compositor.
 
 ### 🖼️ What is the Vulkan / Metal support status?
 
-Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays currently require OpenGL. Live2D supports dynamic texture resolution on OpenGL, Vulkan and Metal, with background decoding/resizing and synchronous native GPU uploads. Disabling it reloads textures at the quality-selected resolution. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays now support all backends. Live2D supports dynamic texture resolution on OpenGL, Vulkan and Metal, with background decoding/resizing and synchronous native GPU uploads. Disabling it reloads textures at the quality-selected resolution. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture. Overlays reuse SDL software rendering, cached until input changes, then composite into the completed native frame and upload to the GPU; performance remains unmeasured.
 
 Large Rendering Optimization appears with Vulkan / Metal and is off by default. Vulkan offers three independent options; Metal offers only large allocations. Changes reload the model. Inox2D Metal packs frame vertices into a shared buffer when enabled and allocates per node when disabled; Live2D Metal reports this option as unavailable. Inox2D Vulkan supports parallel command recording and large memory blocks. Live2D Vulkan supports VMA allocations and parallel recording for ordinary blending without offscreen nodes or high-precision masks. Live2D needs at least 128 Drawables for secondary buffers and 128 drawable snapshots for up to four workers; other models retain the SDK serial path. Live2D Vulkan Bindless uses a table of up to 64 atlas textures for ordinary blending without offscreen nodes, with fallback when device features or capacity are insufficient. Inox2D Bindless is not implemented. Larger pools may use more memory; performance gains remain unmeasured.
 
@@ -449,3 +451,9 @@ Nightly prereleases reuse the [nightly release page](https://github.com/TianMeng
 Preferences → Preferences → Window includes Custom Image Background. Choose Image imports PNG, JPEG, WebP, BMP or GIF (first frame). The image fills the window centered while preserving its aspect ratio; enabling it disables Solid Background and vice versa. Imported images are stored in the application data directory and remain available after the original is moved. Limits: 64 MB and 16 megapixels per image. OpenGL, Vulkan and Metal are supported.
 
 Live2D automatically reuses geometry buffers and repeated render state. OpenGL streaming, Vulkan upload batching and pipeline caching, Metal shared buffer slots, and native adaptive masks require no additional switch. Performance and platform behavior of these new paths remain to be measured.
+
+### Multiple keys and readable mirrored characters
+
+Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).
+
+The action dialog checks each motion’s `Sound` reference and whether the audio file exists, then shows an individual volume control beside motions with audio. Set 0–100% by dragging or typing; double-click restores 100%, and 0% mutes. Settings persist per model and motion and apply to dialog playback, shortcuts, random motions and the context menu, including live adjustment. Other motions sharing the same clip keep their own volume.

@@ -63,6 +63,8 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 
 - GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
 
+  **Baru di 2.1.2:** gelembung banyak tombol dengan karakter tetap terbaca saat dicerminkan, volume per gerakan, latar gambar khusus, serta lapisan tombol, efek, dan penunjuk pada Vulkan / Metal. Setiap opsi pengaturan kini dijelaskan; opsi tetap di dalam layar dihapus. Optimasi opsional menampilkan ketersediaannya; peningkatan kinerja belum diukur. Lihat [catatan perubahan](../CHANGELOG.md) dan [panduan potongan gambar tangan](hand-layout.md).
+
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
   > [!IMPORTANT]
@@ -390,7 +392,7 @@ penggunaan.
 
 ### 🖼️ Bagaimana progres dukungan Vulkan / Metal?
 
-Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk memerlukan OpenGL. Live2D mendukung resolusi tekstur dinamis pada OpenGL, Vulkan dan Metal, dengan dekode/penskalaan di latar belakang dan unggahan GPU native sinkron. Menonaktifkannya memuat ulang tekstur sesuai kualitas yang dipilih. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan.
+Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk kini mendukung semua backend. Live2D mendukung resolusi tekstur dinamis pada OpenGL, Vulkan dan Metal, dengan dekode/penskalaan di latar belakang dan unggahan GPU native sinkron. Menonaktifkannya memuat ulang tekstur sesuai kualitas yang dipilih. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan. Overlay memakai render perangkat lunak SDL, disimpan sampai input berubah, lalu digabung ke frame native yang selesai dan diunggah kembali ke GPU; performa belum diukur.
 
 Optimasi Rendering Besar tersedia pada Vulkan / Metal dan nonaktif secara default. Vulkan menyediakan tiga opsi; Metal hanya alokasi besar. Inox2D Metal menggabungkan vertex setiap frame; opsi ini tidak tersedia pada Live2D Metal. Tiga subopsi disimpan terpisah; perubahan memuat ulang model. Inox2D Vulkan mendukung perekaman paralel dan blok memori besar. Live2D Vulkan mendukung VMA serta perekaman paralel untuk pencampuran biasa tanpa node offscreen atau mask presisi tinggi. Live2D memerlukan 128 Drawable untuk buffer sekunder dan 128 snapshot yang dapat digambar untuk memakai hingga empat thread; model lain tetap memakai jalur serial SDK. Live2D Vulkan Bindless memakai tabel hingga 64 tekstur atlas untuk pencampuran biasa tanpa node offscreen, dengan jalur cadangan jika fitur perangkat atau kapasitas tidak mencukupi. Inox2D Bindless belum diimplementasikan. Pool besar dapat memakai lebih banyak memori; peningkatan kinerja belum diukur.
 
@@ -440,3 +442,9 @@ Input evdev eksperimental di Linux Wayland diaktifkan dengan `BONGOCAT_ENABLE_EV
 Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG, JPEG, WebP, BMP, atau GIF (bingkai pertama). Gambar memenuhi jendela di tengah dengan rasio aspek tetap; latar gambar dan latar warna solid saling menonaktifkan. Salinan disimpan di direktori data aplikasi sehingga pemindahan berkas asli tidak memengaruhinya. Batas: 64 MB dan 16 megapiksel. Mendukung OpenGL, Vulkan, dan Metal.
 
 Live2D otomatis menggunakan kembali buffer geometri dan status render berulang. Streaming OpenGL, unggahan berkelompok dan cache pipeline Vulkan, slot buffer bersama Metal, serta mask native adaptif tidak memerlukan sakelar tambahan. Kinerja dan perilaku platform masih perlu diukur.
+
+### Beberapa tombol dan karakter yang terbaca dalam mode cermin
+
+Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).
+
+Dialog aksi memeriksa referensi `Sound` dan keberadaan file audio, lalu menampilkan kontrol volume tersendiri di samping gerakan dengan audio. Atur 0–100% dengan menyeret atau mengetik; klik ganda mengembalikan 100% dan 0% membisukan. Nilai disimpan per model dan gerakan serta berlaku pada dialog, pintasan, gerakan acak, dan menu konteks, termasuk saat audio diputar. Gerakan lain yang memakai file sama mempertahankan volumenya sendiri.

@@ -4,6 +4,8 @@
 #include "bongo_cat/rhi.h"
 
 /* Backend implementations behind the bongo_cat_rhi_* dispatchers. */
+bool bongo_cat_rhi_compose_foreground(const BongoCatRhi *rhi, void *pixels,
+    int width, int height, size_t pitch, bool bgra);
 
 BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int height,
     bool fallback_ladder, SDL_Window **window, BongoCatRhi *rhi,

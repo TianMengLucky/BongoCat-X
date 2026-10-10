@@ -8,11 +8,12 @@
 #include <string.h>
 
 void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
+    bongo_cat_overlay_native_reset(value);
     bongo_cat_image_free(&value->native_background);
     if (value->native_canvas) SDL_DestroySurface(value->native_canvas);
     value->native_canvas = NULL;
     if (!value->native && value->background) glDeleteTextures(1, &value->background);
-    if (value->composite) glDeleteTextures(1, &value->composite);
+    if (!value->native && value->composite) glDeleteTextures(1, &value->composite);
     value->background = 0;
     value->composite = 0;
     value->clean_paws = false;
@@ -22,7 +23,8 @@ void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
     value->reference_width = value->reference_height = 0;
     value->tight_uv_valid = false;
     for (size_t i = 0; i < 4; ++i) {
-        if (value->cache[i].texture) glDeleteTextures(1, &value->cache[i].texture);
+        if (!value->native && value->cache[i].texture) glDeleteTextures(1, &value->cache[i].texture);
+        bongo_cat_image_free(&value->cache[i].image);
         memset(&value->cache[i], 0, sizeof(value->cache[i]));
     }
     value->left = value->right = 0;
@@ -33,6 +35,7 @@ void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
     value->background_path[0] = '\0';
     value->last_input_path[0] = '\0';
     value->input_texture_failures = 0;
+    bongo_cat_overlay_keys_clear(value);
 }
 
 BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
@@ -72,10 +75,10 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
             &background_width, &background_height, &background_error);
     }
     BongoCatError pointer_error = {0};
-    if (!value->native && !model_pointer_preferred &&
+    if (!model_pointer_preferred &&
         !bongo_cat_mver_pointer_overlay_load(value->mver_pointer, directory,
             &pointer_error)) {
-        if (background) glDeleteTextures(1, &background);
+        if (background && !value->native) glDeleteTextures(1, &background);
         *failure = pointer_error;
         if (!failure->message[0] && background_error.message[0])
             *failure = background_error;
@@ -119,6 +122,7 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
 #endif
     snprintf(value->directory, sizeof(value->directory), "%s", directory);
     snprintf(value->background_path, sizeof(value->background_path), "%s", path);
+    bongo_cat_overlay_layout_load(value);
     value->tight_uv_valid = false;
     if (background)
         value->tight_uv_valid = bongo_cat_image_opaque_bounds(path,
@@ -136,7 +140,7 @@ bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *value,
 
 #ifdef BONGO_CAT_HAS_MODEL_PLUGINS
 GLuint bongo_cat_overlay_cached_texture(BongoCatOverlay *value, const char *path) {
-    if (value->native) return 1;
+    if (value->native) return bongo_cat_overlay_native_image(value, path) ? 1 : 0;
     value->clock++;
     TextureSlot *oldest = NULL;
     for (size_t i = 0; i < 4; ++i) {

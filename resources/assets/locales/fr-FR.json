@@ -32,10 +32,10 @@
       "cat": {
         "background": {
           "title": "Image de fond personnalisée",
-          "help": "Remplit la fenêtre avec une image centrée en conservant ses proportions. Incompatible avec le fond uni.",
+          "help": "Remplit la fenêtre avec une image centrée en conservant ses proportions. Incompatible avec le fond uni ; tous les moteurs sont pris en charge.",
           "image": "Image de fond",
-          "selected": "Une image a été importée",
-          "empty": "Aucune image sélectionnée",
+          "selected": "Image enregistrée dans les données de l’app. Choisissez un autre PNG, JPEG, WebP, BMP ou GIF (première image), jusqu’à 64 Mo et 16 mégapixels.",
+          "empty": "Choisissez PNG, JPEG, WebP, BMP ou GIF (première image), jusqu’à 64 Mo et 16 mégapixels. L’app conserve une copie importée.",
           "choose": "Choisir une image",
           "imported": "Image de fond importée",
           "failed": "Impossible de charger l’image. Choisissez PNG, JPEG, WebP, BMP ou GIF de 64 Mo et 16 mégapixels maximum."
@@ -44,6 +44,7 @@
         "labels": {
           "modelSettings": "Modèle",
           "gamepadFourHands": "Mode quatre mains à la manette",
+          "multiKeyDisplay": "Affichage multi-touches",
           "dynamicTextureResolution": "Désactiver la résolution dynamique des textures",
           "renderQuality": "Qualité du modèle (%)",
           "mirrorMode": "Mode miroir",
@@ -56,7 +57,6 @@
           "windowSettings": "Fenêtre",
           "passThrough": "Clics traversants",
           "alwaysOnTop": "Toujours au premier plan",
-          "keepInScreen": "Maintenir à l'écran",
           "edgeSnap": "Aimant aux bords",
           "captureOnly": "Uniquement dans les logiciels de capture",
           "windowSize": "Taille de la fenêtre",
@@ -76,22 +76,35 @@
           "maxFPS": "Fréquence d'images maximale"
         },
         "hints": {
-          "dynamicTextureResolution": "Adapte automatiquement la résolution des textures à la taille réelle d’affichage, tout en préservant les détails visuels et en optimisant l’utilisation de la mémoire vidéo. Il est généralement déconseillé d’activer cette option.",
-          "renderQuality": "Essayez différents niveaux pour trouver le meilleur équilibre visuel et économiser de la mémoire.",
-          "hoverRequires": "Activez les options [Passage des clics] et [Toujours au premier plan] ci-dessus.",
+          "dynamicTextureResolution": "Activé : cesse d’adapter les textures à la fenêtre et utilise la résolution de qualité choisie, ce qui peut consommer plus de mémoire vidéo.",
+          "renderQuality": "Réduit la résolution des textures pour économiser la mémoire vidéo. Recharge après le réglage ; double-cliquez pour rétablir la valeur par défaut.",
+          "hoverRequires": "Masque au survol puis réaffiche au départ du pointeur. Réglez le fondu ; nécessite [Clics traversants] et [Toujours au premier plan].",
           "hoverUnavailable": "Le masquage au survol est indisponible dans cet environnement de bureau.",
-          "gamepadFourHands": "Affiche en permanence deux mains supplémentaires en mode manette. Le rendu dépend du modèle",
-          "forceMouseInput": "Anime le modèle avec le mouvement brut du périphérique afin de suivre la souris même si le jeu masque le curseur",
-          "passThrough": "Désactivation possible aussi par clic droit sur l’icône de la zone de notification",
-          "alwaysOnTop": "Lorsque cette option est activée, la fenêtre reste au-dessus des autres fenêtres.",
-          "keepInScreen": "Lorsque cette option est activée, la fenêtre reste automatiquement dans les limites de l'écran.",
-          "captureOnly": "Invisible sur le bureau, toujours visible dans OBS",
-          "obsBackground": "La capture de fenêtre est noire ?",
+          "gamepadFourHands": "Affiche deux mains supplémentaires en mode manette si le modèle les fournit.",
+          "multiKeyDisplay": "Mver uniquement : relie les touches maintenues avec + dans une bulle par côté. Les caractères restent lisibles en miroir ; définissez les découpes dans hand-layout.json.",
+          "forceMouseInput": "Utilise les déplacements bruts de la souris sous Windows, même si le jeu masque ou bloque le curseur.",
+          "passThrough": "Les clics atteignent les fenêtres derrière l’animal. Désactivez aussi cette option depuis la zone de notification.",
+          "alwaysOnTop": "Garde l’animal au-dessus des autres fenêtres.",
+          "captureOnly": "Masque l’animal sur le bureau Windows tout en le laissant visible aux logiciels de capture compatibles.",
+          "obsBackground": "Ajoute un fond uni derrière l’animal. Consultez les instructions si la capture OBS est noire.",
           "obsBackgroundHelp": "OBS : activez cette option, utilisez la méthode compatible Windows 7 et supprimez le fond avec un filtre d'incrustation couleur.",
-          "tightFrame": "Réduit la fenêtre au contour visible de la mascotte",
-          "windowSize": "Utilisez la [molette] pour redimensionner ou [maintenez le bouton droit enfoncé] et glissez à droite pour agrandir, à gauche pour réduire",
+          "tightFrame": "Adapte la fenêtre à l’animal et au fond visibles pour réduire les marges transparentes.",
+          "windowSize": "Redimensionnez avec la molette ou en glissant avec le bouton droit. Réinitialiser ramène l’animal à l’écran ; l’icône de taille rétablit l’échelle par défaut.",
           "dynamicTextureResolutionFailed": "Unable to reload the model with the selected texture mode.",
-          "hideOnHover": "Lorsque le passage des clics et Toujours au premier plan sont activés, le compagnon se masque immédiatement au survol et réapparaît lorsque le pointeur s’éloigne."
+          "hideOnHover": "Lorsque le passage des clics et Toujours au premier plan sont activés, le compagnon se masque immédiatement au survol et réapparaît lorsque le pointeur s’éloigne.",
+          "edgeSnap": "Accroche la fenêtre au bord de l’écran lors d’un déplacement à proximité.",
+          "windowCorners": "Arrondit les coins de la fenêtre. Un pourcentage plus élevé augmente l’arrondi ; tous les moteurs sont pris en charge.",
+          "opacity": "Règle la transparence de la fenêtre, également avec Ctrl+molette.",
+          "randomExpression": "Choisit une expression aléatoire à l’intervalle indiqué. Le bouton de réglages permet de sélectionner les expressions participantes.",
+          "randomMotion": "Joue un mouvement aléatoire à l’intervalle indiqué. Choisissez les participants dans les réglages ; chacun conserve son volume.",
+          "sequentialModel": "Change les modèles dans l’ordre à l’intervalle indiqué. Sélectionnez les participants avec le bouton de réglages.",
+          "mirrorMode": "Retourne le modèle horizontalement. Les caractères de touches Mver compatibles restent lisibles.",
+          "verticalFlip": "Retourne le modèle verticalement pour le suspendre à l’envers.",
+          "mouseMirror": "Inverse le suivi horizontal de la souris sans retourner le modèle.",
+          "mouseVerticalFlip": "Inverse le suivi vertical de la souris sans retourner le modèle.",
+          "mouseCentered": "Utilise le centre de l’écran au lieu de la position de l’animal comme référence de suivi.",
+          "ignoreMouse": "Les mouvements et boutons de souris ne pilotent plus le modèle ; clavier et manette restent actifs.",
+          "maxFPS": "Limite les FPS du modèle. Le curseur va jusqu’à la fréquence de l’écran ; saisie jusqu’à 360 FPS. Double-cliquez pour rétablir la valeur par défaut."
         }
       },
       "general": {
@@ -123,12 +136,12 @@
           "darkMode": "Sombre"
         },
         "hints": {
-          "largeRenderOptimization": "Choisissez les optimisations prises en charge par le moteur actuel. Les demandes non prises en charge restent indisponibles. Peut utiliser plus de mémoire ; les modifications rechargent le moteur et le modèle.",
+          "largeRenderOptimization": "Choisissez des optimisations Vulkan/Metal facultatives. Les changements rechargent le modèle ; la mémoire peut augmenter et la prise en charge dépend du moteur.",
           "largeRenderUnavailable": "Le moteur du modèle actuel ne propose aucune de ces optimisations ; le rendu reste inchangé.",
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
           "autostartFailed": "Impossible de modifier le lancement au démarrage",
-          "runAsAdmin": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches et certains événements d'entrée système.",
-          "renderBackend": "Changement immédiat sans redémarrage. Live2D est expérimental avec Vulkan/Metal. Tous les moteurs prennent en charge les fonds de bureau et les coins arrondis ; les superpositions de touches, effets et pointeur nécessitent OpenGL",
+          "runAsAdmin": "Améliore la capture dans les jeux Windows avec droits élevés. L’activation demande une autorisation et redémarre l’application.",
+          "renderBackend": "Changement immédiat ; retour à OpenGL en cas d’échec. Vulkan/Metal expérimental gère aussi fonds, coins et couches de touches, effets et pointeur.",
           "renderBackendChanged": "Changement du moteur de rendu",
           "renderBackendFallback": "Le moteur choisi est indisponible ; OpenGL a été rétabli",
           "runAsAdminHelp": "En s'exécutant en tant qu'administrateur, l'application peut capturer plus fiablement certaines touches et certains événements d'entrée système, et rester réactive dans les jeux lancés avec des privilèges d'administrateur.\n\nÀ l'activation : l'application demande l'autorisation d'administrateur et redémarre ; chaque lancement suivant (y compris le démarrage automatique) s'exécutera également en tant qu'administrateur. Si le démarrage automatique est activé, Windows affiche une confirmation de contrôle de compte d'utilisateur (UAC) à chaque connexion.\n\nÀ la désactivation : les privilèges normaux sont rétablis à partir du lancement suivant ; l'application en cours d'exécution n'est pas affectée.",
@@ -137,10 +150,17 @@
           "portableModeEnabled": "Mode portable activé, données copiées. Redémarrez pour l'utiliser",
           "portableModeDisabled": "L'emplacement système des données sera rétabli après un redémarrage",
           "portableModeFailed": "Impossible de modifier le réglage du mode portable",
-          "inputMonitoringPermission": "Redémarrez après l'autorisation.",
+          "inputMonitoringPermission": "Autorisez le clavier des autres apps dans Surveillance de l’entrée de macOS, puis quittez entièrement et relancez BongoCat.",
           "inputMonitoringPermissionGuide": "La surveillance des entrées permet à BongoCat de voir les touches pressées dans d'autres applications ; la souris continue de fonctionner sans elle. BongoCat construit l'écoute à son démarrage, un changement d'autorisation demande donc un redémarrage.\n\nÉtapes :\n1. Ouvrez Réglages Système → Confidentialité et sécurité → Surveillance de l'entrée.\n2. Activez l'entrée BongoCat déjà présente dans la liste ; ne supprimez aucune entrée.\n3. Si BongoCat n'est pas listé, cliquez sur \"+\" et ajoutez la copie que vous exécutez (vérifiez son emplacement).\n4. Quittez complètement BongoCat puis relancez-le pour qu'il reconstruise l'écoute.\n\nSi le clavier reste sans réponse, vous pouvez supprimer puis rajouter vous-même l'entrée BongoCat.",
           "administratorPermission": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches système et certains événements d'entrée.",
-          "administratorPermissionGuide": "Pour capturer plus fiablement certaines touches système et certains événements d'entrée, il est recommandé d'exécuter l'application en tant qu'administrateur.\n\nProcédure :\n1. Quittez d'abord l'application.\n2. Trouvez le fichier exe ou son raccourci dans l'Explorateur de fichiers.\n3. Choisissez le mode de lancement :\n   - Une fois : faites un clic droit et choisissez \"Exécuter en tant qu'administrateur\".\n   - Toujours : clic droit > Propriétés > onglet Compatibilité > cochez \"Exécuter ce programme en tant qu'administrateur\" > OK."
+          "administratorPermissionGuide": "Pour capturer plus fiablement certaines touches système et certains événements d'entrée, il est recommandé d'exécuter l'application en tant qu'administrateur.\n\nProcédure :\n1. Quittez d'abord l'application.\n2. Trouvez le fichier exe ou son raccourci dans l'Explorateur de fichiers.\n3. Choisissez le mode de lancement :\n   - Une fois : faites un clic droit et choisissez \"Exécuter en tant qu'administrateur\".\n   - Toujours : clic droit > Propriétés > onglet Compatibilité > cochez \"Exécuter ce programme en tant qu'administrateur\" > OK.",
+          "launchOnStartup": "Lance BongoCat automatiquement à l’ouverture de session.",
+          "portableModeSummary": "Stocke les données près de l’exécutable. L’activation copie les données existantes ; redémarrez pour utiliser l’emplacement choisi.",
+          "parallelRecording": "Enregistre les commandes Vulkan sur plusieurs threads si le modèle et le moteur le permettent.",
+          "bindless": "Utilise une table de textures Vulkan si disponible. Live2D impose des limites de modèle et d’appareil ; Inox2D ne propose pas encore cette option.",
+          "largeAllocation": "Regroupe les ressources Vulkan ou partage les tampons de sommets Inox2D Metal. Live2D Metal réutilise automatiquement ses tampons.",
+          "language": "Change immédiatement la langue de l’interface ; les noms des modèles gardent le texte de l’auteur.",
+          "themeMode": "Suit l’apparence du système ou choisit un thème clair ou sombre pour les réglages."
         },
         "status": {
           "authorized": "Autorisé",
@@ -200,7 +220,12 @@
             "stopAllAudio": "Arrêter tous les sons",
             "motionIndex": "Mouvement {index}",
             "motionGroupIndex": "Groupe de mouvements {index}",
-            "expressionIndex": "Expression {index}"
+            "expressionIndex": "Expression {index}",
+            "motionVolume": "Volume"
+          },
+          "hints": {
+            "motionVolume": "Règle uniquement le son de ce mouvement. 0% le coupe ; double-cliquez sur la valeur pour revenir à 100%",
+            "motionVolumeSaveFailed": "Impossible d’enregistrer le volume : limite des réglages atteinte"
           }
         }
       },
@@ -366,6 +391,7 @@
     "selected": "Sélectionné",
     "import": "Importer",
     "importing": "Importation...",
-    "builtIn": "intégré"
+    "builtIn": "intégré",
+    "multiplePetsHint": "Sélectionnez plusieurs modèles pour afficher jusqu’à huit animaux. Désactiver rétablit la sélection unique."
   }
 }

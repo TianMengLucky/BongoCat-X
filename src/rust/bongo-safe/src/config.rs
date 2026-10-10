@@ -24,10 +24,10 @@ const RANDOM_DISABLED_CAP: usize = 256;
 const UPDATE_VERSION_CAP: usize = 32;
 const EXTENSIONS_CAP: usize = 4096;
 
-const OK: c_int = 0;
+pub(crate) const OK: c_int = 0;
 const FORMAT: c_int = 3;
 const MEMORY: c_int = 4;
-const LAYOUT: c_int = -1;
+pub(crate) const LAYOUT: c_int = -1;
 
 const SETTINGS_FORMAT: &str = "bongocat/settings";
 const SESSION_FORMAT: &str = "bongocat/session";
@@ -45,6 +45,7 @@ struct ModelPreferences {
     force_mouse_input: bool,
     gamepad_four_hands: bool,
     dynamic_texture_resolution: bool,
+    multi_key_display: bool,
     render_quality_percent: f32,
     max_fps: c_int,
 }
@@ -54,7 +55,7 @@ struct WindowPreferences {
     pass_through: bool,
     always_on_top: bool,
     hide_on_hover: bool,
-    keep_in_screen: bool,
+    _reserved_keep_on_screen: bool,
     edge_snap: bool,
     capture_only: bool,
     obs_background: bool,
@@ -108,6 +109,12 @@ struct BehaviorShortcut {
 }
 
 #[repr(C)]
+struct MotionVolume {
+    id: [c_char; BEHAVIOR_ID_CAP],
+    percent: f32,
+}
+
+#[repr(C)]
 struct ModelLabel {
     id: [c_char; ID_CAP],
     label: [c_char; ID_CAP],
@@ -143,6 +150,8 @@ pub struct Settings {
     model_order: [RemovedModel; MODEL_CAP],
     model_order_count: usize,
     extensions_json: [c_char; EXTENSIONS_CAP],
+    motion_volumes: [MotionVolume; BEHAVIOR_BINDING_CAP],
+    motion_volume_count: usize,
 }
 
 #[repr(C)]
@@ -176,13 +185,13 @@ pub struct SessionState {
 
 /// Accumulates the format message for the C-side `BongoCatError`.
 #[derive(Debug)]
-struct Failure {
+pub(crate) struct Failure {
     code: c_int,
     message: String,
 }
 
 impl Failure {
-    fn format(message: String) -> Self {
+    pub(crate) fn format(message: String) -> Self {
         Failure {
             code: FORMAT,
             message,
@@ -199,7 +208,7 @@ impl Failure {
 
 type Outcome<T> = Result<T, Failure>;
 
-fn object<'a>(
+pub(crate) fn object<'a>(
     parent: &'a Map<String, Value>,
     description: &str,
     key: &str,
@@ -266,7 +275,7 @@ fn boolean(
     }
 }
 
-fn integer(
+pub(crate) fn integer(
     parent: &Map<String, Value>,
     description: &str,
     key: &str,
@@ -466,6 +475,12 @@ fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outc
         "dynamicTextureResolution",
         &mut value.dynamic_texture_resolution,
     )?;
+    boolean(
+        object,
+        DESCRIPTION,
+        "multiKeyDisplay",
+        &mut value.multi_key_display,
+    )?;
     real(
         object,
         DESCRIPTION,
@@ -488,12 +503,6 @@ fn read_window(object: &Map<String, Value>, value: &mut WindowPreferences) -> Ou
         DESCRIPTION,
         "hideOnPointerOver",
         &mut value.hide_on_hover,
-    )?;
-    boolean(
-        object,
-        DESCRIPTION,
-        "keepOnScreen",
-        &mut value.keep_in_screen,
     )?;
     boolean(object, DESCRIPTION, "edgeSnap", &mut value.edge_snap)?;
     boolean(object, DESCRIPTION, "captureOnly", &mut value.capture_only)?;
@@ -748,6 +757,34 @@ fn read_behaviors(array: Option<&Vec<Value>>, settings: &mut Settings) -> Outcom
     Ok(())
 }
 
+fn read_motion_volumes(object: Option<&Map<String, Value>>, settings: &mut Settings) -> Outcome<()> {
+    let Some(object) = object else { return Ok(()) };
+    if object.len() > BEHAVIOR_BINDING_CAP {
+        return Err(Failure::format("Settings motionVolumes exceeds the entry limit".to_string()));
+    }
+    settings.motion_volume_count = 0;
+    for (id, value) in object {
+        let percent = value.as_f64().filter(|p| p.is_finite() && (0.0..=100.0).contains(p))
+            .ok_or_else(|| Failure::format("Settings motionVolumes must contain percentages from 0 to 100".to_string()))?;
+        if id.is_empty() {
+            return Err(Failure::format("Settings motionVolumes ids must not be empty".to_string()));
+        }
+        let entry = &mut settings.motion_volumes[settings.motion_volume_count];
+        *entry = MotionVolume { id: [0; BEHAVIOR_ID_CAP], percent: percent as f32 };
+        copy_text("Settings", &mut entry.id, id, "motionVolumes id")?;
+        settings.motion_volume_count += 1;
+    }
+    Ok(())
+}
+
+fn write_motion_volumes(settings: &Settings) -> Value {
+    let mut object = Map::new();
+    for entry in &settings.motion_volumes[..settings.motion_volume_count.min(BEHAVIOR_BINDING_CAP)] {
+        object.insert(c_string(&entry.id), serde_json::json!(entry.percent));
+    }
+    Value::Object(object)
+}
+
 fn read_random_disabled(array: Option<&Vec<Value>>, settings: &mut Settings) -> Outcome<()> {
     let Some(array) = array else { return Ok(()) };
     if array.len() > RANDOM_DISABLED_CAP {
@@ -932,7 +969,7 @@ pub unsafe extern "C" fn bongo_safe_settings_parse(
     })
 }
 
-fn write_message(message: *mut c_char, message_capacity: usize, failure: &Failure) -> c_int {
+pub(crate) fn write_message(message: *mut c_char, message_capacity: usize, failure: &Failure) -> c_int {
     let out = unsafe { std::slice::from_raw_parts_mut(message.cast::<u8>(), message_capacity) };
     let bytes = failure.message.as_bytes();
     let copied = bytes.len().min(out.len().saturating_sub(1));
@@ -954,6 +991,7 @@ fn parse_settings(bytes: &[u8], settings: &mut Settings) -> Outcome<()> {
     let removed_models = array(&root, description, "removedModels")?;
     let hidden_models = array(&root, description, "hiddenModels")?;
     let model_order = array(&root, description, "modelOrder")?;
+    let motion_volumes = object(&root, description, "motionVolumes")?;
     let extensions = match root.get("extensions") {
         None | Some(Value::Null) => None,
         Some(value) => Some(value),
@@ -971,6 +1009,7 @@ fn parse_settings(bytes: &[u8], settings: &mut Settings) -> Outcome<()> {
         read_shortcuts(shortcuts, &mut settings.shortcuts)?;
     }
     read_behaviors(behaviors, settings)?;
+    read_motion_volumes(motion_volumes, settings)?;
     read_random_disabled(random_disabled, settings)?;
     read_model_labels(models, settings)?;
     read_model_id_array(
@@ -1011,6 +1050,7 @@ fn write_model(value: &ModelPreferences) -> Value {
         "forceMouseInput": value.force_mouse_input,
         "gamepadFourHands": value.gamepad_four_hands,
         "dynamicTextureResolution": value.dynamic_texture_resolution,
+        "multiKeyDisplay": value.multi_key_display,
         "renderQualityPercent": value.render_quality_percent,
         "maximumFps": value.max_fps,
     })
@@ -1021,7 +1061,6 @@ fn write_window(value: &WindowPreferences) -> Value {
         "clickThrough": value.pass_through,
         "alwaysOnTop": value.always_on_top,
         "hideOnPointerOver": value.hide_on_hover,
-        "keepOnScreen": value.keep_in_screen,
         "edgeSnap": value.edge_snap,
         "captureOnly": value.capture_only,
         "captureBackground": value.obs_background,
@@ -1152,6 +1191,7 @@ fn build_settings_json(settings: &Settings) -> Outcome<Value> {
     root.insert("application".into(), write_app(&settings.app));
     root.insert("shortcuts".into(), write_shortcuts(&settings.shortcuts));
     root.insert("behaviorOverrides".into(), write_behaviors(settings));
+    root.insert("motionVolumes".into(), write_motion_volumes(settings));
     root.insert(
         "randomBehaviorDisabled".into(),
         write_random_disabled(settings),
@@ -1533,6 +1573,21 @@ pub unsafe extern "C" fn bongo_safe_free_json(json: *mut u8, length: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn multi_key_display_round_trips_and_keeps_older_defaults() {
+        let mut model: ModelPreferences = unsafe { std::mem::zeroed() };
+        model.multi_key_display = true;
+        read_model(serde_json::json!({}).as_object().unwrap(), &mut model).unwrap();
+        assert!(model.multi_key_display);
+        for enabled in [false, true] {
+            read_model(serde_json::json!({"multiKeyDisplay": enabled})
+                .as_object().unwrap(), &mut model).unwrap();
+            assert_eq!(write_model(&model)["multiKeyDisplay"], enabled);
+        }
+        assert!(read_model(serde_json::json!({"multiKeyDisplay": "true"})
+            .as_object().unwrap(), &mut model).is_err());
+    }
 
     #[test]
     fn metal_backend_survives_settings_serialization() {

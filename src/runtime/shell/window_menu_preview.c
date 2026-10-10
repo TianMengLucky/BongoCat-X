@@ -122,6 +122,14 @@ void bongo_cat_window_menu_restore(void *userdata, BongoCatMenuAction selected) 
         selected < BONGO_CAT_MENU_EXPRESSION_FIRST + BONGO_CAT_BEHAVIOR_LIMIT);
     bool committed_expression = selected >= BONGO_CAT_MENU_EXPRESSION_FIRST &&
         selected < BONGO_CAT_MENU_EXPRESSION_FIRST + BONGO_CAT_BEHAVIOR_LIMIT;
+    /* A confirmed group becomes the new rollback baseline, so the radial menu
+       can pin several choices in one session: later previews fall back to the
+       last confirmation instead of the values captured when the menu opened.
+       Rollbacks (selected == NONE) never move the baseline. */
+    if (keep_scale) state->scale = app->session.window.scale_percent;
+    if (keep_opacity) state->opacity = app->session.window.opacity_percent;
+    if (keep_expression) state->expression =
+        bongo_cat_model_runtime_expression(app->model_runtime);
     if (!keep_scale &&
         SDL_fabsf(app->session.window.scale_percent - state->scale) > .01f) {
         bongo_cat_window_set_scale(app, state->scale);

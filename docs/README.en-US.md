@@ -386,15 +386,23 @@ configuration, or usage data.
 ### Linux Wayland Input
 
 X11 uses XInput2 by default. Experimental evdev input for Wayland is off by
-default. After reviewing [the input permission risks](SECURITY.md#linux-input),
+default. After reviewing [the input permission risks](../SECURITY.md#linux-input),
 it can be explicitly selected for one launch:
 
 ```sh
 BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 ```
 
-This does not grant device permissions. Do not run the app as root or add
-your account to the `input` group to make it work. Raw input can include
+Startup first tries read-only device access as the current user. On permission
+denial, protected installations request authentication through `/usr/bin/sudo`,
+open devices, then drop privileges and re-execute before SDL, settings, models
+or plugins initialize. Automatic elevation requires root-owned binaries and
+parent directories not writable by group or other users. Development/portable
+installs need separately administered device access. Configure a trusted sudo
+absolute path with `BONGO_CAT_SUDO_EXECUTABLE`. Authentication or privilege-drop
+failure stops startup. No device permissions or udev rules are changed.
+Only startup devices are monitored; hot-plug requires a restart. Do not launch
+the app directly as root or add your account to the `input` group. Raw input can include
 password keystrokes and is not paused on screen lock or session switching.
 Close the app to stop monitoring; hiding it does not stop input. Launch
 without the variable to return to the default backend. Evdev mouse following

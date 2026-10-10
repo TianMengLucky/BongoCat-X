@@ -216,6 +216,7 @@ if(BONGO_CAT_PCH)
   set_source_files_properties(
     src/platform/linux/linux.c
     src/platform/linux/linux_evdev_devices.c
+    src/platform/linux/linux_evdev_probe.c
     src/platform/posix/posix_live2d_sdk.c
     src/ui/rendering/ui_font_atlas_sources.c
     PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
@@ -224,6 +225,16 @@ endif()
 include(cmake/PlatformRuntime.cmake)
 
 add_executable(bongo_cat src/main.c)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_sources(bongo_cat PRIVATE src/platform/linux/linux_evdev_bootstrap.c)
+  set(BONGO_CAT_SUDO_EXECUTABLE "/usr/bin/sudo" CACHE FILEPATH
+    "Absolute path to the trusted sudo executable")
+  if(NOT IS_ABSOLUTE "${BONGO_CAT_SUDO_EXECUTABLE}")
+    message(FATAL_ERROR "BONGO_CAT_SUDO_EXECUTABLE must be an absolute path")
+  endif()
+  target_compile_definitions(bongo_cat PRIVATE
+    BONGO_CAT_SUDO_EXECUTABLE="${BONGO_CAT_SUDO_EXECUTABLE}")
+endif()
 target_link_libraries(bongo_cat PRIVATE bongo_cat_runtime bongo_cat_warnings)
 if(NOT APPLE)
   # The Metal implementation is rhi_metal.m (Apple only); the dispatcher

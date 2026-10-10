@@ -82,7 +82,7 @@ struct BongoCatOverlay {
     bool native_foreground_mirror, native_foreground_flip;
     bool native_draw_failed;
     uint64_t native_input_revision, native_input_seen, native_foreground_revision;
-    float native_pointer_key[5];
+    unsigned char native_pointer_key[5 * sizeof(float)];
     int native_geometry[6];
     uint32_t native_color;
     bool native_mirror, native_flip, native_opaque;

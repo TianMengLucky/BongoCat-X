@@ -74,6 +74,9 @@ static bool extract(BongoCatOverlay *value, BongoCatImage *image, const OverlayK
     OverlayKeySprite *entry) {
     int bw = layout->bubble_width, bh = layout->bubble_height;
     int cw = layout->characters_width, ch = layout->characters_height;
+    if (bw <= 0 || bh <= 0 || cw <= 0 || ch <= 0 ||
+        bw > image->width || bh > image->height || cw > bw || ch > bh)
+        return false;
     int bx = layout->mirrored ? image->width - layout->bubble_x - bw
         : layout->bubble_x;
     int cx = layout->mirrored ? image->width - layout->characters_x - cw
@@ -83,7 +86,7 @@ static bool extract(BongoCatOverlay *value, BongoCatImage *image, const OverlayK
         cx < bx || cy < by || cx + cw > bx + bw || cy + ch > by + bh)
         return false;
     size_t cells = (size_t)cw * ch;
-    unsigned char *mask = malloc(cells);
+    unsigned char *mask = calloc(cells, 1);
     size_t *queue = malloc(cells * sizeof(*queue));
     unsigned char *frame = malloc((size_t)bw * bh * 4);
     if (!mask || !queue || !frame) {

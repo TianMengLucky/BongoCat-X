@@ -125,8 +125,10 @@ bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *value) {
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *value,
     float x_ratio, float y_ratio, bool left, bool right, bool side) {
     if (bongo_cat_overlay_mver_pointer_enabled(value)) {
-        float key[5] = {x_ratio, y_ratio, left ? 1.0f : 0.0f,
+        float inputs[5] = {x_ratio, y_ratio, left ? 1.0f : 0.0f,
             right ? 1.0f : 0.0f, side ? 1.0f : 0.0f};
+        unsigned char key[sizeof(inputs)];
+        memcpy(key, inputs, sizeof(key));
         if (memcmp(key, value->native_pointer_key, sizeof(key))) {
             memcpy(value->native_pointer_key, key, sizeof(key));
             ++value->native_input_revision;

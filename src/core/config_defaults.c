@@ -261,6 +261,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->window.sequential_model_interval_seconds =
         BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
+    config->app.large_render_optimization = false;
     config->app.run_as_admin = false;
     config->app.theme = BONGO_CAT_THEME_AUTO;
     config->app.language = BONGO_CAT_LANG_EN_US;

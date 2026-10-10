@@ -87,6 +87,7 @@
       "general": {
         "title": "Général",
         "labels": {
+          "largeRenderOptimization": "Optimisation des rendus volumineux",
           "appSettings": "Application",
           "launchOnStartup": "Lancer au démarrage",
           "portableMode": "Mode portable",
@@ -101,15 +102,23 @@
           "administratorPermission": "Administrateur"
         },
         "options": {
+          "parallelRecording": "Enregistrement parallèle",
+          "bindless": "Bindless",
+          "asyncCompute": "Calcul asynchrone",
+          "largeAllocation": "Grands blocs mémoire",
+          "optimizationActive": "Activé",
+          "optimizationUnavailable": "Indisponible",
           "auto": "Système",
           "lightMode": "Clair",
           "darkMode": "Sombre"
         },
         "hints": {
+          "largeRenderOptimization": "Active selon la compatibilité : enregistrement parallèle, Bindless, calcul asynchrone et grands blocs mémoire. Peut utiliser plus de mémoire ; recharge le moteur et le modèle.",
+          "largeRenderUnavailable": "Le moteur du modèle actuel ne propose aucune de ces optimisations ; le rendu reste inchangé.",
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
           "autostartFailed": "Impossible de modifier le lancement au démarrage",
           "runAsAdmin": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches et certains événements d'entrée système.",
-          "renderBackend": "Changement immédiat sans redémarrage. Vulkan/Metal prennent en charge Live2D à titre expérimental ; les calques 2D et les coins arrondis nécessitent OpenGL",
+          "renderBackend": "Changement immédiat sans redémarrage. Live2D est expérimental avec Vulkan/Metal. Tous les moteurs prennent en charge les fonds de bureau et les coins arrondis ; les superpositions de touches, effets et pointeur nécessitent OpenGL",
           "renderBackendChanged": "Changement du moteur de rendu",
           "renderBackendFallback": "Le moteur choisi est indisponible ; OpenGL a été rétabli",
           "runAsAdminHelp": "En s'exécutant en tant qu'administrateur, l'application peut capturer plus fiablement certaines touches et certains événements d'entrée système, et rester réactive dans les jeux lancés avec des privilèges d'administrateur.\n\nÀ l'activation : l'application demande l'autorisation d'administrateur et redémarre ; chaque lancement suivant (y compris le démarrage automatique) s'exécutera également en tant qu'administrateur. Si le démarrage automatique est activé, Windows affiche une confirmation de contrôle de compte d'utilisateur (UAC) à chaque connexion.\n\nÀ la désactivation : les privilèges normaux sont rétablis à partir du lancement suivant ; l'application en cours d'exécution n'est pas affectée.",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "Scannez avec QQ ou recherchez le groupe 211957388 pour le rejoindre.",
+      "qqCopy": "Copier le numéro du groupe",
+      "qqCopied": "Numéro du groupe copié",
+      "qqCopyFailed": "Impossible de copier le numéro du groupe"
     },
     "multiplePets": "Afficher plusieurs modèles",
     "multiplePetsLimit": "Jusqu'à 8 mascottes peuvent être affichées à la fois",

@@ -23,6 +23,33 @@ unsafe fn error(target: *mut Error, message: &str) {
         }
     }
 }
+/// Optional v1 policy extension; returns only features implemented here.
+/// # Safety
+/// `value` is an instance owned by this plugin; configure before loading.
+#[no_mangle]
+pub unsafe extern "C" fn bongo_cat_model_plugin_optimize_v1(
+    value: *mut RuntimeHandle,
+    requested: u32,
+    backend: u32,
+) -> u32 {
+    guard(0, || {
+        let Some(r) = runtime(value) else {
+            return 0;
+        };
+        if r.loaded.is_some() {
+            return 0;
+        }
+        r.large_allocation = cfg!(any(target_os = "windows", target_os = "linux"))
+            && backend == 1
+            && requested & 8 != 0;
+        r.parallel_recording = cfg!(any(target_os = "windows", target_os = "linux"))
+            && backend == 1
+            && requested & 1 != 0
+            && std::thread::available_parallelism().is_ok_and(|n| n.get() > 1);
+        u32::from(r.large_allocation) * 8 | u32::from(r.parallel_recording)
+    })
+}
+
 pub unsafe extern "C" fn create(_: *const c_char, _: *mut Error) -> *mut RuntimeHandle {
     guard(std::ptr::null_mut(), || {
         Box::into_raw(Box::new(Runtime::new())).cast()
@@ -325,4 +352,35 @@ pub unsafe extern "C" fn visual_state(
         t.visible = true;
         true
     })
+}
+
+#[cfg(test)]
+mod optimization_tests {
+    use super::*;
+    #[test]
+    fn reports_only_enabled_features_and_clears_them_when_disabled() {
+        let mut r = Runtime::new();
+        let pointer = (&mut r as *mut Runtime).cast::<RuntimeHandle>();
+        unsafe {
+            let expected = if cfg!(any(target_os = "windows", target_os = "linux")) {
+                8 | u32::from(std::thread::available_parallelism().is_ok_and(|n| n.get() > 1))
+            } else {
+                0
+            };
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 1), expected);
+            assert_eq!(r.large_allocation, expected & 8 != 0);
+            assert_eq!(r.parallel_recording, expected & 1 != 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 0, 1), 0);
+            assert!(!r.large_allocation);
+            assert!(!r.parallel_recording);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 0), 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 15, 2), 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 6, 1), 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 16, 1), 0);
+            assert_eq!(
+                bongo_cat_model_plugin_optimize_v1(std::ptr::null_mut(), 15, 1),
+                0
+            );
+        }
+    }
 }

@@ -87,6 +87,7 @@
       "general": {
         "title": "一般",
         "labels": {
+          "largeRenderOptimization": "大規模レンダリング最適化",
           "appSettings": "アプリ",
           "launchOnStartup": "起動時に実行",
           "portableMode": "ポータブルモード",
@@ -101,15 +102,23 @@
           "administratorPermission": "管理者"
         },
         "options": {
+          "parallelRecording": "並列コマンド記録",
+          "bindless": "Bindless",
+          "asyncCompute": "非同期計算",
+          "largeAllocation": "大容量メモリブロック",
+          "optimizationActive": "有効",
+          "optimizationUnavailable": "利用不可",
           "auto": "システム",
           "lightMode": "ライト",
           "darkMode": "ダーク"
         },
         "hints": {
+          "largeRenderOptimization": "対応する並列記録、Bindless、非同期計算、大容量メモリブロックを有効にします。メモリ使用量が増える場合があります。切り替え時に再読み込みします。",
+          "largeRenderUnavailable": "現在のモデルのレンダラーはこれらの最適化に非対応です。描画は変わりません。",
           "showTrayIcon": "有効にすると、システムトレイにアプリアイコンを表示します。",
           "autostartFailed": "起動時に実行する設定を更新できません",
           "runAsAdmin": "アプリを管理者として実行すると、一部のシステムレベルのキーや入力イベントをより安定して受け取れます。",
-          "renderBackend": "再起動せずに即時切り替えます。Vulkan/Metal の Live2D 対応は実験的です。2D オーバーレイと角丸には現在 OpenGL が必要です",
+          "renderBackend": "切り替えは再起動なしで即時反映されます。Vulkan/Metal の Live2D 対応は実験的です。すべてのバックエンドで机の背景と角丸に対応。キー・エフェクト・ポインターのオーバーレイには OpenGL が必要です",
           "renderBackendChanged": "描画バックエンドを切り替えています",
           "renderBackendFallback": "選択した描画バックエンドを使用できないため、OpenGL に戻しました",
           "runAsAdminHelp": "管理者として実行すると、アプリは一部のシステムレベルのキーや入力イベントをより安定して受け取れるようになり、管理者権限で実行されているゲームでも正常に反応できます。\n\n有効にすると：アプリは管理者権限を要求して自動的に再起動します。それ以降の起動（起動時の自動開始を含む）もすべて管理者権限で実行されます。起動時の自動開始も有効にしている場合、サインインのたびにユーザーアカウント制御（UAC）の確認が一度表示されます。\n\n無効にすると：次回の起動から通常の権限に戻ります。実行中のアプリには影響しません。",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "QQ でコードをスキャンするか、グループ番号 211957388 を検索して参加してください。",
+      "qqCopy": "グループ番号をコピー",
+      "qqCopied": "グループ番号をコピーしました",
+      "qqCopyFailed": "グループ番号をコピーできません"
     },
     "multiplePets": "複数を同時に表示",
     "multiplePetsLimit": "一度に表示できるデスクトップペットは 8 体までです",

@@ -1,5 +1,10 @@
 #include "bongo_cat/model_plugin_host.h"
 #include <cstdio>
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+namespace bongo_cat {
+uint32_t configure_vulkan_optimization(BongoCatModelRuntime *, uint32_t, uint32_t);
+}
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -27,6 +32,17 @@ extern "C" FILE *bongo_cat_file_open(const char *path, const char *mode) {
 #else
 #define PLUGIN_EXPORT __attribute__((visibility("default")))
 #endif
+extern "C" PLUGIN_EXPORT uint32_t bongo_cat_model_plugin_optimize_v1(
+    BongoCatModelRuntime *runtime, uint32_t requested, uint32_t backend) {
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    try { return bongo_cat::configure_vulkan_optimization(runtime, requested, backend); }
+    catch (...) { return 0; }
+#else
+    (void)runtime; (void)requested; (void)backend;
+    return 0;
+#endif
+}
+
 extern "C" PLUGIN_EXPORT const BongoCatModelPlugin *bongo_cat_model_plugin_query(
     uint32_t abi, const BongoCatModelPluginHost *host) {
     if (abi != BONGO_CAT_MODEL_PLUGIN_ABI || !host ||

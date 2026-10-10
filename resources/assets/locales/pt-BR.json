@@ -87,6 +87,7 @@
       "general": {
         "title": "Geral",
         "labels": {
+          "largeRenderOptimization": "Otimização de renderização grande",
           "appSettings": "Aplicativo",
           "launchOnStartup": "Iniciar na inicialização",
           "portableMode": "Modo portátil",
@@ -101,15 +102,23 @@
           "administratorPermission": "Administrador"
         },
         "options": {
+          "parallelRecording": "Gravação paralela de comandos",
+          "bindless": "Bindless",
+          "asyncCompute": "Computação assíncrona",
+          "largeAllocation": "Blocos grandes de memória",
+          "optimizationActive": "Ativado",
+          "optimizationUnavailable": "Indisponível",
           "auto": "Sistema",
           "lightMode": "Claro",
           "darkMode": "Escuro"
         },
         "hints": {
+          "largeRenderOptimization": "Solicita gravação paralela, Bindless, computação assíncrona e blocos grandes quando suportados. Pode usar mais memória; recarrega o motor e o modelo.",
+          "largeRenderUnavailable": "O motor do modelo atual não oferece essas otimizações; a renderização não muda.",
           "showTrayIcon": "Quando ativado, o ícone do aplicativo é exibido na bandeja do sistema.",
           "autostartFailed": "Não foi possível atualizar a inicialização automática",
           "runAsAdmin": "Executar o aplicativo como administrador ajuda a capturar com mais estabilidade algumas teclas e eventos de entrada do sistema.",
-          "renderBackend": "Troca imediata sem reiniciar. Vulkan/Metal têm suporte experimental a Live2D; sobreposições 2D e cantos arredondados exigem OpenGL",
+          "renderBackend": "Troca imediata sem reiniciar. Vulkan/Metal oferecem suporte experimental ao Live2D. Todos os motores suportam fundos de mesa e cantos arredondados; sobreposições de teclas, efeitos e ponteiro exigem OpenGL",
           "renderBackendChanged": "Alternando o backend de renderização",
           "renderBackendFallback": "O renderizador selecionado está indisponível; OpenGL foi restaurado",
           "runAsAdminHelp": "Ao executar como administrador, o aplicativo consegue capturar com mais estabilidade algumas teclas e eventos de entrada do sistema e responder normalmente em jogos executados com privilégios de administrador.\n\nAo ativar: o aplicativo solicita permissão de administrador e reinicia; cada inicialização seguinte (incluída a inicialização com o sistema) também será como administrador. Se a inicialização com o sistema estiver ativada, o Windows mostra uma confirmação do Controle de Conta de Usuário (UAC) uma vez a cada login.\n\nAo desativar: os privilégios normais voltam a partir da próxima inicialização; o aplicativo em execução não é afetado.",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "Escaneie com o QQ ou procure o grupo 211957388 para participar.",
+      "qqCopy": "Copiar número do grupo",
+      "qqCopied": "Número do grupo copiado",
+      "qqCopyFailed": "Não foi possível copiar o número do grupo"
     },
     "multiplePets": "Exibir vários",
     "multiplePetsLimit": "Até 8 mascotes podem ser exibidos ao mesmo tempo",

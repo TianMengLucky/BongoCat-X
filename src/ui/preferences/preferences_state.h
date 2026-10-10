@@ -39,6 +39,9 @@ struct BongoCatPreferences {
     bool ui_initialized;
     BongoCatUIBackend ui;
     unsigned int logo_texture;
+    unsigned int qq_texture;
+    bool qq_attempted;
+    int qq_width, qq_height;
     unsigned int asset_retry_count;
     uint64_t asset_retry_ns;
     unsigned int icon_texture;
@@ -191,6 +194,7 @@ void bongo_cat_preferences_live_resize_install(BongoCatPreferences *value);
 void bongo_cat_preferences_live_resize_uninstall(BongoCatPreferences *value);
 void bongo_cat_preferences_record_frame(BongoCatPreferences *value);
 void bongo_cat_preferences_assets_load(BongoCatPreferences *value);
+void bongo_cat_preferences_qq_load(BongoCatPreferences *value);
 void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
 /* Pointer-input rows of the cat settings page (ignore-mouse and the Windows
    force-raw-mouse-input toggle), drawn from preferences_model.c to keep the
@@ -198,6 +202,8 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
 /* Render backend row of the general page (hot-switched via the app loop). */
+void bongo_cat_preferences_large_render_row(BongoCatApp *app,
+    BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_model_visual_begin(BongoCatPreferences *value,

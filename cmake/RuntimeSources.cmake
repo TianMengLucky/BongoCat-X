@@ -53,6 +53,7 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
   list(APPEND BONGO_CAT_RENDER_SOURCES
     src/render/rhi/rhi_vk.c src/render/rhi/rhi_vk_swapchain.c
     src/render/rhi/rhi_vk_readback.c src/render/rhi/rhi_vk_background.c
+    src/render/rhi/rhi_vk_corners.c
     src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c)
 else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
@@ -261,6 +262,7 @@ set(BONGO_CAT_UI_THEME_SOURCES
 
 set(BONGO_CAT_UI_PREFERENCES_ABOUT_SOURCES
   src/ui/preferences/about/preferences_about.c
+  src/ui/preferences/about/preferences_about_community.c
   src/ui/preferences/about/preferences_about_contributors.c
   src/ui/preferences/about/preferences_about_feed.c
   src/ui/preferences/about/preferences_about_footer.c

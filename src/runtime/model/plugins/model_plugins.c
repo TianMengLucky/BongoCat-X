@@ -52,7 +52,7 @@ void bongo_cat_model_plugin_info(BongoCatModelEngine engine, BongoCatModelPlugin
     if (!info) return;
     *info = (BongoCatModelPluginInfo){0};
     info->installed = bongo_cat_model_plugin_resolve(engine, info->path, sizeof(info->path));
-    info->enabled = enabled(engine);
+    info->enabled = info->installed && enabled(engine);
     info->active = engine > 0 && engine < 3 && active[engine] > 0;
     char managed[BONGO_CAT_PATH_CAP];
     info->managed = info->installed && managed_path(engine, "", managed, sizeof(managed)) && !SDL_strcmp(managed, info->path);

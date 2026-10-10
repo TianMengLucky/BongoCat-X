@@ -34,9 +34,15 @@
 
 <p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
 
+## 💬 QQ 交流群
+
+使用 QQ 扫描下方二维码，或搜索群号 **211957388**，加入 **BongoCat-X** 交流群。
+
+<p align="center"><img src="resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 下载
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
@@ -279,7 +285,9 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 ### 🖼️ Vulkan / Metal 支持到哪一步了？
 
-设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 效果 / 指针覆盖层、圆角遮罩和异步动态纹理刷新目前仅在 OpenGL 路径实现；原生路径在加载时应用画质 / 显示尺寸限制。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围。
+设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 效果 / 指针覆盖层和异步动态纹理刷新目前仅在 OpenGL 路径实现；原生路径在加载时应用画质 / 显示尺寸限制。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围；圆角遮罩在 GPU 上仅绘制四角，无额外整帧纹理。
+
+「大型渲染优化」默认关闭，按模型插件与后端能力启用并显示实际状态，切换时重载模型。Inox2D Vulkan 支持多线程命令录制与大块内存分配；Live2D Vulkan 支持 VMA 大块内存分配。小场景继续单线程录制；Bindless、异步计算及 Live2D 多线程录制尚未实现。OpenGL / Metal 显示无可用项。更大的内存池可能增加内存占用。
 
 带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。Windows 已完成构建与 GPU 回归测试；macOS 的 Metal Rust 接口已通过类型检查，尚待真机验证，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
 
@@ -307,3 +315,5 @@ Made with ❤️ & ⌨️
 Windows 便携版为 ZIP 包，解压后请保留程序旁的 `plugins` 目录。打包方式、离线依赖、插件 ABI、参数映射与兼容限制见[动态渲染插件说明](docs/model-plugins.md)。
 
 向 `dev` 推送代码、资源或构建配置更新时，会发布 GitHub 夜间预发布版本；仅修改文档时跳过，没有定时触发。所有平台固定使用此次推送的提交，夜间版不替换最新正式版。
+
+夜间预发布固定使用 [nightly 发布页](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)，更新同一标签并替换固定名称的附件，不再为每次构建创建新版本；构建失败的平台保留上次产物。

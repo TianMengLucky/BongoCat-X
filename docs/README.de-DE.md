@@ -32,11 +32,17 @@
 
 <p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
 
+## 💬 QQ-Community
+
+Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCat-X**-Community beizutreten.
+
+<p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
+
 ## 📥 Download
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases
+- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -275,7 +281,9 @@ Nein. BongoCat verarbeitet Tastatur- und Mauseingaben lokal, um Animationen und 
 
 ### 🖼️ Wie weit ist die Vulkan-/Metal-Unterstützung?
 
-Einstellungen → Anwendung → Render-Backend wechselt sofort: OpenGL ↔ Vulkan unter Windows / Linux x64, OpenGL ↔ Metal unter macOS. System verwendet standardmäßig OpenGL. Native Texturübertragung, Cubism-Zeichnen, GPU-Auslesen und Modellwechsel sind verbunden; Modell und ausgewählte Bewegungen/Ausdrücke bleiben erhalten. Bei Initialisierungs- oder Ladefehlern wird OpenGL wiederhergestellt. Vulkan/Metal sind experimentell: Tasten-/Effekt-/Zeiger-Overlays, runde Ecken und asynchrone dynamische Texturaktualisierung benötigen derzeit OpenGL. Native Texturen beachten Qualitäts-/Anzeigegrenzen beim Laden. Native Backends speichern statische Tischhintergründe im Cache und berücksichtigen sie beim engen Fensterrahmen.
+Einstellungen → Anwendung → Render-Backend wechselt sofort: OpenGL ↔ Vulkan unter Windows / Linux x64, OpenGL ↔ Metal unter macOS. System verwendet standardmäßig OpenGL. Native Texturübertragung, Cubism-Zeichnen, GPU-Auslesen und Modellwechsel sind verbunden; Modell und ausgewählte Bewegungen/Ausdrücke bleiben erhalten. Bei Initialisierungs- oder Ladefehlern wird OpenGL wiederhergestellt. Vulkan/Metal sind experimentell: Tasten-/Effekt-/Zeiger-Overlays und asynchrone dynamische Texturaktualisierung benötigen derzeit OpenGL. Native Texturen beachten Qualitäts-/Anzeigegrenzen beim Laden. Native Backends speichern statische Tischhintergründe im Cache und unterstützen GPU-Rundungen an allen vier Ecken ohne zusätzliche Vollbildtextur.
+
+Die Optimierung großer Renderaufgaben ist standardmäßig aus und zeigt aktivierte Funktionen; ein Wechsel lädt das Modell neu. Inox2D Vulkan unterstützt parallele Befehlsaufzeichnung und große Speicherblöcke, Live2D Vulkan große Zuweisungen mit VMA. Kleine Szenen werden seriell aufgezeichnet. Bindless, asynchrone Berechnung und parallele Live2D-Aufzeichnung sind nicht implementiert. OpenGL / Metal bieten keine dieser Funktionen. Größere Pools können mehr Speicher benötigen.
 
 SDK-Builds aktivieren `BONGO_CAT_CUBISM_VULKAN=ON` unter Windows / Linux x64 (benötigt `glslangValidator` oder `glslang`, unter Linux `glslang-tools`; Vulkan 1.3 zur Laufzeit) und `BONGO_CAT_CUBISM_METAL=ON` unter macOS (Xcode-Metal-Werkzeuge). Mit `OFF` wird die jeweilige Erweiterung deaktiviert. Metal-Quellen und `.metallib` werden nur unter macOS, Vulkan-Quellen und `.spv` nur unter Windows / Linux x64 eingebunden, einschließlich Blend-Varianten. Diagnose-Builds ohne SDK enthalten diese Live2D-Ressourcen nicht. GitHub Actions bereitet plattformspezifische Werkzeuge vor und prüft die Ressourcen. Statische Prüfungen wurden ausgeführt; Builds und GPU-Verhalten wurden noch nicht geprüft. Siehe [Integrationsstatus und Validierung](live2d-vulkan-metal.md).
 
@@ -305,3 +313,5 @@ Einstellungen → Plugins ermöglicht die lokale Installation, Aktivierung und E
 Portable Windows-Versionen werden als ZIP-Archive verteilt. Der entpackte Ordner `plugins` muss neben der Anwendung bleiben. [Renderer-Plugins](model-plugins.md) beschreibt Pakete, Offline-Abhängigkeiten, die Plugin-ABI, Parameterzuordnungen und Kompatibilitätsgrenzen.
 
 Jeder Push auf `dev`, der Code, Ressourcen oder Build-Konfigurationen ändert, veröffentlicht eine GitHub-Vorabversion. Reine Dokumentationsänderungen werden übersprungen; es gibt keinen Zeitplan. Alle Plattformen bauen den gepushten Commit. Die neueste stabile Version bleibt unverändert.
+
+Nächtliche Vorabversionen verwenden die [nightly-Release-Seite](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly) erneut, aktualisieren den Tag und ersetzen Dateien mit festen Namen. Bei fehlgeschlagenen Plattform-Builds bleiben die bisherigen Dateien erhalten.

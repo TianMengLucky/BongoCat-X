@@ -72,7 +72,6 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
         if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
             !clear_frame(vk, index)) return false;
     }
-    if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS) return false;
     vk->frame_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     vk->frame_ready = true;
     if (!bongo_cat_rhi_vk_capture_frame(vk) || !drawn) {
@@ -131,8 +130,15 @@ void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
     info.commandPool = vk->pool;
     info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     info.commandBufferCount = 1;
-    VkCommandBuffer command = VK_NULL_HANDLE;
-    if (vk->vkAllocateCommandBuffers(vk->device, &info, &command) !=
+    /* Synchronous bridge submissions retire before returning. Recycle one
+       command buffer without assuming callers never nest command recording. */
+    VkCommandBuffer command = vk->idle_command;
+    vk->idle_command = VK_NULL_HANDLE;
+    if (command && vk->vkResetCommandBuffer(command, 0) != VK_SUCCESS) {
+        vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &command);
+        return NULL;
+    }
+    if (!command && vk->vkAllocateCommandBuffers(vk->device, &info, &command) !=
         VK_SUCCESS) return NULL;
     VkCommandBufferBeginInfo begin = {0};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -157,12 +163,21 @@ bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &buffer;
-    VkResult submitted = vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
-    VkResult waited = submitted == VK_SUCCESS ? vk->vkQueueWaitIdle(vk->queue) :
-        submitted;
+    VkFenceCreateInfo fence = {0};
+    fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    if ((!vk->submit_fence && vk->vkCreateFence(vk->device, &fence, NULL,
+            &vk->submit_fence) != VK_SUCCESS) ||
+        vk->vkResetFences(vk->device, 1, &vk->submit_fence) != VK_SUCCESS) {
+        vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
+        return false;
+    }
+    VkResult submitted = vk->vkQueueSubmit(vk->queue, 1, &submit, vk->submit_fence);
+    VkResult waited = submitted == VK_SUCCESS ? vk->vkWaitForFences(vk->device,
+        1, &vk->submit_fence, VK_TRUE, UINT64_MAX) : submitted;
     if (waited != VK_SUCCESS)
         SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Vulkan upload failed: %d", (int)waited);
-    vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
+    if (waited == VK_SUCCESS && !vk->idle_command) vk->idle_command = buffer;
+    else vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
     return waited == VK_SUCCESS;
 }
 
@@ -269,7 +284,10 @@ void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     if (!vk) return;
     if (vk->device && vk->vkDeviceWaitIdle) vk->vkDeviceWaitIdle(vk->device);
+    bongo_cat_rhi_vk_release_corners(vk);
     bongo_cat_rhi_vk_destroy_swapchain_objects(vk);
+    if (vk->submit_fence && vk->vkDestroyFence)
+        vk->vkDestroyFence(vk->device, vk->submit_fence, NULL);
     if (vk->fence && vk->vkDestroyFence)
         vk->vkDestroyFence(vk->device, vk->fence, NULL);
     if (vk->pool && vk->vkDestroyCommandPool)

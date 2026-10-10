@@ -35,10 +35,14 @@ typedef struct BongoCatRhiVk {
     uint32_t image_count;
     VkImageView *views;
     VkFramebuffer *framebuffers;
-    VkRenderPass render_pass;
+    VkRenderPass render_pass, corner_pass;
+    VkPipeline corner_pipeline;
+    VkFormat corner_format;
+    VkPipelineLayout corner_layout;
+    VkFramebuffer *corner_framebuffers;
     VkCommandPool pool;
-    VkCommandBuffer command;
-    VkFence fence;
+    VkCommandBuffer command, idle_command;
+    VkFence fence, submit_fence;
     bool frame_ready;
     VkImageLayout frame_layout;
     VkBuffer readback_buffer;
@@ -57,6 +61,17 @@ typedef struct BongoCatRhiVk {
     bool background_ready;
     PFN_vkGetInstanceProcAddr instance_gpa;
 #define BONGO_CAT_VK_FN(name) PFN_##name name;
+    BONGO_CAT_VK_FN(vkCreateShaderModule)
+    BONGO_CAT_VK_FN(vkDestroyShaderModule)
+    BONGO_CAT_VK_FN(vkCreatePipelineLayout)
+    BONGO_CAT_VK_FN(vkDestroyPipelineLayout)
+    BONGO_CAT_VK_FN(vkCreateGraphicsPipelines)
+    BONGO_CAT_VK_FN(vkDestroyPipeline)
+    BONGO_CAT_VK_FN(vkCmdBindPipeline)
+    BONGO_CAT_VK_FN(vkCmdPushConstants)
+    BONGO_CAT_VK_FN(vkCmdDraw)
+    BONGO_CAT_VK_FN(vkCmdSetViewport)
+    BONGO_CAT_VK_FN(vkCmdSetScissor)
     BONGO_CAT_VK_FN(vkCreateInstance)
     BONGO_CAT_VK_FN(vkDestroyInstance)
     BONGO_CAT_VK_FN(vkEnumeratePhysicalDevices)
@@ -124,6 +139,9 @@ bool bongo_cat_rhi_vk_cubism_features(BongoCatRhiVk *vk,
     VkPhysicalDevice device, VkPhysicalDeviceVulkan13Features *enabled);
 #endif
 
+void bongo_cat_rhi_vk_release_corner_framebuffers(BongoCatRhiVk *vk);
+void bongo_cat_rhi_vk_release_corners(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_draw_corners(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_background(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_draw_background(BongoCatRhiVk *vk);
 void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);

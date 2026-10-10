@@ -76,6 +76,7 @@ struct ApplicationPreferences {
     autostart: bool,
     run_as_admin: bool,
     tray_visible: bool,
+    large_render_optimization: bool,
     theme: c_int,
     language: c_int,
     render_backend: c_int,
@@ -596,6 +597,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     meaning under the old key; the new key wins when both are present. */
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
     boolean(object, DESCRIPTION, "showTrayIcon", &mut value.tray_visible)?;
+    boolean(object, DESCRIPTION, "largeRenderOptimization", &mut value.large_render_optimization)?;
     if object.get("runAsAdmin").is_none() && legacy_admin {
         value.run_as_admin = true;
     }
@@ -1028,6 +1030,7 @@ fn write_app(value: &ApplicationPreferences) -> Value {
         "launchAtLogin": value.autostart,
         "runAsAdmin": value.run_as_admin,
         "showTrayIcon": value.tray_visible,
+        "largeRenderOptimization": value.large_render_optimization,
         "theme": themes.get(value.theme as usize).unwrap_or(&themes[0]),
         "language": languages.get(value.language as usize).unwrap_or(&languages[0]),
         "renderBackend": render_backends.get(value.render_backend as usize).unwrap_or(&render_backends[0]),
@@ -1510,11 +1513,25 @@ mod tests {
     fn metal_backend_survives_settings_serialization() {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
+            large_render_optimization: false,
             theme: 0, language: 0, render_backend: 3,
         };
         let json = write_app(&app);
         assert_eq!(json["renderBackend"], "metal");
         assert_eq!(render_backend_from_name(json["renderBackend"].as_str().unwrap()), Some(3));
+    }
+
+    #[test]
+    fn large_render_optimization_round_trips_and_rejects_invalid_types() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        assert!(read_app(&serde_json::json!({}).as_object().unwrap(), &mut app).is_ok());
+        assert!(!app.large_render_optimization);
+        assert!(read_app(&serde_json::json!({"largeRenderOptimization": true}).as_object().unwrap(), &mut app).is_ok());
+        assert_eq!(write_app(&app)["largeRenderOptimization"], true);
+        assert!(read_app(&serde_json::json!({"largeRenderOptimization": false}).as_object().unwrap(), &mut app).is_ok());
+        assert!(!app.large_render_optimization);
+        assert!(read_app(&serde_json::json!({"largeRenderOptimization": "true"}).as_object().unwrap(), &mut app).is_err());
+        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 16);
     }
 
     #[test]

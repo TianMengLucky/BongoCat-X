@@ -45,6 +45,13 @@ void bongo_cat_preferences_assets_load(BongoCatPreferences *value) {
     value->icon_hidpi_attempted = false;
 }
 
+void bongo_cat_preferences_qq_load(BongoCatPreferences *value) {
+    if (value->qq_attempted) return;
+    value->qq_attempted = true;
+    value->qq_texture = load(value, "qq-group.jpg", NK_MIN(1536, raster_size(value, 768)),
+        &value->qq_width, &value->qq_height);
+}
+
 void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     struct nk_command_buffer *canvas, int icon, struct nk_rect bounds,
     struct nk_color color) {
@@ -78,6 +85,8 @@ void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, true);
     clear(&value->logo_texture);
+    clear(&value->qq_texture);
+    value->qq_attempted = false;
     clear(&value->icon_texture);
     clear(&value->icon_texture_hidpi);
     value->icon_hidpi_attempted = false;
@@ -89,6 +98,8 @@ void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value) {
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, false);
     value->logo_texture = 0;
+    value->qq_texture = 0;
+    value->qq_attempted = false;
     value->icon_texture = 0;
     value->icon_texture_hidpi = 0;
     value->icon_hidpi_attempted = false;

@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.1.0"
+version = "2.1.1"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false
@@ -38,3 +38,6 @@ symphonia = { version = "0.5", default-features = false, features = [
     "adpcm",
     "vorbis",
 ] }
+
+[build-dependencies]
+naga = { version = "0.19", features = ["wgsl-in", "spv-out"] }

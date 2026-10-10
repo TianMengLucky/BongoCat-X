@@ -9,7 +9,13 @@ pub enum NativeGpu {
     Metal(crate::native_metal::Metal),
 }
 impl NativeGpu {
-    pub unsafe fn new(backend: i32, model: &Model, hidden: HashSet<u32>) -> Result<Self, String> {
+    pub unsafe fn new(
+        backend: i32,
+        model: &Model,
+        hidden: HashSet<u32>,
+        large_allocation: bool,
+        parallel_recording: bool,
+    ) -> Result<Self, String> {
         let mut info = crate::abi::RhiInfo::default();
         if !crate::host()
             .device_info
@@ -18,10 +24,15 @@ impl NativeGpu {
         {
             return Err("Host graphics device is unavailable".into());
         }
+        let _ = (large_allocation, parallel_recording); // Metal keeps its native allocator.
         match backend {
             #[cfg(any(target_os = "windows", target_os = "linux"))]
             1 => Ok(Self::Vulkan(crate::native_vulkan::Vulkan::new(
-                info, model, hidden,
+                info,
+                model,
+                hidden,
+                large_allocation,
+                parallel_recording,
             )?)),
             #[cfg(target_os = "macos")]
             2 => Ok(Self::Metal(crate::native_metal::Metal::new(

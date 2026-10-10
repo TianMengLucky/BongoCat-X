@@ -87,6 +87,7 @@
       "general": {
         "title": "Allgemein",
         "labels": {
+          "largeRenderOptimization": "Optimierung großer Renderaufgaben",
           "appSettings": "Anwendung",
           "launchOnStartup": "Beim Systemstart ausführen",
           "portableMode": "Portabler Modus",
@@ -101,15 +102,23 @@
           "administratorPermission": "Administrator"
         },
         "options": {
+          "parallelRecording": "Parallele Befehlsaufzeichnung",
+          "bindless": "Bindless",
+          "asyncCompute": "Asynchrone Berechnung",
+          "largeAllocation": "Große Speicherblöcke",
+          "optimizationActive": "Aktiviert",
+          "optimizationUnavailable": "Nicht verfügbar",
           "auto": "System",
           "lightMode": "Hell",
           "darkMode": "Dunkel"
         },
         "hints": {
+          "largeRenderOptimization": "Parallele Aufzeichnung, Bindless, asynchrone Berechnung und große Speicherblöcke nutzen, soweit unterstützt. Kann mehr Speicher benötigen; Renderer und Modell werden neu geladen.",
+          "largeRenderUnavailable": "Der aktuelle Modell-Renderer unterstützt keine dieser Optimierungen; die Darstellung bleibt unverändert.",
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",
           "autostartFailed": "Die Einstellung für den automatischen Start konnte nicht aktualisiert werden",
           "runAsAdmin": "Wenn die App als Administrator ausgeführt wird, werden einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfasst.",
-          "renderBackend": "Sofortiger Wechsel ohne Neustart. Vulkan/Metal unterstützen Live2D experimentell; 2D-Overlays und abgerundete Ecken benötigen derzeit OpenGL",
+          "renderBackend": "Wechsel sofort ohne Neustart. Vulkan/Metal unterstützen Live2D experimentell. Alle Backends unterstützen Tischhintergründe und abgerundete Ecken; Tasten-, Effekt- und Zeiger-Overlays benötigen OpenGL",
           "renderBackendChanged": "Wechsle das Render-Backend",
           "renderBackendFallback": "Der gewählte Renderer ist nicht verfügbar; OpenGL wurde wiederhergestellt",
           "runAsAdminHelp": "Als Administrator ausgeführt kann die App einige Tasten und Eingabeereignisse auf Systemebene zuverlässiger erfassen und auch in Spielen reagieren, die mit Administratorrechten laufen.\n\nBeim Aktivieren: Die App fordert Administratorrechte an und startet sich neu; jeder spätere Start (auch der Autostart) läuft ebenfalls als Administrator. Ist der Autostart aktiviert, zeigt Windows bei jeder Anmeldung einmal eine Benutzerkontensteuerung (UAC) an.\n\nBeim Deaktivieren: Ab dem nächsten Start gelten wieder normale Rechte; die laufende App ist nicht betroffen.",
@@ -287,7 +296,11 @@
       "docs": "Documentation",
       "bugs": "Bug reports",
       "translations": "Translations",
-      "joinGithub": "Contribute on GitHub"
+      "joinGithub": "Contribute on GitHub",
+      "qqHint": "Mit QQ scannen oder nach Gruppe 211957388 suchen, um beizutreten.",
+      "qqCopy": "Gruppennummer kopieren",
+      "qqCopied": "Gruppennummer kopiert",
+      "qqCopyFailed": "Gruppennummer konnte nicht kopiert werden"
     },
     "multiplePets": "Mehrere gleichzeitig anzeigen",
     "multiplePetsLimit": "Bis zu 8 Desktop-Begleiter können gleichzeitig angezeigt werden",

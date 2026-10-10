@@ -15,6 +15,8 @@ mod runtime;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_pipeline;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
+mod vulkan_recording;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_resources;
 use abi::*;
 use std::sync::atomic::{AtomicPtr, Ordering};

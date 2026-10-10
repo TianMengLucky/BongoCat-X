@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "window_corner_policy.h"
+#include "rhi_corners.h"
 #include "bongo_cat/gl_api.h"
 
 #include <SDL3/SDL_opengl.h>
@@ -77,12 +78,20 @@ static bool prepare_corner_mask(void) {
 void bongo_cat_window_mask_corners(BongoCatApp *app, int width, int height) {
     if (!app->settings.window.rounded_corners ||
         app->settings.window.corner_radius_percent <= 0.0f ||
-        width <= 0 || height <= 0) return;
+        width <= 0 || height <= 0) {
+        if (!bongo_cat_rhi_is_gl(&app->rhi))
+            bongo_cat_rhi_store_corners(app->window, (BongoCatCornerRect){0});
+        return;
+    }
     int x = 0, y = 0, cw = 0, ch = 0;
     bool content = !app->settings.window.obs_background &&
         bongo_cat_model_runtime_viewport(app->model_runtime, &x, &y, &cw, &ch);
     BongoCatCornerRect rect = bongo_cat_corner_rect(width, height,
         content, x, y, cw, ch, app->settings.window.corner_radius_percent);
+    if (!bongo_cat_rhi_is_gl(&app->rhi)) {
+        bongo_cat_rhi_store_corners(app->window, rect);
+        return;
+    }
     if (rect.radius_milli <= 0 || !prepare_corner_mask()) return;
     GLint program, vao, equation_rgb, equation_alpha, src_rgb, dst_rgb,
         src_alpha, dst_alpha;

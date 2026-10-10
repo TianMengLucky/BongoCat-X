@@ -32,6 +32,8 @@ static void cache_startup_display_fps(BongoCatApp *app) {
 /* Passes the active backend's device handles to the Live2D bridge so the
    Cubism Vulkan/Metal renderers can drive it (see docs/live2d-vulkan-metal.md). */
 void attach_rhi_info(BongoCatApp *app) {
+    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LargeRenderOptimization",
+        app->settings.app.large_render_optimization);
     BongoCatRhiDeviceInfo info;
     if (app->model_runtime && bongo_cat_rhi_get_device_info(&app->rhi, &info))
         bongo_cat_model_runtime_set_rhi_info(app->model_runtime, &info);

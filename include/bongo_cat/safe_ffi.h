@@ -131,6 +131,9 @@ char *bongo_safe_mver_edit(const char *data, size_t length, const char *mode,
 bool bongo_safe_mver_labels(const char *data, size_t length, const char *mode,
     bool (*callback)(void *userdata, const char *field, size_t index, const char *label),
     void *userdata);
+/* Borrowed immutable, aligned SPIR-V; bytes receives its byte length.
+   No parsing or allocation occurs at runtime. Never free this pointer. */
+const uint32_t *bongo_safe_corner_shader(bool fragment, size_t *bytes);
 int bongo_safe_model_kind_file(const char *path);
 bool bongo_safe_inochi_validate_file(const char *path, char *message, size_t capacity);
 

@@ -17,6 +17,7 @@ pub struct Vulkan {
     hidden: HashSet<u32>,
     depth_format: vk::Format,
     surface: RefCell<Option<Surface>>,
+    recorder: RefCell<Option<crate::vulkan_recording::Recorder>>,
 }
 struct Surface {
     width: u32,
@@ -41,8 +42,14 @@ impl Drop for Frame {
     }
 }
 impl Vulkan {
-    pub unsafe fn new(info: RhiInfo, model: &Model, hidden: HashSet<u32>) -> Result<Self, String> {
-        let gpu = Gpu::new(info)?;
+    pub unsafe fn new(
+        info: RhiInfo,
+        model: &Model,
+        hidden: HashSet<u32>,
+        large_allocation: bool,
+        parallel_recording: bool,
+    ) -> Result<Self, String> {
+        let gpu = Gpu::new(info, large_allocation)?;
         let physical = vk::PhysicalDevice::from_raw(info.vulkan_physical_device as usize as u64);
         let depth_format = [
             vk::Format::D24_UNORM_S8_UINT,
@@ -57,6 +64,14 @@ impl Vulkan {
         })
         .ok_or("Vulkan device has no stencil attachment format")?;
         let pipelines = Pipelines::new(gpu.clone(), depth_format)?;
+        let recorder = if parallel_recording {
+            Some(crate::vulkan_recording::Recorder::new(
+                gpu.device.clone(),
+                info.queue_family,
+            )?)
+        } else {
+            None
+        };
         let mut result = Self {
             gpu,
             pipelines,
@@ -64,6 +79,7 @@ impl Vulkan {
             hidden,
             depth_format,
             surface: RefCell::new(None),
+            recorder: RefCell::new(recorder),
         };
         for source in &model.textures {
             let mut reader = image::ImageReader::with_format(
@@ -325,12 +341,26 @@ impl Vulkan {
                 frame.buffers.extend([vertices, uniform]);
             }
         }
+        let secondary = if let Some(recorder) = self.recorder.borrow_mut().as_mut() {
+            recorder.record(
+                &plan,
+                &prepared,
+                self.pipelines.pass,
+                &frame.framebuffers,
+                self.pipelines.layout,
+                &self.pipelines.pipelines,
+                s.width,
+                s.height,
+            )?
+        } else {
+            None
+        };
         let commands = self.gpu.commands()?;
         let cmd = commands.raw;
         let d = &self.gpu.device;
         let mut current = None;
         let mut paints = prepared.into_iter();
-        for command in &plan {
+        for (index, command) in plan.iter().enumerate() {
             let target = match command {
                 Command::Clear { target, .. } => *target,
                 Command::Paint(p) => p.target,
@@ -371,94 +401,65 @@ impl Vulkan {
                                 height: s.height,
                             },
                         }),
-                    vk::SubpassContents::INLINE,
+                    if secondary.is_some() {
+                        vk::SubpassContents::SECONDARY_COMMAND_BUFFERS
+                    } else {
+                        vk::SubpassContents::INLINE
+                    },
                 );
-                d.cmd_set_viewport(
-                    cmd,
-                    0,
-                    &[vk::Viewport {
-                        x: 0.0,
-                        y: s.height as f32,
-                        width: s.width as f32,
-                        height: -(s.height as f32),
-                        min_depth: 0.0,
-                        max_depth: 1.0,
-                    }],
-                );
-                d.cmd_set_scissor(
-                    cmd,
-                    0,
-                    &[vk::Rect2D {
-                        offset: Default::default(),
-                        extent: vk::Extent2D {
-                            width: s.width,
-                            height: s.height,
-                        },
-                    }],
-                );
-                current = Some(target);
-            }
-            match command {
-                Command::Clear { color, stencil, .. } => {
-                    let mut clears = vec![vk::ClearAttachment {
-                        aspect_mask: vk::ImageAspectFlags::STENCIL,
-                        color_attachment: 0,
-                        clear_value: vk::ClearValue {
-                            depth_stencil: vk::ClearDepthStencilValue {
-                                depth: 1.0,
-                                stencil: *stencil,
-                            },
-                        },
-                    }];
-                    if *color && target == 1 {
-                        clears.push(vk::ClearAttachment {
-                            aspect_mask: COLOR,
-                            color_attachment: 0,
-                            clear_value: vk::ClearValue {
-                                color: vk::ClearColorValue { float32: [0.0; 4] },
-                            },
-                        });
-                    }
-                    d.cmd_clear_attachments(
+                if secondary.is_none() {
+                    d.cmd_set_viewport(
                         cmd,
-                        &clears,
-                        &[vk::ClearRect {
-                            rect: vk::Rect2D {
-                                offset: Default::default(),
-                                extent: vk::Extent2D {
-                                    width: s.width,
-                                    height: s.height,
-                                },
+                        0,
+                        &[vk::Viewport {
+                            x: 0.0,
+                            y: s.height as f32,
+                            width: s.width as f32,
+                            height: -(s.height as f32),
+                            min_depth: 0.0,
+                            max_depth: 1.0,
+                        }],
+                    );
+                    d.cmd_set_scissor(
+                        cmd,
+                        0,
+                        &[vk::Rect2D {
+                            offset: Default::default(),
+                            extent: vk::Extent2D {
+                                width: s.width,
+                                height: s.height,
                             },
-                            base_array_layer: 0,
-                            layer_count: 1,
                         }],
                     );
                 }
-                Command::Paint(p) => {
-                    let (buffer, set) = paints.next().unwrap();
-                    d.cmd_bind_pipeline(
-                        cmd,
-                        vk::PipelineBindPoint::GRAPHICS,
-                        self.pipelines.pipelines[p.blend * 3 + p.mode],
-                    );
-                    d.cmd_set_stencil_reference(
-                        cmd,
-                        vk::StencilFaceFlags::FRONT_AND_BACK,
-                        p.stencil,
-                    );
-                    d.cmd_bind_vertex_buffers(cmd, 0, &[buffer], &[0]);
-                    d.cmd_bind_descriptor_sets(
-                        cmd,
-                        vk::PipelineBindPoint::GRAPHICS,
-                        self.pipelines.layout,
-                        0,
-                        &[set],
-                        &[],
-                    );
-                    d.cmd_draw(cmd, p.vertices.len() as u32, 1, 0, 0);
-                }
+                current = Some(target);
             }
+            if let Some(recorded) = &secondary {
+                if let Some(buffer) = recorded[index] {
+                    d.cmd_execute_commands(cmd, &[buffer]);
+                }
+                continue;
+            }
+            let draw = if matches!(command, Command::Paint(_)) {
+                paints.next()
+            } else {
+                None
+            };
+            crate::vulkan_recording::encode_command(
+                d,
+                cmd,
+                command,
+                draw,
+                &self.pipelines.pipelines,
+                self.pipelines.layout,
+                vk::Rect2D {
+                    offset: Default::default(),
+                    extent: vk::Extent2D {
+                        width: s.width,
+                        height: s.height,
+                    },
+                },
+            );
         }
         if let Some(old) = current {
             d.cmd_end_render_pass(cmd);

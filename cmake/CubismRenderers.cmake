@@ -101,6 +101,7 @@ string(REPLACE "${cull_lookup}"
   FACTORY_TEXT "${FACTORY_TEXT}")
 include(cmake/CubismNativeShaderIO.cmake)
 bongo_cat_vulkan_shader_io(FACTORY_TEXT)
+include(cmake/CubismVulkanMemory.cmake)
 include(cmake/CubismVulkanSafety.cmake)
 bongo_cat_harden_vulkan_pipelines(FACTORY_TEXT)
 bongo_cat_vulkan_depth_aspects(FACTORY_TEXT)

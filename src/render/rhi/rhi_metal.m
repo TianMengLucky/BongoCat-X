@@ -6,6 +6,7 @@
 
 #include "rhi_internal.h"
 #include "rhi_pixels.h"
+#include "rhi_metal_corners.h"
 #include "bongo_cat/log.h"
 
 #include <SDL3/SDL.h>
@@ -32,6 +33,7 @@
     id<MTLBuffer> readback;
     id<MTLTexture> depth_texture;
     id<MTLTexture> background_texture;
+    id<MTLRenderPipelineState> corner_pipeline;
     uint64_t background_revision;
     NSUInteger stride;
     int frame_width, frame_height;
@@ -102,7 +104,7 @@ bool bongo_cat_rhi_metal_render_frame(BongoCatRhi *rhi) {
         NSUInteger stride = (width * 4 + 255) & ~(NSUInteger)255;
         if (height > NSUIntegerMax / stride) return false;
         NSUInteger length = stride * height;
-        if (!metal->readback || metal->readback.length < length)
+        if (!metal->readback || metal->readback.length != length)
             metal->readback = [metal->layer.device newBufferWithLength:length
                 options:MTLResourceStorageModeShared];
         if (!metal->readback) return false;
@@ -156,6 +158,7 @@ bool bongo_cat_rhi_metal_render_frame(BongoCatRhi *rhi) {
         metal->frame_pass = nil;
         metal->frame_texture = nil;
         if (!drawn) return false;
+        if (!encode_corners(rhi->window, buffer, drawable.texture, &metal->corner_pipeline)) return false;
         id<MTLBlitCommandEncoder> blit = [buffer blitCommandEncoder];
         if (!blit) return false;
         [blit copyFromTexture:drawable.texture sourceSlice:0 sourceLevel:0

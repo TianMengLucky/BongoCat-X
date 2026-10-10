@@ -87,6 +87,7 @@
       "general": {
         "title": "通用设置",
         "labels": {
+          "largeRenderOptimization": "大型渲染优化",
           "appSettings": "应用",
           "launchOnStartup": "开机自启动",
           "portableMode": "便携模式",
@@ -101,15 +102,23 @@
           "administratorPermission": "管理员身份"
         },
         "options": {
+          "parallelRecording": "多线程录制",
+          "bindless": "Bindless",
+          "asyncCompute": "异步计算",
+          "largeAllocation": "大块内存分配",
+          "optimizationActive": "已启用",
+          "optimizationUnavailable": "不可用",
           "auto": "跟随系统",
           "lightMode": "亮色模式",
           "darkMode": "暗色模式"
         },
         "hints": {
+          "largeRenderOptimization": "按渲染器能力启用多线程录制、Bindless、异步计算和大块分配。可能增加内存占用；切换后重载渲染器与模型。",
+          "largeRenderUnavailable": "当前模型渲染器未提供这些优化，开关暂不影响绘制。",
           "showTrayIcon": "启用后，在系统托盘中显示应用图标。",
           "autostartFailed": "无法更新开机启动设置",
           "runAsAdmin": "以管理员身份运行应用，可以更稳定地捕获部分系统级按键与输入事件。",
-          "renderBackend": "切换后立即生效，无需重启。Vulkan/Metal 实验性支持 Live2D；2D 覆盖层和圆角目前需使用 OpenGL",
+          "renderBackend": "切换后立即生效，无需重启。Vulkan/Metal 实验性支持 Live2D。所有后端均支持桌面背景和圆角；按键、效果、指针覆盖层需使用 OpenGL",
           "renderBackendChanged": "正在切换渲染后端",
           "renderBackendFallback": "所选渲染后端不可用，已恢复 OpenGL",
           "runAsAdminHelp": "以管理员身份运行后，应用可以更稳定地捕获部分系统级按键与输入事件，在以管理员权限运行的游戏中也能正常响应。\n\n开启后：应用会请求管理员权限并自动重启；之后的每次启动（包括开机自启动）都会以管理员权限运行。若同时开启了开机自启动，登录系统时会出现一次用户账户控制（UAC）确认。\n\n关闭后：从下一次启动起恢复普通权限，当前正在运行的应用不受影响。",
@@ -287,7 +296,11 @@
       "docs": "文档改进",
       "bugs": "Bug 反馈",
       "translations": "翻译国际化",
-      "joinGithub": "参与 GitHub 贡献"
+      "joinGithub": "参与 GitHub 贡献",
+      "qqHint": "使用 QQ 扫描二维码，或搜索群号 211957388 加入 BongoCat-X 交流群。",
+      "qqCopy": "复制群号",
+      "qqCopied": "群号已复制",
+      "qqCopyFailed": "无法复制群号"
     },
     "multiplePets": "同时显示多个",
     "multiplePetsLimit": "最多可同时显示 8 个桌宠",

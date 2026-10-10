@@ -98,6 +98,9 @@ jobs:
             exit 1
           fi
 
+      - name: Check rolling nightly assets
+        run: python3 .github/scripts/test-nightly-assets.py
+
       - name: Check source file size policy
         run: cmake -DROOT="$GITHUB_WORKSPACE" -P cmake/CheckLines.cmake
 

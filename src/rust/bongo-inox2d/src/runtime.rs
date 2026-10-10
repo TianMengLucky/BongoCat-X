@@ -17,6 +17,8 @@ pub struct Runtime {
     pub width: i32,
     pub height: i32,
     pub backend: i32,
+    pub large_allocation: bool,
+    pub parallel_recording: bool,
     pub mirror: bool,
     pub flipped: bool,
     pub tight: bool,
@@ -40,6 +42,8 @@ impl Runtime {
             width: 612,
             height: 354,
             backend: 0,
+            large_allocation: false,
+            parallel_recording: false,
             mirror: false,
             flipped: false,
             tight: false,
@@ -59,7 +63,14 @@ impl Runtime {
         hidden_nodes(&json["nodes"], false, &mut hidden);
         let base = Bounds::measure(&model, &hidden)?;
         let parameters = Parameters::new(&json, directory)?;
-        let renderer = Renderer::new(self.backend, &model, hidden.clone(), quality)?;
+        let renderer = Renderer::new(
+            self.backend,
+            &model,
+            hidden.clone(),
+            quality,
+            self.large_allocation,
+            self.parallel_recording,
+        )?;
         self.loaded = Some(Loaded {
             renderer,
             model,

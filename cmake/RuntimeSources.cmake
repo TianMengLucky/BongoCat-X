@@ -45,7 +45,8 @@ set(BONGO_CAT_RENDER_SOURCES
   src/render/overlay_draw.c
   src/render/overlay_native.c
   src/render/mver_pointer_overlay.c
-  src/render/mver_pointer_overlay_draw.c)
+  src/render/mver_pointer_overlay_draw.c
+  src/render/mver_pointer_overlay_geometry.c)
 
 if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
     (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND

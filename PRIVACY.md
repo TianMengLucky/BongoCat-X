@@ -23,8 +23,11 @@ Keyboard, mouse, and gamepad input is processed locally to animate the pet and
 is not sent to a remote service.
 
 On Linux, experimental Wayland evdev monitoring is disabled by default and
-requires explicit opt-in with `BONGOCAT_ENABLE_EVDEV=1`. When enabled and
-device permissions allow it, raw keyboard events can include input in other
+requires explicit opt-in with `BONGOCAT_ENABLE_EVDEV=1`. If device access is
+denied, a protected installation may request sudo authentication, open devices
+read-only, and immediately drop privileges before normal initialization. No
+persistent device permissions are changed; hot-plug requires a restart.
+When enabled, raw keyboard events can include input in other
 applications and password fields. Hiding the pet does not stop this listener,
 and it does not detect screen locking or session switching. See
 [Linux Input in SECURITY.md](SECURITY.md#linux-input) before enabling it.

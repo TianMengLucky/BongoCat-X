@@ -332,3 +332,9 @@ Windows 可攜版以 ZIP 壓縮檔發佈，解壓後請將 `plugins` 資料夾�
 `dev` 每次推送程式碼、資源或建置設定更新時，發佈 GitHub 夜間預發佈版本。僅修改文件時略過，沒有定時觸發。所有平台使用此次推送的提交；夜間版不取代最新正式版。
 
 夜間預發佈固定使用 [nightly 發佈頁](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)，更新同一標籤並替換固定名稱的附件，不再為每次建置建立新版本；建置失敗的平台保留上次產物。
+
+### Linux Wayland / evdev
+
+Linux Wayland 的實驗性 evdev 輸入可用 `BONGOCAT_ENABLE_EVDEV=1` 啟用。先嘗試一般使用者的唯讀存取；權限不足時，受保護的安裝會透過 `/usr/bin/sudo` 請求認證，開啟裝置後立即降權並重新執行，再初始化 SDL、設定及模型。自動提權要求程式、sudo 及父目錄歸 root 所有且群組與其他使用者不可寫；開發與可攜安裝需要管理員另行授權。可信 sudo 路徑可用 `BONGO_CAT_SUDO_EXECUTABLE` 設定。失敗會停止啟動，不修改永久權限；僅監聽啟動時已有的裝置，熱插拔需要重啟。不要直接以 root 執行或加入 `input` 群組。原始輸入可能包含密碼，鎖屏及切換工作階段不會自動暫停；隱藏寵物也不會停止監聽。
+
+[SECURITY.md](../SECURITY.md#linux-input)

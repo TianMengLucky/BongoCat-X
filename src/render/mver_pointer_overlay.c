@@ -31,6 +31,7 @@ static void clear_textures(BongoCatMverPointerOverlay *value) {
         *textures[index] = (BongoCatPointerTexture){0};
     }
     value->enabled = false;
+    value->geometry_cache_valid = false;
 }
 
 BongoCatMverPointerOverlay *bongo_cat_mver_pointer_overlay_create(

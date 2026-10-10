@@ -31,7 +31,7 @@ set(FORBIDDEN_APIS
   AuthorizationCreate AuthorizationExecuteWithPrivileges SMJobBless
   XTestFakeKeyEvent XTestFakeButtonEvent XTestFakeMotionEvent XWarpPointer
   XGrabKey XGrabButton process_vm_readv process_vm_writev ptrace ioctl
-  setuid seteuid setgid setegid capset)
+  seteuid setegid capset)
 set(FORBIDDEN_TOKENS
   SE_DEBUG_NAME SeDebugPrivilege PROCESS_VM_READ PROCESS_VM_WRITE
   PROCESS_VM_OPERATION PROCESS_ALL_ACCESS THREAD_SET_CONTEXT
@@ -84,7 +84,10 @@ set(SENSITIVE_RULES
   "CGEventTapEnable|src/platform/macos/macos_input.m"
   "CGPreflightListenEventAccess|src/platform/macos/macos_input.m"
   "CGRequestListenEventAccess|src/platform/macos/macos_input.m"
-  "/dev/input|src/platform/linux/linux_evdev_devices.c"
+  "/dev/input|src/platform/linux/linux_evdev_devices.c|src/platform/linux/linux_evdev_bootstrap.c"
+  "setuid|src/platform/linux/linux_evdev_bootstrap.c"
+  "setgid|src/platform/linux/linux_evdev_bootstrap.c"
+  "setgroups|src/platform/linux/linux_evdev_bootstrap.c"
   "XISelectEvents|src/platform/linux/linux_x11.c"
   "XFixesSetWindowShapeRegion|src/platform/linux/linux_x11.c"
   "XSendEvent|src/platform/linux/linux.c|src/platform/linux/linux_x11.c"
@@ -115,26 +118,34 @@ foreach(RULE IN LISTS SENSITIVE_RULES)
   endforeach()
 endforeach()
 
-# The reviewed evdev exception permits read-only observation, not device writes
-# or permission changes.
-file(READ "${ROOT}/src/platform/linux/linux_evdev_devices.c" LINUX_EVDEV)
-foreach(TOKEN O_WRONLY O_RDWR O_CREAT O_TRUNC)
-  string(FIND "${LINUX_EVDEV}" "${TOKEN}" POSITION)
-  if(NOT POSITION EQUAL -1)
-    list(APPEND FAILURES "linux_evdev_devices.c: forbidden open flag ${TOKEN}")
+# The reviewed bootstrap opens devices before dropping privileges. Both
+# creation and import remain read-only and cannot change device permissions.
+foreach(EVDEV_SOURCE IN ITEMS linux_evdev_bootstrap.c linux_evdev_devices.c)
+  file(READ "${ROOT}/src/platform/linux/${EVDEV_SOURCE}" LINUX_EVDEV)
+  foreach(TOKEN O_WRONLY O_RDWR O_CREAT O_TRUNC)
+    string(FIND "${LINUX_EVDEV}" "${TOKEN}" POSITION)
+    if(NOT POSITION EQUAL -1)
+      list(APPEND FAILURES "${EVDEV_SOURCE}: forbidden open flag ${TOKEN}")
+    endif()
+  endforeach()
+  set(EVDEV_REQUIRED O_RDONLY O_NONBLOCK)
+  if(EVDEV_SOURCE STREQUAL "linux_evdev_bootstrap.c")
+    list(APPEND EVDEV_REQUIRED O_CLOEXEC O_NOFOLLOW)
+  else()
+    list(APPEND EVDEV_REQUIRED FD_CLOEXEC)
   endif()
-endforeach()
-foreach(TOKEN O_RDONLY O_NONBLOCK O_CLOEXEC O_NOFOLLOW)
-  string(FIND "${LINUX_EVDEV}" "${TOKEN}" POSITION)
-  if(POSITION EQUAL -1)
-    list(APPEND FAILURES "linux_evdev_devices.c: missing open safeguard ${TOKEN}")
-  endif()
-endforeach()
-foreach(API chmod fchmod chown fchown system popen)
-  string(REGEX MATCH "(^|[^A-Za-z0-9_])${API}[ \t\r\n]*\\(" MATCHED "${LINUX_EVDEV}")
-  if(MATCHED)
-    list(APPEND FAILURES "linux_evdev_devices.c: forbidden API ${API}")
-  endif()
+  foreach(TOKEN IN LISTS EVDEV_REQUIRED)
+    string(FIND "${LINUX_EVDEV}" "${TOKEN}" POSITION)
+    if(POSITION EQUAL -1)
+      list(APPEND FAILURES "${EVDEV_SOURCE}: missing safeguard ${TOKEN}")
+    endif()
+  endforeach()
+  foreach(API chmod fchmod chown fchown system popen)
+    string(REGEX MATCH "(^|[^A-Za-z0-9_])${API}[ \t\r\n]*\\(" MATCHED "${LINUX_EVDEV}")
+    if(MATCHED)
+      list(APPEND FAILURES "${EVDEV_SOURCE}: forbidden API ${API}")
+    endif()
+  endforeach()
 endforeach()
 
 file(READ "${ROOT}/cmake/windows.manifest.in" WINDOWS_MANIFEST)

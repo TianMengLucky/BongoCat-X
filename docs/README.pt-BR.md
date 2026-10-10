@@ -308,3 +308,9 @@ As versões portáteis para Windows são arquivos ZIP. Mantenha a pasta extraíd
 Cada push para `dev` que altera código, recursos ou configuração de compilação publica uma versão de pré-lançamento no GitHub. Alterações apenas na documentação são ignoradas; não há execução agendada. Todas as plataformas usam o commit enviado. A versão estável mais recente não é substituída.
 
 As prévias noturnas reutilizam a [página nightly](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), atualizam a tag e substituem arquivos com nomes fixos. Plataformas com falha mantêm seus arquivos anteriores.
+
+### Linux Wayland / evdev
+
+A entrada evdev experimental no Linux Wayland é ativada com `BONGOCAT_ENABLE_EVDEV=1`. Primeiro, os dispositivos são abertos somente para leitura como usuário normal. Se o acesso for negado, uma instalação protegida solicita autenticação por `/usr/bin/sudo`, abre os dispositivos e reinicia após abandonar imediatamente os privilégios, antes de inicializar SDL, configurações e modelos. O programa, sudo e diretórios superiores devem pertencer a root e não permitir escrita pelo grupo ou outros usuários. Instalações de desenvolvimento e portáteis precisam de permissões administradas separadamente. O caminho confiável do sudo é configurável por `BONGO_CAT_SUDO_EXECUTABLE`. Falhas interrompem a inicialização; permissões permanentes não são alteradas. Apenas dispositivos presentes ao iniciar são monitorados; novas conexões exigem reiniciar. Não execute diretamente como root nem entre no grupo `input`. A entrada pode incluir senhas e não pausa ao bloquear a tela, trocar de sessão ou ocultar o pet.
+
+[SECURITY.md](../SECURITY.md#linux-input)

@@ -315,3 +315,9 @@ Portable Windows-Versionen werden als ZIP-Archive verteilt. Der entpackte Ordner
 Jeder Push auf `dev`, der Code, Ressourcen oder Build-Konfigurationen ändert, veröffentlicht eine GitHub-Vorabversion. Reine Dokumentationsänderungen werden übersprungen; es gibt keinen Zeitplan. Alle Plattformen bauen den gepushten Commit. Die neueste stabile Version bleibt unverändert.
 
 Nächtliche Vorabversionen verwenden die [nightly-Release-Seite](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly) erneut, aktualisieren den Tag und ersetzen Dateien mit festen Namen. Bei fehlgeschlagenen Plattform-Builds bleiben die bisherigen Dateien erhalten.
+
+### Linux Wayland / evdev
+
+Experimentelle evdev-Eingabe unter Linux Wayland wird mit `BONGOCAT_ENABLE_EVDEV=1` aktiviert. Zunächst werden Geräte als normaler Benutzer schreibgeschützt geöffnet. Bei fehlenden Rechten fordert eine geschützte Installation über `/usr/bin/sudo` eine Authentifizierung an, öffnet die Geräte und startet nach sofortigem Rechteabbau neu, bevor SDL, Einstellungen und Modelle initialisiert werden. Programm, sudo und Elternverzeichnisse müssen root gehören und dürfen für Gruppe und andere Benutzer nicht beschreibbar sein. Entwicklungs- und portable Installationen benötigen separat verwaltete Geräterechte. Der vertrauenswürdige sudo-Pfad ist über `BONGO_CAT_SUDO_EXECUTABLE` konfigurierbar. Fehler stoppen den Start; dauerhafte Rechte bleiben unverändert. Nur beim Start vorhandene Geräte werden überwacht; Hotplug erfordert einen Neustart. Nicht direkt als root starten oder der Gruppe `input` beitreten. Rohe Eingaben können Passwörter enthalten; Bildschirmsperre, Sitzungswechsel und Ausblenden des Tiers pausieren die Überwachung nicht.
+
+[SECURITY.md](../SECURITY.md#linux-input)

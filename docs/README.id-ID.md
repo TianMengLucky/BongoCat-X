@@ -430,3 +430,9 @@ Rilis portabel Windows berbentuk arsip ZIP. Simpan folder hasil ekstraksi `plugi
 Setiap push ke `dev` yang mengubah kode, aset, atau konfigurasi build menerbitkan prarilis GitHub. Perubahan dokumentasi saja dilewati; tidak ada pemicu terjadwal. Semua platform membangun commit yang didorong. Prarilis tidak menggantikan rilis stabil terbaru.
 
 Prarilis nightly memakai kembali [halaman nightly](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), memperbarui tag dan mengganti berkas bernama tetap. Platform yang gagal tetap menyimpan berkas sebelumnya.
+
+### Linux Wayland / evdev
+
+Input evdev eksperimental di Linux Wayland diaktifkan dengan `BONGOCAT_ENABLE_EVDEV=1`. Perangkat dibuka hanya untuk dibaca sebagai pengguna biasa terlebih dahulu. Jika izin ditolak, instalasi terlindungi meminta autentikasi melalui `/usr/bin/sudo`, membuka perangkat, lalu segera menurunkan hak akses dan menjalankan ulang sebelum inisialisasi SDL, pengaturan, dan model. Program, sudo, serta direktori induk harus dimiliki root dan tidak boleh ditulis oleh grup atau pengguna lain. Instalasi pengembangan dan portabel memerlukan izin perangkat yang dikelola terpisah. Jalur sudo dapat diatur melalui `BONGO_CAT_SUDO_EXECUTABLE`. Kegagalan menghentikan startup; izin permanen tidak diubah. Hanya perangkat saat startup yang dipantau; perangkat baru memerlukan restart. Jangan jalankan langsung sebagai root atau bergabung dengan grup `input`. Input mentah dapat mencakup kata sandi dan tidak berhenti saat layar terkunci, sesi berganti, atau pet disembunyikan.
+
+[SECURITY.md](../SECURITY.md#linux-input)

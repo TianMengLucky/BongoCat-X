@@ -1,4 +1,5 @@
 #include "preferences_state.h"
+#include "bongo_cat/model_plugin.h"
 #include "preferences_model_card.h"
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"

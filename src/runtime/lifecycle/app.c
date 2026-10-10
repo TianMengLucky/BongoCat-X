@@ -35,9 +35,12 @@ static void cache_startup_display_fps(BongoCatApp *app) {
 void attach_rhi_info(BongoCatApp *app) {
     const BongoCatApplicationPreferences *options = &app->settings.app;
     uint32_t requested = 0;
-    if (options->large_render_optimization && app->rhi.backend == BONGO_CAT_RHI_VULKAN) {
-        if (options->render_parallel_recording) requested |= BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING;
-        if (options->render_bindless) requested |= BONGO_CAT_OPTIMIZE_BINDLESS;
+    if (options->large_render_optimization &&
+        (app->rhi.backend == BONGO_CAT_RHI_VULKAN || app->rhi.backend == BONGO_CAT_RHI_METAL)) {
+        if (app->rhi.backend == BONGO_CAT_RHI_VULKAN) {
+            if (options->render_parallel_recording) requested |= BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING;
+            if (options->render_bindless) requested |= BONGO_CAT_OPTIMIZE_BINDLESS;
+        }
         if (options->render_large_allocation) requested |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
     }
     SDL_SetNumberProperty(SDL_GetGlobalProperties(), "BongoCat.RenderOptimizationFlags", requested);

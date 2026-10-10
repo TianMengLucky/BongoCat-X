@@ -1,9 +1,11 @@
 #include "cubism_plugin_services.hpp"
+#include "cubism_native_masks.hpp"
 #include "cubism_runtime.hpp"
 #include <Rendering/Vulkan/CubismClass_Vulkan.hpp>
 #include "cubism_vulkan_memory.hpp"
 #include "cubism_vulkan_recording.hpp"
 #include "cubism_vulkan_bindless.hpp"
+#include "cubism_vulkan_submission.hpp"
 #include <exception>
 #include <cstring>
 #include <stdexcept>
@@ -39,6 +41,7 @@ void release_vulkan_device() {
     vulkan_recording_release();
     vulkan_bindless_release();
     RendererAccess::DoStaticRelease();
+    vulkan_submit_release();
     vulkan_memory_release();
 }
 
@@ -57,6 +60,8 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM, "No Live2D Vulkan device attached");
         return false;
     }
+    vulkan_submit_initialize((VkDevice)info.vulkan_device, (VkQueue)info.vulkan_queue,
+        (VkCommandPool)info.vulkan_command_pool);
     Csm::Rendering::CubismRenderer_Vulkan::SetConstantSettings(
         (VkDevice)info.vulkan_device, (VkPhysicalDevice)info.vulkan_physical_device,
         (VkCommandPool)info.vulkan_command_pool, (VkQueue)info.vulkan_queue,
@@ -67,7 +72,18 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
         atlases.push_back({texture.GetSampler(), texture.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     vulkan_bindless_model(atlases.data(), atlases.size(),
         _model && !_model->IsBlendModeEnabled() && _model->GetOffscreenCount() == 0);
-    CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_, prepare_mask_layout());
+    release_renderer();
+    std::vector<int> vertex_counts;
+    for (int i = 0; i < _model->GetDrawableCount(); ++i)
+        vertex_counts.push_back(_model->GetDrawableVertexCount(i));
+    vulkan_geometry_ = vulkan_geometry_create((VkDevice)info.vulkan_device,
+        (VkPhysicalDevice)info.vulkan_physical_device, vertex_counts.data(), vertex_counts.size());
+    VulkanGeometryScope geometry_scope(vulkan_geometry_);
+    vulkan_upload_batch_begin();
+    try {
+        CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_, prepare_mask_layout());
+        vulkan_upload_batch_end();
+    } catch (...) { vulkan_submit_cancel(); throw; }
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
     if (!renderer) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM, "Cannot create Live2D Vulkan renderer");
@@ -94,20 +110,26 @@ bool NativeModel::upload_texture_vulkan(int index,
         Csm::CubismBufferVulkan buffer;
         VkDevice device;
         VkBuffer pooled = VK_NULL_HANDLE;
+        VkDeviceMemory pooled_memory = VK_NULL_HANDLE;
         VkBuffer handle() const { return pooled ? pooled : buffer.GetBuffer(); }
         ~Staging() {
-            if (pooled) vulkan_buffer_destroy(pooled);
-            else buffer.Destroy(device);
+            if (pooled && !vulkan_upload_defer_buffer(pooled, pooled_memory)) vulkan_buffer_destroy(pooled);
+            else if (!pooled) buffer.Destroy(device);
         }
     } staging{{}, device};
+    struct Replacement {
+        Csm::CubismImageVulkan image;
+        VkDevice device;
+        ~Replacement() { image.Destroy(device); }
+    } replacement{{}, device};
     try {
         const VkDeviceSize size = (VkDeviceSize)width * (VkDeviceSize)height * 4;
         const VkMemoryPropertyFlags memory_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         // This synchronous upload is the only transient buffer opted out of pooling.
-        VkDeviceMemory memory = VK_NULL_HANDLE;
+        vulkan_upload_budget(size);
         if (vulkan_buffer_create(device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                memory_flags, &staging.pooled, &memory, true)) {
+                memory_flags, &staging.pooled, &staging.pooled_memory, true)) {
             void *mapped = nullptr;
             if (!vulkan_buffer_map(staging.pooled, &mapped) || !mapped)
                 throw std::runtime_error("Cannot map Vulkan texture upload buffer");
@@ -120,7 +142,7 @@ bool NativeModel::upload_texture_vulkan(int index,
             staging.buffer.MemCpy(pixels, size);
             staging.buffer.UnMap(device);
         }
-        auto &image = vulkan_textures_[(size_t)index];
+        auto &image = replacement.image;
         image.CreateImage(device, physical, width, height, 1, VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
         image.CreateView(device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
@@ -128,7 +150,7 @@ bool NativeModel::upload_texture_vulkan(int index,
         image.CreateSampler(device, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, 0.0f, 1);
         auto *rhi = static_cast<const BongoCatRhi *>(rhi_info_.rhi_handle);
-        VkCommandBuffer command = (VkCommandBuffer)bongo_cat_rhi_begin_commands(rhi);
+        VkCommandBuffer command = vulkan_upload_begin();
         if (!command) throw std::runtime_error("Cannot allocate Vulkan upload commands");
         image.SetImageLayout(command, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, VK_IMAGE_ASPECT_COLOR_BIT);
         VkBufferImageCopy region{};
@@ -138,8 +160,25 @@ bool NativeModel::upload_texture_vulkan(int index,
         vkCmdCopyBufferToImage(command, staging.handle(), image.GetImage(),
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
         image.SetImageLayout(command, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, VK_IMAGE_ASPECT_COLOR_BIT);
-        if (!bongo_cat_rhi_submit_commands_checked(rhi, command))
-            throw std::runtime_error("Cannot submit Vulkan texture upload");
+        vulkan_submit(command, VK_NULL_HANDLE, VK_NULL_HANDLE);
+        auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
+        if (renderer) {
+            if (!bongo_cat_rhi_wait_idle(rhi))
+                throw std::runtime_error("Cannot retire previous Live2D texture");
+            std::vector<VkDescriptorImageInfo> atlases;
+            for (size_t i = 0; i < vulkan_textures_.size(); ++i) {
+                const auto &atlas = i == (size_t)index ? image : vulkan_textures_[i];
+                atlases.push_back({atlas.GetSampler(), atlas.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+            }
+            vulkan_bindless_model(atlases.data(), atlases.size(),
+                !_model->IsBlendModeEnabled() && _model->GetOffscreenCount() == 0);
+            struct Rebind {
+                explicit Rebind(int slot) { vulkan_texture_rebind_slot = slot; }
+                ~Rebind() { vulkan_texture_rebind_slot = -1; }
+            } rebind(index);
+            renderer->BindTexture(image);
+        }
+        std::swap(vulkan_textures_[(size_t)index], image);
         return true;
     } catch (const std::exception &exception) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM, "%s", exception.what());
@@ -163,12 +202,22 @@ void NativeModel::draw_vulkan() {
     Csm::Rendering::CubismRenderer_Vulkan::SetRenderTarget(
         (VkImage)frame.image, (VkImageView)frame.view,
         (VkFormat)rhi_info_.color_format, VkExtent2D{rhi_info_.extent_width, rhi_info_.extent_height});
+    prepare_native_mask_sizes();
+    NativeMaskScope mask_scope(drawable_masks_.size, offscreen_masks_.size);
     Csm::CubismMatrix44 projection;
     native_projection(projection);
     renderer->SetMvpMatrix(&projection);
     renderer->SetModelColor(1.0f, 1.0f, 1.0f, _model->GetModelOpacity());
-    try { renderer->DrawModel(); }
-    catch (...) { vulkan_recording_cancel(); throw; }
+    VulkanGeometryScope geometry_scope(vulkan_geometry_);
+    try {
+        vulkan_geometry_prepare_begin();
+        for (int i = 0; i < _model->GetDrawableCount(); ++i)
+            vulkan_geometry_prepare((size_t)i, _model->GetDrawableVertices(i),
+                reinterpret_cast<const float *>(_model->GetDrawableVertexUvs(i)));
+        renderer->DrawModel();
+        vulkan_geometry_commit(true);
+    }
+    catch (...) { vulkan_geometry_commit(false); vulkan_recording_cancel(); vulkan_submit_cancel(); throw; }
     native_visual_state(projection);
 }
 } // namespace bongo_cat

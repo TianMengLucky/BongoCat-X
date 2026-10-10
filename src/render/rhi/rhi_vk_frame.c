@@ -36,7 +36,9 @@ static bool initialize_frame(BongoCatRhiVk *vk, uint32_t index, bool background)
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &vk->command;
-    return vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE) == VK_SUCCESS;
+    if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS ||
+        vk->vkQueueSubmit(vk->queue, 1, &submit, vk->fence) != VK_SUCCESS) return false;
+    return vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
 }
 
 bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
@@ -49,8 +51,7 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
        on the CPU before any draw, and all rendering completes before present.
        No binary present semaphore is reused while the presentation engine
        might still own it. A future asynchronous path needs per-image signals. */
-    if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
-        vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS) return false;
+    if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS) return false;
     uint32_t index = 0;
     VkResult acquired = vk->vkAcquireNextImageKHR(vk->device, vk->swapchain,
         UINT64_MAX, VK_NULL_HANDLE, vk->fence, &index);
@@ -67,8 +68,7 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
     vk->current_view = vk->views[index];
     const BongoCatRhiPresentOps *ops = &vk->owner->present;
     /* Background copy and frame initialization share one submission/wait. */
-    if (!initialize_frame(vk, index, vk->background_ready) ||
-        vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS) return false;
+    if (!initialize_frame(vk, index, vk->background_ready)) return false;
     bool drawn = !ops->draw_frame || ops->draw_frame(ops->hook_user);
     if (!drawn) {
         /* A failed callback may already have submitted work. Retire it before

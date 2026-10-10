@@ -58,6 +58,11 @@ layout(push_constant) uniform BongoAtlasIndex { uint texture; } bongo_atlas;
 #else
 layout(binding = 1) uniform sampler2D s_texture0;
 #endif]=])
+  string(REPLACE "vkBeginCommandBuffer(" "bongo_cat::vulkan_begin_commands(" source "${source}")
+  string(REPLACE "vkCmdBindPipeline(" "bongo_cat::vulkan_bind_pipeline(" source "${source}")
+  string(REPLACE "vkCmdBindDescriptorSets(" "bongo_cat::vulkan_bind_descriptors(" source "${source}")
+  string(REPLACE "vkCreateGraphicsPipelines(" "bongo_cat::vulkan_create_pipelines(" source "${source}")
+  string(REPLACE "vkCmdSetCullModeEXT(commandBuffer," "bongo_cat::vulkan_set_cull(commandBuffer," source "${source}")
   set(${variable} "${source}" PARENT_SCOPE)
 endfunction()
 

@@ -59,9 +59,10 @@ bool bongo_cat_model_plugin_open(BongoCatModelRuntime *target,
             BONGO_CAT_VULKAN_SAMPLED_IMAGE_DYNAMIC_INDEXING : 0;
         device_extension.features(instance, enabled);
     } else SDL_ClearError();
-    uint32_t requested = target->rhi.backend == BONGO_CAT_RHI_VULKAN ?
-        (uint32_t)SDL_GetNumberProperty(SDL_GetGlobalProperties(),
-            "BongoCat.RenderOptimizationFlags", 0) & BONGO_CAT_OPTIMIZE_ALL : 0;
+    uint32_t supported = target->rhi.backend == BONGO_CAT_RHI_VULKAN ? BONGO_CAT_OPTIMIZE_ALL :
+        target->rhi.backend == BONGO_CAT_RHI_METAL ? BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION : 0;
+    uint32_t requested = (uint32_t)SDL_GetNumberProperty(SDL_GetGlobalProperties(),
+        "BongoCat.RenderOptimizationFlags", 0) & supported;
     union { SDL_FunctionPointer function; BongoCatModelPluginOptimize optimize; } extension;
     extension.function = SDL_LoadFunction(library, BONGO_CAT_PLUGIN_OPTIMIZE_SYMBOL);
     target->optimizations = extension.function ? extension.optimize(instance,

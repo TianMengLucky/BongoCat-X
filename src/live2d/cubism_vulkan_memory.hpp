@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 
 namespace bongo_cat {
+// Main render thread only; -1 appends during initialization.
+extern int vulkan_texture_rebind_slot;
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
     VkDevice device, bool enabled);
 void vulkan_memory_release();

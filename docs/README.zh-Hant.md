@@ -292,9 +292,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 支援進度如何？
 
-設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層和非同步動態紋理更新目前需要 OpenGL；原生紋理在載入時套用畫質 / 顯示尺寸限制。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
+設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層目前需要 OpenGL；Live2D 的 OpenGL / Vulkan / Metal 均支援動態紋理解析度，原生後端在背景解碼和縮放、主執行緒同步上傳。關閉後按畫質比例重新載入紋理。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
 
-「大型渲染最佳化」僅在 Vulkan 後端顯示，預設關閉，三個子項可個別設定並儲存，切換時重新載入模型。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
+「大型算繪最佳化」在 Vulkan / Metal 後端顯示，預設關閉；Vulkan 提供三個獨立子項，Metal 僅提供大塊記憶體配置。Inox2D Metal 啟用後合併整幀頂點，Live2D Metal 顯示不可用。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
 
 含 SDK 的 Windows / Linux x64 建置預設 `BONGO_CAT_CUBISM_VULKAN=ON`，需要 `glslangValidator` 或 `glslang`（Linux 安裝 `glslang-tools`），執行需要 Vulkan 1.3；macOS 預設 `BONGO_CAT_CUBISM_METAL=ON`，需要 Xcode Metal 工具。設為 `OFF` 可建置 OpenGL 版本。Metal 原始碼與 `.metallib` 僅進入 macOS，Vulkan 原始碼與 `.spv` 僅進入 Windows / Linux x64，包含混合模式變體；無 SDK 的診斷建置不打包原生 Live2D 資源。GitHub Actions 按平台準備工具並檢查資源。本輪完成靜態檢查，尚未建置或進行 GPU 實測，詳見 [整合進度與驗證](live2d-vulkan-metal.md)。
 
@@ -340,3 +340,5 @@ Linux Wayland 的實驗性 evdev 輸入可用 `BONGOCAT_ENABLE_EVDEV=1` 啟用�
 [SECURITY.md](../SECURITY.md#linux-input)
 
 在「偏好設定 → 偏好 → 視窗」啟用「自訂圖片背景」，點選「選擇圖片」匯入 PNG、JPEG、WebP、BMP 或 GIF（靜態首幀）。圖片保持比例、置中填滿視窗，與「純色背景」互斥。圖片儲存在應用程式資料目錄，移動原始檔不影響使用；上限為 64 MB、1600 萬像素，支援 OpenGL、Vulkan 和 Metal。
+
+Live2D 自動重用幾何緩衝與連續重複的渲染狀態；OpenGL 動態上傳、Vulkan 上傳批次與管線快取、Metal 共用緩衝槽及原生動態遮罩無需額外開關。新增路徑的效能與平台行為待實測。

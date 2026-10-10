@@ -72,6 +72,10 @@ int main() {
             }
             retained_vao = outer.vao;
             retained_buffer = outer.buffers[0];
+            bongo_cat::CoreProfileBinding::prepare_begin(7, 9);
+            bongo_cat::CoreProfileBinding::prepare_mesh(triangle, triangle_uv, 3, triangle_indices, 3);
+            bongo_cat::CoreProfileBinding::prepare_mesh(quad, quad_uv, 4, quad_indices, 6);
+            bongo_cat::CoreProfileBinding::prepare_end();
             glEnableVertexAttribArray(3);
             glEnableVertexAttribArray(7);
             bongo_cat::CoreProfileBinding::attribute(0, 3, triangle, sizeof(triangle));
@@ -119,11 +123,16 @@ int main() {
         GLuint vao = outer.vao;
         GLuint buffers[] = {outer.buffers[0], outer.buffers[1], outer.buffers[2],
             inner.buffers[0], inner.buffers[1], inner.buffers[2]};
-        for (GLuint buffer : buffers) CHECK(glIsBuffer(buffer));
+        GLuint arenas[] = {outer.arena[0], outer.arena[1], outer.arena[2]};
+        for (GLuint buffer : arenas) CHECK(glIsBuffer(buffer));
         outer.release();
         inner.release();
+        CHECK(outer.positions.capacity() == 0 && outer.uv.capacity() == 0);
+        CHECK(outer.indices.capacity() == 0);
+        for (const auto &ranges : outer.ranges) CHECK(ranges.empty());
         CHECK(!glIsVertexArray(vao));
         for (GLuint buffer : buffers) CHECK(!glIsBuffer(buffer));
+        for (GLuint buffer : arenas) CHECK(!glIsBuffer(buffer));
         outer.release();
         CHECK(outer.vao == 0 && outer.buffers[0] == 0);
         CHECK(glGetError() == GL_NO_ERROR);

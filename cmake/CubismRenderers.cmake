@@ -112,10 +112,17 @@ include(cmake/CubismVulkanRecording.cmake)
 bongo_cat_vulkan_recording_patch(FACTORY_TEXT)
 include(cmake/CubismVulkanBindless.cmake)
 bongo_cat_vulkan_bindless_patch(FACTORY_TEXT)
+include(cmake/CubismVulkanStreaming.cmake)
+bongo_cat_vulkan_stream_state_patch(FACTORY_TEXT)
+include(cmake/CubismShaderOptimize.cmake)
+include(cmake/CubismNativeMasks.cmake)
+bongo_cat_native_masks_patch(FACTORY_TEXT Vulkan)
 find_package(Threads REQUIRED)
 target_link_libraries(Framework PRIVATE Threads::Threads)
 target_sources(Framework PRIVATE "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_recording.cpp"
-  "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_bindless.cpp")
+  "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_bindless.cpp"
+  "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_geometry.cpp"
+  "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_submission.cpp")
 bongo_cat_write_if_different("${BONGO_CAT_FACTORY_VK_OUTPUT}" "${FACTORY_TEXT}")
 # Remove the original from the Framework target (source properties set
 # from a parent scope do not reach files added in a subdirectory; the

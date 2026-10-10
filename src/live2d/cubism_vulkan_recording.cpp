@@ -1,9 +1,11 @@
 #include "cubism_vulkan_recording.hpp"
 #include "cubism_vulkan_bindless.hpp"
+#include "cubism_vulkan_submission.hpp"
 #include <algorithm>
 #include <array>
 #include <exception>
-#include <future>
+#include <condition_variable>
+#include <mutex>
 #include <memory>
 #include <stdexcept>
 #include <system_error>
@@ -20,11 +22,22 @@ void checked(VkResult result, const char *message) {
 struct Worker {
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandBuffer command = VK_NULL_HANDLE;
+    std::thread thread;
+    std::mutex mutex;
+    std::condition_variable ready, finished;
+    size_t count = 0;
+    bool pending = false, stop = false;
+    std::exception_ptr failure;
 };
 class Recorder final {
 public:
     explicit Recorder(VkDevice device) : device_(device) {}
     ~Recorder() {
+        for (auto &worker : workers_) {
+            { std::lock_guard<std::mutex> lock(worker.mutex); worker.stop = true; }
+            worker.ready.notify_one();
+        }
+        for (auto &worker : workers_) if (worker.thread.joinable()) worker.thread.join();
         // The SDK normally waits after each draw submission. Also cover an
         // interrupted draw before releasing buffers still owned by the GPU.
         vkDeviceWaitIdle(device_);
@@ -48,6 +61,22 @@ public:
                 "Cannot allocate Live2D secondary commands");
         }
         count_ = count;
+        for (size_t i = 0; i < count_; ++i)
+            workers_[i].thread = std::thread([this, i] {
+                auto &worker = workers_[i];
+                std::unique_lock<std::mutex> lock(worker.mutex);
+                for (;;) {
+                    worker.ready.wait(lock, [&worker] { return worker.pending || worker.stop; });
+                    if (worker.stop) return;
+                    const auto ranges = worker.count;
+                    lock.unlock();
+                    std::exception_ptr failure;
+                    try { record(i, ranges); } catch (...) { failure = std::current_exception(); }
+                    lock.lock();
+                    worker.failure = failure; worker.pending = false;
+                    worker.finished.notify_one();
+                }
+            });
     }
     bool begin(VkCommandBuffer primary, VkFormat color, VkFormat depth,
         VkExtent2D extent, bool compatible) {
@@ -82,30 +111,22 @@ public:
         primary_ = VK_NULL_HANDLE;
         if (draws_.empty()) return;
         const size_t count = draws_.size() < parallel_threshold ? 1 : count_;
-        std::array<std::future<void>, max_workers> futures;
         std::exception_ptr failure;
-        // Contiguous ranges preserve alpha blending order when executed in
-        // worker order. Each worker owns a separate externally synchronized pool.
-        for (size_t i = 0; i < count; ++i) {
-            if (count == 1) {
-                record(i, count);
-                break;
+        // Persistent workers keep separate command pools and contiguous ranges.
+        if (count == 1) record(0, 1);
+        else {
+            for (size_t i = 0; i < count; ++i) {
+                auto &worker = workers_[i];
+                { std::lock_guard<std::mutex> lock(worker.mutex);
+                  worker.count = count; worker.failure = nullptr; worker.pending = true; }
+                worker.ready.notify_one();
             }
-            try {
-                futures[i] = std::async(std::launch::async, [this, i, count] {
-                    record(i, count);
-                });
-            } catch (const std::system_error &) {
-                // A host thread limit must not drop this range of draws.
-                try { record(i, count); }
-                catch (...) { if (!failure) failure = std::current_exception(); }
+            for (size_t i = 0; i < count; ++i) {
+                auto &worker = workers_[i];
+                std::unique_lock<std::mutex> lock(worker.mutex);
+                worker.finished.wait(lock, [&worker] { return !worker.pending; });
+                if (!failure && worker.failure) failure = worker.failure;
             }
-        }
-        // Join every launched worker before rethrowing or touching snapshots.
-        for (size_t i = 0; i < count; ++i) {
-            if (!futures[i].valid()) continue;
-            try { futures[i].get(); }
-            catch (...) { if (!failure) failure = std::current_exception(); }
         }
         if (failure) std::rethrow_exception(failure);
         std::array<VkCommandBuffer, max_workers> commands{};
@@ -130,24 +151,23 @@ private:
             VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
         begin.pInheritanceInfo = &inheritance;
         VkCommandBuffer command = workers_[worker].command;
-        checked(vkBeginCommandBuffer(command, &begin), "Cannot begin Live2D secondary commands");
+        checked(vulkan_begin_commands(command, &begin), "Cannot begin Live2D secondary commands");
         const VkViewport viewport{0.0f, 0.0f, static_cast<float>(extent_.width),
             static_cast<float>(extent_.height), 0.0f, 1.0f};
         const VkRect2D scissor{{0, 0}, extent_};
         vkCmdSetViewport(command, 0, 1, &viewport);
         vkCmdSetScissor(command, 0, 1, &scissor);
-        const VkDeviceSize offset = 0;
         const size_t first = draws_.size() * worker / count;
         const size_t last = draws_.size() * (worker + 1) / count;
         for (size_t i = first; i < last; ++i) {
             const auto &draw = draws_[i];
-            vkCmdSetCullMode(command, draw.cull);
-            vkCmdBindVertexBuffers(command, 0, 1, &draw.vertices, &offset);
+            vulkan_set_cull(command, draw.cull);
+            vkCmdBindVertexBuffers(command, 0, 1, &draw.vertices, &draw.vertex_offset);
             vkCmdBindIndexBuffer(command, draw.indices, 0, VK_INDEX_TYPE_UINT16);
-            vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vulkan_bind_descriptors(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
                 draw.layout, 0, 1, &draw.descriptor, 0, nullptr);
             vulkan_bindless_bind(command, draw.layout, draw.texture);
-            vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.pipeline);
+            vulkan_bind_pipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.pipeline);
             vkCmdDrawIndexed(command, draw.index_count, 1, 0, 0, 0);
         }
         checked(vkEndCommandBuffer(command), "Cannot end Live2D secondary commands");

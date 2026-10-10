@@ -31,7 +31,8 @@ function(bongo_cat_vulkan_memory_patch variable)
   set(source "${${variable}}")
   bongo_cat_memory_replace(source [=[#include <stdexcept>]=]
     [=[#include <stdexcept>
-#include "cubism_vulkan_memory.hpp"]=])
+#include "cubism_vulkan_memory.hpp"
+#include "cubism_vulkan_submission.hpp"]=])
   bongo_cat_memory_replace(source [=[    VkBufferCreateInfo bufferInfo{};]=]
     [=[    if (bongo_cat::vulkan_buffer_create(device, size, usage, properties, &buffer, &memory)) return;
     VkBufferCreateInfo bufferInfo{};]=])
@@ -50,6 +51,13 @@ function(bongo_cat_vulkan_memory_patch variable)
         vkFreeMemory(device, memory, nullptr);
     }
     buffer = VK_NULL_HANDLE; memory = VK_NULL_HANDLE; mapped = nullptr;]=])
+  bongo_cat_memory_replace(source [=[void CubismBufferVulkan::Destroy(VkDevice device)
+{]=] [=[void CubismBufferVulkan::Destroy(VkDevice device)
+{
+    if (bongo_cat::vulkan_upload_defer_buffer(buffer, memory)) {
+        buffer = VK_NULL_HANDLE; memory = VK_NULL_HANDLE; mapped = nullptr;
+        return;
+    }]=])
   # Destroy views before images and free memory even when view creation failed.
   set(anchor [=[void CubismImageVulkan::Destroy(VkDevice device)
 {]=])

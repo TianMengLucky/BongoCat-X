@@ -271,9 +271,9 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 지원은 어디까지 진행되었나요?
 
-설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이와 비동기 동적 텍스처 갱신은 현재 OpenGL이 필요합니다. 네이티브 텍스처는 로딩 시 화질/표시 크기 제한을 적용합니다. 네이티브 백엔드는 책상 배경을 캐시하고 밀착 프레임 경계에 포함하며, 추가 전체 화면 텍스처 없이 GPU에서 네 모서리를 둥글게 처리합니다.
+설정 → 앱 → 렌더 백엔드에서 재시작 없이 전환합니다. Windows / Linux x64는 OpenGL ↔ Vulkan, macOS는 OpenGL ↔ Metal을 지원하며 시스템 기본값은 OpenGL입니다. 네이티브 텍스처 업로드, Cubism 그리기, GPU 읽기와 모델 재로딩을 연결했습니다. 모델과 선택한 동작/표정을 보존하며 초기화나 로딩 실패 시 OpenGL로 복원합니다. Vulkan/Metal은 실험적입니다. 키/효과/포인터 오버레이는 현재 OpenGL이 필요합니다. Live2D는 OpenGL, Vulkan, Metal에서 동적 텍스처 해상도를 지원하며 백그라운드 디코딩/크기 조절과 동기 네이티브 GPU 업로드를 사용합니다. 비활성화하면 선택한 화질에 맞춰 텍스처를 다시 로드합니다. 네이티브 백엔드는 책상 배경을 캐시하고 밀착 프레임 경계에 포함하며, 추가 전체 화면 텍스처 없이 GPU에서 네 모서리를 둥글게 처리합니다.
 
-대규모 렌더링 최적화는 Vulkan에서만 표시되며 기본적으로 꺼져 있습니다. 세 하위 옵션은 개별 저장되며 변경 시 모델을 다시 로드합니다. Inox2D Vulkan은 병렬 명령 기록과 대용량 메모리 블록을 지원합니다. Live2D Vulkan은 VMA와 일반 혼합 모델의 병렬 기록을 지원하며 오프스크린 노드와 고정밀 마스크는 제외됩니다. Live2D는 Drawable 128개 이상에서 보조 버퍼를 사용하고 그릴 수 있는 스냅샷 128개 이상에서 최대 4개 작업 스레드를 사용합니다. 다른 모델은 SDK 직렬 경로를 유지합니다. Live2D Vulkan Bindless는 일반 혼합 및 오프스크린 노드가 없는 모델에서 최대 64개 아틀라스 텍스처 테이블을 사용하며 장치 기능이나 용량이 부족하면 기존 경로로 돌아갑니다. Inox2D Bindless는 아직 구현되지 않았습니다. 큰 풀은 메모리를 더 사용할 수 있으며 성능 향상은 아직 측정하지 않았습니다.
+대규모 렌더링 최적화는 Vulkan / Metal에서 표시되며 기본적으로 꺼져 있습니다. Vulkan은 세 옵션, Metal은 대용량 메모리 할당만 제공합니다. Inox2D Metal은 프레임 정점을 공유 버퍼로 합치며 Live2D Metal에서는 사용할 수 없습니다. 세 하위 옵션은 개별 저장되며 변경 시 모델을 다시 로드합니다. Inox2D Vulkan은 병렬 명령 기록과 대용량 메모리 블록을 지원합니다. Live2D Vulkan은 VMA와 일반 혼합 모델의 병렬 기록을 지원하며 오프스크린 노드와 고정밀 마스크는 제외됩니다. Live2D는 Drawable 128개 이상에서 보조 버퍼를 사용하고 그릴 수 있는 스냅샷 128개 이상에서 최대 4개 작업 스레드를 사용합니다. 다른 모델은 SDK 직렬 경로를 유지합니다. Live2D Vulkan Bindless는 일반 혼합 및 오프스크린 노드가 없는 모델에서 최대 64개 아틀라스 텍스처 테이블을 사용하며 장치 기능이나 용량이 부족하면 기존 경로로 돌아갑니다. Inox2D Bindless는 아직 구현되지 않았습니다. 큰 풀은 메모리를 더 사용할 수 있으며 성능 향상은 아직 측정하지 않았습니다.
 
 SDK 빌드는 Windows / Linux x64에서 `BONGO_CAT_CUBISM_VULKAN=ON`을 사용합니다(`glslangValidator` 또는 `glslang`, Linux 패키지 `glslang-tools`; 실행 시 Vulkan 1.3 필요). macOS는 `BONGO_CAT_CUBISM_METAL=ON`과 Xcode Metal 도구를 사용합니다. `OFF`로 해당 확장을 제외할 수 있습니다. Metal 소스와 `.metallib`는 macOS에만, Vulkan 소스와 `.spv`는 Windows / Linux x64에만 혼합 모드 변형과 함께 포함됩니다. SDK 없는 진단 빌드는 이 Live2D 리소스를 제외합니다. GitHub Actions는 플랫폼별 도구를 준비하고 리소스를 확인합니다. 정적 검사를 수행했지만 빌드와 GPU 동작은 아직 검증하지 않았습니다. [통합 현황과 검증](live2d-vulkan-metal.md)을 참조하세요.
 
@@ -313,3 +313,5 @@ Linux Wayland의 실험적 evdev 입력은 `BONGOCAT_ENABLE_EVDEV=1`로 활성�
 [SECURITY.md](../SECURITY.md#linux-input)
 
 설정 → 설정 → 창에서 사용자 지정 이미지 배경을 선택할 수 있습니다. PNG, JPEG, WebP, BMP 또는 GIF(첫 프레임)를 지원합니다. 비율을 유지하고 중앙에 배치하여 창을 채우며, 단색 배경과 동시에 사용할 수 없습니다. 앱 데이터 폴더에 복사하므로 원본을 옮겨도 유지됩니다. 제한은 64 MB 및 1600만 픽셀입니다. OpenGL, Vulkan, Metal을 지원합니다.
+
+Live2D는 지오메트리 버퍼와 반복되는 렌더링 상태를 자동으로 재사용합니다. OpenGL 동적 업로드, Vulkan 일괄 업로드와 파이프라인 캐시, Metal 공유 버퍼 슬롯 및 네이티브 적응형 마스크에는 추가 스위치가 필요 없습니다. 새 경로의 성능과 플랫폼 동작은 실측이 필요합니다.

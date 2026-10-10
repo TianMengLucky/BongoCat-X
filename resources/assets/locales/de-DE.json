@@ -123,7 +123,7 @@
           "darkMode": "Dunkel"
         },
         "hints": {
-          "largeRenderOptimization": "Vulkan-Optimierungen unten einzeln auswählen. Nicht unterstützte Anfragen bleiben unverfügbar. Kann mehr Speicher nutzen; Änderungen laden Renderer und Modell neu.",
+          "largeRenderOptimization": "Wählen Sie Optimierungen für das aktuelle Backend. Nicht unterstützte Anfragen werden als nicht verfügbar angezeigt. Kann mehr Speicher benötigen; Änderungen laden Renderer und Modell neu.",
           "largeRenderUnavailable": "Der aktuelle Modell-Renderer unterstützt keine dieser Optimierungen; die Darstellung bleibt unverändert.",
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",
           "autostartFailed": "Die Einstellung für den automatischen Start konnte nicht aktualisiert werden",

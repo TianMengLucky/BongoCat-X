@@ -123,7 +123,7 @@
           "darkMode": "Dark"
         },
         "hints": {
-          "largeRenderOptimization": "Select Vulkan optimizations individually below. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model.",
+          "largeRenderOptimization": "Select optimizations supported by the current backend. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model.",
           "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",
           "autostartFailed": "Unable to update launch-on-startup settings",

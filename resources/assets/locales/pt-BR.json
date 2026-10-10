@@ -123,7 +123,7 @@
           "darkMode": "Escuro"
         },
         "hints": {
-          "largeRenderOptimization": "Selecione cada otimização Vulkan abaixo. Solicitações não compatíveis aparecem como indisponíveis. Pode usar mais memória; as alterações recarregam o motor e o modelo.",
+          "largeRenderOptimization": "Selecione otimizações compatíveis com o backend atual. Solicitações não suportadas aparecem como indisponíveis. Pode usar mais memória; alterações recarregam o renderizador e o modelo.",
           "largeRenderUnavailable": "O motor do modelo atual não oferece essas otimizações; a renderização não muda.",
           "showTrayIcon": "Quando ativado, o ícone do aplicativo é exibido na bandeja do sistema.",
           "autostartFailed": "Não foi possível atualizar a inicialização automática",

@@ -38,7 +38,8 @@ function(bongo_cat_vulkan_recording_patch variable)
   set(source "${${variable}}")
   bongo_cat_recording_replace(source [=[#include "CubismRenderer_Vulkan.hpp"]=]
     [=[#include "CubismRenderer_Vulkan.hpp"
-#include "cubism_vulkan_recording.hpp"]=])
+#include "cubism_vulkan_recording.hpp"
+#include "cubism_vulkan_geometry.hpp"]=])
   bongo_cat_recording_function(source BeginRendering
     [=[    vkCmdBeginRendering(drawCommandBuffer, &renderingInfo);]=]
     [=[    // Masks remain serial; only an ordinary model pass uses secondary commands.
@@ -63,11 +64,11 @@ function(bongo_cat_vulkan_recording_patch variable)
     // immutable handles and never call DrawMeshVulkan or touch clipping contexts.
     if (bongo_cat::vulkan_recording_draw(cmdBuffer, {
             pipeline, pipelineLayout, *descriptorSet,
-            _vertexBuffers[_commandBufferCurrent][index].GetBuffer(),
+            bongo_cat::vulkan_geometry_buffer(_vertexBuffers[_commandBufferCurrent][index].GetBuffer()),
             _indexBuffers[_commandBufferCurrent][index].GetBuffer(),
             static_cast<uint32_t>(model.GetDrawableVertexIndexCount(index)),
             static_cast<VkCullModeFlags>(IsCulling() ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE),
-            static_cast<uint32_t>(textureIndex)})) return;
+            static_cast<uint32_t>(textureIndex), bongo_cat::vulkan_geometry_offset((size_t)index)})) return;
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,]=])
   bongo_cat_recording_function(source DrawMeshVulkan [=[    if (IsCulling())
     {

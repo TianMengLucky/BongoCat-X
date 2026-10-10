@@ -403,12 +403,13 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
 
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context) {
-    if (app->rhi.backend != BONGO_CAT_RHI_VULKAN) return;
+    bool metal = app->rhi.backend == BONGO_CAT_RHI_METAL;
+    if (app->rhi.backend != BONGO_CAT_RHI_VULKAN && !metal) return;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
     if (bongo_cat_pref_toggle(context, "large-render-optimization", tr(app,
         "pages.preference.general.labels.largeRenderOptimization", "Large Rendering Optimization"),
         tr(app, "pages.preference.general.hints.largeRenderOptimization",
-            "Select Vulkan optimizations individually below. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model."),
+            "Select optimizations supported by the current backend. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model."),
         &options->large_render_optimization)) app->render_backend_swap_pending = true;
     if (!options->large_render_optimization) return;
     uint32_t active = bongo_cat_model_runtime_optimizations(app->model_runtime);
@@ -422,14 +423,15 @@ void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     bool *values[] = {&options->render_parallel_recording, &options->render_bindless,
         &options->render_large_allocation};
     /* Inset the child group so these controls read as master-switch children. */
-    float height = (float)SDL_arraysize(bits) * (89.0f + context->style.window.spacing.y) +
+    size_t first = metal ? 2 : 0;
+    float height = (float)(SDL_arraysize(bits) - first) * (89.0f + context->style.window.spacing.y) +
         2 * (context->style.window.group_padding.y + context->style.window.group_border);
     nk_layout_row_begin(context, NK_DYNAMIC, height, 2);
     nk_layout_row_push(context, .04f);
     nk_spacing(context, 1);
     nk_layout_row_push(context, .96f);
     if (nk_group_begin(context, "large-render-options", NK_WINDOW_NO_SCROLLBAR)) {
-        for (size_t i = 0; i < SDL_arraysize(bits); ++i) {
+        for (size_t i = first; i < SDL_arraysize(bits); ++i) {
             const char *status = !*values[i] ? tr(app,
                 "pages.preference.general.options.optimizationDisabled", "Disabled") :
                 tr(app, active & bits[i] ? "pages.preference.general.options.optimizationActive" :

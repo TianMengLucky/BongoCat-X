@@ -81,6 +81,7 @@ if(BUILD_TESTING)
     target_link_libraries(bongo_cat_window_frame_tests PRIVATE m)
   endif()
   add_test(NAME window-motion-frame COMMAND bongo_cat_window_frame_tests)
+  include(cmake/StreamingTests.cmake)
   add_test(NAME cubism-vulkan-vertex-upload COMMAND ${CMAKE_COMMAND} "-DSDK=${BONGO_CAT_CUBISM_SDK}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismVulkanVertexUpload.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubismOptimizationTests.cmake")
   add_test(NAME cubism-texture-sampling COMMAND ${CMAKE_COMMAND}

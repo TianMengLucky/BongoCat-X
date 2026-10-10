@@ -8,6 +8,7 @@
 #include <stdexcept>
 
 namespace bongo_cat {
+int vulkan_texture_rebind_slot = -1;
 namespace {
 VmaAllocator allocator;
 VkDevice allocator_device;

@@ -13,6 +13,7 @@ struct VulkanDrawSnapshot {
     uint32_t index_count = 0;
     VkCullModeFlags cull = VK_CULL_MODE_NONE;
     uint32_t texture = 0;
+    VkDeviceSize vertex_offset = 0;
 };
 bool vulkan_recording_configure(VkDevice device, uint32_t family, bool enabled);
 void vulkan_recording_release();

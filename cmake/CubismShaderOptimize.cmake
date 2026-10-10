@@ -118,9 +118,8 @@ void CubismShader_OpenGLES2::SetupShaderProgramForDrawable]=])
   bongo_cat_replace_cubism_text(source "${offscreen_setup}" "${offscreen_lazy}"
     "offscreen lazy shader call")
 
-  if(APPLE)
-    bongo_cat_core_profile_patch_shader(source)
-  endif()
+  bongo_cat_core_profile_patch_shader(source)
+  bongo_cat_gl_cache_state(source)
 
   file(MAKE_DIRECTORY "${output_dir}")
   file(REMOVE "${output_dir}/CubismShader_OpenGLES2.hpp")

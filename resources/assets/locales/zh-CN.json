@@ -123,7 +123,7 @@
           "darkMode": "暗色模式"
         },
         "hints": {
-          "largeRenderOptimization": "在下方单独选择 Vulkan 优化项；不支持的请求会显示不可用。可能增加内存占用；修改后重载渲染器与模型。",
+          "largeRenderOptimization": "选择当前后端支持的优化项；不支持的请求会显示不可用。可能增加内存占用；修改后重载渲染器与模型。",
           "largeRenderUnavailable": "当前模型渲染器未提供这些优化，开关暂不影响绘制。",
           "showTrayIcon": "启用后，在系统托盘中显示应用图标。",
           "autostartFailed": "无法更新开机启动设置",

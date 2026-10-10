@@ -2,10 +2,15 @@
 #include "cubism_model.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "cubism_texture_resolution.hpp"
+#include "cubism_model_texture.hpp"
 #include <SDL3/SDL_log.h>
 #include <cstring>
+#include <algorithm>
 #include <memory>
 #include <exception>
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+#include "cubism_vulkan_submission.hpp"
+#endif
 
 namespace bongo_cat {
 void NativeModel::set_rhi_info(const BongoCatRhiDeviceInfo &info) {
@@ -43,6 +48,7 @@ bool NativeModel::load_textures_native(BongoCatError *error,
     release_render_resources();
     int count = setting_->GetTextureCount();
     native_alpha_.resize((size_t)count);
+    native_texture_info_.resize((size_t)count);
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (rhi_info_.backend == BONGO_CAT_RHI_VULKAN)
         vulkan_textures_.resize((size_t)count);
@@ -53,6 +59,8 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         reference_width = render_options_.reference_width;
         reference_height = render_options_.reference_height;
     }
+    if (reference_width <= 0) reference_width = width_;
+    if (reference_height <= 0) reference_height = height_;
     if (display_width <= 0 || display_height <= 0) {
         display_width = viewport_width_; display_height = viewport_height_;
     }
@@ -64,6 +72,18 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         limit = (int)properties.limits.maxImageDimension2D;
     }
 #endif
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    struct UploadBatch {
+        bool active;
+        ~UploadBatch() { if (active) vulkan_submit_cancel(); }
+    } upload_batch{rhi_info_.backend == BONGO_CAT_RHI_VULKAN};
+    if (upload_batch.active) {
+        vulkan_submit_initialize((VkDevice)rhi_info_.vulkan_device, (VkQueue)rhi_info_.vulkan_queue,
+            (VkCommandPool)rhi_info_.vulkan_command_pool);
+        vulkan_upload_batch_begin();
+    }
+#endif
+    texture_limit_ = limit;
     for (int i = 0; i < count; ++i) {
         int width = 0, height = 0;
         auto *decoded = [this, i, &width, &height] {
@@ -86,6 +106,8 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         bongo_cat_image_make_alpha_mask(&image, &native_alpha_[(size_t)i]);
         auto bound = texture_resolution_for(dynamic_texture_resolution_, display_width, display_height,
             reference_width, reference_height, width, height, limit, render_quality_percent_);
+        auto metadata = std::make_shared<ModelTexture>();
+        metadata->source_width = width; metadata->source_height = height;
         BongoCatImage resized{};
         const auto free_image = [](BongoCatImage *value) { bongo_cat_image_free(value); };
         std::unique_ptr<BongoCatImage, decltype(free_image)> resized_owner(&resized, free_image);
@@ -111,22 +133,34 @@ bool NativeModel::load_textures_native(BongoCatError *error,
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
         if (rhi_info_.backend == BONGO_CAT_RHI_METAL) {
-            std::vector<unsigned char> metal_pixels(pixels, pixels + pixel_bytes);
-            resized_owner.reset();
-            uploaded = upload_texture_metal(i, metal_pixels, width, height, error);
+            uploaded = upload_texture_metal(i, pixels, width, height, error);
         }
 #endif
         if (!uploaded) { release_render_resources(); return false; }
         resized_owner.reset();
         native_texture_bytes_ += pixel_bytes;
+        metadata->width = width; metadata->height = height;
+        native_texture_info_[(size_t)i] = std::move(metadata);
         if (progress) progress(userdata, .50f + .45f * (float)(i + 1) /
             (float)(count > 0 ? count : 1));
     }
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (upload_batch.active) { vulkan_upload_batch_end(); upload_batch.active = false; }
+#endif
     if (!frame_prepared_) { prepare_expression_frame(); frame_prepared_ = true; }
     prepare_frame_bounds();
     if (!create_renderer(error)) { release_render_resources(); return false; }
     // One mip level; native atlases honor the display/quality bounds at load time.
     return true;
+}
+
+void NativeModel::prepare_native_mask_sizes() {
+    // Bound atlas memory while retaining the same layout and resize hysteresis.
+    const int limit = std::min(texture_limit_ > 0 ? texture_limit_ : 16384, 2048);
+    drawable_masks_.size = mask_target_size(drawable_masks_.layout,
+        viewport_width_, viewport_height_, limit, drawable_masks_.size);
+    offscreen_masks_.size = mask_target_size(offscreen_masks_.layout,
+        viewport_width_, viewport_height_, limit, offscreen_masks_.size);
 }
 
 void NativeModel::native_projection(Csm::CubismMatrix44 &projection) {

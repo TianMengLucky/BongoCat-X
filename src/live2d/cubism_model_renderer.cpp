@@ -1,5 +1,6 @@
 #include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
+#include "cubism_gl_state.hpp"
 #include <algorithm>
 #include <cmath>
 #include "bongo_cat/model_memory.h"
@@ -285,9 +286,7 @@ void NativeModel::draw() {
 #endif
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
-#ifdef CSM_TARGET_MAC_GL
     CoreProfileBinding binding(core_buffers_);
-#endif
     const bool first_frame = trim_offscreen_pool_;
     const bool resources_changed = first_frame ||
         width_ != mask_last_width_ || height_ != mask_last_height_;
@@ -346,6 +345,8 @@ void NativeModel::draw() {
     renderer->SetModelColor(1.0f, 1.0f, 1.0f, _model->GetModelOpacity());
     {
         DrawFrame frame(manager);
+        GLStateScope state_scope;
+        prepare_gl_geometry();
         renderer->DrawModel();
     }
     if (trim_offscreen_pool_) {
@@ -384,16 +385,18 @@ void NativeModel::release_renderer() {
 #endif
     DeleteRenderer();
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    vulkan_geometry_.reset();
+#endif
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_VULKAN && rhi_info_.vulkan_device)
         Csm::Rendering::CubismDeviceInfo_Vulkan::ReleaseDeviceInfo((VkDevice)rhi_info_.vulkan_device);
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
+    metal_geometry_.reset();
     if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_METAL && rhi_info_.metal_device)
         release_metal_device(rhi_info_.metal_device);
 #endif
-#ifdef CSM_TARGET_MAC_GL
     if (rhi_info_.backend == BONGO_CAT_RHI_OPENGL) core_buffers_.release();
-#endif
     renderer_width_ = 0;
     renderer_height_ = 0;
     mask_texture_limit_ = 0;
@@ -431,9 +434,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
             "Cannot clear the OpenGL error state before creating the Live2D renderer");
         return false;
     }
-#ifdef CSM_TARGET_MAC_GL
     CoreProfileBinding binding(core_buffers_);
-#endif
     const int buffer_count = prepare_mask_layout();
     TargetBindings bindings;
     CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_,

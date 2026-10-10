@@ -1,4 +1,5 @@
 #include "cubism_vulkan_bindless.hpp"
+#include "cubism_vulkan_submission.hpp"
 #include <array>
 #include <memory>
 #include <stdexcept>
@@ -104,7 +105,7 @@ bool vulkan_bindless_model(const VkDescriptorImageInfo *images, size_t count, bo
 void vulkan_bindless_bind(VkCommandBuffer command, VkPipelineLayout layout, uint32_t texture) {
     if (!vulkan_bindless_active()) return;
     if (texture >= table->count) throw std::runtime_error("Live2D texture table index out of range");
-    vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vulkan_bind_descriptors(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
         layout, 1, 1, &table->set, 0, nullptr);
     // A draw-uniform index requires only sampled-image array dynamic indexing,
     // not non-uniform indexing. All invocations of this draw use the same atlas.

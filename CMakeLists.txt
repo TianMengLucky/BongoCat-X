@@ -66,6 +66,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     set(BONGO_CAT_LIVE2D_SOURCES
       src/live2d/cubism_bridge.cpp src/live2d/cubism_bridge_load.cpp
       src/live2d/cubism_native_textures.cpp
+      src/live2d/cubism_native_texture_refresh.cpp
       src/live2d/cubism_renderer_factory.cpp
       src/live2d/cubism_render_resources.cpp
       src/live2d/cubism_bridge_visual.cpp
@@ -75,6 +76,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
       src/live2d/cubism_texture_refresh.cpp
       src/live2d/cubism_texture_refresh_memory.cpp
       src/live2d/cubism_model_renderer.cpp
+      src/live2d/cubism_gl_geometry.cpp
       src/live2d/cubism_model_masks.cpp
       src/live2d/cubism_model_projection.cpp
       src/live2d/cubism_model_textures.cpp

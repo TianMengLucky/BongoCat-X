@@ -12,7 +12,13 @@ endif()
 file(SHA256 "${renderer}" original_hash)
 file(READ "${renderer}" source)
 string(REPLACE "\r\n" "\n" source "${source}")
-if(MUTATION STREQUAL "missing")
+if(MUTATION STREQUAL "missing_binding")
+  string(REPLACE "_textures.PushBack(image);" "changed_texture_binding();" source "${source}")
+elseif(MUTATION STREQUAL "missing_wait")
+  string(REPLACE "vkQueueWaitIdle(s_queue);" "changed_async_submit();" source "${source}")
+elseif(MUTATION STREQUAL "missing_slots")
+  string(REPLACE "s_bufferSetNum = swapchainImageCount;" "s_bufferSetNum = 3;" source "${source}")
+elseif(MUTATION STREQUAL "missing")
   string(REPLACE "vertices.PushBack(vertex);" "changed_sdk_upload();" source "${source}")
 elseif(MUTATION STREQUAL "missing_pass")
   string(REPLACE "void CubismRenderer_Vulkan::DoDrawModel()"
@@ -21,7 +27,9 @@ elseif(MUTATION STREQUAL "ambiguous")
   string(APPEND source "\n        vertices.PushBack(vertex);\n")
 endif()
 bongo_cat_vulkan_vertex_upload_patch(source)
-foreach(required IN ITEMS "vulkan_buffer_mapped_data(" "if (!mapped) vertices.PrepareCapacity(vcount);"
+foreach(required IN ITEMS "_textures[slot] = image;"
+    "isDescriptorSetUpdated = false;" "isDescriptorSetMaskedUpdated = false;"
+    "isDescriptorSetForMaskUpdated = false;" "s_bufferSetNum = 1;" "vulkan_buffer_mapped_data(" "if (!mapped) vertices.PrepareCapacity(vcount);"
     "if (vcount <= 0) return;" "if (mapped) std::memcpy(mapped +"
     "if (!mapped)\n        _stagingBuffers" "vkCmdCopyBuffer(commandBuffer,"
     "if (!_drawableClippingManager && !_offscreenClippingManager)"
@@ -34,7 +42,7 @@ endforeach()
 # Verify that the independent secondary-recording adaptation still composes.
 include("${CMAKE_CURRENT_LIST_DIR}/CubismVulkanRecording.cmake")
 bongo_cat_vulkan_recording_patch(source)
-foreach(mutation IN ITEMS missing ambiguous missing_pass)
+foreach(mutation IN ITEMS missing ambiguous missing_pass missing_wait missing_slots missing_binding)
   execute_process(COMMAND "${CMAKE_COMMAND}" "-DSDK=${SDK}" "-DMUTATION=${mutation}"
     -P "${CMAKE_CURRENT_LIST_FILE}"
     RESULT_VARIABLE result OUTPUT_QUIET ERROR_VARIABLE error)

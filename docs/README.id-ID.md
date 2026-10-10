@@ -61,7 +61,7 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -392,7 +392,7 @@ penggunaan.
 
 Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk dan pembaruan tekstur dinamis asinkron memerlukan OpenGL. Tekstur native menerapkan batas kualitas/ukuran saat dimuat. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan.
 
-Optimasi rendering besar nonaktif secara bawaan dan menampilkan fitur yang aktif; pergantian memuat ulang model. Inox2D Vulkan mendukung perekaman perintah paralel dan blok memori besar; Live2D Vulkan mendukung alokasi besar melalui VMA. Adegan kecil memakai perekaman serial. Bindless, komputasi asinkron, dan perekaman paralel Live2D belum diimplementasikan. OpenGL / Metal tidak menyediakan fitur ini. Pool besar dapat memakai lebih banyak memori.
+Optimasi rendering besar hanya muncul pada Vulkan dan nonaktif secara bawaan. Tiga subopsi disimpan terpisah; perubahan memuat ulang model. Inox2D Vulkan mendukung perekaman paralel dan blok memori besar. Live2D Vulkan mendukung VMA serta perekaman paralel untuk pencampuran biasa tanpa node offscreen atau mask presisi tinggi. Live2D memerlukan 128 Drawable untuk buffer sekunder dan 128 snapshot yang dapat digambar untuk memakai hingga empat thread; model lain tetap memakai jalur serial SDK. Live2D Vulkan Bindless memakai tabel hingga 64 tekstur atlas untuk pencampuran biasa tanpa node offscreen, dengan jalur cadangan jika fitur perangkat atau kapasitas tidak mencukupi. Inox2D Bindless belum diimplementasikan. Pool besar dapat memakai lebih banyak memori; peningkatan kinerja belum diukur.
 
 Build SDK memakai `BONGO_CAT_CUBISM_VULKAN=ON` pada Windows / Linux x64 (`glslangValidator` atau `glslang`, paket Linux `glslang-tools`; Vulkan 1.3 saat dijalankan) dan `BONGO_CAT_CUBISM_METAL=ON` pada macOS (alat Metal Xcode). Pakai `OFF` untuk menonaktifkan ekstensi terkait. Sumber Metal dan `.metallib` hanya masuk macOS; Vulkan dan `.spv` hanya Windows / Linux x64, termasuk variasi blending. Build diagnostik tanpa SDK mengabaikan sumber daya Live2D ini. GitHub Actions menyiapkan alat dan memeriksa sumber daya per platform. Pemeriksaan statis telah dijalankan; build dan GPU belum diverifikasi. Lihat [integrasi dan validasi](live2d-vulkan-metal.md).
 
@@ -436,3 +436,5 @@ Prarilis nightly memakai kembali [halaman nightly](https://github.com/TianMengLu
 Input evdev eksperimental di Linux Wayland diaktifkan dengan `BONGOCAT_ENABLE_EVDEV=1`. Perangkat dibuka hanya untuk dibaca sebagai pengguna biasa terlebih dahulu. Jika izin ditolak, instalasi terlindungi meminta autentikasi melalui `/usr/bin/sudo`, membuka perangkat, lalu segera menurunkan hak akses dan menjalankan ulang sebelum inisialisasi SDL, pengaturan, dan model. Program, sudo, serta direktori induk harus dimiliki root dan tidak boleh ditulis oleh grup atau pengguna lain. Instalasi pengembangan dan portabel memerlukan izin perangkat yang dikelola terpisah. Jalur sudo dapat diatur melalui `BONGO_CAT_SUDO_EXECUTABLE`. Kegagalan menghentikan startup; izin permanen tidak diubah. Hanya perangkat saat startup yang dipantau; perangkat baru memerlukan restart. Jangan jalankan langsung sebagai root atau bergabung dengan grup `input`. Input mentah dapat mencakup kata sandi dan tidak berhenti saat layar terkunci, sesi berganti, atau pet disembunyikan.
 
 [SECURITY.md](../SECURITY.md#linux-input)
+
+Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG, JPEG, WebP, BMP, atau GIF (bingkai pertama). Gambar memenuhi jendela di tengah dengan rasio aspek tetap; latar gambar dan latar warna solid saling menonaktifkan. Salinan disimpan di direktori data aplikasi sehingga pemindahan berkas asli tidak memengaruhinya. Batas: 64 MB dan 16 megapiksel. Mendukung OpenGL, Vulkan, dan Metal.

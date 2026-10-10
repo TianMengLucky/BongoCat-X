@@ -189,7 +189,7 @@ private:
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     /* Cubism Vulkan renderer paths (see docs/live2d-vulkan-metal.md). */
     bool create_renderer_vulkan(BongoCatError *error);
-    bool upload_texture_vulkan(int index, const std::vector<unsigned char> &pixels,
+    bool upload_texture_vulkan(int index, const unsigned char *pixels,
         int width, int height, BongoCatError *error);
     void release_textures_vulkan();
     std::vector<Csm::CubismImageVulkan> vulkan_textures_;
@@ -237,6 +237,7 @@ private:
     std::vector<float> parameter_baseline_values_;
     std::vector<float> parameter_save_scratch_;
     std::vector<unsigned char> parameter_overrides_;
+    std::vector<int> parameter_override_indices_;
     std::vector<float> motion_preview_parameters_;
     std::vector<float> motion_preview_parts_;
     Csm::csmVector<Csm::CubismIdHandle> eye_blink_ids_;
@@ -250,6 +251,7 @@ private:
     int renderer_width_ = 0;
     int renderer_height_ = 0;
     int mask_texture_limit_ = 0;
+    int mask_buffer_count_ = 0;
     struct MaskBuffers { MaskSize layout; MaskSize size; };
     MaskBuffers drawable_masks_, offscreen_masks_;
     bool mask_update_failed_ = false;

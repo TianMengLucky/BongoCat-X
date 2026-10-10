@@ -80,8 +80,8 @@ static bool discard_oldest_task(BongoCatApp *app,
     return true;
 }
 
-void bongo_cat_model_cover_schedule(BongoCatApp *app,
-    const BongoCatModelEntry *entry) {
+static void schedule_cover(BongoCatApp *app,
+    const BongoCatModelEntry *entry, bool force) {
     if (!app || !entry || !entry->adapter_directory[0]) return;
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), entry->adapter_directory,
@@ -90,7 +90,7 @@ void bongo_cat_model_cover_schedule(BongoCatApp *app,
     char source[BONGO_CAT_PATH_CAP];
     uint64_t cover_size = 0, cover_time = 0, source_time = 0;
     int width = 0, height = 0;
-    if (bongo_cat_path_file_info(path, &cover_size, &cover_time) && cover_size &&
+    if (!force && bongo_cat_path_file_info(path, &cover_size, &cover_time) && cover_size &&
         bongo_cat_path_join(source, sizeof(source), entry->directory, entry->setting_file) &&
         bongo_cat_path_file_info(source, NULL, &source_time) && cover_time >= source_time &&
         bongo_cat_image_info(path, &width, &height) && width > 0 && height > 0) return;
@@ -125,6 +125,23 @@ void bongo_cat_model_cover_schedule(BongoCatApp *app,
     SDL_Log("Scheduling model cover refresh: id=%s source=runtime path=%s",
         entry->id, path);
     app->dirty = true;
+}
+
+void bongo_cat_model_cover_schedule(BongoCatApp *app,
+    const BongoCatModelEntry *entry) {
+    schedule_cover(app, entry, false);
+}
+
+void bongo_cat_model_cover_refresh(BongoCatApp *app) {
+    if (!app) return;
+    const BongoCatModelEntry *entry = bongo_cat_models_find(&app->models,
+        app->loaded_model);
+    if (!entry) return;
+    schedule_cover(app, entry, true);
+    size_t index = find_task(app, entry->id);
+    /* Coalesce rapid changes and let the pose/window reach the new state. */
+    if (index != SIZE_MAX)
+        app->pending_model_cover_retry_ns[index] = SDL_GetTicksNS() + 500000000ull;
 }
 
 bool bongo_cat_model_cover_pending(const BongoCatApp *app) {

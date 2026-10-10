@@ -30,6 +30,16 @@
       },
       "title": "Preferencias",
       "cat": {
+        "background": {
+          "title": "Imagen de fondo personalizada",
+          "help": "Llena la ventana con una imagen centrada, conservando sus proporciones. Incompatible con el fondo de color sólido.",
+          "image": "Imagen de fondo",
+          "selected": "Se ha importado una imagen",
+          "empty": "Ninguna imagen seleccionada",
+          "choose": "Elegir imagen",
+          "imported": "Imagen de fondo importada",
+          "failed": "No se puede cargar la imagen. Elige PNG, JPEG, WebP, BMP o GIF de hasta 64 MB y 16 megapíxeles."
+        },
         "title": "Preferencias",
         "labels": {
           "modelSettings": "Modelo",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "Grabación paralela de comandos",
           "bindless": "Bindless",
-          "asyncCompute": "Cálculo asíncrono",
           "largeAllocation": "Bloques grandes de memoria",
+          "optimizationDisabled": "Desactivado",
           "optimizationActive": "Activado",
           "optimizationUnavailable": "No disponible",
           "auto": "Sistema",
@@ -113,7 +123,7 @@
           "darkMode": "Oscuro"
         },
         "hints": {
-          "largeRenderOptimization": "Solicita grabación paralela, Bindless, cálculo asíncrono y bloques grandes cuando sean compatibles. Puede usar más memoria; recarga el motor y el modelo.",
+          "largeRenderOptimization": "Selecciona cada optimización de Vulkan abajo. Las solicitudes no compatibles aparecen como no disponibles. Puede usar más memoria; los cambios recargan el motor y el modelo.",
           "largeRenderUnavailable": "El motor del modelo actual no ofrece estas optimizaciones; el renderizado no cambia.",
           "showTrayIcon": "Al activarlo, el icono de la aplicación aparece en la bandeja del sistema.",
           "autostartFailed": "No se pudo actualizar la configuración de inicio automático",

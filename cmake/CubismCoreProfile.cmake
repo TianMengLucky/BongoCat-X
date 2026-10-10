@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 # macOS core-profile shaders and buffer-backed drawing.
 set(BONGO_CAT_CUBISM_SHADER_SOURCE_DIR
   "${CUBISM_FRAMEWORK_PATH}/src/Rendering/OpenGL/Shaders/Standard")
@@ -32,7 +33,7 @@ function(bongo_cat_core_profile_convert_shader input output)
         "'${legacy}' remains")
     endif()
   endforeach()
-  file(WRITE "${output}" "${text}")
+  bongo_cat_write_if_different("${output}" "${text}")
 endfunction()
 
 function(bongo_cat_core_profile_prepare_shaders)
@@ -93,7 +94,7 @@ function(bongo_cat_core_profile_patch_renderer target)
     message(FATAL_ERROR "Unpatched Cubism client-side index draw")
   endif()
   file(MAKE_DIRECTORY "${output_dir}")
-  file(WRITE "${output_source}" "#include \"cubism_core_profile.hpp\"\n${source}")
+  bongo_cat_write_if_different("${output_source}" "#include \"cubism_core_profile.hpp\"\n${source}")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_path}")
   get_target_property(framework_sources ${target} SOURCES)
   list(REMOVE_ITEM framework_sources "${source_path}")

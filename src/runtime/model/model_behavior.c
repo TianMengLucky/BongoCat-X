@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "model_cover.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/overlay.h"
 
@@ -34,6 +35,9 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
         if (!bongo_cat_model_runtime_set_expression(app->model_runtime, expression)) return false;
     }
     bongo_cat_app_capture_behavior_state(app);
+    if (behavior->kind == BONGO_CAT_BEHAVIOR_MOTION ||
+        behavior->kind == BONGO_CAT_BEHAVIOR_EXPRESSION)
+        bongo_cat_model_cover_refresh(app);
     app->input_diagnostics.visual_actions++;
     app->input_diagnostics.pending = true;
     SDL_snprintf(app->input_diagnostics.last_visual_action,

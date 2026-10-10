@@ -223,6 +223,7 @@ bool bongo_cat_window_geometry_self_test(BongoCatApp *app) {
     app->settings.window.pass_through = true;
     app->settings.window.always_on_top = true;
     app->settings.window.obs_background = true;
+    app->settings.window.custom_background = false;
     app->settings.window.rounded_corners = false;
     app->session.window.opacity_percent = 100.0f;
     bongo_cat_window_sync_click_through(app);

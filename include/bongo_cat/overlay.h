@@ -39,6 +39,9 @@ bool bongo_cat_overlay_tight_uv_bounds(const BongoCatOverlay *overlay,
 bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *overlay,
     BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
     bool mirror, bool flip, bool opaque, uint32_t rgb);
+bool bongo_cat_overlay_set_custom_background(BongoCatOverlay *overlay,
+    const char *path, BongoCatError *error);
+void bongo_cat_overlay_draw_custom_background(BongoCatOverlay *overlay, int width, int height);
 void bongo_cat_overlay_draw_background(BongoCatOverlay *overlay, bool mirror);
 void bongo_cat_overlay_draw_pointer_before_keys(BongoCatOverlay *overlay);
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *overlay, bool mirror);

@@ -30,6 +30,16 @@
       },
       "title": "Einstellungen",
       "cat": {
+        "background": {
+          "title": "Eigenes Hintergrundbild",
+          "help": "Das Bild füllt das Fenster zentriert unter Beibehaltung des Seitenverhältnisses. Schließt den einfarbigen Hintergrund aus.",
+          "image": "Hintergrundbild",
+          "selected": "Ein Bild wurde importiert",
+          "empty": "Kein Bild ausgewählt",
+          "choose": "Bild auswählen",
+          "imported": "Hintergrundbild importiert",
+          "failed": "Bild kann nicht geladen werden. Wähle PNG, JPEG, WebP, BMP oder GIF mit höchstens 64 MB und 16 Megapixeln."
+        },
         "title": "Einstellungen",
         "labels": {
           "modelSettings": "Modell",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "Parallele Befehlsaufzeichnung",
           "bindless": "Bindless",
-          "asyncCompute": "Asynchrone Berechnung",
           "largeAllocation": "Große Speicherblöcke",
+          "optimizationDisabled": "Ausgeschaltet",
           "optimizationActive": "Aktiviert",
           "optimizationUnavailable": "Nicht verfügbar",
           "auto": "System",
@@ -113,7 +123,7 @@
           "darkMode": "Dunkel"
         },
         "hints": {
-          "largeRenderOptimization": "Parallele Aufzeichnung, Bindless, asynchrone Berechnung und große Speicherblöcke nutzen, soweit unterstützt. Kann mehr Speicher benötigen; Renderer und Modell werden neu geladen.",
+          "largeRenderOptimization": "Vulkan-Optimierungen unten einzeln auswählen. Nicht unterstützte Anfragen bleiben unverfügbar. Kann mehr Speicher nutzen; Änderungen laden Renderer und Modell neu.",
           "largeRenderUnavailable": "Der aktuelle Modell-Renderer unterstützt keine dieser Optimierungen; die Darstellung bleibt unverändert.",
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",
           "autostartFailed": "Die Einstellung für den automatischen Start konnte nicht aktualisiert werden",

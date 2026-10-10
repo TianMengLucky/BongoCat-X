@@ -17,6 +17,11 @@ typedef struct TextureSlot {
 struct BongoCatOverlay {
     bool native;
     BongoCatImage native_background;
+    BongoCatImage custom_background;
+    GLuint custom_texture;
+    GLint backdrop_width_location, backdrop_height_location;
+    int backdrop_width, backdrop_height;
+    char custom_path[BONGO_CAT_PATH_CAP];
     SDL_Surface *native_canvas;
     int native_geometry[6];
     uint32_t native_color;

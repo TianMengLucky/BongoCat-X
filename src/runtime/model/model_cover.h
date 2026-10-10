@@ -7,6 +7,8 @@
 /* Pending cover queue and retry policy. */
 void bongo_cat_model_cover_schedule(BongoCatApp *app,
     const BongoCatModelEntry *entry);
+/* Refresh the active model after its expression or motion changes. */
+void bongo_cat_model_cover_refresh(BongoCatApp *app);
 bool bongo_cat_model_cover_pending(const BongoCatApp *app);
 bool bongo_cat_model_cover_capture_due(const BongoCatApp *app, uint64_t now);
 const char *bongo_cat_model_cover_pending_path(const BongoCatApp *app);

@@ -56,7 +56,7 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -413,7 +413,7 @@ always-on-top support still depend on the compositor.
 
 Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays and asynchronous dynamic texture refresh currently require OpenGL. Native textures apply quality/display bounds when loaded. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture.
 
-Large Rendering Optimization is off by default and displays the enabled features; switching reloads the model. Inox2D Vulkan supports parallel command recording and large memory blocks; Live2D Vulkan supports large allocations through VMA. Small scenes use serial recording. Bindless, async compute and Live2D parallel recording are not implemented. OpenGL / Metal have no available features. Larger pools may use more memory.
+Large Rendering Optimization appears only with Vulkan and is off by default. Its three child options are saved independently; changes reload the model. Inox2D Vulkan supports parallel command recording and large memory blocks. Live2D Vulkan supports VMA allocations and parallel recording for ordinary blending without offscreen nodes or high-precision masks. Live2D needs at least 128 Drawables for secondary buffers and 128 drawable snapshots for up to four workers; other models retain the SDK serial path. Live2D Vulkan Bindless uses a table of up to 64 atlas textures for ordinary blending without offscreen nodes, with fallback when device features or capacity are insufficient. Inox2D Bindless is not implemented. Larger pools may use more memory; performance gains remain unmeasured.
 
 SDK builds default to `BONGO_CAT_CUBISM_VULKAN=ON` on Windows / Linux x64 (requires `glslangValidator` or `glslang`; install `glslang-tools` on Linux; Vulkan 1.3 at runtime) and `BONGO_CAT_CUBISM_METAL=ON` on macOS (Xcode Metal tools). Set the relevant option to `OFF` for OpenGL builds. Metal sources and `.metallib` files are included only on macOS; Vulkan sources and `.spv` files only on Windows / Linux x64, including blend variants. Diagnostic builds without the SDK omit native Live2D shader resources. GitHub Actions prepares platform tools and checks resource selection. Windows builds and GPU regression tests pass. Metal Rust APIs pass cross-target type checking; macOS GPU validation is pending. See [integration status and validation](live2d-vulkan-metal.md).
 
@@ -445,3 +445,5 @@ Windows portable releases are ZIP archives. Keep the extracted `plugins` directo
 Each `dev` push that changes code, assets or build configuration publishes a GitHub nightly prerelease. Documentation-only pushes are skipped; there is no scheduled trigger. All platforms build the pushed commit. Nightlies do not replace the latest stable release.
 
 Nightly prereleases reuse the [nightly release page](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly), update its tag and replace assets with stable names instead of creating a release for each build. Failed platforms retain their previous assets.
+
+Preferences → Preferences → Window includes Custom Image Background. Choose Image imports PNG, JPEG, WebP, BMP or GIF (first frame). The image fills the window centered while preserving its aspect ratio; enabling it disables Solid Background and vice versa. Imported images are stored in the application data directory and remain available after the original is moved. Limits: 64 MB and 16 megapixels per image. OpenGL, Vulkan and Metal are supported.

@@ -10,6 +10,8 @@
 
 void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path);
+void bongo_cat_preferences_background_import(BongoCatApp *app, const char *path);
+void bongo_cat_preferences_background_row(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_page_settings(BongoCatPreferences *value,
     struct nk_context *context);
 void bongo_cat_preferences_page_model(BongoCatPreferences *value,
@@ -88,6 +90,7 @@ bool bongo_cat_preferences_chrome_drag_allowed(
 typedef struct BongoCatImportDialog BongoCatImportDialog;
 BongoCatImportDialog *bongo_cat_preferences_import_create(void);
 void bongo_cat_preferences_import_destroy(BongoCatImportDialog *dialog);
+bool bongo_cat_preferences_import_background_open(BongoCatImportDialog *dialog, SDL_Window *window);
 bool bongo_cat_preferences_import_open(BongoCatImportDialog *dialog,
     SDL_Window *window);
 bool bongo_cat_preferences_import_plugin_open(BongoCatImportDialog *dialog, SDL_Window *window);

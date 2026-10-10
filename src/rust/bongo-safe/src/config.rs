@@ -14,6 +14,7 @@ use serde_json::{Map, Value};
 use std::os::raw::{c_char, c_int};
 
 const ID_CAP: usize = 128;
+const PATH_CAP: usize = 1024;
 const SHORTCUT_CAP: usize = 128;
 const MODEL_CAP: usize = 128;
 const ADDITIONAL_MODEL_CAP: usize = 7;
@@ -69,6 +70,8 @@ struct WindowPreferences {
     random_motion_interval_seconds: f32,
     sequential_model_interval_seconds: f32,
     corner_radius_percent: f32,
+    custom_background: bool,
+    custom_background_path: [c_char; PATH_CAP],
 }
 
 #[repr(C)]
@@ -77,6 +80,9 @@ struct ApplicationPreferences {
     run_as_admin: bool,
     tray_visible: bool,
     large_render_optimization: bool,
+    render_parallel_recording: bool,
+    render_bindless: bool,
+    render_large_allocation: bool,
     theme: c_int,
     language: c_int,
     render_backend: c_int,
@@ -169,6 +175,7 @@ pub struct SessionState {
 }
 
 /// Accumulates the format message for the C-side `BongoCatError`.
+#[derive(Debug)]
 struct Failure {
     code: c_int,
     message: String,
@@ -470,6 +477,9 @@ fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outc
 }
 
 fn read_window(object: &Map<String, Value>, value: &mut WindowPreferences) -> Outcome<()> {
+    boolean(object, "Settings", "customBackground", &mut value.custom_background)?;
+    text(object, "Settings", "customBackgroundPath", &mut value.custom_background_path)?;
+    value.custom_background &= value.custom_background_path[0] != 0;
     const DESCRIPTION: &str = "Settings";
     boolean(object, DESCRIPTION, "clickThrough", &mut value.pass_through)?;
     boolean(object, DESCRIPTION, "alwaysOnTop", &mut value.always_on_top)?;
@@ -574,6 +584,9 @@ fn read_window(object: &Map<String, Value>, value: &mut WindowPreferences) -> Ou
     if legacy_random_model {
         value.sequential_model = true;
     }
+    if value.custom_background {
+        value.obs_background = false;
+    }
     let color = string(object, DESCRIPTION, "captureBackgroundColor")?;
     if let Some(color) = color {
         match background_color_from_text(color) {
@@ -598,6 +611,13 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
     boolean(object, DESCRIPTION, "showTrayIcon", &mut value.tray_visible)?;
     boolean(object, DESCRIPTION, "largeRenderOptimization", &mut value.large_render_optimization)?;
+    // Older settings requested all features through the master switch.
+    value.render_parallel_recording = true;
+    boolean(object, DESCRIPTION, "largeRenderParallelRecording", &mut value.render_parallel_recording)?;
+    value.render_bindless = true;
+    boolean(object, DESCRIPTION, "largeRenderBindless", &mut value.render_bindless)?;
+    value.render_large_allocation = true;
+    boolean(object, DESCRIPTION, "largeRenderLargeAllocation", &mut value.render_large_allocation)?;
     if object.get("runAsAdmin").is_none() && legacy_admin {
         value.run_as_admin = true;
     }
@@ -1005,6 +1025,8 @@ fn write_window(value: &WindowPreferences) -> Value {
         "edgeSnap": value.edge_snap,
         "captureOnly": value.capture_only,
         "captureBackground": value.obs_background,
+        "customBackground": value.custom_background,
+        "customBackgroundPath": string_value(&value.custom_background_path),
         "tightFrame": value.tight_frame,
         "randomExpression": value.random_expression,
         "randomMotion": value.random_motion,
@@ -1031,6 +1053,9 @@ fn write_app(value: &ApplicationPreferences) -> Value {
         "runAsAdmin": value.run_as_admin,
         "showTrayIcon": value.tray_visible,
         "largeRenderOptimization": value.large_render_optimization,
+        "largeRenderParallelRecording": value.render_parallel_recording,
+        "largeRenderBindless": value.render_bindless,
+        "largeRenderLargeAllocation": value.render_large_allocation,
         "theme": themes.get(value.theme as usize).unwrap_or(&themes[0]),
         "language": languages.get(value.language as usize).unwrap_or(&languages[0]),
         "renderBackend": render_backends.get(value.render_backend as usize).unwrap_or(&render_backends[0]),
@@ -1514,6 +1539,9 @@ mod tests {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
             large_render_optimization: false,
+            render_parallel_recording: true,
+            render_bindless: true,
+            render_large_allocation: true,
             theme: 0, language: 0, render_backend: 3,
         };
         let json = write_app(&app);
@@ -1531,7 +1559,56 @@ mod tests {
         assert!(read_app(&serde_json::json!({"largeRenderOptimization": false}).as_object().unwrap(), &mut app).is_ok());
         assert!(!app.large_render_optimization);
         assert!(read_app(&serde_json::json!({"largeRenderOptimization": "true"}).as_object().unwrap(), &mut app).is_err());
-        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 16);
+        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 20);
+    }
+
+    #[test]
+    fn render_optimization_children_migrate_and_round_trip_independently() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        read_app(serde_json::json!({"largeRenderOptimization": true}).as_object().unwrap(), &mut app).unwrap();
+        assert!(app.render_parallel_recording && app.render_bindless);
+        assert!(app.render_large_allocation);
+        let keys = ["largeRenderParallelRecording", "largeRenderBindless", "largeRenderLargeAllocation"];
+        for mask in 0..8 {
+            let mut object = Map::new();
+            object.insert("largeRenderOptimization".into(), Value::Bool(true));
+            for (index, key) in keys.iter().enumerate() {
+                object.insert((*key).into(), Value::Bool(mask & (1 << index) != 0));
+            }
+            read_app(&object, &mut app).unwrap();
+            let json = write_app(&app);
+            for key in keys {
+                assert_eq!(json[key], object[key]);
+            }
+            // Switching off the parent retains all child preferences.
+            app.large_render_optimization = false;
+            let json = write_app(&app);
+            for key in keys {
+                assert_eq!(json[key], object[key]);
+            }
+        }
+        for key in keys {
+            let mut object = Map::new();
+            object.insert(key.into(), Value::Null);
+            read_app(&object, &mut app).unwrap();
+            assert_eq!(write_app(&app)[key], true);
+            for invalid in [serde_json::json!("true"), serde_json::json!(1), serde_json::json!([])] {
+                let mut object = Map::new();
+                object.insert(key.into(), invalid);
+                assert!(read_app(&object, &mut app).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn removed_async_compute_preference_is_ignored_and_not_written() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        let json = serde_json::json!({"largeRenderOptimization": true,
+            "largeRenderAsyncCompute": true, "largeRenderBindless": false});
+        read_app(json.as_object().unwrap(), &mut app).unwrap();
+        assert!(app.large_render_optimization);
+        assert!(!app.render_bindless);
+        assert!(write_app(&app).get("largeRenderAsyncCompute").is_none());
     }
 
     #[test]
@@ -1540,6 +1617,25 @@ mod tests {
         assert!(parse_session(br#"{"format":"bongocat/session","schemaVersion":1,"activeModelId":""}"#, &mut session).is_ok());
         assert_eq!(session.active_model_id[0], 0);
         assert!(build_session_json(&session).map(|json| json["activeModelId"] == "").unwrap_or(false));
+    }
+
+    #[test]
+    fn custom_background_round_trip_and_exclusion() {
+        let mut window: WindowPreferences = unsafe { std::mem::zeroed() };
+        let input = serde_json::json!({
+            "captureBackground": true, "customBackground": true,
+            "customBackgroundPath": "backgrounds/example.img"
+        });
+        assert!(read_window(input.as_object().unwrap(), &mut window).is_ok());
+        assert!(window.custom_background && !window.obs_background);
+        let saved = write_window(&window);
+        assert_eq!(saved["customBackgroundPath"], input["customBackgroundPath"]);
+        assert_eq!(saved["customBackground"], true);
+        let empty = serde_json::json!({"customBackgroundPath": ""});
+        assert!(read_window(empty.as_object().unwrap(), &mut window).is_ok());
+        assert!(!window.custom_background);
+        let invalid = serde_json::json!({"customBackgroundPath": 42});
+        assert!(read_window(invalid.as_object().unwrap(), &mut window).is_err());
     }
 
     #[test]

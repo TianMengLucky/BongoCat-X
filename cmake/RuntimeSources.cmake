@@ -44,6 +44,7 @@ set(BONGO_CAT_RENDER_SOURCES
   src/render/overlay_input.c
   src/render/overlay_draw.c
   src/render/overlay_native.c
+  src/render/overlay_background.c
   src/render/mver_pointer_overlay.c
   src/render/mver_pointer_overlay_draw.c
   src/render/mver_pointer_overlay_geometry.c)
@@ -308,6 +309,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_overlay.c
   src/ui/preferences/preferences_page_dispatch.c
   src/ui/preferences/preferences_pages.c
+  src/ui/preferences/preferences_background.c
   src/ui/preferences/preferences_plugins.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c

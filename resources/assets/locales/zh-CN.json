@@ -30,6 +30,16 @@
       },
       "title": "偏好设置",
       "cat": {
+        "background": {
+          "title": "自定义图片背景",
+          "help": "保持图片比例、居中铺满窗口，与纯色背景互斥。",
+          "image": "背景图片",
+          "selected": "已导入背景图片",
+          "empty": "尚未选择图片",
+          "choose": "选择图片",
+          "imported": "背景图片已导入",
+          "failed": "无法加载图片，请选择不超过 64 MB、1600 万像素的 PNG、JPEG、WebP、BMP 或 GIF 图片。"
+        },
         "title": "偏好",
         "labels": {
           "modelSettings": "模型",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "多线程录制",
           "bindless": "Bindless",
-          "asyncCompute": "异步计算",
           "largeAllocation": "大块内存分配",
+          "optimizationDisabled": "已关闭",
           "optimizationActive": "已启用",
           "optimizationUnavailable": "不可用",
           "auto": "跟随系统",
@@ -113,7 +123,7 @@
           "darkMode": "暗色模式"
         },
         "hints": {
-          "largeRenderOptimization": "按渲染器能力启用多线程录制、Bindless、异步计算和大块分配。可能增加内存占用；切换后重载渲染器与模型。",
+          "largeRenderOptimization": "在下方单独选择 Vulkan 优化项；不支持的请求会显示不可用。可能增加内存占用；修改后重载渲染器与模型。",
           "largeRenderUnavailable": "当前模型渲染器未提供这些优化，开关暂不影响绘制。",
           "showTrayIcon": "启用后，在系统托盘中显示应用图标。",
           "autostartFailed": "无法更新开机启动设置",

@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "model_cover.h"
 
 #include <stdio.h>
 
@@ -84,8 +85,10 @@ static void random_behavior_run(BongoCatApp *app, uint64_t now,
         if (choice--) continue;
         if (kind == BONGO_CAT_BEHAVIOR_MOTION)
             bongo_cat_app_run_behavior(app, entry);
-        else if (bongo_cat_model_runtime_set_expression(app->model_runtime, entry->index))
+        else if (bongo_cat_model_runtime_set_expression(app->model_runtime, entry->index)) {
+            bongo_cat_model_cover_refresh(app);
             app->dirty = true;
+        }
         return;
     }
 }

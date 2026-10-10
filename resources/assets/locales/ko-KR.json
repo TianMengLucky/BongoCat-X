@@ -30,6 +30,16 @@
       },
       "title": "환경 설정",
       "cat": {
+        "background": {
+          "title": "사용자 지정 이미지 배경",
+          "help": "비율을 유지하고 중앙에 배치하여 창을 채웁니다. 단색 배경과 동시에 사용할 수 없습니다.",
+          "image": "배경 이미지",
+          "selected": "배경 이미지를 가져왔습니다",
+          "empty": "선택한 이미지 없음",
+          "choose": "이미지 선택",
+          "imported": "배경 이미지를 가져왔습니다",
+          "failed": "이미지를 불러올 수 없습니다. 64 MB 및 1600만 픽셀 이하의 PNG, JPEG, WebP, BMP 또는 GIF를 선택하세요."
+        },
         "title": "환경 설정",
         "labels": {
           "modelSettings": "모델",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "병렬 명령 기록",
           "bindless": "Bindless",
-          "asyncCompute": "비동기 연산",
           "largeAllocation": "대용량 메모리 블록",
+          "optimizationDisabled": "꺼짐",
           "optimizationActive": "활성화됨",
           "optimizationUnavailable": "사용 불가",
           "auto": "시스템",
@@ -113,7 +123,7 @@
           "darkMode": "다크"
         },
         "hints": {
-          "largeRenderOptimization": "지원되는 병렬 기록, Bindless, 비동기 연산 및 대용량 메모리 블록을 활성화합니다. 메모리 사용량이 늘 수 있으며 전환 시 다시 로드합니다.",
+          "largeRenderOptimization": "아래에서 Vulkan 최적화 항목을 개별 선택하세요. 지원하지 않는 요청은 사용 불가로 표시됩니다. 메모리 사용량이 늘어날 수 있으며 변경 시 렌더러와 모델을 다시 불러옵니다.",
           "largeRenderUnavailable": "현재 모델 렌더러는 이 최적화를 지원하지 않아 렌더링에 영향을 주지 않습니다.",
           "showTrayIcon": "활성화하면 시스템 트레이에 앱 아이콘이 표시됩니다.",
           "autostartFailed": "시작 프로그램 설정을 변경할 수 없습니다",

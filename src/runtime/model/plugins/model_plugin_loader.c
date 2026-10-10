@@ -50,16 +50,25 @@ bool bongo_cat_model_plugin_open(BongoCatModelRuntime *target,
     target->engine = engine;
     bongo_cat_model_plugin_retain(engine);
     target->ops->set_rhi_info(instance, &target->rhi);
-    bool optimize = SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
-        "BongoCat.LargeRenderOptimization", false);
+    union { SDL_FunctionPointer function; BongoCatModelPluginVulkanFeatures features; } device_extension;
+    device_extension.function = SDL_LoadFunction(library, BONGO_CAT_PLUGIN_VULKAN_FEATURES_SYMBOL);
+    if (device_extension.function) {
+        uint32_t enabled = target->rhi.backend == BONGO_CAT_RHI_VULKAN &&
+            SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
+                "BongoCat.VulkanSampledImageDynamicIndexing", false) ?
+            BONGO_CAT_VULKAN_SAMPLED_IMAGE_DYNAMIC_INDEXING : 0;
+        device_extension.features(instance, enabled);
+    } else SDL_ClearError();
+    uint32_t requested = target->rhi.backend == BONGO_CAT_RHI_VULKAN ?
+        (uint32_t)SDL_GetNumberProperty(SDL_GetGlobalProperties(),
+            "BongoCat.RenderOptimizationFlags", 0) & BONGO_CAT_OPTIMIZE_ALL : 0;
     union { SDL_FunctionPointer function; BongoCatModelPluginOptimize optimize; } extension;
     extension.function = SDL_LoadFunction(library, BONGO_CAT_PLUGIN_OPTIMIZE_SYMBOL);
     target->optimizations = extension.function ? extension.optimize(instance,
-        optimize ? BONGO_CAT_OPTIMIZE_ALL : 0, (uint32_t)target->rhi.backend) &
-        (optimize ? BONGO_CAT_OPTIMIZE_ALL : 0) : 0;
+        requested, (uint32_t)target->rhi.backend) & requested : 0;
     if (!extension.function) SDL_ClearError();
-    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[render] large optimization requested=%d active=0x%x",
-        optimize, (unsigned)target->optimizations);
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[render] large optimization requested=0x%x active=0x%x",
+        (unsigned)requested, (unsigned)target->optimizations);
     target->ops->resize(instance, target->width, target->height);
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[model] loaded plugin: %s", plugin->name);
     return true;

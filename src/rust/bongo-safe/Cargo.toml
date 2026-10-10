@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.1.1"
+version = "2.1.2"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false

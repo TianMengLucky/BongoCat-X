@@ -102,8 +102,12 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.obsBackground", "Solid Background"), tr(app,
         "pages.preference.cat.hints.obsBackground", "Window capture is black?"), tr(app,
         "pages.preference.cat.hints.obsBackgroundHelp", "OBS: enable this option, use the Windows 7 compatibility method, and remove the background with a color key filter."),
-        &window->obs_background, &window->obs_background_rgb))
+        &window->obs_background, &window->obs_background_rgb)) {
+        if (window->obs_background) window->custom_background = false;
         app->dirty = true;
+        bongo_cat_window_mark_hit_dirty(app);
+    }
+    bongo_cat_preferences_background_row(value, context);
     /* Repaint only after the dragged color settles (present pass); the pet
        itself recolors live. */
     if (window->obs_background && bongo_cat_pref_color_picker(context,

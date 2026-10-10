@@ -53,20 +53,16 @@ pub unsafe extern "C" fn bongo_safe_image_decode(
         } else {
             std::slice::from_raw_parts(data, size)
         };
-        let decoded = reader(bytes)?.decode().ok()?;
-        let rgba = decoded.to_rgba8();
+        let rgba = reader(bytes)?.decode().ok()?.into_rgba8();
         let (decoded_width, decoded_height) = rgba.dimensions();
         if decoded_width == 0 || decoded_height == 0 {
             return None;
         }
-        let total = decoded_width as usize * decoded_height as usize * 4;
-        // A fresh exact-size buffer so the free side can reclaim it with the
-        // element count alone.
-        let mut exact = vec![0u8; total];
-        exact.copy_from_slice(rgba.as_raw());
+        // Transfer the decoded storage; release_exact discards excess capacity
+        // so C can release it with only the RGBA byte count.
         *width = decoded_width as c_int;
         *height = decoded_height as c_int;
-        Some(release_exact(exact))
+        Some(release_exact(rgba.into_raw()))
     })
     .unwrap_or(std::ptr::null_mut());
     if pixels.is_null() {
@@ -115,8 +111,8 @@ pub unsafe extern "C" fn bongo_safe_image_info(
 }
 
 /// # Safety
-/// `pointer` must come from `bongo_safe_image_decode` with the same pixel
-/// count and must not have been freed yet.
+/// `pointer` must come from `bongo_safe_image_decode` with the same
+/// byte count (`width * height * 4`) and must not have been freed yet.
 #[no_mangle]
 pub unsafe extern "C" fn bongo_safe_free_pixels(pointer: *mut u8, count: usize) {
     guard((), || {
@@ -148,8 +144,28 @@ mod tests {
         assert_eq!(height, 1);
         assert!(!pixels.is_null());
         let slice = unsafe { std::slice::from_raw_parts(pixels, 4) };
-        assert_eq!(slice[3], 255);
+        assert_eq!(slice, [255, 0, 0, 255]);
         unsafe { bongo_safe_free_pixels(pixels, 4) };
+    }
+
+    #[test]
+    fn preserves_rgba_and_alpha_when_transferring_decoded_storage() {
+        let rgba =
+            image::RgbaImage::from_raw(2, 1, vec![9, 21, 43, 67, 89, 101, 123, 145]).unwrap();
+        let mut encoded = Cursor::new(Vec::new());
+        rgba.write_to(&mut encoded, image::ImageFormat::Png)
+            .unwrap();
+        let bytes = encoded.into_inner();
+        let mut width = 0;
+        let mut height = 0;
+        let pointer = unsafe {
+            bongo_safe_image_decode(bytes.as_ptr(), bytes.len(), &mut width, &mut height)
+        };
+        assert!(!pointer.is_null());
+        assert_eq!((width, height), (2, 1));
+        let pixels = unsafe { std::slice::from_raw_parts(pointer, 8) };
+        assert_eq!(pixels, rgba.as_raw());
+        unsafe { bongo_safe_free_pixels(pointer, 8) };
     }
 
     #[test]

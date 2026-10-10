@@ -30,6 +30,16 @@
       },
       "title": "Preferences",
       "cat": {
+        "background": {
+          "title": "Custom Image Background",
+          "help": "Fill the window with an image, preserving its aspect ratio. Mutually exclusive with Solid Background.",
+          "image": "Background Image",
+          "selected": "An image has been imported",
+          "empty": "No image selected",
+          "choose": "Choose Image",
+          "imported": "Background image imported",
+          "failed": "Cannot load this image. Choose PNG, JPEG, WebP, BMP or GIF up to 64 MB and 16 megapixels."
+        },
         "title": "Preferences",
         "labels": {
           "modelSettings": "Model",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "Parallel command recording",
           "bindless": "Bindless",
-          "asyncCompute": "Async compute",
           "largeAllocation": "Large memory blocks",
+          "optimizationDisabled": "Disabled",
           "optimizationActive": "Enabled",
           "optimizationUnavailable": "Unavailable",
           "auto": "System",
@@ -113,7 +123,7 @@
           "darkMode": "Dark"
         },
         "hints": {
-          "largeRenderOptimization": "Request parallel recording, Bindless, async compute and large memory blocks where supported. May use more memory; reloads the renderer and model.",
+          "largeRenderOptimization": "Select Vulkan optimizations individually below. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model.",
           "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",
           "autostartFailed": "Unable to update launch-on-startup settings",

@@ -5,6 +5,7 @@
 #include "bongo_cat/image.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/model_plugins.h"
+#include "bongo_cat/model_plugin.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -32,8 +33,14 @@ static void cache_startup_display_fps(BongoCatApp *app) {
 /* Passes the active backend's device handles to the Live2D bridge so the
    Cubism Vulkan/Metal renderers can drive it (see docs/live2d-vulkan-metal.md). */
 void attach_rhi_info(BongoCatApp *app) {
-    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LargeRenderOptimization",
-        app->settings.app.large_render_optimization);
+    const BongoCatApplicationPreferences *options = &app->settings.app;
+    uint32_t requested = 0;
+    if (options->large_render_optimization && app->rhi.backend == BONGO_CAT_RHI_VULKAN) {
+        if (options->render_parallel_recording) requested |= BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING;
+        if (options->render_bindless) requested |= BONGO_CAT_OPTIMIZE_BINDLESS;
+        if (options->render_large_allocation) requested |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
+    }
+    SDL_SetNumberProperty(SDL_GetGlobalProperties(), "BongoCat.RenderOptimizationFlags", requested);
     BongoCatRhiDeviceInfo info;
     if (app->model_runtime && bongo_cat_rhi_get_device_info(&app->rhi, &info))
         bongo_cat_model_runtime_set_rhi_info(app->model_runtime, &info);

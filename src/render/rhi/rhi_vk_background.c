@@ -119,13 +119,11 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
     else bongo_cat_rhi_vk_release_background(vk);
     return ok;
 }
-bool bongo_cat_rhi_vk_draw_background(BongoCatRhiVk *vk) {
-    if (!vk->background_ready) return true;
-    VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
-    if (!command) return false;
-    transition(vk, command, vk->current_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT);
+void bongo_cat_rhi_vk_record_background(BongoCatRhiVk *vk, VkCommandBuffer command) {
+    /* The acquired image is wholly overwritten, including transparent pixels.
+       Discard its previous contents instead of clearing before the copy. */
+    transition(vk, command, vk->current_image, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT);
     VkImageCopy region = {0};
     region.srcSubresource = region.dstSubresource = (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     region.extent = (VkExtent3D){vk->extent.width, vk->extent.height, 1};
@@ -134,6 +132,5 @@ bool bongo_cat_rhi_vk_draw_background(BongoCatRhiVk *vk) {
     transition(vk, command, vk->current_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-    return bongo_cat_rhi_vk_submit_commands(vk->owner, command);
 }
 #endif

@@ -30,6 +30,31 @@ bool NativeModel::canvas_size(int *width, int *height) const {
 NativeModel::ModelBounds NativeModel::capture_visible_bounds() const {
     ModelBounds bounds;
     if (!_model) return bounds;
+    /* Cropping must retain every potentially visible triangle, including
+       small accessories and thin edge fragments. Subject framing below uses
+       sparse alpha samples and rejects remote/small drawables; those
+       heuristics are unsuitable for a window that clips the actual render. */
+    if (tight_frame_ && frame_drawables_.size() ==
+            (size_t)_model->GetDrawableCount()) {
+        for (size_t i = 0; i < frame_drawables_.size(); ++i) {
+            if (!_model->GetDrawableDynamicFlagIsVisible((int)i) ||
+                _model->GetDrawableOpacity((int)i) <= 0.001f) continue;
+            const float *positions = _model->GetDrawableVertices((int)i);
+            if (!positions) continue;
+            for (unsigned short vertex : frame_drawables_[i].vertices) {
+                float x = positions[vertex * 2], y = positions[vertex * 2 + 1];
+                if (!std::isfinite(x) || !std::isfinite(y)) continue;
+                if (!bounds.valid) bounds = {x, y, x, y, true};
+                else {
+                    bounds.min_x = std::min(bounds.min_x, x);
+                    bounds.min_y = std::min(bounds.min_y, y);
+                    bounds.max_x = std::max(bounds.max_x, x);
+                    bounds.max_y = std::max(bounds.max_y, y);
+                }
+            }
+        }
+        return bounds;
+    }
     auto &drawables = bounds_scratch_;
     drawables.clear();
     const size_t drawable_count = (size_t)_model->GetDrawableCount();
@@ -57,7 +82,8 @@ NativeModel::ModelBounds NativeModel::capture_visible_bounds() const {
         auto alpha = [&](float u, float v) {
             if (!mask || !mask->width || !mask->height) return 255;
             int x = std::max(0, std::min(mask->width - 1, (int)(u * mask->width)));
-            int y = std::max(0, std::min(mask->height - 1, (int)(v * mask->height)));
+            int y = std::max(0, std::min(mask->height - 1,
+                (int)((1.0f - v) * mask->height)));
             return (int)mask->pixels[(size_t)y * mask->width + x];
         };
         for (int j = 0; indices && uvs && j + 2 < index_count; j += 3) {

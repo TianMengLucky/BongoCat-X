@@ -6,27 +6,31 @@
 #if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
     (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
 
-/* Clear is also used to release an acquired image after a failed draw hook. */
-static bool clear_frame(BongoCatRhiVk *vk, uint32_t index) {
+/* Failure recovery always clears; normal frames may copy a complete background. */
+static bool initialize_frame(BongoCatRhiVk *vk, uint32_t index, bool background) {
     if (vk->vkResetCommandBuffer(vk->command, 0) != VK_SUCCESS) return false;
     VkCommandBufferBeginInfo begin = {0};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
         return false;
-    VkClearValue clear;
-    clear.color = (VkClearColorValue){{
-        vk->clear[0] * vk->clear[3], vk->clear[1] * vk->clear[3],
-        vk->clear[2] * vk->clear[3], vk->clear[3]}};
-    VkRenderPassBeginInfo pass = {0};
-    pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    pass.renderPass = vk->render_pass;
-    pass.framebuffer = vk->framebuffers[index];
-    pass.renderArea.extent = vk->extent;
-    pass.clearValueCount = 1;
-    pass.pClearValues = &clear;
-    vk->vkCmdBeginRenderPass(vk->command, &pass, VK_SUBPASS_CONTENTS_INLINE);
-    vk->vkCmdEndRenderPass(vk->command);
+    if (background) {
+        bongo_cat_rhi_vk_record_background(vk, vk->command);
+    } else {
+        VkClearValue clear;
+        clear.color = (VkClearColorValue){{
+            vk->clear[0] * vk->clear[3], vk->clear[1] * vk->clear[3],
+            vk->clear[2] * vk->clear[3], vk->clear[3]}};
+        VkRenderPassBeginInfo pass = {0};
+        pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        pass.renderPass = vk->render_pass;
+        pass.framebuffer = vk->framebuffers[index];
+        pass.renderArea.extent = vk->extent;
+        pass.clearValueCount = 1;
+        pass.pClearValues = &clear;
+        vk->vkCmdBeginRenderPass(vk->command, &pass, VK_SUBPASS_CONTENTS_INLINE);
+        vk->vkCmdEndRenderPass(vk->command);
+    }
     if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
     VkSubmitInfo submit = {0};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -62,15 +66,15 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
     vk->current_image = vk->images[index];
     vk->current_view = vk->views[index];
     const BongoCatRhiPresentOps *ops = &vk->owner->present;
-    if (!clear_frame(vk, index) || vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS)
-        return false;
-    bool drawn = bongo_cat_rhi_vk_draw_background(vk) &&
-        (!ops->draw_frame || ops->draw_frame(ops->hook_user));
+    /* Background copy and frame initialization share one submission/wait. */
+    if (!initialize_frame(vk, index, vk->background_ready) ||
+        vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS) return false;
+    bool drawn = !ops->draw_frame || ops->draw_frame(ops->hook_user);
     if (!drawn) {
         /* A failed callback may already have submitted work. Retire it before
            resetting our command buffer and clearing the acquired image. */
         if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
-            !clear_frame(vk, index)) return false;
+            !initialize_frame(vk, index, false)) return false;
     }
     vk->frame_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     vk->frame_ready = true;

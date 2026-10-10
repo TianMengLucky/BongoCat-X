@@ -8,11 +8,16 @@ static const char *vertex_source =
     "layout(location=0) in vec2 pos; layout(location=1) in vec2 uv;\n"
     "out vec2 tex; uniform bool mirror; uniform bool vertical_flip;\n"
     "uniform sampler2D image; uniform int reference_width,reference_height;\n"
+    "uniform int backdrop_width,backdrop_height;\n"
     "void main(){vec2 p=pos;"
     "if(reference_width>0&&reference_height>0){"
     "vec2 extent=vec2(textureSize(image,0))/vec2(reference_width,reference_height);"
     "p=(p+vec2(1,-1))*extent+vec2(-1,1);}"
-    "if(mirror)p.x=-p.x;if(vertical_flip)p.y=-p.y;gl_Position=vec4(p,0,1);tex=uv;}";
+    "if(mirror)p.x=-p.x;if(vertical_flip)p.y=-p.y;gl_Position=vec4(p,0,1);tex=uv;"
+    "if(backdrop_width>0&&backdrop_height>0){"
+    "vec2 size=vec2(textureSize(image,0));"
+    "float ratio=(size.x/size.y)/(float(backdrop_width)/float(backdrop_height));"
+    "vec2 span=ratio>1.?vec2(1./ratio,1.):vec2(1.,ratio);tex=(uv-.5)*span+.5;}}";
 static const char *fragment_source =
     "#version 330 core\n"
     "in vec2 tex; out vec4 color; uniform sampler2D image;\n"
@@ -42,6 +47,8 @@ BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error) {
         "reference_width");
     value->reference_height_location = value->gl.uniform_location(value->program,
         "reference_height");
+    value->backdrop_width_location = value->gl.uniform_location(value->program, "backdrop_width");
+    value->backdrop_height_location = value->gl.uniform_location(value->program, "backdrop_height");
     value->erase_left_location = value->gl.uniform_location(value->program, "erase_left");
     value->erase_right_location = value->gl.uniform_location(value->program, "erase_right");
     const float vertices[] = {-1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0};
@@ -71,6 +78,7 @@ void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *value, bool flipped) {
 
 void bongo_cat_overlay_destroy(BongoCatOverlay *value) {
     if (!value) return;
+    bongo_cat_overlay_set_custom_background(value, NULL, NULL);
     bongo_cat_mver_pointer_overlay_destroy(value->mver_pointer);
     bongo_cat_overlay_clear_textures(value);
     if (value->vbo) value->gl.delete_buffers(1, &value->vbo);

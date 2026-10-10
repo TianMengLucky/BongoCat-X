@@ -30,6 +30,16 @@
       },
       "title": "設定",
       "cat": {
+        "background": {
+          "title": "カスタム画像背景",
+          "help": "縦横比を維持し、中央配置でウィンドウ全体を覆います。単色背景とは同時に使用できません。",
+          "image": "背景画像",
+          "selected": "背景画像を読み込み済み",
+          "empty": "画像が選択されていません",
+          "choose": "画像を選択",
+          "imported": "背景画像を読み込みました",
+          "failed": "画像を読み込めません。64 MB・1600 万画素以下の PNG、JPEG、WebP、BMP、GIF を選択してください。"
+        },
         "title": "設定",
         "labels": {
           "modelSettings": "モデル",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "並列コマンド記録",
           "bindless": "Bindless",
-          "asyncCompute": "非同期計算",
           "largeAllocation": "大容量メモリブロック",
+          "optimizationDisabled": "無効",
           "optimizationActive": "有効",
           "optimizationUnavailable": "利用不可",
           "auto": "システム",
@@ -113,7 +123,7 @@
           "darkMode": "ダーク"
         },
         "hints": {
-          "largeRenderOptimization": "対応する並列記録、Bindless、非同期計算、大容量メモリブロックを有効にします。メモリ使用量が増える場合があります。切り替え時に再読み込みします。",
+          "largeRenderOptimization": "下で Vulkan の最適化を個別に選択します。非対応の項目は利用不可と表示されます。メモリ使用量が増える場合があり、変更時にレンダラーとモデルを再読み込みします。",
           "largeRenderUnavailable": "現在のモデルのレンダラーはこれらの最適化に非対応です。描画は変わりません。",
           "showTrayIcon": "有効にすると、システムトレイにアプリアイコンを表示します。",
           "autostartFailed": "起動時に実行する設定を更新できません",

@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 # Renderer implementations are shared libraries; the host never links Framework.
 option(BONGO_CAT_BUILD_INOX2D "Build the Rust Inox2D renderer plugin" ON)
 set(BONGO_CAT_MODEL_HOST_SOURCES
@@ -25,7 +26,7 @@ if(BONGO_CAT_CUBISM_ENABLED)
   file(GLOB_RECURSE gl_shader_sources CONFIGURE_DEPENDS
     "${BONGO_CAT_CUBISM_SHADER_SOURCE_DIR}/*")
   string(REPLACE ";" "\n" shader_paths "${gl_shader_sources};${BONGO_CAT_VULKAN_SHADER_BINARIES};${BONGO_CAT_METAL_SHADER_BINARIES}")
-  file(WRITE "${shader_list}" "${shader_paths}")
+  bongo_cat_write_if_different("${shader_list}" "${shader_paths}")
   add_custom_command(OUTPUT "${BONGO_CAT_PLUGIN_SHADER_SOURCE}"
     COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_plugin_shaders.py"
       --output "${BONGO_CAT_PLUGIN_SHADER_SOURCE}" --list "${shader_list}"
@@ -33,6 +34,14 @@ if(BONGO_CAT_CUBISM_ENABLED)
       ${gl_shader_sources} ${BONGO_CAT_VULKAN_SHADER_BINARIES} ${BONGO_CAT_METAL_SHADER_BINARIES}
     VERBATIM)
   add_library(bongo_cubism_plugin_shaders OBJECT "${BONGO_CAT_PLUGIN_SHADER_SOURCE}")
+  # Complete shader compilation before the embedding rule examines binary
+  # dependencies. MSBuild otherwise emits the same output rules in both
+  # projects and may execute them twice in one parallel build.
+  foreach(backend IN ITEMS vulkan metal)
+    if(TARGET bongo_cat_${backend}_shaders)
+      add_dependencies(bongo_cubism_plugin_shaders bongo_cat_${backend}_shaders)
+    endif()
+  endforeach()
   target_link_libraries(bongo_cubism_plugin_shaders PRIVATE bongo_cat_warnings)
   add_library(bongo_live2d SHARED ${BONGO_CAT_LIVE2D_SOURCES} src/live2d/cubism_plugin.cpp)
   target_link_libraries(bongo_live2d PRIVATE bongo_cubism_plugin_shaders)

@@ -143,7 +143,7 @@ void bongo_cat_rhi_vk_release_corner_framebuffers(BongoCatRhiVk *vk);
 void bongo_cat_rhi_vk_release_corners(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_draw_corners(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_background(BongoCatRhiVk *vk);
-bool bongo_cat_rhi_vk_draw_background(BongoCatRhiVk *vk);
+void bongo_cat_rhi_vk_record_background(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk);
 /* Chooses and records a depth format for the Cubism render passes. */

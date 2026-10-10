@@ -81,6 +81,8 @@ if(BUILD_TESTING)
     target_link_libraries(bongo_cat_window_frame_tests PRIVATE m)
   endif()
   add_test(NAME window-motion-frame COMMAND bongo_cat_window_frame_tests)
+  add_test(NAME cubism-vulkan-vertex-upload COMMAND ${CMAKE_COMMAND} "-DSDK=${BONGO_CAT_CUBISM_SDK}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismVulkanVertexUpload.cmake")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubismOptimizationTests.cmake")
   add_test(NAME cubism-texture-sampling COMMAND ${CMAKE_COMMAND}
     "-DROOT=${CMAKE_CURRENT_SOURCE_DIR}"
     "-DSDK=${BONGO_CAT_CUBISM_SDK}"
@@ -96,14 +98,12 @@ if(BUILD_TESTING)
       /experimental:c11atomics)
   endif()
   add_test(NAME multi-pet-shortcuts COMMAND bongo_cat_multi_pet_shortcut_tests)
-
   add_executable(bongo_cat_input_concurrent_tests tests/core/test_input_concurrent.c)
   target_include_directories(bongo_cat_input_concurrent_tests PRIVATE tests/support)
   target_link_libraries(bongo_cat_input_concurrent_tests PRIVATE
     bongo_cat_core SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME input-concurrent COMMAND bongo_cat_input_concurrent_tests)
   set_tests_properties(input-concurrent PROPERTIES TIMEOUT 30)
-
   add_executable(bongo_cat_safe_ffi_tests tests/core/test_safe_ffi.c)
   target_include_directories(bongo_cat_safe_ffi_tests PRIVATE tests/support)
   target_link_libraries(bongo_cat_safe_ffi_tests PRIVATE

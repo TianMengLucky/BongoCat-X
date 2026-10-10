@@ -403,33 +403,42 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
 
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context) {
+    if (app->rhi.backend != BONGO_CAT_RHI_VULKAN) return;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
     if (bongo_cat_pref_toggle(context, "large-render-optimization", tr(app,
         "pages.preference.general.labels.largeRenderOptimization", "Large Rendering Optimization"),
         tr(app, "pages.preference.general.hints.largeRenderOptimization",
-            "Request parallel recording, Bindless, async compute and large memory blocks where supported. May use more memory; reloads the renderer and model."),
+            "Select Vulkan optimizations individually below. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model."),
         &options->large_render_optimization)) app->render_backend_swap_pending = true;
     if (!options->large_render_optimization) return;
     uint32_t active = bongo_cat_model_runtime_optimizations(app->model_runtime);
-    if (!active) {
-        nk_layout_row_dynamic(context, 36, 1);
-        nk_label_wrap(context, tr(app, "pages.preference.general.hints.largeRenderUnavailable",
-            "The current model renderer provides none of these optimizations."));
-        return;
-    }
     const uint32_t bits[] = {BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING, BONGO_CAT_OPTIMIZE_BINDLESS,
-        BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE, BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION};
+        BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION};
     const char *keys[] = {"pages.preference.general.options.parallelRecording",
-        "pages.preference.general.options.bindless", "pages.preference.general.options.asyncCompute",
-        "pages.preference.general.options.largeAllocation"};
-    const char *fallbacks[] = {"Parallel command recording", "Bindless", "Async compute", "Large memory blocks"};
-    for (size_t i = 0; i < SDL_arraysize(bits); ++i) {
-        char status[256];
-        snprintf(status, sizeof(status), "%s: %s", tr(app, keys[i], fallbacks[i]),
-            tr(app, active & bits[i] ? "pages.preference.general.options.optimizationActive" :
-                "pages.preference.general.options.optimizationUnavailable",
-                active & bits[i] ? "Enabled" : "Unavailable"));
-        nk_layout_row_dynamic(context, 24, 1);
-        nk_label(context, status, NK_TEXT_LEFT);
+        "pages.preference.general.options.bindless", "pages.preference.general.options.largeAllocation"};
+    const char *fallbacks[] = {"Parallel command recording", "Bindless", "Large memory blocks"};
+    const char *ids[] = {"render-parallel-recording", "render-bindless",
+        "render-large-allocation"};
+    bool *values[] = {&options->render_parallel_recording, &options->render_bindless,
+        &options->render_large_allocation};
+    /* Inset the child group so these controls read as master-switch children. */
+    float height = (float)SDL_arraysize(bits) * (89.0f + context->style.window.spacing.y) +
+        2 * (context->style.window.group_padding.y + context->style.window.group_border);
+    nk_layout_row_begin(context, NK_DYNAMIC, height, 2);
+    nk_layout_row_push(context, .04f);
+    nk_spacing(context, 1);
+    nk_layout_row_push(context, .96f);
+    if (nk_group_begin(context, "large-render-options", NK_WINDOW_NO_SCROLLBAR)) {
+        for (size_t i = 0; i < SDL_arraysize(bits); ++i) {
+            const char *status = !*values[i] ? tr(app,
+                "pages.preference.general.options.optimizationDisabled", "Disabled") :
+                tr(app, active & bits[i] ? "pages.preference.general.options.optimizationActive" :
+                    "pages.preference.general.options.optimizationUnavailable",
+                    active & bits[i] ? "Enabled" : "Unavailable");
+            if (bongo_cat_pref_toggle(context, ids[i], tr(app, keys[i], fallbacks[i]),
+                    status, values[i])) app->render_backend_swap_pending = true;
+        }
+        nk_group_end(context);
     }
+    nk_layout_row_end(context);
 }

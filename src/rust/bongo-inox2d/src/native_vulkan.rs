@@ -91,7 +91,7 @@ impl Vulkan {
             limits.max_image_width = Some(16384);
             limits.max_image_height = Some(16384);
             reader.limits(limits);
-            let mut image = reader.decode().map_err(|e| e.to_string())?.to_rgba8();
+            let mut image = reader.decode().map_err(|e| e.to_string())?.into_rgba8();
             for pixel in image.pixels_mut() {
                 for c in 0..3 {
                     pixel[c] = ((u16::from(pixel[c]) * u16::from(pixel[3]) + 127) / 255) as u8;

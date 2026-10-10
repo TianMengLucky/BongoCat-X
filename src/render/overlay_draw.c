@@ -14,19 +14,36 @@ static void draw(BongoCatOverlay *value, GLuint texture,
     value->gl.uniform_1i(value->mirror_location, mirror);
     value->gl.uniform_1i(value->vertical_flip_location, value->vertical_flip);
     value->gl.uniform_1i(value->image_location, 0);
+    value->gl.uniform_1i(value->backdrop_width_location, value->backdrop_width);
+    value->gl.uniform_1i(value->backdrop_height_location, value->backdrop_height);
     value->gl.uniform_1i(value->reference_width_location, value->reference_width);
     value->gl.uniform_1i(value->reference_height_location, value->reference_height);
     value->gl.uniform_1i(value->erase_left_location,
-        !blend && value->composed_cover && !value->composite &&
+        texture == value->background && value->composed_cover && !value->composite &&
             value->left != 0);
     value->gl.uniform_1i(value->erase_right_location,
-        !blend && value->composed_cover && !value->composite &&
+        texture == value->background && value->composed_cover && !value->composite &&
             value->right != 0);
     value->gl.active_texture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     value->gl.bind_vertex_array(value->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     value->gl.bind_vertex_array(0);
+}
+
+void bongo_cat_overlay_draw_custom_background(BongoCatOverlay *value, int width, int height) {
+    if (!value || !value->custom_texture || width <= 0 || height <= 0) return;
+    int reference_width = value->reference_width, reference_height = value->reference_height;
+    bool flip = value->vertical_flip;
+    value->reference_width = value->reference_height = 0;
+    value->vertical_flip = false;
+    value->backdrop_width = width;
+    value->backdrop_height = height;
+    draw(value, value->custom_texture, false, true);
+    value->backdrop_width = value->backdrop_height = 0;
+    value->reference_width = reference_width;
+    value->reference_height = reference_height;
+    value->vertical_flip = flip;
 }
 
 void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
@@ -43,7 +60,7 @@ void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
     }
     bool active = value->left || value->right;
     draw(value, active && value->composite ? value->composite :
-        value->background, mirror, false);
+        value->background, mirror, value->custom_texture != 0);
 }
 
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *value, bool mirror) {

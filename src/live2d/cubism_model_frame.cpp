@@ -41,9 +41,10 @@ struct AlphaCoverage {
            A UV bounding box may include transparent corners; false positives
            cost a little space, whereas false negatives would clip thin parts. */
         int x0 = std::max(0, cell(min_u, width) - 1);
-        int y0 = std::max(0, cell(min_v, height) - 1);
+        /* Cubism shaders sample (u, 1-v); masks use decoded top-down rows. */
+        int y0 = std::max(0, cell(1.0f - max_v, height) - 1);
         int x1 = std::min(width, cell(max_u, width) + 3);
-        int y1 = std::min(height, cell(max_v, height) + 3);
+        int y1 = std::min(height, cell(1.0f - min_v, height) + 3);
         size_t stride = (size_t)width + 1;
         return sums[(size_t)y1 * stride + x1] + sums[(size_t)y0 * stride + x0] >
             sums[(size_t)y0 * stride + x1] + sums[(size_t)y1 * stride + x0];

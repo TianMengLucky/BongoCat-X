@@ -185,6 +185,9 @@ static void reload_secondary_settings(BongoCatApp *app) {
         settings.window.always_on_top != app->settings.window.always_on_top ||
         settings.window.hide_on_hover != app->settings.window.hide_on_hover ||
         settings.window.obs_background != app->settings.window.obs_background ||
+        settings.window.custom_background != app->settings.window.custom_background ||
+        strcmp(settings.window.custom_background_path,
+            app->settings.window.custom_background_path) != 0 ||
         settings.window.random_expression != app->settings.window.random_expression ||
         settings.window.random_motion != app->settings.window.random_motion ||
         settings.window.rounded_corners != app->settings.window.rounded_corners ||

@@ -65,12 +65,14 @@ bool NativeModel::load_textures_native(BongoCatError *error,
     }
 #endif
     for (int i = 0; i < count; ++i) {
-        auto bytes = read(path(setting_->GetTextureFileName(i)));
         int width = 0, height = 0;
-        auto *decoded = bongo_safe_image_decode(bytes.data(), bytes.size(), &width, &height);
+        auto *decoded = [this, i, &width, &height] {
+            auto bytes = read(path(setting_->GetTextureFileName(i)));
+            return bongo_safe_image_decode(bytes.data(), bytes.size(), &width, &height);
+        }();
         size_t texels = width > 0 && height > 0 ? (size_t)width * (size_t)height : 0;
         const auto free_pixels = [texels](unsigned char *pixels) {
-            if (pixels) bongo_safe_free_pixels(pixels, texels);
+            if (pixels) bongo_safe_free_pixels(pixels, texels * 4);
         };
         std::unique_ptr<unsigned char, decltype(free_pixels)> owned(decoded, free_pixels);
         if (!decoded || !texels || texels > SIZE_MAX / 4) {
@@ -94,9 +96,10 @@ bool NativeModel::load_textures_native(BongoCatError *error,
             release_render_resources(); return false;
         }
         width = resized.width; height = resized.height;
-        std::vector<unsigned char> pixels(resized.pixels, resized.pixels + (size_t)width * (size_t)height * 4);
-        resized_owner.reset();
-        for (size_t p = 0; p < pixels.size(); p += 4) {
+        const size_t pixel_bytes = (size_t)width * (size_t)height * 4;
+        // Keep the resize result owned until the synchronous upload completes.
+        auto *pixels = resized.pixels;
+        for (size_t p = 0; p < pixel_bytes; p += 4) {
             unsigned alpha = pixels[p + 3];
             for (size_t c = 0; c < 3; ++c)
                 pixels[p + c] = (unsigned char)(pixels[p + c] * alpha / 255);
@@ -107,11 +110,15 @@ bool NativeModel::load_textures_native(BongoCatError *error,
             uploaded = upload_texture_vulkan(i, pixels, width, height, error);
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
-        if (rhi_info_.backend == BONGO_CAT_RHI_METAL)
-            uploaded = upload_texture_metal(i, pixels, width, height, error);
+        if (rhi_info_.backend == BONGO_CAT_RHI_METAL) {
+            std::vector<unsigned char> metal_pixels(pixels, pixels + pixel_bytes);
+            resized_owner.reset();
+            uploaded = upload_texture_metal(i, metal_pixels, width, height, error);
+        }
 #endif
         if (!uploaded) { release_render_resources(); return false; }
-        native_texture_bytes_ += pixels.size();
+        resized_owner.reset();
+        native_texture_bytes_ += pixel_bytes;
         if (progress) progress(userdata, .50f + .45f * (float)(i + 1) /
             (float)(count > 0 ? count : 1));
     }

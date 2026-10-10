@@ -30,6 +30,16 @@
       },
       "title": "Préférences",
       "cat": {
+        "background": {
+          "title": "Image de fond personnalisée",
+          "help": "Remplit la fenêtre avec une image centrée en conservant ses proportions. Incompatible avec le fond uni.",
+          "image": "Image de fond",
+          "selected": "Une image a été importée",
+          "empty": "Aucune image sélectionnée",
+          "choose": "Choisir une image",
+          "imported": "Image de fond importée",
+          "failed": "Impossible de charger l’image. Choisissez PNG, JPEG, WebP, BMP ou GIF de 64 Mo et 16 mégapixels maximum."
+        },
         "title": "Préférences",
         "labels": {
           "modelSettings": "Modèle",
@@ -104,8 +114,8 @@
         "options": {
           "parallelRecording": "Enregistrement parallèle",
           "bindless": "Bindless",
-          "asyncCompute": "Calcul asynchrone",
           "largeAllocation": "Grands blocs mémoire",
+          "optimizationDisabled": "Désactivé",
           "optimizationActive": "Activé",
           "optimizationUnavailable": "Indisponible",
           "auto": "Système",
@@ -113,7 +123,7 @@
           "darkMode": "Sombre"
         },
         "hints": {
-          "largeRenderOptimization": "Active selon la compatibilité : enregistrement parallèle, Bindless, calcul asynchrone et grands blocs mémoire. Peut utiliser plus de mémoire ; recharge le moteur et le modèle.",
+          "largeRenderOptimization": "Sélectionnez les optimisations Vulkan séparément ci-dessous. Les demandes non prises en charge restent indisponibles. Peut utiliser plus de mémoire ; les changements rechargent le moteur et le modèle.",
           "largeRenderUnavailable": "Le moteur du modèle actuel ne propose aucune de ces optimisations ; le rendu reste inchangé.",
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
           "autostartFailed": "Impossible de modifier le lancement au démarrage",

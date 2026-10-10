@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 function(bongo_cat_replace_cubism_text variable needle replacement label)
   string(FIND "${${variable}}" "${needle}" position)
   if(position EQUAL -1)
@@ -123,7 +124,7 @@ void CubismShader_OpenGLES2::SetupShaderProgramForDrawable]=])
 
   file(MAKE_DIRECTORY "${output_dir}")
   file(REMOVE "${output_dir}/CubismShader_OpenGLES2.hpp")
-  file(WRITE "${output_source}" "${source}")
+  bongo_cat_write_if_different("${output_source}" "${source}")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_path}")
   get_target_property(framework_sources ${target} SOURCES)
   list(REMOVE_ITEM framework_sources "${source_path}")

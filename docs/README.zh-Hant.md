@@ -60,7 +60,7 @@
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.1](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.1))
+- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 
@@ -294,7 +294,7 @@ flowchart TB
 
 設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層和非同步動態紋理更新目前需要 OpenGL；原生紋理在載入時套用畫質 / 顯示尺寸限制。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
 
-「大型渲染最佳化」預設關閉，依模型插件與後端能力啟用並顯示實際狀態，切換時重新載入模型。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 大區塊配置。小場景維持單執行緒；Bindless、非同步運算與 Live2D 多執行緒錄製尚未實作。OpenGL / Metal 顯示無可用項目。較大的池可能增加記憶體用量。
+「大型渲染最佳化」僅在 Vulkan 後端顯示，預設關閉，三個子項可個別設定並儲存，切換時重新載入模型。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
 
 含 SDK 的 Windows / Linux x64 建置預設 `BONGO_CAT_CUBISM_VULKAN=ON`，需要 `glslangValidator` 或 `glslang`（Linux 安裝 `glslang-tools`），執行需要 Vulkan 1.3；macOS 預設 `BONGO_CAT_CUBISM_METAL=ON`，需要 Xcode Metal 工具。設為 `OFF` 可建置 OpenGL 版本。Metal 原始碼與 `.metallib` 僅進入 macOS，Vulkan 原始碼與 `.spv` 僅進入 Windows / Linux x64，包含混合模式變體；無 SDK 的診斷建置不打包原生 Live2D 資源。GitHub Actions 按平台準備工具並檢查資源。本輪完成靜態檢查，尚未建置或進行 GPU 實測，詳見 [整合進度與驗證](live2d-vulkan-metal.md)。
 
@@ -338,3 +338,5 @@ Windows 可攜版以 ZIP 壓縮檔發佈，解壓後請將 `plugins` 資料夾�
 Linux Wayland 的實驗性 evdev 輸入可用 `BONGOCAT_ENABLE_EVDEV=1` 啟用。先嘗試一般使用者的唯讀存取；權限不足時，受保護的安裝會透過 `/usr/bin/sudo` 請求認證，開啟裝置後立即降權並重新執行，再初始化 SDL、設定及模型。自動提權要求程式、sudo 及父目錄歸 root 所有且群組與其他使用者不可寫；開發與可攜安裝需要管理員另行授權。可信 sudo 路徑可用 `BONGO_CAT_SUDO_EXECUTABLE` 設定。失敗會停止啟動，不修改永久權限；僅監聽啟動時已有的裝置，熱插拔需要重啟。不要直接以 root 執行或加入 `input` 群組。原始輸入可能包含密碼，鎖屏及切換工作階段不會自動暫停；隱藏寵物也不會停止監聽。
 
 [SECURITY.md](../SECURITY.md#linux-input)
+
+在「偏好設定 → 偏好 → 視窗」啟用「自訂圖片背景」，點選「選擇圖片」匯入 PNG、JPEG、WebP、BMP 或 GIF（靜態首幀）。圖片保持比例、置中填滿視窗，與「純色背景」互斥。圖片儲存在應用程式資料目錄，移動原始檔不影響使用；上限為 64 MB、1600 萬像素，支援 OpenGL、Vulkan 和 Metal。

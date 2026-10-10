@@ -54,6 +54,7 @@ int main() {
     const GLushort quad_indices[] = {0,1,2, 2,3,0};
     const GLfloat triangle_uv[] = {1,0, 1,0, 1,0};
     const GLfloat quad_uv[] = {1,0, 1,0, 1,0, 1,0};
+    const GLfloat green_uv[] = {0,1, 0,1, 0,1};
     GLuint host_vao, host_buffers[2];
     glGenVertexArrays(1, &host_vao);
     glGenBuffers(2, host_buffers);
@@ -96,6 +97,15 @@ int main() {
             CHECK((GLuint)current == outer.vao);
             bongo_cat::CoreProfileBinding::draw(3, triangle_indices);
             unsigned char pixel[4] = {};
+            glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+            CHECK(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0);
+            bongo_cat::CoreProfileBinding::attribute(1, 7, green_uv, sizeof(green_uv));
+            bongo_cat::CoreProfileBinding::draw(3, triangle_indices);
+            glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+            CHECK(pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0);
+            bongo_cat::CoreProfileBinding::attribute(0, 3, quad, sizeof(quad));
+            bongo_cat::CoreProfileBinding::attribute(1, 7, quad_uv, sizeof(quad_uv));
+            bongo_cat::CoreProfileBinding::draw(6, quad_indices);
             glReadPixels(16, 16, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
             CHECK(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0);
         }

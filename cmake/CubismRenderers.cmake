@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 # Cubism multi-backend renderer support (Cubism 5.1+ ships Rendering/Vulkan
 # and Rendering/Metal next to Rendering/OpenGL). Both implementations compile
 # into the Framework, but each backend .cpp defines the CubismRenderer::
@@ -38,7 +39,7 @@ endif()
 # the chain (types first, then volk's function pointers).
 set(BONGO_CAT_VULKAN_SHIM_DIR "${CMAKE_BINARY_DIR}/vulkan-compat")
 file(MAKE_DIRECTORY "${BONGO_CAT_VULKAN_SHIM_DIR}/vulkan")
-file(WRITE "${BONGO_CAT_VULKAN_SHIM_DIR}/vulkan/vulkan.h" "#ifndef BONGO_CAT_COMPAT_VULKAN_H
+bongo_cat_write_if_different("${BONGO_CAT_VULKAN_SHIM_DIR}/vulkan/vulkan.h" "#ifndef BONGO_CAT_COMPAT_VULKAN_H
 #define BONGO_CAT_COMPAT_VULKAN_H
 #ifndef VK_NO_PROTOTYPES
 #define VK_NO_PROTOTYPES
@@ -105,7 +106,17 @@ include(cmake/CubismVulkanMemory.cmake)
 include(cmake/CubismVulkanSafety.cmake)
 bongo_cat_harden_vulkan_pipelines(FACTORY_TEXT)
 bongo_cat_vulkan_depth_aspects(FACTORY_TEXT)
-file(WRITE "${BONGO_CAT_FACTORY_VK_OUTPUT}" "${FACTORY_TEXT}")
+include(cmake/CubismVulkanVertexUpload.cmake)
+bongo_cat_vulkan_vertex_upload_patch(FACTORY_TEXT)
+include(cmake/CubismVulkanRecording.cmake)
+bongo_cat_vulkan_recording_patch(FACTORY_TEXT)
+include(cmake/CubismVulkanBindless.cmake)
+bongo_cat_vulkan_bindless_patch(FACTORY_TEXT)
+find_package(Threads REQUIRED)
+target_link_libraries(Framework PRIVATE Threads::Threads)
+target_sources(Framework PRIVATE "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_recording.cpp"
+  "${PROJECT_SOURCE_DIR}/src/live2d/cubism_vulkan_bindless.cpp")
+bongo_cat_write_if_different("${BONGO_CAT_FACTORY_VK_OUTPUT}" "${FACTORY_TEXT}")
 # Remove the original from the Framework target (source properties set
 # from a parent scope do not reach files added in a subdirectory; the
 # core-profile patcher uses the same target-SOURCES rewrite.
@@ -126,7 +137,10 @@ target_sources(Framework PRIVATE
 
 include(cmake/CubismNativeShaders.cmake)
 set(BONGO_CAT_VULKAN_SHADER_OUTPUT "${CMAKE_BINARY_DIR}/FrameworkShaders")
-bongo_cat_compile_native_shaders(VULKAN "${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src"
+set(BONGO_CAT_VULKAN_GENERATED_SHADERS "${CMAKE_BINARY_DIR}/cubism-bindless-shaders")
+bongo_cat_prepare_vulkan_bindless_shaders("${BONGO_CAT_CUBISM_VULKAN_SHADERS_DIR}/src"
+  "${BONGO_CAT_VULKAN_GENERATED_SHADERS}")
+bongo_cat_compile_native_shaders(VULKAN "${BONGO_CAT_VULKAN_GENERATED_SHADERS}"
   "${BONGO_CAT_VULKAN_SHADER_OUTPUT}")
 bongo_cat_harden_vulkan_resources(Framework)
 bongo_cat_harden_vulkan_render_targets(Framework)

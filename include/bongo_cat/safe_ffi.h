@@ -37,7 +37,8 @@ unsigned char *bongo_safe_image_decode(const unsigned char *data, size_t size,
 /* Header-only dimensions for the same formats. */
 bool bongo_safe_image_info(const unsigned char *data, size_t size, int *width,
     int *height);
-void bongo_safe_free_pixels(unsigned char *pixels, size_t pixel_count);
+/* byte_count is width * height * 4, including every RGBA component. */
+void bongo_safe_free_pixels(unsigned char *pixels, size_t byte_count);
 
 /* --- about-page contributor feed --- */
 

@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 function(bongo_cat_patch_cubism_renderer_creation variable)
   set(source "${${variable}}")
   set(create_anchor "void CubismUserModel::CreateRenderer")
@@ -129,7 +130,7 @@ function(bongo_cat_harden_cubism_user_model target)
   endif()
 
   file(MAKE_DIRECTORY "${output_dir}")
-  file(WRITE "${output_source}" "${source}")
+  bongo_cat_write_if_different("${output_source}" "${source}")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${source_path}")
   get_target_property(framework_sources ${target} SOURCES)

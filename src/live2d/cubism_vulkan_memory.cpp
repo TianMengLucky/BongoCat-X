@@ -12,7 +12,11 @@ namespace {
 VmaAllocator allocator;
 VkDevice allocator_device;
 bool use_pool;
-struct BufferAllocation { VmaAllocation allocation; unsigned maps = 0; };
+struct BufferAllocation {
+    VmaAllocation allocation;
+    unsigned maps = 0;
+    void *mapped = nullptr;
+};
 std::map<VkBuffer, BufferAllocation> buffers;
 std::map<VkImage, VmaAllocation> images;
 void check(VkResult result) {
@@ -36,7 +40,9 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         info.physicalDevice = physical;
         info.device = device;
         info.vulkanApiVersion = VK_API_VERSION_1_3;
-        info.preferredLargeHeapBlockSize = 64ull * 1024 * 1024;
+        // Keep small models from reserving large mostly empty blocks per memory type.
+        // VMA still grows the pool and dedicates oversized resources as needed.
+        info.preferredLargeHeapBlockSize = 16ull * 1024 * 1024;
         info.pVulkanFunctions = &functions;
         if (vmaCreateAllocator(&info, &allocator) != VK_SUCCESS) return false;
         allocator_device = device;
@@ -54,7 +60,7 @@ void vulkan_memory_release() {
 }
 bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
     VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkBuffer *buffer, VkDeviceMemory *memory) {
+    VkBuffer *buffer, VkDeviceMemory *memory, bool transient) {
     if (!use_pool || device != allocator_device) return false;
     VkBufferCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -62,6 +68,9 @@ bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
     info.usage = usage;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VmaAllocationCreateInfo allocation_info{};
+    // Uploads must not expand pools retained by long-lived mesh/uniform buffers.
+    allocation_info.flags = transient ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT :
+        VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
     allocation_info.requiredFlags = properties;
     VmaAllocation allocation{};
     VmaAllocationInfo details{};
@@ -77,6 +86,7 @@ bool vulkan_image_create(VkDevice device, const VkImageCreateInfo &info,
     VkImage *image, VkDeviceMemory *memory) {
     if (!use_pool || device != allocator_device) return false;
     VmaAllocationCreateInfo allocation_info{};
+    allocation_info.flags = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
     allocation_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     VmaAllocation allocation{};
     VmaAllocationInfo details{};
@@ -92,15 +102,20 @@ bool vulkan_buffer_map(VkBuffer buffer, void **mapped) {
     auto found = buffers.find(buffer);
     if (found == buffers.end()) return false;
     check(vmaMapMemory(allocator, found->second.allocation, mapped));
+    found->second.mapped = *mapped;
     ++found->second.maps;
     return true;
+}
+void *vulkan_buffer_mapped_data(VkBuffer buffer) {
+    auto found = buffers.find(buffer);
+    return found != buffers.end() && found->second.maps ? found->second.mapped : nullptr;
 }
 bool vulkan_buffer_unmap(VkBuffer buffer) {
     auto found = buffers.find(buffer);
     if (found == buffers.end()) return false;
     if (found->second.maps) {
         vmaUnmapMemory(allocator, found->second.allocation);
-        --found->second.maps;
+        if (!--found->second.maps) found->second.mapped = nullptr;
     }
     return true;
 }

@@ -24,6 +24,8 @@ static size_t combination_count(Csm::csmInt32 count,
 }
 
 int NativeModel::prepare_mask_layout() {
+    // Mask IDs are immutable for the lifetime of the loaded Core model.
+    if (mask_buffer_count_ > 0) return mask_buffer_count_;
     size_t drawables = combination_count(_model->GetDrawableCount(),
         _model->GetDrawableMaskCounts(), _model->GetDrawableMasks());
     size_t offscreens = combination_count(_model->GetOffscreenCount(),
@@ -31,6 +33,7 @@ int NativeModel::prepare_mask_layout() {
     int count = std::max(mask_buffer_count(drawables), mask_buffer_count(offscreens));
     drawable_masks_.layout = mask_layout(drawables, count);
     offscreen_masks_.layout = mask_layout(offscreens, count);
+    mask_buffer_count_ = count;
     return count;
 }
 

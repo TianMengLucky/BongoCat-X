@@ -196,7 +196,29 @@ static void check_behavior_companions(void) {
     CHECK(bongo_cat_file_remove("bongocat-audio-config-test.json"));
 }
 
+static void check_custom_background(void) {
+    static BongoCatSettings settings, loaded;
+    bongo_cat_settings_defaults(&settings);
+    CHECK(!settings.window.custom_background && !settings.window.custom_background_path[0]);
+    settings.window.custom_background = true;
+    settings.window.obs_background = true;
+    bongo_cat_settings_validate(&settings);
+    CHECK(!settings.window.custom_background && settings.window.obs_background);
+    snprintf(settings.window.custom_background_path, BONGO_CAT_PATH_CAP,
+        "backgrounds/example.img");
+    settings.window.custom_background = true;
+    bongo_cat_settings_validate(&settings);
+    CHECK(settings.window.custom_background && !settings.window.obs_background);
+    CHECK(bongo_cat_settings_save("bongocat-background-config-test.json", &settings, NULL) == BONGO_CAT_OK);
+    bongo_cat_settings_defaults(&loaded);
+    CHECK(bongo_cat_settings_load("bongocat-background-config-test.json", &loaded, NULL) == BONGO_CAT_OK);
+    CHECK(loaded.window.custom_background && !loaded.window.obs_background);
+    CHECK(!strcmp(settings.window.custom_background_path, loaded.window.custom_background_path));
+    CHECK(bongo_cat_file_remove("bongocat-background-config-test.json"));
+}
+
 void test_config_validation(void) {
+    check_custom_background();
     check_defaults_and_validation();
     check_behavior_companions();
     check_shortcuts();

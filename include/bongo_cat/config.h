@@ -93,6 +93,8 @@ typedef struct BongoCatWindowPreferences {
     float random_motion_interval_seconds;
     float sequential_model_interval_seconds;
     float corner_radius_percent;
+    bool custom_background;
+    char custom_background_path[BONGO_CAT_PATH_CAP];
 } BongoCatWindowPreferences;
 
 typedef struct BongoCatWindowState {
@@ -120,6 +122,9 @@ typedef struct BongoCatApplicationPreferences {
     bool run_as_admin;
     bool tray_visible;
     bool large_render_optimization;
+    bool render_parallel_recording;
+    bool render_bindless;
+    bool render_large_allocation;
     BongoCatTheme theme;
     BongoCatLanguage language;
     BongoCatRenderBackend render_backend;

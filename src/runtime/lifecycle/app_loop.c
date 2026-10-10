@@ -64,6 +64,7 @@ static bool render(BongoCatApp *app, bool present) {
     glDisable(GL_SCISSOR_TEST);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     bongo_cat_window_clear_background(app);
+    bongo_cat_overlay_draw_custom_background(app->overlay, width, height);
     int content_x = 0, content_y = 0, content_width = width,
         content_height = height;
     /* Overlays follow the model's own canvas mapping: in tight mode the

@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 function(bongo_cat_enable_mver_physics target)
   set(physics_dir "${CUBISM_FRAMEWORK_PATH}/src/Physics")
   set(source_path "${physics_dir}/CubismPhysics.cpp")
@@ -39,8 +40,8 @@ function(bongo_cat_enable_mver_physics target)
       configure_file("${physics_header}" "${output_dir}/${header_name}" COPYONLY)
     endif()
   endforeach()
-  file(WRITE "${output_header}" "${header}")
-  file(WRITE "${output_source}" "${source}")
+  bongo_cat_write_if_different("${output_header}" "${header}")
+  bongo_cat_write_if_different("${output_source}" "${source}")
 
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${source_path}" "${header_path}" "${legacy_path}" ${physics_headers})
@@ -95,8 +96,8 @@ function(bongo_cat_enable_mver_motion target)
 
   file(REMOVE_RECURSE "${output_dir}")
   file(MAKE_DIRECTORY "${output_dir}")
-  file(WRITE "${output_header}" "${header}")
-  file(WRITE "${output_source}" "${source}")
+  bongo_cat_write_if_different("${output_header}" "${header}")
+  bongo_cat_write_if_different("${output_source}" "${source}")
 
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${source_path}" "${header_path}" "${legacy_path}")

@@ -1,3 +1,4 @@
+include("${CMAKE_CURRENT_LIST_DIR}/WriteIfDifferent.cmake")
 if(BONGO_CAT_FETCH_DEPS)
   FetchContent_Declare(miniz
     URL https://codeload.github.com/richgel999/miniz/tar.gz/refs/tags/3.1.0
@@ -5,7 +6,7 @@ if(BONGO_CAT_FETCH_DEPS)
     SOURCE_SUBDIR bongocat-unused)
   FetchContent_MakeAvailable(miniz)
   # Build only the library, without changing the parent's build options.
-  file(WRITE "${miniz_BINARY_DIR}/miniz_export.h"
+  bongo_cat_write_if_different("${miniz_BINARY_DIR}/miniz_export.h"
     "#pragma once\n#define MINIZ_EXPORT\n")
   add_library(bongo_cat_archive STATIC
     "${miniz_SOURCE_DIR}/miniz.c" "${miniz_SOURCE_DIR}/miniz_zip.c"

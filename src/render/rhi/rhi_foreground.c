@@ -69,8 +69,10 @@ bool bongo_cat_rhi_set_foreground(BongoCatRhi *rhi, const void *pixels,
     }
     rhi->foreground_width = width; rhi->foreground_height = height;
     rhi->foreground_revision = revision;
-    store_bounds(rhi, max_x < 0 ? (SDL_Rect){0} :
-        (SDL_Rect){min_x, min_y, max_x - min_x + 1, max_y - min_y + 1});
+    SDL_Rect bounds = {0};
+    if (max_x >= 0)
+        bounds = (SDL_Rect){min_x, min_y, max_x - min_x + 1, max_y - min_y + 1};
+    store_bounds(rhi, bounds);
     return true;
 }
 

@@ -76,7 +76,8 @@ static void test_display_projection(BongoCatApp *app,
         mouse.lLastX = mouse.lLastY = 1000000;
         bongo_cat_windows_input_motion(&input, &device, &mouse, NULL);
         expect_position(app, &projection, true, 9000, 9000,
-            hundredths ? 1.0f : 0.5f, hundredths ? 1.0f : 0.5f, hundredths != 0);
+            hundredths ? 1.0f : 0.5f, hundredths ? 1.0f : 0.5f,
+            hundredths > 0 && hundredths < 500);
         mouse.lLastX = (LONG)(-bounds.width * 0.1);
         mouse.lLastY = (LONG)(-bounds.height * 0.1);
         bongo_cat_windows_input_motion(&input, &device, &mouse, NULL);

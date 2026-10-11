@@ -10,6 +10,8 @@ if(BUILD_TESTING)
     add_dependencies(bongo_cat_model_plugin_tests bongo_inox2d-shared)
     add_test(NAME model-plugins COMMAND bongo_cat_model_plugin_tests
       "$<TARGET_FILE:bongo_inox2d-shared>" "${CMAKE_CURRENT_BINARY_DIR}/plugin-test-data")
+    set_tests_properties(model-plugins PROPERTIES ENVIRONMENT
+      "BONGO_CAT_PLUGIN_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/plugin-test-data/plugins")
     add_test(NAME plugin-archives COMMAND "${Python3_EXECUTABLE}"
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/model_import/test_plugin_archives.py"
       --tester "$<TARGET_FILE:bongo_cat_model_plugin_tests>"
@@ -317,6 +319,7 @@ if(BUILD_TESTING)
   target_compile_definitions(bongo_cat_mver_import_tests PRIVATE
     BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
   if(MSVC)
+    target_compile_options(bongo_cat_mver_import_tests PRIVATE /utf-8)
     set_property(SOURCE ${BONGO_CAT_MVER_IMPORT_TEST_SOURCES}
       APPEND PROPERTY COMPILE_OPTIONS "/experimental:c11atomics")
     set_property(SOURCE tests/platform/test_windows_capture.c APPEND PROPERTY

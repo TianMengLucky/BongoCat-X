@@ -124,10 +124,16 @@ BongoCatResult bongo_cat_overlay_load(BongoCatOverlay *value,
     snprintf(value->background_path, sizeof(value->background_path), "%s", path);
     bongo_cat_overlay_layout_load(value);
     value->tight_uv_valid = false;
-    if (background)
-        value->tight_uv_valid = bongo_cat_image_opaque_bounds(path,
-            &value->tight_uv[0], &value->tight_uv[1],
-            &value->tight_uv[2], &value->tight_uv[3]);
+    if (background) {
+        if (value->native)
+            value->tight_uv_valid = bongo_cat_image_opaque_bounds_pixels(
+                &value->native_background, &value->tight_uv[0], &value->tight_uv[1],
+                &value->tight_uv[2], &value->tight_uv[3]);
+        else
+            value->tight_uv_valid = bongo_cat_image_opaque_bounds(path,
+                &value->tight_uv[0], &value->tight_uv[1],
+                &value->tight_uv[2], &value->tight_uv[3]);
+    }
     return BONGO_CAT_OK;
 }
 

@@ -60,9 +60,11 @@
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **2.1.2 更新**：新增多按鍵氣泡、鏡像時保持字元可讀、動作獨立音量及自訂圖片背景；Vulkan / Metal 也可顯示按鍵、特效與指標。設定頁補齊各選項說明，並移除「保持在螢幕內」。繪圖最佳化依後端顯示可用狀態，效能收益仍待實測。詳見[更新日誌](../CHANGELOG.md)和[手部裁切設定](hand-layout.md)。
+  在設定的「一般」頁可開啟「GitHub 下載加速」（預設關閉），透過 [gh-proxy.com](https://gh-proxy.com/) 加速更新檢查、更新套件和貢獻者頭像。應用程式內的網路下載統一由 Rust 處理。點擊關於頁的更新按鈕後，應用程式下載並驗證 SHA-256，再顯示「稍後／重新啟動並更新」確認視窗；選擇「稍後」可繼續使用目前版本，並在本次執行中再次點擊更新按鈕安裝。商店版仍透過商店更新。
+
+  **2.1.3 更新**：新增 Rust 統計外掛，以獨立背景執行緒統計鍵鼠活動與應用程式使用時間；停用外掛即隱藏統計入口。偏好選項可切換全部展開／摺疊群組，新增滑鼠靈敏度、GitHub 下載加速及下載後確認重新啟動更新，並減少覆蓋層傳輸與閒置音訊開銷。詳見[更新日誌](../CHANGELOG.md)和[統計外掛說明](statistics-plugin.md)。
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 
@@ -91,7 +93,7 @@ BongoCat 使用 CMake，需要 C11 編譯器、C++17 編譯器、CMake 3.24 或�
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 配置與建置
@@ -350,3 +352,11 @@ Live2D 自動重用幾何緩衝與連續重複的渲染狀態；OpenGL 動態上
 Mver (OpenGL/Vulkan/Metal) 可分別裁剪手部、氣泡外框和字元，將按住的按鍵以加號連接在同一個氣泡中。外框和尾巴隨模型鏡像，字元保持可讀，單鍵模式也生效。在手部圖片資料夾的 `hand-layout.json` 中設定三個裁剪區域、加號兩側間距和每側顯示數量，修改後重新啟動應用程式。詳見[設定說明與範例](hand-layout.md)。
 
 動作彈窗會檢查動作的 `Sound` 引用及音訊檔案是否存在，僅在帶音訊的動作旁顯示獨立音量控制項。範圍為 0–100%，可拖曳、輸入數值或按兩下恢復 100%；0% 靜音。設定按模型與動作儲存，套用至彈窗播放、快捷鍵、隨機動作及右鍵選單，播放中也可調整；共用同一音訊檔案的其他動作保留各自的音量。
+
+### 偏好選項選單樣式
+
+「偏好」頁頂部可切換「全部展開」與「摺疊分組」樣式。點擊視窗、模型、應用或外觀分組標題即可展開或收起選項；樣式選擇會儲存，既有設定值保持不變。
+
+### 輸入統計外掛
+
+Rust 統計外掛預設隨程式建置，可在「外掛」頁啟停或匯入。「統計」頁提供鍵鼠總量、每日與每小時趨勢、本機儲存及 CSV 匯出。詳見[統計外掛說明](statistics-plugin.md)。 前景應用使用時間提供排行、每小時分布及獨立開關；取樣、儲存與匯出由獨立執行緒處理。 統計入口由外掛在啟用時註冊，停用或解除安裝後自動移除。

@@ -2,10 +2,11 @@
 #define BONGO_CAT_RHI_INTERNAL_H
 
 #include "bongo_cat/rhi.h"
+#include <SDL3/SDL_rect.h>
 
 /* Backend implementations behind the bongo_cat_rhi_* dispatchers. */
 bool bongo_cat_rhi_compose_foreground(const BongoCatRhi *rhi, void *pixels,
-    int width, int height, size_t pitch, bool bgra);
+    int width, int height, size_t pitch, bool bgra, SDL_Rect *changed);
 
 BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int height,
     bool fallback_ladder, SDL_Window **window, BongoCatRhi *rhi,

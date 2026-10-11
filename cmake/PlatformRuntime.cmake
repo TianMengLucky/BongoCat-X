@@ -19,6 +19,7 @@ if(WIN32)
     src/platform/windows/windows_snapshot_image.c
     src/platform/windows/windows_snapshot_input.c
     src/platform/windows/windows_dialog.c
+    src/platform/windows/windows_statistics.c
     src/platform/windows/windows_input.c
     src/platform/windows/windows_input_receiver.c
     src/platform/windows/windows_input_registration.c
@@ -44,14 +45,14 @@ if(WIN32)
     src/platform/windows)
   target_link_libraries(bongo_cat_runtime PRIVATE
     dwmapi ole32 shell32 user32 uuid windowscodecs advapi32
-    winhttp comctl32 oleaut32 taskschd psapi)
+    comctl32 oleaut32 taskschd psapi)
 elseif(APPLE)
-  find_package(CURL REQUIRED)
   enable_language(OBJC)
   target_sources(bongo_cat_runtime PRIVATE
     src/platform/posix/posix_live2d_sdk.c
     src/platform/macos/macos.m
     src/platform/macos/macos_preferences.m
+    src/platform/macos/macos_statistics.m
     src/platform/macos/macos_input.m
     src/platform/macos/macos_keys.m
     src/platform/macos/macos_tray.m
@@ -64,9 +65,8 @@ elseif(APPLE)
   target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE "-framework Cocoa"
     "-framework ApplicationServices" "-framework Metal"
-    "-framework QuartzCore" CURL::libcurl)
+    "-framework QuartzCore")
 else()
-  find_package(CURL REQUIRED)
   find_package(X11 REQUIRED)
   if(NOT TARGET X11::Xi OR NOT TARGET X11::Xfixes)
     message(FATAL_ERROR
@@ -74,6 +74,7 @@ else()
   endif()
   target_sources(bongo_cat_runtime PRIVATE
     src/platform/posix/posix_live2d_sdk.c
+    src/platform/linux/linux_statistics.c
     src/platform/linux/linux.c
     src/platform/linux/linux_evdev.c
     src/platform/linux/linux_evdev_devices.c
@@ -85,8 +86,16 @@ else()
     src/platform/linux/linux_x11.c)
   target_include_directories(bongo_cat_runtime PRIVATE src/platform/posix)
   target_link_libraries(bongo_cat_runtime PRIVATE
-    X11::X11 X11::Xi X11::Xfixes m CURL::libcurl)
+    X11::X11 X11::Xi X11::Xfixes m)
   target_link_libraries(bongo_cat_core PRIVATE m)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(BONGO_CAT_STATISTICS_XCB QUIET IMPORTED_TARGET xcb xcb-screensaver)
+  endif()
+  if(TARGET PkgConfig::BONGO_CAT_STATISTICS_XCB)
+    target_compile_definitions(bongo_cat_runtime PRIVATE BONGO_CAT_HAS_STATISTICS_XCB=1)
+    target_link_libraries(bongo_cat_runtime PRIVATE PkgConfig::BONGO_CAT_STATISTICS_XCB)
+  endif()
   # Discover fonts outside the known distro paths, including user fonts.
   find_package(Fontconfig QUIET)
   if(Fontconfig_FOUND)

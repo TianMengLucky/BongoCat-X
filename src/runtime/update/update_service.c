@@ -13,10 +13,10 @@
 #define STORE_URI "ms-windows-store://pdp/?ProductId=9P41MLSX72XW"
 #define STORE_WEB_URL "https://apps.microsoft.com/detail/9P41MLSX72XW"
 
-static void reap_worker(BongoCatUpdateService *service) {
+void bongo_cat_update_reap_worker(BongoCatUpdateService *service) {
     SDL_LockMutex(service->mutex);
-    SDL_Thread *worker = service->status != BONGO_CAT_UPDATE_CHECKING
-        ? service->worker : NULL;
+    SDL_Thread *worker = service->status != BONGO_CAT_UPDATE_CHECKING &&
+        service->status != BONGO_CAT_UPDATE_DOWNLOADING ? service->worker : NULL;
     if (worker) service->worker = NULL;
     SDL_UnlockMutex(service->mutex);
     if (worker) SDL_WaitThread(worker, NULL);
@@ -30,7 +30,7 @@ static int local_day(void) {
     return local.year * 10000 + local.month * 100 + local.day;
 }
 
-static void complete(BongoCatUpdateService *service,
+void bongo_cat_update_complete(BongoCatUpdateService *service,
     BongoCatUpdateStatus status, const BongoCatUpdateRelease *release,
     const char *error) {
     SDL_LockMutex(service->mutex);
@@ -46,9 +46,10 @@ static void complete(BongoCatUpdateService *service,
     SDL_UnlockMutex(service->mutex);
     if (!notify) return;
     if (status == BONGO_CAT_UPDATE_ERROR)
-        SDL_LogError(BONGO_CAT_LOG_UPDATE, "Update check failed: %s",
+        SDL_LogError(BONGO_CAT_LOG_UPDATE, "Update task failed: %s",
             error && error[0] ? error : "unknown error");
-    else SDL_LogInfo(BONGO_CAT_LOG_UPDATE, "Update check: %s version=%s",
+    else SDL_LogInfo(BONGO_CAT_LOG_UPDATE, "Update task: %s version=%s",
+        status == BONGO_CAT_UPDATE_READY ? "downloaded" :
         status == BONGO_CAT_UPDATE_AVAILABLE ? "available" : "current",
         release ? release->version : BONGO_CAT_VERSION);
     SDL_Event event = {0};
@@ -60,27 +61,28 @@ static void complete(BongoCatUpdateService *service,
 static int SDLCALL update_worker(void *userdata) {
     BongoCatUpdateService *service = userdata;
     char *response = NULL;
+    size_t response_length = 0;
     char message[256] = {0};
     BongoCatUpdateFetchResult fetched = bongo_cat_update_http_fetch(service,
-        &response, message, sizeof(message));
+        &response, &response_length, message, sizeof(message));
     if (fetched != BONGO_CAT_UPDATE_FETCH_OK) {
         if (fetched != BONGO_CAT_UPDATE_FETCH_CANCELLED)
-            complete(service, BONGO_CAT_UPDATE_ERROR, NULL, message);
+            bongo_cat_update_complete(service, BONGO_CAT_UPDATE_ERROR, NULL, message);
         return 0;
     }
     BongoCatUpdateRelease release;
     BongoCatError error = {0};
     bool parsed = bongo_cat_update_parse_release(response,
         bongo_cat_update_platform_asset(), &release, &error);
-    free(response);
+    bongo_safe_free_http_response((unsigned char *)response, response_length);
     if (!parsed) {
-        complete(service, BONGO_CAT_UPDATE_ERROR, NULL, error.message);
+        bongo_cat_update_complete(service, BONGO_CAT_UPDATE_ERROR, NULL, error.message);
         return 0;
     }
     BongoCatUpdateStatus status = bongo_cat_update_compare_versions(
         release.version, BONGO_CAT_VERSION) > 0
         ? BONGO_CAT_UPDATE_AVAILABLE : BONGO_CAT_UPDATE_CURRENT;
-    complete(service, status, &release, NULL);
+    bongo_cat_update_complete(service, status, &release, NULL);
     return 0;
 }
 
@@ -90,12 +92,10 @@ BongoCatUpdateService *bongo_cat_update_create(BongoCatApp *app) {
     if (!service) return NULL;
     service->app = app;
     service->mutex = SDL_CreateMutex();
-    service->http_mutex = SDL_CreateMutex();
     service->event_type = SDL_RegisterEvents(1);
-    if (!service->mutex || !service->http_mutex ||
+    if (!service->mutex ||
         service->event_type == (Uint32)-1) {
         if (service->mutex) SDL_DestroyMutex(service->mutex);
-        if (service->http_mutex) SDL_DestroyMutex(service->http_mutex);
         free(service);
         return NULL;
     }
@@ -123,20 +123,22 @@ BongoCatUpdateService *bongo_cat_update_create(BongoCatApp *app) {
 
 bool bongo_cat_update_check(BongoCatUpdateService *service, bool manual) {
     if (!service) return false;
-    reap_worker(service);
+    bongo_cat_update_reap_worker(service);
     SDL_LockMutex(service->mutex);
     if (service->shutting_down || service->worker ||
         service->status == BONGO_CAT_UPDATE_STORE ||
-        service->status == BONGO_CAT_UPDATE_UNSUPPORTED) {
+        service->status == BONGO_CAT_UPDATE_UNSUPPORTED ||
+        service->status == BONGO_CAT_UPDATE_READY) {
         SDL_UnlockMutex(service->mutex);
         return false;
     }
     service->status = BONGO_CAT_UPDATE_CHECKING;
     service->manual = manual;
+    service->download_task = false;
     service->error[0] = '\0';
-    SDL_LockMutex(service->http_mutex);
-    service->http_cancelled = false;
-    SDL_UnlockMutex(service->http_mutex);
+    SDL_SetAtomicInt(&service->http_cancelled, 0);
+    service->accelerate_github =
+        service->app->settings.app.github_download_acceleration;
     SDL_LogInfo(BONGO_CAT_LOG_UPDATE, "Update check started");
     service->worker = SDL_CreateThread(update_worker,
         BONGO_CAT_SLUG "-update-check", service);
@@ -186,6 +188,8 @@ void bongo_cat_update_snapshot(BongoCatUpdateService *service,
     snapshot->status = service->status;
     snapshot->release = service->release;
     snapshot->installed = service->installed;
+    snapshot->downloaded_bytes = service->downloaded_bytes;
+    snapshot->download_total_bytes = service->download_total_bytes;
     snprintf(snapshot->error, sizeof(snapshot->error), "%s", service->error);
     SDL_UnlockMutex(service->mutex);
 }
@@ -199,6 +203,10 @@ bool bongo_cat_update_event(BongoCatUpdateService *service,
     const SDL_Event *event) {
     if (!service || !event || event->type != service->event_type ||
         event->user.data1 != service) return false;
+    if (event->user.code == 1) {
+        bongo_cat_preferences_invalidate(service->app->preferences);
+        return true;
+    }
     SDL_LockMutex(service->mutex);
     bool manual = service->manual;
     BongoCatUpdateStatus status = service->status;
@@ -206,7 +214,13 @@ bool bongo_cat_update_event(BongoCatUpdateService *service,
     service->open_after_check = false;
     BongoCatUpdateRelease release = service->release;
     SDL_UnlockMutex(service->mutex);
-    reap_worker(service);
+    bongo_cat_update_reap_worker(service);
+    bongo_cat_preferences_invalidate(service->app->preferences);
+    if (status == BONGO_CAT_UPDATE_DOWNLOADING) return true;
+    if (status == BONGO_CAT_UPDATE_READY) {
+        bongo_cat_update_confirm(service);
+        return true;
+    }
     if ((status == BONGO_CAT_UPDATE_AVAILABLE ||
             status == BONGO_CAT_UPDATE_ERROR) && release.version[0])
         snprintf(service->app->session.available_update_version,
@@ -231,9 +245,9 @@ bool bongo_cat_update_event(BongoCatUpdateService *service,
             char detail[384];
             const char *reason = SDL_GetError();
             snprintf(detail, sizeof(detail), "%s: %s", tr(service,
-                "native.support.openUpdateFailed",
-                "Unable to open the update page"),
-                reason && reason[0] ? reason : "system rejected the URL");
+                "native.support.downloadUpdateFailed",
+                "Unable to download the update"),
+                reason && reason[0] ? reason : "unknown error");
             bongo_cat_preferences_notice_show(service->app, detail, true);
         }
     } else if (manual) bongo_cat_update_show_completion(service);
@@ -245,16 +259,11 @@ bool bongo_cat_update_open(BongoCatUpdateService *service) {
     bongo_cat_update_snapshot(service, &snapshot);
     if (snapshot.status == BONGO_CAT_UPDATE_STORE)
         return SDL_OpenURL(STORE_URI) || SDL_OpenURL(STORE_WEB_URL);
-    const char *url = RELEASES_URL;
-    if (snapshot.status == BONGO_CAT_UPDATE_AVAILABLE) {
-        if (snapshot.installed && snapshot.release.installer_url[0])
-            url = snapshot.release.installer_url;
-        else if (!snapshot.installed && snapshot.release.portable_url[0])
-            url = snapshot.release.portable_url;
-        else if (snapshot.release.release_url[0])
-            url = snapshot.release.release_url;
-    }
-    return SDL_OpenURL(url);
+    if (snapshot.status == BONGO_CAT_UPDATE_READY)
+        return bongo_cat_update_confirm(service);
+    if (snapshot.status == BONGO_CAT_UPDATE_AVAILABLE)
+        return bongo_cat_update_begin_download(service);
+    return SDL_OpenURL(RELEASES_URL);
 }
 
 void bongo_cat_update_destroy(BongoCatUpdateService *service) {
@@ -267,7 +276,7 @@ void bongo_cat_update_destroy(BongoCatUpdateService *service) {
     SDL_Event event;
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, service->event_type,
         service->event_type) > 0) {}
-    SDL_DestroyMutex(service->http_mutex);
+    bongo_safe_update_free(service->prepared_update);
     SDL_DestroyMutex(service->mutex);
     free(service);
 }

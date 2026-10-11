@@ -142,6 +142,15 @@ static void force_mouse_input(struct nk_command_buffer *c, struct nk_rect b,
     line(c, b, 3, 12, 5, 10, color);
 }
 
+static void mouse_sensitivity(struct nk_command_buffer *c, struct nk_rect b,
+    struct nk_color color) {
+    nk_stroke_rect(c, nk_rect(b.x + 1, b.y + 2, 8, 14), 4, 1.5f, color);
+    line(c, b, 5, 2, 5, 7, color);
+    line(c, b, 12, 3, 12, 15, color);
+    line(c, b, 16, 3, 16, 15, color);
+    dot(c, b, 12, 6, 2, color); dot(c, b, 16, 12, 2, color);
+}
+
 static void texture_resolution(struct nk_command_buffer *c, struct nk_rect b,
     struct nk_color color) {
     nk_stroke_rect(c, nk_rect(b.x + 2, b.y + 2, 14, 14), 2, 1.5f, color);
@@ -272,7 +281,8 @@ bool bongo_cat_pref_row_icon_draw(struct nk_command_buffer *canvas,
         ignore_mouse, force_mouse_input, texture_resolution,
         max_fps, render_quality, autostart, administrator, language, theme, shortcut_visibility,
         shortcut_preferences, shortcut_menu, hide_fade, gamepad_four_hands,
-        vertical_flip, mouse_vertical_flip, frame_bounds, live2d_core};
+        vertical_flip, mouse_vertical_flip, frame_bounds, live2d_core,
+        mouse_sensitivity};
     int index = icon - BONGO_CAT_PREF_ICON_MULTIPLE_MODELS;
     int count = (int)(sizeof(draws) / sizeof(draws[0]));
     if (index < 0 || index >= count) return false;

@@ -16,6 +16,12 @@
 extern "C" {
 #endif
 
+/* Optional preferences layout in Settings.extensions_json. Set preserves all
+   other keys and leaves the buffer unchanged on invalid JSON or insufficient
+   capacity. Get defaults to expanded; neither changes the settings ABI. */
+bool bongo_safe_preferences_collapsible_get(const char *extensions, size_t capacity);
+bool bongo_safe_preferences_collapsible_set(char *extensions, size_t capacity, bool enabled);
+
 /* --- streaming SHA-256 (64 lowercase hex digits, NUL terminated) --- */
 
 typedef struct bongo_safe_sha256 bongo_safe_sha256;

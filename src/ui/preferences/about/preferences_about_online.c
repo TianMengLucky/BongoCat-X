@@ -1,15 +1,14 @@
 #include "preferences_about_online.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/safe_http.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "bongo_cat/json_dom.h"
 #ifdef _WIN32
 #include <windows.h>
-#include <winhttp.h>
 #else
-#include <curl/curl.h>
 #include <unistd.h>
 #endif
 
@@ -151,113 +150,24 @@ typedef struct fetch_buffer {
     size_t length, capacity;
 } fetch_buffer;
 
-static bool fetch_append(fetch_buffer *buffer, const void *data, size_t size) {
-    if (size > RESPONSE_LIMIT - buffer->length) return false;
-    size_t needed = buffer->length + size;
-    if (needed > buffer->capacity) {
-        size_t capacity = buffer->capacity ? buffer->capacity : 4096;
-        while (capacity < needed) capacity *= 2;
-        if (capacity > RESPONSE_LIMIT) capacity = RESPONSE_LIMIT;
-        char *grown = realloc(buffer->data, capacity + 1);
-        if (!grown) return false;
-        buffer->data = grown;
-        buffer->capacity = capacity;
-    }
-    memcpy(buffer->data + buffer->length, data, size);
-    buffer->length = needed;
-    buffer->data[buffer->length] = 0;
+static bool about_cancelled(void *userdata) {
+    BongoCatAboutRequest *job = userdata;
+    return SDL_GetAtomicInt(&job->cancel) != 0;
+}
+
+static bool http_get(bongo_safe_http_client *client, const char *host,
+    const char *path, BongoCatAboutRequest *job, fetch_buffer *out) {
+    char url[1024], message[256];
+    int length = snprintf(url, sizeof(url), "https://%s%s", host, path);
+    if (length < 0 || (size_t)length >= sizeof(url)) return false;
+    unsigned char *data = NULL;
+    int result = bongo_safe_http_get(client, url, job->accelerate_github,
+        RESPONSE_LIMIT, about_cancelled, job, &data, &out->length,
+        message, sizeof(message));
+    if (result != BONGO_SAFE_HTTP_OK) return false;
+    out->data = (char *)data;
     return true;
 }
-
-#ifdef _WIN32
-static wchar_t *wide_from(const char *text) {
-    int size = MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
-    wchar_t *wide = size > 0 ? (wchar_t *)malloc((size_t)size * sizeof(wchar_t)) : NULL;
-    if (wide && MultiByteToWideChar(CP_UTF8, 0, text, -1, wide, size) == 0) {
-        free(wide);
-        wide = NULL;
-    }
-    return wide;
-}
-
-/* One HTTPS GET; the session is reused across the JSON and avatar calls. */
-static bool http_get(void *client, const char *host, const char *path,
-    SDL_AtomicInt *cancel, fetch_buffer *out) {
-    bool ok = false;
-    wchar_t *wide_host = wide_from(host), *wide_path = wide_from(path);
-    HINTERNET connection = wide_host ?
-        WinHttpConnect(client, wide_host, INTERNET_DEFAULT_HTTPS_PORT, 0) : NULL;
-    if (connection && wide_path) {
-        HINTERNET request = WinHttpOpenRequest(connection, L"GET", wide_path,
-            NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
-            WINHTTP_FLAG_SECURE);
-        if (request) {
-            DWORD redirect = WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
-            WinHttpSetOption(request, WINHTTP_OPTION_REDIRECT_POLICY,
-                &redirect, sizeof(redirect));
-            ok = !SDL_GetAtomicInt(cancel) &&
-                 WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
-                                    WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
-                 WinHttpReceiveResponse(request, NULL);
-            DWORD status = 0, bytes = sizeof(status);
-            if (ok)
-                ok = WinHttpQueryHeaders(request,
-                    WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-                    NULL, &status, &bytes, NULL) != FALSE && status == 200;
-            Uint64 deadline = SDL_GetTicks() + 15000;
-            while (ok && !SDL_GetAtomicInt(cancel)) {
-                char chunk[4096];
-                DWORD read = 0;
-                ok = SDL_GetTicks() < deadline &&
-                     WinHttpReadData(request, chunk, sizeof(chunk), &read);
-                if (!ok || !read) break;
-                ok = fetch_append(out, chunk, read);
-            }
-            WinHttpCloseHandle(request);
-        }
-        WinHttpCloseHandle(connection);
-    }
-    free(wide_host);
-    free(wide_path);
-    return ok && !SDL_GetAtomicInt(cancel);
-}
-#else
-struct curl_fetch {
-    fetch_buffer *buffer;
-    SDL_AtomicInt *cancel;
-};
-
-static size_t curl_receive(char *data, size_t size, size_t count, void *user) {
-    struct curl_fetch *fetch = user;
-    if (SDL_GetAtomicInt(fetch->cancel)) return 0;
-    return fetch_append(fetch->buffer, data, size * count) ? size * count : 0;
-}
-
-static int curl_progress(void *user, curl_off_t a, curl_off_t b,
-    curl_off_t c, curl_off_t d) {
-    (void)a; (void)b; (void)c; (void)d;
-    return SDL_GetAtomicInt((SDL_AtomicInt *)user);
-}
-
-static bool http_get(void *client, const char *host, const char *path,
-    SDL_AtomicInt *cancel, fetch_buffer *out) {
-    char url[1024];
-    if (snprintf(url, sizeof(url), "https://%s%s", host, path) < 0) return false;
-    struct curl_fetch fetch = {out, cancel};
-    curl_easy_setopt(client, CURLOPT_URL, url);
-    curl_easy_setopt(client, CURLOPT_USERAGENT, "BongoCat About/1.0");
-    curl_easy_setopt(client, CURLOPT_CONNECTTIMEOUT_MS, 3000L);
-    curl_easy_setopt(client, CURLOPT_TIMEOUT_MS, 15000L);
-    curl_easy_setopt(client, CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(client, CURLOPT_FAILONERROR, 1L);
-    curl_easy_setopt(client, CURLOPT_WRITEFUNCTION, curl_receive);
-    curl_easy_setopt(client, CURLOPT_WRITEDATA, &fetch);
-    curl_easy_setopt(client, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(client, CURLOPT_XFERINFOFUNCTION, curl_progress);
-    curl_easy_setopt(client, CURLOPT_XFERINFODATA, cancel);
-    return curl_easy_perform(client) == CURLE_OK && out->length;
-}
-#endif
 
 static bool svg_text_append(BongoCatAboutRequest *job, const char *text) {
     for (size_t i = 0; text[i]; ++i) {
@@ -313,31 +223,32 @@ static bool split_https_url(const char *url, char *host, size_t host_cap,
     return true;
 }
 
-static bool avatar_append(BongoCatAboutRequest *job, void *client,
+static bool avatar_append(BongoCatAboutRequest *job, bongo_safe_http_client *client,
     const char *avatar_url) {
     char host[256], path[512];
     if (!split_https_url(avatar_url, host, sizeof(host), path, sizeof(path)))
         return false;
+    if (strcmp(host, "avatars.githubusercontent.com") != 0) return false;
     /* Request the small variant so a full page of avatars stays well below
        the response limit. */
     size_t length = strlen(path);
     if (length + 6 >= sizeof(path)) return false;
     memcpy(path + length, strchr(path, '?') ? "&s=64" : "?s=64", 6);
     fetch_buffer image = {0};
-    bool ok = http_get(client, host, path, &job->cancel, &image) &&
+    bool ok = http_get(client, host, path, job, &image) &&
         image.length &&
         append(job, "data:image/png;base64,", 22) &&
         base64_append(job, image.data, image.length);
-    free(image.data);
+    bongo_safe_free_http_response((unsigned char *)image.data, image.length);
     return ok;
 }
 
-static bool build_contributors_svg(BongoCatAboutRequest *job, void *client) {
+static bool build_contributors_svg(BongoCatAboutRequest *job, bongo_safe_http_client *client) {
     fetch_buffer json = {0};
     if (!http_get(client, CONTRIBUTORS_HOST, CONTRIBUTORS_PATH,
-            &job->cancel, &json)) return false;
+            job, &json)) return false;
     BongoJsonDoc *doc = bongo_json_read(json.data, json.length, 0);
-    free(json.data);
+    bongo_safe_free_http_response((unsigned char *)json.data, json.length);
     BongoJsonValue *root = doc ? bongo_json_doc_get_root(doc) : NULL;
     if (!bongo_json_is_arr(root)) {
         bongo_json_doc_free(doc);
@@ -383,24 +294,9 @@ static int SDLCALL request_worker(void *user) {
     /* Publish stale data before starting the separate background refresh. */
     if (!job->network_only && cache_read(job)) return complete(job);
     if (SDL_GetAtomicInt(&job->cancel)) return complete(job);
-    bool ok = false;
-#ifdef _WIN32
-    HINTERNET session = WinHttpOpen(L"BongoCat About/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
-                                    WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-    if (session) {
-        WinHttpSetTimeouts(session, 3000, 3000, 4000, 4000);
-        ok = build_contributors_svg(job, session);
-        WinHttpCloseHandle(session);
-    }
-#else
-    bool initialized = curl_global_init(CURL_GLOBAL_DEFAULT) == CURLE_OK;
-    CURL *curl = initialized ? curl_easy_init() : NULL;
-    if (curl) {
-        ok = build_contributors_svg(job, curl);
-        curl_easy_cleanup(curl);
-    }
-    /* curl is shared with the update service; process lifetime owns its global state. */
-#endif
+    bongo_safe_http_client *client = bongo_safe_http_new();
+    bool ok = client && build_contributors_svg(job, client);
+    bongo_safe_http_free(client);
     job->status = ok ? 200 : 0;
     if (job->status == 200) {
         if (decode_response(job, true)) cache_write(job);
@@ -410,7 +306,8 @@ static int SDLCALL request_worker(void *user) {
 }
 
 BongoCatAboutRequest *bongo_cat_about_request(Uint32 event_type,
-    Uint32 window_id, const char *cache_root, bool network_only) {
+    Uint32 window_id, const char *cache_root, bool network_only,
+    bool accelerate_github) {
     BongoCatAboutRequest *job = calloc(1, sizeof(*job));
     if (!job)
         return NULL;
@@ -418,6 +315,7 @@ BongoCatAboutRequest *bongo_cat_about_request(Uint32 event_type,
     job->event_type = event_type;
     job->window_id = window_id;
     job->network_only = network_only;
+    job->accelerate_github = accelerate_github;
     if (cache_root && cache_root[0] &&
         !bongo_cat_path_join(job->cache_directory, sizeof(job->cache_directory),
             cache_root, "about")) job->cache_directory[0] = 0;

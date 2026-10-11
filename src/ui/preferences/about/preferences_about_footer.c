@@ -80,6 +80,7 @@ static void draw_update(BongoCatPreferences *value,
         0, 4, 14, 0, nk_rgba(p.accent.r, p.accent.g, p.accent.b, 89));
     nk_fill_rect(canvas, bounds, 10, p.accent);
     if (snapshot->status == BONGO_CAT_UPDATE_AVAILABLE ||
+            snapshot->status == BONGO_CAT_UPDATE_READY ||
             (snapshot->status == BONGO_CAT_UPDATE_ERROR &&
                 snapshot->release.version[0])) {
         /* Mark the actionable update without obscuring its label. */
@@ -94,7 +95,12 @@ static void draw_update(BongoCatPreferences *value,
         nk_rgb(255, 255, 255));
     link_cursor(context, bounds);
     if (hit(context, bounds)) {
-        if (snapshot->status == BONGO_CAT_UPDATE_CHECKING) return;
+        if (snapshot->status == BONGO_CAT_UPDATE_CHECKING ||
+            snapshot->status == BONGO_CAT_UPDATE_DOWNLOADING) return;
+        if (snapshot->status == BONGO_CAT_UPDATE_READY) {
+            bongo_cat_update_open(value->app->update);
+            return;
+        }
         if (snapshot->status == BONGO_CAT_UPDATE_AVAILABLE ||
                 (snapshot->status == BONGO_CAT_UPDATE_ERROR &&
                     snapshot->release.version[0])) {
@@ -127,6 +133,17 @@ static const char *update_label(BongoCatPreferences *value,
     switch (snapshot->status) {
     case BONGO_CAT_UPDATE_CHECKING:
         return tr(value, "native.support.checkingUpdate", "Checking...");
+    case BONGO_CAT_UPDATE_DOWNLOADING:
+        if (snapshot->download_total_bytes) {
+            unsigned percent = (unsigned)(snapshot->downloaded_bytes * 100 /
+                snapshot->download_total_bytes);
+            snprintf(buffer, capacity, tr(value,
+                "native.support.downloadingUpdateProgress", "Downloading %u%%"), percent);
+            return buffer;
+        }
+        return tr(value, "native.support.downloadingUpdate", "Downloading...");
+    case BONGO_CAT_UPDATE_READY:
+        return tr(value, "native.support.restartUpdate", "Restart and Update");
     case BONGO_CAT_UPDATE_AVAILABLE:
         snprintf(buffer, capacity, tr(value,
             "native.support.downloadUpdate", "Update to v%s"),

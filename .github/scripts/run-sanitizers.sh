@@ -27,6 +27,6 @@ JSON
 }
 
 run_scenario startup
-for page in 0 1 2 3; do
+for page in 0 1 2 3 4 5; do
   run_scenario "preferences-$page" --ci-preferences "--ci-preference-page=$page"
 done

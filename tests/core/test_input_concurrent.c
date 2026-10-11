@@ -10,6 +10,7 @@ int bongo_cat_test_failures;
 static BongoCatInputState input;
 static atomic_int finished;
 static atomic_uint accepted;
+static uint64_t statistics_keys;
 
 static int SDLCALL produce(void *userdata) {
     unsigned id = *(unsigned *)userdata;
@@ -26,8 +27,22 @@ static int SDLCALL produce(void *userdata) {
     return 0;
 }
 
+static int SDLCALL collect_statistics(void *unused) {
+    (void)unused;
+    do {
+        BongoCatStatisticsMetrics metrics;
+        bongo_cat_input_metrics_take(&input, &metrics);
+        statistics_keys += metrics.keys;
+        SDL_Delay(1);
+    } while (atomic_load(&finished) != PRODUCERS);
+    BongoCatStatisticsMetrics final;
+    bongo_cat_input_metrics_take(&input, &final);
+    statistics_keys += final.keys;
+    return 0;
+}
 int main(void) {
     bongo_cat_input_init(&input);
+    bongo_cat_input_metrics_enable(&input, true);
     atomic_init(&finished, 0);
     atomic_init(&accepted, 0);
     SDL_Thread *threads[PRODUCERS];
@@ -39,6 +54,9 @@ int main(void) {
         CHECK(threads[i] != NULL);
         if (!threads[i]) return 1;
     }
+    SDL_Thread *statistics = SDL_CreateThread(collect_statistics, "input-statistics", NULL);
+    CHECK(statistics != NULL);
+    if (!statistics) return 1;
     unsigned received = 0;
     uint64_t sequence = 0;
     for (;;) {
@@ -67,6 +85,8 @@ int main(void) {
         ++received;
     }
     for (unsigned i = 0; i < PRODUCERS; ++i) SDL_WaitThread(threads[i], NULL);
+    SDL_WaitThread(statistics, NULL);
+    CHECK(statistics_keys == PRODUCERS * EVENTS / 2);
     CHECK(received == atomic_load(&accepted));
     CHECK(received + atomic_load(&input.dropped) == PRODUCERS * EVENTS);
     for (unsigned i = 0; i < PRODUCERS; ++i) CHECK(seen[i]);

@@ -286,3 +286,9 @@ bool bongo_cat_pref_capsule_button(struct nk_context *context,
     capsule(context, id, labels, 1, false, 0, &clicked);
     return clicked;
 }
+
+int bongo_cat_pref_segments(struct nk_context *context, const char *id,
+    const char *const *labels, int count, int selected) {
+    bool clicked = false;
+    return capsule(context, id, labels, count, false, selected, &clicked);
+}

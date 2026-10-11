@@ -32,7 +32,7 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
         bool refresh = value->visible && job->refresh_needed &&
             !SDL_GetAtomicInt(&job->cancel);
         if (value->visible && job->status == 200 && !SDL_GetAtomicInt(&job->cancel)) {
-            if (value->page == 4) value->render_dirty = true;
+            if (value->page == 5) value->render_dirty = true;
             if (!same_contributors(s->contributors, job->feed)) {
                 bongo_cat_about_feed_free(s->contributors);
                 s->contributors = job->feed;
@@ -45,21 +45,23 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
         *slots[i] = NULL;
         if (refresh)
             *slots[i] = bongo_cat_about_request(s->event_type,
-                SDL_GetWindowID(value->window), value->app->cache_root, true);
+                SDL_GetWindowID(value->window), value->app->cache_root, true,
+                value->app->settings.app.github_download_acceleration);
     }
     if (!value->visible) return;
     bongo_cat_about_ensure_event(value);
     if (!s->contributors_attempted && !s->contributors_request) {
         s->contributors_attempted = true;
         s->contributors_request = bongo_cat_about_request(
-            s->event_type, SDL_GetWindowID(value->window), value->app->cache_root, false);
+            s->event_type, SDL_GetWindowID(value->window), value->app->cache_root, false,
+            value->app->settings.app.github_download_acceleration);
     }
 }
 
 bool bongo_cat_about_event(BongoCatPreferences *value, const SDL_Event *event) {
     if (value->about.event_type && event->type == value->about.event_type) {
         bongo_cat_about_refresh(value);
-        if (value->visible && value->page == 4) value->render_dirty = true;
+        if (value->visible && value->page == 5) value->render_dirty = true;
         return true;
     }
     return false;

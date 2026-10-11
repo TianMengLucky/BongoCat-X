@@ -5,6 +5,15 @@
 
 void bongo_cat_input_init(BongoCatInputState *state) {
     if (!state) return;
+    atomic_init(&state->metrics_busy, false);
+    atomic_init(&state->metrics_enabled, false);
+    atomic_init(&state->metrics_reset, true);
+    atomic_init(&state->metrics_keys, 0);
+    for (unsigned i = 0; i < 5; ++i) atomic_init(&state->metrics_buttons[i], 0);
+    atomic_init(&state->metrics_movement, 0);
+    atomic_init(&state->metrics_scroll, 0);
+    state->metrics_pointer_known = false;
+    state->metrics_x = state->metrics_y = 0.0;
     atomic_init(&state->queue_busy, false);
     memset(state->queue, 0, sizeof(state->queue));
     atomic_init(&state->head, 0);
@@ -110,6 +119,7 @@ static void lock_queue(BongoCatInputState *state) {
 
 bool bongo_cat_input_push(BongoCatInputState *state, const BongoCatInputEvent *event) {
     if (!state || !event) return false;
+    bongo_cat_input_metrics_event(state, event);
     lock_queue(state);
     bool pushed = push_locked(state, event);
     atomic_store_explicit(&state->queue_busy, false, memory_order_release);
@@ -126,6 +136,7 @@ bool bongo_cat_input_pop(BongoCatInputState *state, BongoCatInputEvent *event) {
 
 bool bongo_cat_input_mouse(BongoCatInputState *state, double x, double y) {
     if (!state) return false;
+    bongo_cat_input_metrics_pointer(state, x, y);
     atomic_store_explicit(&state->mouse_x, x, memory_order_relaxed);
     atomic_store_explicit(&state->mouse_y, y, memory_order_relaxed);
     return !atomic_exchange_explicit(&state->mouse_dirty, true,

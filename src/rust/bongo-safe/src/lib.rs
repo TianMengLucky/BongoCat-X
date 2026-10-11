@@ -13,9 +13,14 @@
 mod about;
 mod audio;
 mod config;
+mod config_ui;
 mod corners;
 mod expression;
 mod hand_layout;
+mod http;
+mod update;
+mod update_apply;
+mod update_archive;
 mod image;
 pub mod inochi;
 mod json_dom;

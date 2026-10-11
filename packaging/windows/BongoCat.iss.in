@@ -42,7 +42,7 @@ Name: "{userprograms}\BongoCat\BongoCat"; Filename: "{app}\BongoCat.exe"; Parame
 Name: "{userprograms}\BongoCat\Uninstall"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\BongoCat.exe"; Description: "Launch BongoCat"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\BongoCat.exe"; Description: "Launch BongoCat"; Flags: nowait postinstall skipifsilent shellexec
 
 [Code]
 #include "install-lifecycle.iss"

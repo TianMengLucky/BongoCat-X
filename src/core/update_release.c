@@ -47,6 +47,16 @@ static bool copy_asset_url(BongoJsonValue *asset, const char *expected,
     return true;
 }
 
+static bool copy_release_asset_url(BongoJsonValue *asset, const char *expected,
+    char *target, size_t capacity) {
+    if (copy_asset_url(asset, expected, target, capacity)) return true;
+    char legacy[128];
+    int length = snprintf(legacy, sizeof(legacy), "BongoCat%s",
+        expected + strlen("BongoCat-X"));
+    return length > 0 && (size_t)length < sizeof(legacy) &&
+        copy_asset_url(asset, legacy, target, capacity);
+}
+
 static bool read_assets(BongoJsonValue *root, const char *platform,
     BongoCatUpdateRelease *release) {
     BongoJsonValue *assets = bongo_json_obj_get(root, "assets");
@@ -55,16 +65,19 @@ static bool read_assets(BongoJsonValue *root, const char *platform,
     int installer_length = 0, portable_length = 0;
     if (strncmp(platform, "windows-", 8) == 0) {
         installer_length = snprintf(installer, sizeof(installer),
-            "BongoCat-%s-%s-setup.exe", release->version, platform);
+            "BongoCat-X-%s-%s-setup.exe", release->version, platform);
         portable_length = snprintf(portable, sizeof(portable),
-            "BongoCat-%s-%s-portable.zip", release->version, platform);
+            "BongoCat-X-%s-%s-portable.zip", release->version, platform);
+    } else if (strcmp(platform, "linux-x64-appimage") == 0) {
+        portable_length = snprintf(portable, sizeof(portable),
+            "BongoCat-X-%s-linux-x64.AppImage", release->version);
     } else if (strcmp(platform, "linux-x64") == 0) {
         portable_length = snprintf(portable, sizeof(portable),
-            "BongoCat-%s-%s.tar.gz", release->version, platform);
+            "BongoCat-X-%s-%s.tar.gz", release->version, platform);
     } else if (strcmp(platform, "macos-x64") == 0 ||
         strcmp(platform, "macos-arm64") == 0) {
         portable_length = snprintf(portable, sizeof(portable),
-            "BongoCat-%s-%s.zip", release->version, platform);
+            "BongoCat-X-%s-%s.zip", release->version, platform);
     } else return false;
     if (installer_length < 0 || (size_t)installer_length >= sizeof(installer) ||
         portable_length < 0 || (size_t)portable_length >= sizeof(portable))
@@ -74,9 +87,9 @@ static bool read_assets(BongoJsonValue *root, const char *platform,
     bongo_json_arr_foreach(assets, index, count, asset) {
         if (!bongo_json_is_obj(asset)) continue;
         if (installer[0] && !release->installer_url[0])
-            copy_asset_url(asset, installer, release->installer_url,
+            copy_release_asset_url(asset, installer, release->installer_url,
                 sizeof(release->installer_url));
-        if (!release->portable_url[0]) copy_asset_url(asset, portable,
+        if (!release->portable_url[0]) copy_release_asset_url(asset, portable,
             release->portable_url, sizeof(release->portable_url));
     }
     return true;

@@ -10,6 +10,8 @@ if(BUILD_TESTING)
     add_dependencies(bongo_cat_model_plugin_tests bongo_inox2d-shared)
     add_test(NAME model-plugins COMMAND bongo_cat_model_plugin_tests
       "$<TARGET_FILE:bongo_inox2d-shared>" "${CMAKE_CURRENT_BINARY_DIR}/plugin-test-data")
+    set_tests_properties(model-plugins PROPERTIES ENVIRONMENT
+      "BONGO_CAT_PLUGIN_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/plugin-test-data/plugins")
     add_test(NAME plugin-archives COMMAND "${Python3_EXECUTABLE}"
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/model_import/test_plugin_archives.py"
       --tester "$<TARGET_FILE:bongo_cat_model_plugin_tests>"
@@ -31,11 +33,7 @@ if(BUILD_TESTING)
     set_tests_properties(model-renderer-switch PROPERTIES RUN_SERIAL TRUE
       SKIP_RETURN_CODE 77 TIMEOUT 150)
   endif()
-  add_executable(bongo_cat_rhi_pixel_tests tests/platform/test_rhi_pixels.c)
-  target_include_directories(bongo_cat_rhi_pixel_tests PRIVATE
-    src/render/rhi tests/support)
-  target_link_libraries(bongo_cat_rhi_pixel_tests PRIVATE bongo_cat_warnings)
-  add_test(NAME rhi-pixel-layout COMMAND bongo_cat_rhi_pixel_tests)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/NativePixelTests.cmake")
   add_executable(bongo_cat_window_corner_tests tests/platform/test_window_corners.c)
   target_include_directories(bongo_cat_window_corner_tests PRIVATE
     src/runtime/shell tests/support)
@@ -81,6 +79,7 @@ if(BUILD_TESTING)
     target_link_libraries(bongo_cat_window_frame_tests PRIVATE m)
   endif()
   add_test(NAME window-motion-frame COMMAND bongo_cat_window_frame_tests)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/WindowDisplayTests.cmake")
   include(cmake/StreamingTests.cmake)
   add_test(NAME cubism-vulkan-vertex-upload COMMAND ${CMAKE_COMMAND} "-DSDK=${BONGO_CAT_CUBISM_SDK}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismVulkanVertexUpload.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubismOptimizationTests.cmake")
@@ -320,6 +319,7 @@ if(BUILD_TESTING)
   target_compile_definitions(bongo_cat_mver_import_tests PRIVATE
     BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
   if(MSVC)
+    target_compile_options(bongo_cat_mver_import_tests PRIVATE /utf-8)
     set_property(SOURCE ${BONGO_CAT_MVER_IMPORT_TEST_SOURCES}
       APPEND PROPERTY COMPILE_OPTIONS "/experimental:c11atomics")
     set_property(SOURCE tests/platform/test_windows_capture.c APPEND PROPERTY

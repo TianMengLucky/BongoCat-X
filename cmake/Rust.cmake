@@ -25,3 +25,7 @@ find_package(Rust REQUIRED)
 corrosion_import_crate(MANIFEST_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-safe/Cargo.toml"
   CRATE_TYPES staticlib)
+if(MSVC)
+  # Match the host's static CRT, including C dependencies built by Rust crates.
+  corrosion_add_target_rustflags(bongo_safe "-Ctarget-feature=+crt-static")
+endif()

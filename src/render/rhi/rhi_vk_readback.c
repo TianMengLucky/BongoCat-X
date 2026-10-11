@@ -112,7 +112,10 @@ bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk) {
     return true;
 }
 
-bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk) {
+bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed) {
+    if (changed.x < 0 || changed.y < 0 || changed.w <= 0 || changed.h <= 0 ||
+        (uint64_t)changed.x + changed.w > vk->extent.width ||
+        (uint64_t)changed.y + changed.h > vk->extent.height) return false;
     VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
     if (!command) return false;
     VkBufferMemoryBarrier host = {0};
@@ -132,8 +135,12 @@ bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk) {
     vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_HOST_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 1, &host, 1, &barrier);
     VkBufferImageCopy region = {0};
+    /* Keep the full readback row stride, but transfer only foreground pixels. */
+    region.bufferOffset = ((VkDeviceSize)changed.y * vk->extent.width + changed.x) * 4;
+    region.bufferRowLength = vk->extent.width;
     region.imageSubresource = (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.imageExtent = (VkExtent3D){vk->extent.width, vk->extent.height, 1};
+    region.imageOffset = (VkOffset3D){changed.x, changed.y, 0};
+    region.imageExtent = (VkExtent3D){(uint32_t)changed.w, (uint32_t)changed.h, 1};
     vk->vkCmdCopyBufferToImage(command, vk->readback_buffer, vk->current_image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

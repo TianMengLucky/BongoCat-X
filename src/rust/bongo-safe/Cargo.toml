@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.1.2"
+version = "2.1.3"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false
@@ -24,6 +24,12 @@ image = { version = "0.25", default-features = false, features = [
     "hdr",
 ] }
 roxmltree = "0.20"
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls-native-roots", "system-proxy"] }
+tokio = { version = "1", features = ["rt", "time", "macros"] }
+tempfile = "3"
+zip = { version = "2.4", default-features = false, features = ["deflate"] }
+tar = "0.4"
+flate2 = "1"
 serde = "1"
 json5 = "0.4"
 jsonc-parser = { version = "0.34", features = ["cst", "serde"] }

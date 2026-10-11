@@ -67,6 +67,12 @@ static CGEventRef event_tap(CGEventTapProxy proxy, CGEventType type,
         if (state->tap) CGEventTapEnable(state->tap, true);
         return event;
     }
+    if (type == kCGEventScrollWheel) {
+        bongo_cat_input_metrics_scroll(state->platform->input,
+            CGEventGetDoubleValueField(event, kCGScrollWheelEventDeltaAxis2),
+            CGEventGetDoubleValueField(event, kCGScrollWheelEventDeltaAxis1));
+        return event;
+    }
     if (type == kCGEventMouseMoved || type == kCGEventLeftMouseDragged ||
         type == kCGEventRightMouseDragged || type == kCGEventOtherMouseDragged) {
         CGPoint point = CGEventGetLocation(event);
@@ -99,6 +105,10 @@ static CGEventRef event_tap(CGEventTapProxy proxy, CGEventType type,
     const char *name = type == kCGEventLeftMouseDown || type == kCGEventLeftMouseUp
         ? "Left" : type == kCGEventRightMouseDown || type == kCGEventRightMouseUp
         ? "Right" : "Middle";
+    if (type == kCGEventOtherMouseDown || type == kCGEventOtherMouseUp) {
+        int64_t button = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
+        name = button == 3 ? "Back" : button == 4 ? "Forward" : "Middle";
+    }
     bool down = type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown ||
         type == kCGEventOtherMouseDown;
     push(state, down ? BONGO_CAT_INPUT_MOUSE_DOWN : BONGO_CAT_INPUT_MOUSE_UP,
@@ -115,7 +125,7 @@ static int SDLCALL input_thread(void *userdata) {
             CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventRightMouseUp) |
             CGEventMaskBit(kCGEventOtherMouseDown) | CGEventMaskBit(kCGEventOtherMouseUp) |
             CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventLeftMouseDragged) |
-            CGEventMaskBit(kCGEventRightMouseDragged) | CGEventMaskBit(kCGEventOtherMouseDragged);
+            CGEventMaskBit(kCGEventRightMouseDragged) | CGEventMaskBit(kCGEventOtherMouseDragged) | CGEventMaskBit(kCGEventScrollWheel);
         /* The permission this listener is built with, kept only to word the
            warning below; the page reads the current permission itself. */
         bool permitted = false;

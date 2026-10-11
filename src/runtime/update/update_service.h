@@ -14,7 +14,9 @@ typedef enum BongoCatUpdateStatus {
     BONGO_CAT_UPDATE_AVAILABLE,
     BONGO_CAT_UPDATE_ERROR,
     BONGO_CAT_UPDATE_STORE,
-    BONGO_CAT_UPDATE_UNSUPPORTED
+    BONGO_CAT_UPDATE_UNSUPPORTED,
+    BONGO_CAT_UPDATE_DOWNLOADING,
+    BONGO_CAT_UPDATE_READY
 } BongoCatUpdateStatus;
 
 typedef struct BongoCatUpdateSnapshot {
@@ -22,6 +24,8 @@ typedef struct BongoCatUpdateSnapshot {
     BongoCatUpdateRelease release;
     char error[256];
     bool installed;
+    uint64_t downloaded_bytes;
+    uint64_t download_total_bytes;
 } BongoCatUpdateSnapshot;
 
 BongoCatUpdateService *bongo_cat_update_create(BongoCatApp *app);

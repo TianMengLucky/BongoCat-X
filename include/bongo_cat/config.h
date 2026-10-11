@@ -4,6 +4,8 @@
 #include "bongo_cat/common.h"
 
 #define BONGO_CAT_DEFAULT_MAX_FPS 60
+#define BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY 1.0f
+#define BONGO_CAT_MAX_MOUSE_SENSITIVITY 5.0f
 #define BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT 100
 /* Resolve this saved choice using the display refresh rate cached at startup. */
 #define BONGO_CAT_DISPLAY_MAX_FPS (-1)
@@ -74,7 +76,7 @@ typedef struct BongoCatWindowPreferences {
     bool pass_through;
     bool always_on_top;
     bool hide_on_hover;
-    bool reserved_keep_on_screen; /* Reserved for the removed preference ABI. */
+    bool keep_in_screen; /* Reuses the reserved slot; C/Rust ABI is unchanged. */
     bool edge_snap;
     /*
      * 只在录屏/直播软件里可见: 桌面上看不见这个窗口, 但 OBS 之类的采集
@@ -99,6 +101,9 @@ typedef struct BongoCatWindowPreferences {
     float corner_radius_percent;
     bool custom_background;
     char custom_background_path[BONGO_CAT_PATH_CAP];
+    /* Hundredths, 0..500. Uses trailing padding to retain the C/Rust ABI;
+       serialized under rendering.mouseSensitivity. Use the settings accessors. */
+    uint16_t mouse_sensitivity_hundredths;
 } BongoCatWindowPreferences;
 
 typedef struct BongoCatWindowState {
@@ -129,6 +134,8 @@ typedef struct BongoCatApplicationPreferences {
     bool render_parallel_recording;
     bool render_bindless;
     bool render_large_allocation;
+    /* Uses the last padding byte before theme; existing field offsets stay stable. */
+    bool github_download_acceleration;
     BongoCatTheme theme;
     BongoCatLanguage language;
     BongoCatRenderBackend render_backend;
@@ -218,6 +225,9 @@ extern "C" {
 
 void bongo_cat_settings_defaults(BongoCatSettings *settings);
 void bongo_cat_settings_validate(BongoCatSettings *settings);
+float bongo_cat_settings_mouse_sensitivity(const BongoCatSettings *settings);
+void bongo_cat_settings_set_mouse_sensitivity(BongoCatSettings *settings,
+    float sensitivity);
 /* Snaps a render quality percent to the nearest valid level
    (0.1, 1, 10, 20, ... 100). */
 float bongo_cat_settings_snap_render_quality(float percent);

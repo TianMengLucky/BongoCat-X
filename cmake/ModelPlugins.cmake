@@ -67,13 +67,19 @@ endif()
 if(BONGO_CAT_BUILD_INOX2D)
   include("${CMAKE_CURRENT_LIST_DIR}/Inox2D.cmake")
 endif()
+option(BONGO_CAT_BUILD_STATISTICS "Build the Rust input statistics plugin" ON)
+if(BONGO_CAT_BUILD_STATISTICS)
+  corrosion_import_crate(MANIFEST_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-stats/Cargo.toml"
+    CRATE_TYPES cdylib LOCKED)
+endif()
 function(bongo_cat_stage_model_plugins target)
   if(APPLE)
     set(destination "$<TARGET_BUNDLE_DIR:${target}>/Contents/PlugIns")
   else()
     set(destination "$<TARGET_FILE_DIR:${target}>/plugins")
   endif()
-  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared)
+  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared bongo_stats-shared)
     if(TARGET ${plugin})
       # Restage changed DLLs even when the executable needs no relink.
       add_custom_target(${target}_stage_${plugin}

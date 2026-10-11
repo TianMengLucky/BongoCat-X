@@ -69,6 +69,14 @@ static float clamp_pointer_ratio(float value) {
     return value;
 }
 
+float bongo_cat_mouse_sensitivity_ratio(float ratio, float sensitivity) {
+    if (!isfinite(sensitivity)) sensitivity = 1.0f;
+    if (sensitivity < 0.0f) sensitivity = 0.0f;
+    if (sensitivity > 5.0f) sensitivity = 5.0f;
+    return clamp_pointer_ratio(0.5f +
+        (clamp_pointer_ratio(ratio) - 0.5f) * sensitivity);
+}
+
 void bongo_cat_mouse_drag_coordinates(float x_ratio, float y_ratio,
     bool horizontal_mirror, float *x, float *y) {
     float horizontal = clamp_pointer_ratio(x_ratio);

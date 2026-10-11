@@ -5,7 +5,8 @@ param(
     [ValidateSet('linux-x64', 'macos-x64', 'macos-arm64')][string]$Platform,
     [switch]$SkipSmoke,
     [switch]$ExpectLive2D,
-    [switch]$ExpectInox2D
+    [switch]$ExpectInox2D,
+    [switch]$ExpectStatistics
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +59,9 @@ try {
         if ($ExpectInox2D) {
             $required += Join-Path $plugins "libbongo_inox2d.$suffix"
             $required += Join-Path $licenseRoot 'Inox2D-LICENSE'
+        }
+        if ($ExpectStatistics) {
+            $required += Join-Path $plugins "libbongo_stats.$suffix"
         }
         foreach ($path in $required) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or

@@ -1,0 +1,18 @@
+add_executable(bongo_cat_rhi_pixel_tests tests/platform/test_rhi_pixels.c)
+target_include_directories(bongo_cat_rhi_pixel_tests PRIVATE
+  src/render/rhi tests/support)
+target_link_libraries(bongo_cat_rhi_pixel_tests PRIVATE bongo_cat_warnings)
+add_test(NAME rhi-pixel-layout COMMAND bongo_cat_rhi_pixel_tests)
+
+add_executable(bongo_cat_rhi_foreground_tests tests/platform/test_rhi_foreground.c)
+target_include_directories(bongo_cat_rhi_foreground_tests PRIVATE
+  src/render/rhi src/runtime/shell tests/support)
+target_link_libraries(bongo_cat_rhi_foreground_tests PRIVATE
+  bongo_cat_runtime bongo_cat_warnings)
+add_test(NAME rhi-foreground COMMAND bongo_cat_rhi_foreground_tests)
+
+add_executable(bongo_cat_image_bounds_tests tests/media/test_image_bounds.c)
+target_include_directories(bongo_cat_image_bounds_tests PRIVATE tests/support)
+target_link_libraries(bongo_cat_image_bounds_tests PRIVATE
+  bongo_cat_runtime bongo_cat_warnings)
+add_test(NAME image-opaque-bounds COMMAND bongo_cat_image_bounds_tests)

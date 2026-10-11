@@ -52,6 +52,12 @@ struct BongoCatPreferences {
     BongoCatAboutState about;
     struct nk_user_font support_logs_font;
     int page;
+    bool collapsible_options;
+    enum nk_collapse_states options_sections[5];
+    float quality_reload_from;
+    uint64_t quality_settle_deadline_ns;
+    int statistics_period;
+    uint64_t statistics_glyph_hash;
     int style_theme;
     BongoCatLanguage font_language;
     nk_rune glyph_ranges[16384];
@@ -118,9 +124,9 @@ struct BongoCatPreferences {
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;
-    float scroll_current[5];
-    float scroll_target[5];
-    bool scroll_ready[5];
+    float scroll_current[6];
+    float scroll_target[6];
+    bool scroll_ready[6];
     bool page_seen;
     int last_page;
     uint64_t page_transition_ns;
@@ -196,7 +202,7 @@ void bongo_cat_preferences_record_frame(BongoCatPreferences *value);
 void bongo_cat_preferences_assets_load(BongoCatPreferences *value);
 void bongo_cat_preferences_qq_load(BongoCatPreferences *value);
 void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
-/* Pointer-input rows of the cat settings page (ignore-mouse and the Windows
+/* Pointer-input rows of the cat settings page (sensitivity, ignore-mouse and
    force-raw-mouse-input toggle), drawn from preferences_model.c to keep the
    page module within the source size policy. */
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,

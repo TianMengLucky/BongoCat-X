@@ -90,7 +90,7 @@ const char *bongo_cat_update_platform_asset(void) {
     return "macos-x64";
 #endif
 #elif defined(__x86_64__) || defined(__amd64__)
-    return "linux-x64";
+    return SDL_getenv("APPIMAGE") ? "linux-x64-appimage" : "linux-x64";
 #else
     return "unsupported";
 #endif
@@ -131,6 +131,11 @@ void bongo_cat_update_show_completion(BongoCatUpdateService *service) {
         } else snprintf(detail, sizeof(detail), "%s", snapshot.error[0] ?
             snapshot.error : tr(service, "native.support.updateFailed",
                 "Unable to check for updates"));
-        bongo_cat_preferences_notice_show(service->app, detail, true);
+        if (service->download_task) {
+            char download_message[512];
+            snprintf(download_message, sizeof(download_message), "%s: %s", tr(service,
+                "native.support.downloadUpdateFailed", "Unable to download the update"), detail);
+            bongo_cat_preferences_notice_show(service->app, download_message, true);
+        } else bongo_cat_preferences_notice_show(service->app, detail, true);
     }
 }

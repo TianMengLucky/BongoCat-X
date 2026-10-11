@@ -42,9 +42,11 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **2.1.2 업데이트:** 여러 키 말풍선과 반전해도 읽을 수 있는 글자, 동작별 음량, 사용자 이미지 배경, Vulkan / Metal 키·효과·포인터 표시를 추가했습니다. 설정의 각 옵션 설명을 보완하고 화면 안에 유지 옵션을 제거했습니다. 추가 렌더링 최적화의 사용 가능 상태를 표시하며 성능 효과는 아직 측정되지 않았습니다. [변경 기록](../CHANGELOG.md)과 [손 이미지 자르기 안내](hand-layout.md)를 참고하세요.
+  일반 설정에서 **GitHub 다운로드 가속**을 켜면(기본값은 꺼짐) [gh-proxy.com](https://gh-proxy.com/)을 통해 업데이트 확인, 패키지 및 기여자 이미지를 가져옵니다. 앱 내 모든 네트워크 다운로드는 Rust가 처리합니다. 정보 페이지의 업데이트 버튼을 누르면 패키지를 다운로드하고 SHA-256을 검증한 뒤 확인 창을 표시합니다. **다시 시작 및 업데이트**는 종료 후 설치하고 앱을 다시 실행하며, **나중에**는 현재 버전을 계속 사용하고 이번 실행 중 같은 버튼으로 설치할 수 있게 합니다. 스토어 버전은 계속 스토어에서 업데이트합니다.
+
+  **2.1.3 업데이트:** Rust 플러그인이 독립된 백그라운드 스레드에서 키보드·마우스 활동과 앱 사용 시간을 기록하며, 비활성화하면 통계 메뉴가 사라집니다. 환경설정 그룹을 모두 펼치거나 접을 수 있습니다. 마우스 감도, 선택적 GitHub 다운로드 가속, 업데이트 재시작 확인을 추가하고 오버레이 전송과 유휴 오디오 부담을 줄였습니다. [변경 기록](../CHANGELOG.md)과 [통계 안내](statistics-plugin.md)를 참고하세요.
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -73,7 +75,7 @@ BongoCat은 CMake를 사용하며, C11 컴파일러, C++17 컴파일러, CMake 3
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 구성 및 빌드
@@ -323,3 +325,11 @@ Live2D는 지오메트리 버퍼와 반복되는 렌더링 상태를 자동으�
 Mver (OpenGL/Vulkan/Metal)은 손, 말풍선 테두리, 글자를 따로 잘라 누른 키를 +로 연결해 하나의 말풍선에 표시합니다. 테두리와 꼬리는 모델과 함께 뒤집히며, 단일 키 모드에서도 글자는 읽는 방향을 유지합니다. 손 이미지 옆의 `hand-layout.json`에서 세 자르기 영역, + 양쪽 간격, 각 손의 표시 개수를 설정하고 변경 후 앱을 다시 시작하세요. [설명과 예제](hand-layout.md)를 참고하세요.
 
 동작 창은 `Sound` 참조와 오디오 파일의 존재를 확인하고, 오디오가 있는 동작 옆에만 개별 음량 조절을 표시합니다. 드래그하거나 값을 입력해 0–100%로 조절하며, 두 번 클릭하면 100%로 복원되고 0%는 음소거입니다. 설정은 모델과 동작별로 저장되어 창 재생, 단축키, 무작위 동작, 컨텍스트 메뉴에 적용되며 재생 중에도 조절됩니다. 같은 파일을 쓰는 다른 동작의 음량에는 영향을 주지 않습니다.
+
+### 환경설정 옵션 표시
+
+환경설정 상단 버튼으로 모든 옵션 표시와 접이식 그룹을 전환합니다. 창, 모델, 앱 또는 모양의 제목을 누르면 그룹이 펼쳐지거나 접힙니다. 표시 방식은 저장되고 기존 설정 값은 유지됩니다.
+
+### 입력 통계 플러그인
+
+Rust 통계 플러그인은 기본적으로 앱과 함께 빌드됩니다. 플러그인 페이지에서 켜기, 끄기 또는 가져오기를 할 수 있습니다. 통계 페이지는 키보드와 마우스 합계, 일별·시간별 차트, 로컬 저장 및 CSV 내보내기를 제공합니다. [통계 플러그인](statistics-plugin.md)을 참고하세요. 활성 앱 사용 시간은 순위, 시간대별 합계와 별도 스위치를 제공합니다. 수집, 저장과 내보내기는 독립 스레드에서 실행됩니다. 통계 메뉴는 플러그인을 켜면 등록되고 끄거나 제거하면 사라집니다.

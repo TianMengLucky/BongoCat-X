@@ -45,6 +45,15 @@ void bongo_cat_windows_input_packet(WindowsInputState *state,
         bounds.bottom = bounds.top + GetSystemMetrics(virtual_desktop ?
             SM_CYVIRTUALSCREEN : SM_CYSCREEN);
     }
+    if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
+        bongo_cat_input_metrics_scroll(state->platform->input, 0, (SHORT)mouse->usButtonData / (double)WHEEL_DELTA);
+    if (mouse->usButtonFlags & RI_MOUSE_HWHEEL)
+        bongo_cat_input_metrics_scroll(state->platform->input, (SHORT)mouse->usButtonData / (double)WHEEL_DELTA, 0);
+    if (atomic_load_explicit(&state->platform->input->metrics_enabled, memory_order_relaxed) &&
+        (mouse->lLastX || mouse->lLastY)) {
+        POINT point;
+        if (GetCursorPos(&point)) bongo_cat_input_metrics_pointer(state->platform->input, point.x, point.y);
+    }
     bongo_cat_windows_input_motion(state, device, mouse, &bounds);
     state->wake_pending = true;
 }

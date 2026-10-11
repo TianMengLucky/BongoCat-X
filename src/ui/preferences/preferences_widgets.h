@@ -7,6 +7,7 @@
 #include "preferences_icons.h"
 
 void bongo_cat_pref_section(struct nk_context *context, const char *title);
+void bongo_cat_pref_section_rows_begin(struct nk_context *context);
 void bongo_cat_pref_section_icon(struct nk_context *context,
     const char *title, BongoCatPrefIcon icon);
 void bongo_cat_pref_row_icon(struct nk_context *context,
@@ -50,6 +51,10 @@ bool bongo_cat_pref_int(struct nk_context *context, const char *id,
 bool bongo_cat_pref_slider(struct nk_context *context, const char *id,
     const char *title, const char *description, float minimum, float *value,
     float maximum, float step, float default_value);
+/* Slider with a caller-selected unit; NULL displays a plain number. */
+bool bongo_cat_pref_slider_suffix(struct nk_context *context, const char *id,
+    const char *title, const char *description, float minimum, float *value,
+    float maximum, float step, float default_value, const char *suffix);
 int bongo_cat_pref_combo(struct nk_context *context, const char *id,
     const char *title, const char *description, const char *const *items,
     int count, int selected);

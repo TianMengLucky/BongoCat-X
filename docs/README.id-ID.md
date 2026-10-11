@@ -61,9 +61,11 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **Baru di 2.1.2:** gelembung banyak tombol dengan karakter tetap terbaca saat dicerminkan, volume per gerakan, latar gambar khusus, serta lapisan tombol, efek, dan penunjuk pada Vulkan / Metal. Setiap opsi pengaturan kini dijelaskan; opsi tetap di dalam layar dihapus. Optimasi opsional menampilkan ketersediaannya; peningkatan kinerja belum diukur. Lihat [catatan perubahan](../CHANGELOG.md) dan [panduan potongan gambar tangan](hand-layout.md).
+  Aktifkan **Akselerasi Unduhan GitHub** pada pengaturan umum (nonaktif secara bawaan) untuk pemeriksaan pembaruan, paket, dan gambar kontributor melalui [gh-proxy.com](https://gh-proxy.com/). Rust menangani semua unduhan jaringan di aplikasi. Tombol pembaruan pada halaman Tentang mengunduh paket, memverifikasi SHA-256, lalu meminta konfirmasi. **Mulai Ulang dan Perbarui** memasang setelah aplikasi ditutup dan membuka aplikasi kembali; **Nanti** tetap menjalankan versi saat ini dan menyediakan pembaruan melalui tombol yang sama selama sesi ini. Versi toko tetap diperbarui melalui toko.
+
+  **Baru di 2.1.3:** plugin Rust mencatat aktivitas keyboard/mouse dan durasi penggunaan aplikasi melalui thread latar terpisah; menonaktifkannya menghapus menu statistik. Kelompok preferensi dapat dibuka seluruhnya atau dilipat. Tersedia sensitivitas mouse, percepatan unduhan GitHub opsional, konfirmasi mulai ulang untuk pembaruan, serta pengurangan beban lapisan dan audio. Lihat [catatan perubahan](../CHANGELOG.md) dan [panduan statistik](statistics-plugin.md).
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -102,7 +104,7 @@ Jalankan perintah berikut dari root proyek (direktori yang berisi
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Konfigurasi dan Build
@@ -422,6 +424,14 @@ Oleh vladelaina\
 Dibuat dengan ❤️ & ⌨️
 
 </div>
+
+### Tampilan opsi preferensi
+
+Tombol di bagian atas beralih antara semua opsi dan grup yang dapat dilipat. Klik judul Jendela, Model, Aplikasi atau Tampilan untuk membuka atau menutup grup. Pilihan tampilan disimpan dan nilai opsi tetap terjaga.
+
+### Plugin statistik input
+
+Plugin statistik Rust dibangun bersama aplikasi secara bawaan. Aktifkan, nonaktifkan, atau impor dari halaman plugin. Halaman statistik menampilkan total keyboard dan mouse, grafik harian dan per jam, penyimpanan lokal, serta ekspor CSV. Lihat [Plugin statistik](statistics-plugin.md). Waktu aplikasi aktif mencakup peringkat, total per jam dan sakelar terpisah. Pengambilan sampel, penyimpanan dan ekspor berjalan di thread tersendiri. Plugin mendaftarkan menu statistik saat diaktifkan dan menghapusnya saat dinonaktifkan atau dihapus.
 
 ### Plugin perender dinamis
 

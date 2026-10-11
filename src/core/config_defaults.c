@@ -245,6 +245,8 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     if (!config) return;
     memset(config, 0, sizeof(*config));
     config->model.mouse_centered = true;
+    bongo_cat_settings_set_mouse_sensitivity(config,
+        BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY);
     config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
     config->model.dynamic_texture_resolution = true;
     config->model.multi_key_display = true;
@@ -273,6 +275,21 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     memcpy(config->extensions_json, "{}", sizeof("{}"));
 }
 
+float bongo_cat_settings_mouse_sensitivity(const BongoCatSettings *settings) {
+    return settings ? clampf_or(settings->window.mouse_sensitivity_hundredths /
+        100.0f, 0.0f, BONGO_CAT_MAX_MOUSE_SENSITIVITY,
+        BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY) : BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY;
+}
+
+void bongo_cat_settings_set_mouse_sensitivity(BongoCatSettings *settings,
+    float sensitivity) {
+    if (!settings) return;
+    sensitivity = clampf_or(sensitivity, 0.0f, BONGO_CAT_MAX_MOUSE_SENSITIVITY,
+        BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY);
+    settings->window.mouse_sensitivity_hundredths =
+        (uint16_t)roundf(sensitivity * 100.0f);
+}
+
 float bongo_cat_settings_snap_render_quality(float percent) {
     static const float levels[] = {0.1f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f,
         50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f};
@@ -292,6 +309,8 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     if (!config->window.custom_background_path[0])
         config->window.custom_background = false;
     if (config->window.custom_background) config->window.obs_background = false;
+    bongo_cat_settings_set_mouse_sensitivity(config,
+        bongo_cat_settings_mouse_sensitivity(config));
     config->model.render_quality_percent =
         bongo_cat_settings_snap_render_quality(
             config->model.render_quality_percent);

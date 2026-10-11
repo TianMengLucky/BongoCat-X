@@ -19,6 +19,8 @@ bool bongo_cat_mouse_step(BongoCatMouseTracking *tracking, float delta_seconds,
     double *x, double *y);
 float bongo_cat_mouse_centered_ratio(double position, double center,
     double minimum, double maximum);
+/* Scale absolute pointer travel around the neutral position. */
+float bongo_cat_mouse_sensitivity_ratio(float ratio, float sensitivity);
 void bongo_cat_mouse_drag_coordinates(float x_ratio, float y_ratio,
     bool horizontal_mirror, float *x, float *y);
 float bongo_cat_mouse_parameter_value(float minimum, float maximum,

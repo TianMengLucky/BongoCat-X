@@ -58,9 +58,11 @@ Scannez le QR code avec QQ ou recherchez le groupe **211957388** pour rejoindre 
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **Nouveautés de 2.1.2 :** bulles multitouches avec caractères lisibles en miroir, volume par mouvement, fonds personnalisés et couches de touches, effets et pointeur sous Vulkan / Metal. Chaque option est expliquée ; Maintenir à l’écran a été supprimé. Les optimisations facultatives indiquent leur disponibilité ; les performances restent à mesurer. Voir le [journal des modifications](../CHANGELOG.md) et le [guide des découpes](hand-layout.md).
+  Activez **Accélération des téléchargements GitHub** dans les réglages généraux (désactivée par défaut) pour obtenir les vérifications, paquets et images des contributeurs via [gh-proxy.com](https://gh-proxy.com/). Rust gère tous les téléchargements réseau de l’application. Le bouton de mise à jour de la page À propos télécharge le paquet, vérifie SHA-256 puis demande confirmation. **Redémarrer et mettre à jour** installe après la fermeture et relance l’application ; **Plus tard** conserve la version actuelle et permet l’installation depuis le même bouton pendant cette session. Les versions du magasin utilisent toujours le magasin.
+
+  **Nouveautés de 2.1.3 :** un plugin Rust mesure l’activité clavier/souris et le temps d’utilisation des applications dans des threads indépendants ; sa désactivation retire l’entrée des statistiques. Les groupes de préférences peuvent être dépliés ou repliés. Ajout de la sensibilité de la souris, de l’accélération facultative des téléchargements GitHub et de la confirmation du redémarrage pour les mises à jour, avec moins de charge pour les couches et l’audio. Voir le [journal des modifications](../CHANGELOG.md) et le [guide des statistiques](statistics-plugin.md).
 
   Téléchargez la dernière version depuis [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -101,7 +103,7 @@ contenant `CMakeLists.txt`).
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Configuration et compilation
@@ -444,6 +446,14 @@ Par vladelaina\
 Fait avec ❤️ & ⌨️
 
 </div>
+
+### Présentation des options
+
+Les boutons en haut des préférences basculent entre toutes les options et des groupes repliables. Cliquez sur Fenêtre, Modèle, Application ou Apparence pour ouvrir ou fermer le groupe. La présentation est enregistrée et les valeurs sont conservées.
+
+### Plugin de statistiques des entrées
+
+Le plugin Rust est compilé par défaut avec l’application. Activez, désactivez ou importez-le depuis la page des plugins. La page de statistiques affiche les totaux du clavier et de la souris, les graphiques par jour et par heure, le stockage local et l’export CSV. Voir [Statistiques](statistics-plugin.md). Le temps des applications actives inclut classement, totaux horaires et commande séparée. Relevés, stockage et export fonctionnent dans un thread indépendant. Le plugin ajoute l’entrée des statistiques à son activation et la retire à sa désactivation ou désinstallation.
 
 ### Plugins de rendu dynamiques
 

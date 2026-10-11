@@ -126,10 +126,13 @@ void bongo_cat_app_apply_mouse(BongoCatApp *app) {
         app->model_render_options.mouse_force_move;
     bool map_pointer = cursor_locked || (app->model_render_options.mver_projection &&
         (!app->settings.model.mouse_centered || profile_relative));
-    if (map_pointer && !bongo_cat_app_map_pointer(app, &projection,
-            relative_requested, target_x, target_y, &model_x, &model_y,
-            &model_moved)) {
-        model_x = target_x; model_y = target_y; model_moved = moved;
+    if (map_pointer) {
+        if (bongo_cat_app_map_pointer(app, &projection, relative_requested,
+                target_x, target_y, &model_x, &model_y, &model_moved))
+            projection.relative = relative_requested;
+        else {
+            model_x = target_x; model_y = target_y; model_moved = moved;
+        }
     }
     if (model_moved || button_changed || pointer_mode_changed || button_event_pending)
         bongo_cat_app_apply_mouse_coordinates(app, &projection, model_x, model_y,

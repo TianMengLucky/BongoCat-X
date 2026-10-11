@@ -324,11 +324,24 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
     bongo_cat_preferences_model_covers_prune(app);
 }
 
-/* Pointer-input rows of the cat settings page: the ignore-mouse toggle and
+/* Pointer-input rows of the cat settings page: sensitivity, ignore-mouse and
    the Windows force-raw-mouse-input toggle. Drawn from here so the page
    module stays within the source size policy. */
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context) {
+    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_SENSITIVITY);
+    float sensitivity = bongo_cat_settings_mouse_sensitivity(&app->settings);
+    if (bongo_cat_pref_slider_suffix(context, "mouse-sensitivity", tr(app,
+        "pages.preference.cat.labels.mouseSensitivity", "Desktop Pet Mouse Sensitivity"), tr(app,
+        "pages.preference.cat.hints.mouseSensitivity",
+        "Multiply mouse movement by 0 to 5 in steps of 0.01. Default: 1.00; 0 stops the pet mouse. Double-click the value to reset."),
+        0.0f, &sensitivity, BONGO_CAT_MAX_MOUSE_SENSITIVITY, 0.01f,
+        BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY, NULL)) {
+        bongo_cat_settings_set_mouse_sensitivity(&app->settings, sensitivity);
+        /* Keep the virtual game pointer in place while tuning its speed. */
+        app->pointer_known = false;
+        app->dirty = true;
+    }
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_IGNORE_MOUSE);
     if (bongo_cat_pref_toggle(context, "ignore-mouse", tr(app,
         "pages.preference.cat.labels.ignoreMouse", "Ignore Mouse Events"), tr(app, "pages.preference.cat.hints.ignoreMouse",

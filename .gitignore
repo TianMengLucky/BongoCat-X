@@ -63,6 +63,7 @@ Desktop.ini
 /docs/*
 !/docs/
 !/docs/model-plugins.md
+!/docs/statistics-plugin.md
 !/docs/hand-layout.md
 !/docs/hand-layout.example.json
 !/docs/README.en-US.md

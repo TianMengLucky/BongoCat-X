@@ -3,6 +3,7 @@
 #include "preferences_theme.h"
 #include "preferences_controls.h"
 #include "preferences_widgets.h"
+#include "preferences_options.h"
 #include "preferences_notice.h"
 #include "ui_tooltip.h"
 #include "bongo_cat/audio.h"
@@ -89,9 +90,6 @@ static void input_monitoring_section(BongoCatApp *app,
     if (!value) return;
     if (!value->input_monitoring_valid)
         bongo_cat_preferences_input_monitoring_refresh(value);
-    bongo_cat_pref_section_icon(context, tr(app,
-        "pages.preference.general.labels.permissionsSettings",
-        "Permissions Settings"), BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
     const char *title = tr(app,
         "pages.preference.general.labels.inputMonitoringPermission",
         "Input Monitoring Permission");
@@ -126,95 +124,116 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
         bongo_cat_ui_language_name(BONGO_CAT_LANG_PT_BR),
         bongo_cat_ui_language_name(BONGO_CAT_LANG_RU_RU),
         bongo_cat_ui_language_name(BONGO_CAT_LANG_ES_ES)};
-    bongo_cat_pref_section_icon(context, tr(app,
+    BongoCatPreferences *value = app->preferences;
+    bool application_open = bongo_cat_preferences_options_begin(value, context,
+        BONGO_CAT_OPTIONS_APPLICATION, tr(app,
         "pages.preference.general.labels.appSettings", "Application"),
         BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
-    bool old_autostart = options->autostart;
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);
-    if (bongo_cat_pref_toggle(context, "autostart", tr(app,
-        "pages.preference.general.labels.launchOnStartup", "Launch on Startup"), tr(app, "pages.preference.general.hints.launchOnStartup",
-            "Start BongoCat automatically when you sign in."),
-        &options->autostart)) update_autostart(app, old_autostart);
+    if (application_open) {
+        bool old_autostart = options->autostart;
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);
+        if (bongo_cat_pref_toggle(context, "autostart", tr(app,
+            "pages.preference.general.labels.launchOnStartup", "Launch on Startup"), tr(app, "pages.preference.general.hints.launchOnStartup",
+                "Start BongoCat automatically when you sign in."),
+            &options->autostart)) update_autostart(app, old_autostart);
 #ifdef _WIN32
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ADMINISTRATOR);
-    if (bongo_cat_pref_toggle_help(context, "run-as-admin",
-        tr(app, "pages.preference.general.labels.runAsAdmin",
-            "Run as Administrator"),
-        tr(app, "pages.preference.general.hints.runAsAdmin",
-            "Improve input capture in elevated Windows games. Enabling requests permission and restarts the app."),
-        tr(app, "pages.preference.general.hints.runAsAdminHelp",
-            "Running as administrator lets the app capture some system-level keys and input events more reliably, and stay responsive in games that run with administrator privileges.\n\nWhen enabled: the app asks for administrator permission and restarts itself; every later launch (including launch-on-startup) also runs as administrator. With launch-on-startup enabled, Windows shows a User Account Control confirmation once at each sign-in.\n\nWhen disabled: normal privileges are restored from the next launch on; the running app is not affected."),
-        &options->run_as_admin)) {
-        BongoCatError admin_error = {0};
-        if (!bongo_cat_windows_game_compatibility_set(app,
-                options->run_as_admin, &admin_error)) {
-            char message[1024];
-            snprintf(message, sizeof(message), "%s\n%s", tr(app,
-                "pages.preference.general.hints.runAsAdminFailed",
-                "Unable to change the run-as-administrator setting"),
-                admin_error.message);
-            bongo_cat_preferences_notice_show(app, message, true);
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_ADMINISTRATOR);
+        if (bongo_cat_pref_toggle_help(context, "run-as-admin",
+            tr(app, "pages.preference.general.labels.runAsAdmin",
+                "Run as Administrator"),
+            tr(app, "pages.preference.general.hints.runAsAdmin",
+                "Improve input capture in elevated Windows games. Enabling requests permission and restarts the app."),
+            tr(app, "pages.preference.general.hints.runAsAdminHelp",
+                "Running as administrator lets the app capture some system-level keys and input events more reliably, and stay responsive in games that run with administrator privileges.\n\nWhen enabled: the app asks for administrator permission and restarts itself; every later launch (including launch-on-startup) also runs as administrator. With launch-on-startup enabled, Windows shows a User Account Control confirmation once at each sign-in.\n\nWhen disabled: normal privileges are restored from the next launch on; the running app is not affected."),
+            &options->run_as_admin)) {
+            BongoCatError admin_error = {0};
+            if (!bongo_cat_windows_game_compatibility_set(app,
+                    options->run_as_admin, &admin_error)) {
+                char message[1024];
+                snprintf(message, sizeof(message), "%s\n%s", tr(app,
+                    "pages.preference.general.hints.runAsAdminFailed",
+                    "Unable to change the run-as-administrator setting"),
+                    admin_error.message);
+                bongo_cat_preferences_notice_show(app, message, true);
+            }
         }
-    }
 #endif
-    /* Enabling portable storage copies existing data beside the executable;
-       the selected location is used from the next launch on. */
-    bool portable = bongo_cat_portable_mode_active();
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
-    if (bongo_cat_pref_toggle_help(context, "portable-mode",
-        tr(app, "pages.preference.general.labels.portableMode",
-            "Portable Mode"), tr(app, "pages.preference.general.hints.portableModeSummary",
-            "Store data beside the executable. Enabling copies existing data; restart to use the selected location."),
-        tr(app, "pages.preference.general.hints.portableMode",
-            "Store settings, models and data in the application folder instead of the system profile. Enabling copies your existing config, data (including the live2d core), models and state folders next to the executable (files already there are kept; originals are not deleted) and takes effect after a restart. The switch itself is stored in BongoCat.ini beside the executable."),
-        &portable)) {
-        BongoCatError portable_error = {0};
-        if (bongo_cat_portable_mode_set(portable, app, &portable_error))
-            bongo_cat_preferences_notice_show(app, tr(app, portable ?
-                "pages.preference.general.hints.portableModeEnabled" :
-                "pages.preference.general.hints.portableModeDisabled",
-                portable ?
-                "Portable mode will be used after a restart" : "The system data location will be used after a restart"),
-                false);
-        else {
-            char message[1024];
-            snprintf(message, sizeof(message), "%s\n%s", tr(app,
-                "pages.preference.general.hints.portableModeFailed", "Unable to change the portable mode setting"),
-                portable_error.message[0] ? portable_error.message :
-                "unknown error");
-            bongo_cat_preferences_notice_show(app, message, true);
+        /* Enabling portable storage copies existing data beside the executable;
+           the selected location is used from the next launch on. */
+        bool portable = bongo_cat_portable_mode_active();
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
+        if (bongo_cat_pref_toggle_help(context, "portable-mode",
+            tr(app, "pages.preference.general.labels.portableMode",
+                "Portable Mode"), tr(app, "pages.preference.general.hints.portableModeSummary",
+                "Store data beside the executable. Enabling copies existing data; restart to use the selected location."),
+            tr(app, "pages.preference.general.hints.portableMode",
+                "Store settings, models and data in the application folder instead of the system profile. Enabling copies your existing config, data (including the live2d core), models and state folders next to the executable (files already there are kept; originals are not deleted) and takes effect after a restart. The switch itself is stored in BongoCat.ini beside the executable."),
+            &portable)) {
+            BongoCatError portable_error = {0};
+            if (bongo_cat_portable_mode_set(portable, app, &portable_error))
+                bongo_cat_preferences_notice_show(app, tr(app, portable ?
+                    "pages.preference.general.hints.portableModeEnabled" :
+                    "pages.preference.general.hints.portableModeDisabled",
+                    portable ?
+                    "Portable mode will be used after a restart" : "The system data location will be used after a restart"),
+                    false);
+            else {
+                char message[1024];
+                snprintf(message, sizeof(message), "%s\n%s", tr(app,
+                    "pages.preference.general.hints.portableModeFailed", "Unable to change the portable mode setting"),
+                    portable_error.message[0] ? portable_error.message :
+                    "unknown error");
+                bongo_cat_preferences_notice_show(app, message, true);
+            }
         }
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
+        bongo_cat_pref_toggle(context, "github-download-acceleration", tr(app,
+            "pages.preference.general.labels.githubDownloadAcceleration",
+            "GitHub Download Acceleration"), tr(app,
+            "pages.preference.general.hints.githubDownloadAcceleration",
+            "Use gh-proxy.com for GitHub update checks, update downloads and contributor images. Applies to the next request."),
+            &options->github_download_acceleration);
+        bongo_cat_preferences_render_backend_row(app, options, context);
+        bongo_cat_preferences_large_render_row(app, options, context);
     }
-    bongo_cat_preferences_render_backend_row(app, options, context);
-    bongo_cat_preferences_large_render_row(app, options, context);
+    if (application_open) bongo_cat_preferences_options_end(value, context);
     section_gap(context, 7);
-    bongo_cat_pref_section_icon(context, tr(app,
+    bool appearance_open = bongo_cat_preferences_options_begin(value, context,
+        BONGO_CAT_OPTIONS_APPEARANCE, tr(app,
         "pages.preference.general.labels.appearanceSettings", "Appearance"),
         BONGO_CAT_PREF_ICON_SECTION_APPEARANCE);
-    section_gap(context, 6);
-    const int language_to_ui[] = {2, 0, 1, 3, 4, 5, 6, 7, 8, 9};
-    const BongoCatLanguage ui_to_language[] = {
-        BONGO_CAT_LANG_ZH_CN, BONGO_CAT_LANG_ZH_HANT, BONGO_CAT_LANG_EN_US, BONGO_CAT_LANG_FR_FR,
-        BONGO_CAT_LANG_DE_DE, BONGO_CAT_LANG_JA_JP, BONGO_CAT_LANG_KO_KR, BONGO_CAT_LANG_PT_BR,
-        BONGO_CAT_LANG_RU_RU, BONGO_CAT_LANG_ES_ES};
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_LANGUAGE);
-    int selected = bongo_cat_pref_combo(context,
-        "language", tr(app, "pages.preference.general.labels.language",
-        "Language"), tr(app, "pages.preference.general.hints.language",
-            "Change the interface language immediately; model names are kept as authored."), ui_languages, BONGO_CAT_LANG_COUNT,
-        language_to_ui[options->language]);
-    options->language = ui_to_language[selected];
-    const char *themes[] = {
-        tr(app, "pages.preference.general.options.auto", "System"),
-        tr(app, "pages.preference.general.options.lightMode", "Light"),
-        tr(app, "pages.preference.general.options.darkMode", "Dark")};
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_THEME);
-    options->theme = (BongoCatTheme)bongo_cat_pref_theme(context,
-        "theme", tr(app, "pages.preference.general.labels.themeMode",
-        "Theme"), tr(app, "pages.preference.general.hints.themeMode",
-            "Follow the system appearance or choose a light or dark settings window."), themes, options->theme);
+    if (appearance_open) {
+        section_gap(context, 6);
+        const int language_to_ui[] = {2, 0, 1, 3, 4, 5, 6, 7, 8, 9};
+        const BongoCatLanguage ui_to_language[] = {
+            BONGO_CAT_LANG_ZH_CN, BONGO_CAT_LANG_ZH_HANT, BONGO_CAT_LANG_EN_US, BONGO_CAT_LANG_FR_FR,
+            BONGO_CAT_LANG_DE_DE, BONGO_CAT_LANG_JA_JP, BONGO_CAT_LANG_KO_KR, BONGO_CAT_LANG_PT_BR,
+            BONGO_CAT_LANG_RU_RU, BONGO_CAT_LANG_ES_ES};
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_LANGUAGE);
+        int selected = bongo_cat_pref_combo(context,
+            "language", tr(app, "pages.preference.general.labels.language",
+            "Language"), tr(app, "pages.preference.general.hints.language",
+                "Change the interface language immediately; model names are kept as authored."), ui_languages, BONGO_CAT_LANG_COUNT,
+            language_to_ui[options->language]);
+        options->language = ui_to_language[selected];
+        const char *themes[] = {
+            tr(app, "pages.preference.general.options.auto", "System"),
+            tr(app, "pages.preference.general.options.lightMode", "Light"),
+            tr(app, "pages.preference.general.options.darkMode", "Dark")};
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_THEME);
+        options->theme = (BongoCatTheme)bongo_cat_pref_theme(context,
+            "theme", tr(app, "pages.preference.general.labels.themeMode",
+            "Theme"), tr(app, "pages.preference.general.hints.themeMode",
+                "Follow the system appearance or choose a light or dark settings window."), themes, options->theme);
+    }
+    if (appearance_open) bongo_cat_preferences_options_end(value, context);
 #ifdef __APPLE__
     section_gap(context, 7);
-    input_monitoring_section(app, context);
+    if (bongo_cat_preferences_options_begin(value, context, BONGO_CAT_OPTIONS_PERMISSIONS,
+        tr(app, "pages.preference.general.labels.permissionsSettings", "Permissions Settings"),
+        BONGO_CAT_PREF_ICON_SECTION_APPLICATION)) {
+        input_monitoring_section(app, context);
+        bongo_cat_preferences_options_end(value, context);
+    }
 #endif
 }

@@ -213,7 +213,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev \
-            libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev \
+            libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libcurl4-openssl-dev \
             libfontconfig1-dev glslang-tools curl file desktop-file-utils
 
       # sccache is not packaged for Ubuntu 22.04 (jammy); use the official
@@ -457,6 +457,7 @@ jobs:
             SkipSmoke = '${{ matrix.platform }}'.StartsWith('macos-')
             ExpectLive2D = $true
             ExpectInox2D = $true
+            ExpectStatistics = $true
           }
           & ./.github/scripts/check-unix-package.ps1 @packageCheckArgs
           $checksum = "$($archive.FullName).sha256"

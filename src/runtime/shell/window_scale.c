@@ -44,11 +44,13 @@ bool bongo_cat_window_apply_scale_centered(BongoCatApp *app, float scale,
         return true;
     }
     bongo_cat_window_snapshot_begin(app);
-    bongo_cat_window_snapshot_geometry(app, &image);
     if (!bongo_cat_window_apply_geometry(app, x, y, actual, width, height)) {
         bongo_cat_window_snapshot_end(app);
         return false;
     }
+    image.x += (float)((double)app->session.window.x - x);
+    image.y += (float)((double)app->session.window.y - y);
+    bongo_cat_window_snapshot_geometry(app, &image);
     /* Uniform scaling preserves the normalized gaze anchor. Finish drawing
        the resized surface before returning to event/model processing, where
        the compositor could otherwise display the moved previous frame. */

@@ -55,6 +55,15 @@ foreach(FILE IN LISTS PRODUCTION_FILES)
       "FALSE[ \t\r\n]*,[ \t\r\n]*shell_pid[ \t\r\n]*\\)")
     string(REGEX REPLACE "${SHELL_PROCESS_QUERY}" "\\1" SOURCE "${SOURCE}")
   endif()
+  if(RELATIVE_FILE STREQUAL "src/platform/windows/windows_statistics.c")
+    # Foreground application timing needs its executable basename. Permit
+    # only a non-inheritable metadata query handle, never process memory access.
+    string(CONCAT STATISTICS_PROCESS_QUERY
+      "(^|[^A-Za-z0-9_])OpenProcess[ \t\r\n]*\\([ \t\r\n]*"
+      "PROCESS_QUERY_LIMITED_INFORMATION[ \t\r\n]*,[ \t\r\n]*"
+      "FALSE[ \t\r\n]*,[ \t\r\n]*process_id[ \t\r\n]*\\)")
+    string(REGEX REPLACE "${STATISTICS_PROCESS_QUERY}" "\\1" SOURCE "${SOURCE}")
+  endif()
   foreach(API IN LISTS FORBIDDEN_APIS)
     string(REGEX MATCH
       "(^|[^A-Za-z0-9_])${API}[ \t\r\n]*\\(" MATCHED "${SOURCE}")
@@ -72,6 +81,9 @@ endforeach()
 
 # Intentional sensitive capabilities remain confined to reviewed modules.
 set(SENSITIVE_RULES
+  "QueryFullProcessImageNameW|src/platform/windows/windows_statistics.c"
+  "GetLastInputInfo|src/platform/windows/windows_statistics.c"
+  "OpenInputDesktop|src/platform/windows/windows_statistics.c|src/platform/windows/windows_input.c"
   "GetAsyncKeyState|src/platform/windows/windows_keys.c"
   "RegisterRawInputDevices|src/platform/windows/windows_input_registration.c"
   "GetRegisteredRawInputDevices|src/platform/windows/windows_input_registration.c"

@@ -9,6 +9,9 @@
 #include "../rendering/ui_icons.h"
 static struct nk_context *section_context;
 static bool section_first;
+void bongo_cat_pref_section_rows_begin(struct nk_context *context) {
+    section_context = context; section_first = true;
+}
 static const float description_line_height = 19.0f;
 int bongo_cat_pref_detail_lines(const struct nk_context *context,
     const char *text) {
@@ -305,11 +308,18 @@ bool bongo_cat_pref_int(struct nk_context *context, const char *id,
 bool bongo_cat_pref_slider(struct nk_context *context, const char *id,
     const char *title, const char *detail, float minimum, float *value,
     float maximum, float step, float default_value) {
+    return bongo_cat_pref_slider_suffix(context, id, title, detail, minimum,
+        value, maximum, step, default_value, "%");
+}
+
+bool bongo_cat_pref_slider_suffix(struct nk_context *context, const char *id,
+    const char *title, const char *detail, float minimum, float *value,
+    float maximum, float step, float default_value, const char *suffix) {
     int lines = bongo_cat_pref_detail_lines(context, detail); FormStyle saved;
     if (!form_begin(context, id, lines, &saved)) return false;
     form_title(context, title);
     bool changed = bongo_cat_pref_control_slider(context, id,
-        minimum, value, maximum, step, default_value, "%", 0.0f);
+        minimum, value, maximum, step, default_value, suffix, 0.0f);
     nk_layout_row_end(context); bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved); return changed;
 }

@@ -42,9 +42,11 @@
 
 ## 📥 下载
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **2.1.2 更新**：新增多按键气泡、镜像时保持字符可读、动作独立音量和自定义图片背景；Vulkan / Metal 也可显示按键、特效与指针。设置页补齐各选项说明，并移除“保持在屏幕内”。渲染优化按后端显示可用状态，性能收益仍待实测。详见[更新日志](CHANGELOG.md)和[手部裁剪配置](docs/hand-layout.md)。
+  在设置的「常规」页可开启「GitHub 下载加速」（默认关闭），通过 [gh-proxy.com](https://gh-proxy.com/) 加速更新检查、更新包和贡献者头像。应用内网络下载统一由 Rust 处理。点击关于页的更新按钮后，应用下载并校验 SHA-256，再弹出「稍后／重启并更新」确认窗口；选择「稍后」可继续使用当前版本，并在本次运行中再次点击更新按钮安装。商店版仍通过商店更新。
+
+  **2.1.3 更新**：新增 Rust 统计插件，独立后台统计键鼠活动和应用使用时长；停用插件即隐藏统计入口。偏好选项可切换全部展开／折叠分组，新增鼠标灵敏度、GitHub 下载加速和下载后确认重启更新，并减少覆盖层传输与空闲音频开销。详见[更新日志](CHANGELOG.md)和[统计插件说明](docs/statistics-plugin.md)。
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
@@ -77,7 +79,7 @@ BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或�
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libfontconfig1-dev fonts-noto-cjk
   ```
 
 ### 🔧 配置与构建
@@ -314,6 +316,14 @@ By vladelaina<br>
 Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
 Made with ❤️ & ⌨️
 </div>
+
+### 偏好选项菜单样式
+
+「偏好」页顶部可切换「全部展开」和「折叠分组」样式。折叠样式下，点击窗口、模型、应用或外观分组标题即可展开或收起选项；样式选择会保存，原有设置值保持不变。
+
+### 输入统计插件
+
+Rust 动态统计插件默认随程序构建，可在「插件」页启停或导入。新增「统计」页展示键鼠总量、每日和每小时趋势，支持本地保存及 CSV 导出。详见[统计插件说明](docs/statistics-plugin.md)。 应用使用时长按前台应用汇总，支持排行、小时分布和独立开关；统计采样、保存与导出在独立线程执行。 统计入口由插件在启用时注册，停用或卸载后自动移除。
 
 ### 动态渲染插件
 

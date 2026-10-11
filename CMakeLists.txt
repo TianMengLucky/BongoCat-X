@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.1.2")
+set(BONGO_CAT_VERSION "2.1.3")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
@@ -132,7 +132,7 @@ add_library(bongo_cat_core STATIC
   src/core/config_file.c src/core/config_motion_volume.c
   src/core/error.c
   src/core/file.c src/core/i18n.c src/core/json_dom_io.c
-  src/core/input_state.c src/core/mver_pointer.c
+  src/core/input_state.c src/core/input_metrics.c src/core/mver_pointer.c
   src/core/mouse_tracking.c src/core/sha256.c src/core/utf8.c
   src/core/model_catalog.c
   src/core/model_behavior.c src/core/model_json.c
@@ -307,4 +307,5 @@ add_custom_target(check-cubism-user-model-safety ${BONGO_CAT_CHECK_ALL}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismUserModelSafety.cmake
   VERBATIM)
 include(cmake/Tests.cmake)
+include(cmake/StatisticsTests.cmake)
 include(cmake/Packaging.cmake)

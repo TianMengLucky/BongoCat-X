@@ -6,6 +6,7 @@
 #include "ui_font_atlas.h"
 #include "ui_paint.h"
 #include "bongo_cat/i18n.h"
+#include "bongo_cat/statistics.h"
 #include "bongo_cat/memory_policy.h"
 
 #include <SDL3/SDL.h>
@@ -45,6 +46,16 @@ void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *value,
     /* Include label glyphs in the initial atlas so page switches need no bake. */
     bongo_cat_preferences_model_glyphs(value->app, value->glyph_ranges,
         sizeof(value->glyph_ranges) / sizeof(value->glyph_ranges[0]));
+    BongoCatApplicationSnapshot applications;
+    for (unsigned period = 0; period < 4; ++period) {
+        if (bongo_cat_statistics_usage_snapshot(value->app, period, &applications)) {
+            unsigned count = applications.count > BONGO_CAT_STATISTICS_APPS ? BONGO_CAT_STATISTICS_APPS : applications.count;
+            for (unsigned i = 0; i < count; ++i) {
+                applications.apps[i].name[BONGO_CAT_STATISTICS_APP_CAP - 1] = 0;
+                bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, applications.apps[i].name);
+            }
+        }
+    }
     fonts->ranges = value->glyph_ranges;
 }
 

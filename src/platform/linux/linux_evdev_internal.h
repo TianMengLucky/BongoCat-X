@@ -15,6 +15,7 @@ typedef struct EvdevDevice {
     bool pointer;
     bool relative;
     bool desynchronized;
+    double statistics_x, statistics_y;
     bool down[KEY_CNT];
     char node[EVDEV_NODE_CAP];
 } EvdevDevice;

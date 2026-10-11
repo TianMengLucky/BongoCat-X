@@ -2,6 +2,7 @@
 #include "bongo_cat/input.h"
 #include "bongo_cat/mouse.h"
 
+#include <math.h>
 #include <string.h>
 #ifdef _WIN32
 #include "windows_keys.h"
@@ -104,6 +105,18 @@ void test_input(void) {
         CHECK(bongo_cat_mouse_step(&tracking, 1.0f / 60.0f, &x, &y));
     CHECK(tracking.settled && x == 100.0 && y == 40.0);
     CHECK(!bongo_cat_mouse_step(&tracking, 1.0f / 60.0f, &x, &y));
+    /* Sensitivity preserves neutral/default travel and clamps before flips. */
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.8f, 0.0f) == 0.5f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.5f, 5.0f) == 0.5f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.75f, 1.0f) == 0.75f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.75f, 0.5f) == 0.625f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.25f, 2.0f) == 0.0f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.75f, 2.0f) == 1.0f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(1.0f, 5.0f) == 1.0f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(NAN, 1.0f) == 0.5f);
+    CHECK(bongo_cat_mouse_sensitivity_ratio(0.75f, NAN) == 0.75f);
+    CHECK(fabsf(bongo_cat_mouse_sensitivity_ratio(0.75f, 0.01f) -
+        0.5025f) < 0.00001f);
     float drag_x = 0.0f, drag_y = 0.0f;
     bongo_cat_mouse_drag_coordinates(0.0f, 0.0f, false, &drag_x, &drag_y);
     CHECK(drag_x == -1.0f && drag_y == 1.0f);

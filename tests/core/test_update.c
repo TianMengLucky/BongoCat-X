@@ -55,6 +55,15 @@ void test_update(void) {
     CHECK(release.installer_url[0] == '\0');
     CHECK(strstr(release.portable_url, "linux-x64.tar.gz") != NULL);
 
+    const char modern[] =
+        "{\"tag_name\":\"v2.1.2\",\"draft\":false,\"prerelease\":false,"
+        "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2\","
+        "\"assets\":[{\"name\":\"BongoCat-X-2.1.2-windows-x64-portable.zip\","
+        "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
+        "releases/download/v2.1.2/BongoCat-X-2.1.2-windows-x64-portable.zip\"}]}";
+    CHECK(bongo_cat_update_parse_release(modern, "windows-x64", &release, &error));
+    CHECK(strstr(release.portable_url, "BongoCat-X-2.1.2-") != NULL);
+
     const char unsafe[] =
         "{\"tag_name\":\"v2.0.0\",\"draft\":false,"
         "\"prerelease\":false,\"html_url\":\"https://example.com/v2\","

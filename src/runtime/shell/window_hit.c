@@ -98,6 +98,8 @@ void bongo_cat_window_set_visible(BongoCatApp *app, bool visible) {
         SDL_SetWindowPosition(app->window, app->session.window.x,
             app->session.window.y);
 #endif
+    if (app->settings.window.keep_in_screen) bongo_cat_window_clamp_to_display(app);
+    else bongo_cat_window_recover_to_display(app);
     /* Keep the native surface hidden until the first complete frame has been
        submitted. The render loop will reveal it next to that presentation. */
     bongo_cat_platform_set_visible(&app->platform,

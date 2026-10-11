@@ -3,6 +3,7 @@
 
 #include "bongo_cat/common.h"
 #include <stdatomic.h>
+#include "bongo_cat/statistics_plugin.h"
 
 #define BONGO_CAT_INPUT_QUEUE_CAP 256u
 #define BONGO_CAT_INPUT_RECOVERY_CAP 65u
@@ -37,6 +38,10 @@ typedef struct BongoCatScheduledRelease {
 } BongoCatScheduledRelease;
 
 typedef struct BongoCatInputState {
+    atomic_bool metrics_busy, metrics_enabled, metrics_reset;
+    atomic_uint_fast64_t metrics_keys, metrics_buttons[5], metrics_movement, metrics_scroll;
+    bool metrics_pointer_known;
+    double metrics_x, metrics_y;
     atomic_bool queue_busy;
     BongoCatInputEvent queue[BONGO_CAT_INPUT_QUEUE_CAP];
     atomic_uint_fast16_t head;
@@ -69,5 +74,12 @@ void bongo_cat_input_schedule_release(BongoCatInputState *state,
     const BongoCatInputEvent *event, uint64_t delay_ms);
 bool bongo_cat_input_take_scheduled_release(BongoCatInputState *state,
     uint64_t now_ms, BongoCatInputEvent *event);
+
+void bongo_cat_input_metrics_enable(BongoCatInputState *state, bool enabled);
+void bongo_cat_input_metrics_event(BongoCatInputState *state, const BongoCatInputEvent *event);
+void bongo_cat_input_metrics_pointer(BongoCatInputState *state, double x, double y);
+void bongo_cat_input_metrics_motion(BongoCatInputState *state, double x, double y);
+void bongo_cat_input_metrics_scroll(BongoCatInputState *state, double x, double y);
+void bongo_cat_input_metrics_take(BongoCatInputState *state, BongoCatStatisticsMetrics *metrics);
 
 #endif

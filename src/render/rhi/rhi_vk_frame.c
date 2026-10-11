@@ -82,10 +82,11 @@ bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
         (void)bongo_cat_rhi_vk_frame_present(rhi->window, vk);
         return false;
     }
+    SDL_Rect changed;
     if (bongo_cat_rhi_compose_foreground(rhi, vk->pixels, (int)vk->extent.width,
         (int)vk->extent.height, (size_t)vk->extent.width * 4,
-        vk->format == VK_FORMAT_B8G8R8A8_UNORM) &&
-        !bongo_cat_rhi_vk_upload_composed_frame(vk)) return false;
+        vk->format == VK_FORMAT_B8G8R8A8_UNORM, &changed) &&
+        !bongo_cat_rhi_vk_upload_composed_frame(vk, changed)) return false;
     return true;
 }
 

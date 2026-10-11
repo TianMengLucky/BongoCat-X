@@ -111,6 +111,20 @@ int main(void) {
     CHECK(audible(audio));
     for (size_t i = 0; i < AUDIO_VOICES; ++i)
         if (audio->voices[i].ready) ma_sound_stop(&audio->voices[i].sound);
+    audio->next_collect = 0;
+    bongo_cat_audio_collect(audio, audio->last_play + 1);
+    CHECK(audio->initialized && count(audio) != 0);
+#ifdef _WIN32
+    CHECK(SDL_GetAtomicInt(&audio->mixing) == 0);
+#endif
+    CHECK(bongo_cat_audio_play(audio, first, &error) == BONGO_CAT_OK);
+#ifdef _WIN32
+    CHECK(SDL_GetAtomicInt(&audio->mixing) == 1);
+#endif
+    CHECK(audible(audio));
+    for (size_t i = 0; i < AUDIO_VOICES; ++i)
+        if (audio->voices[i].ready) ma_sound_stop(&audio->voices[i].sound);
+    audio->next_collect = 0;
     bongo_cat_audio_collect(audio, audio->last_play + AUDIO_IDLE_MS + 1);
     CHECK(!audio->initialized && count(audio) == 0);
     CHECK(!bongo_cat_audio_is_playing(audio, first));

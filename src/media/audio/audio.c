@@ -55,11 +55,10 @@ void bongo_cat_audio_collect(BongoCatAudio *audio, uint64_t now) {
         } else active = true;
     }
 #ifdef _WIN32
+    /* Cached voices can stay allocated after playback ends. Only mix while a
+       voice is playing; the next play reenables the callback before starting. */
+    SDL_SetAtomicInt(&audio->mixing, active ? 1 : 0);
     if (ma_engine_get_device(&audio->engine)) {
-        bool retained = false;
-        for (size_t i = 0; i < AUDIO_VOICES; ++i)
-            retained |= audio->voices[i].ready;
-        if (!retained) SDL_SetAtomicInt(&audio->mixing, 0);
         return;
     }
 #endif

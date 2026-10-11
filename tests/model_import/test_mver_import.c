@@ -209,7 +209,7 @@ static void font_reload_defers_during_frame(void) {
 }
 
 static void model_change_reloads_glyphs_before_drawing(void) {
-    for (int page = 0; page < 5; ++page) {
+    for (int page = 0; page < 6; ++page) {
         BongoCatPreferences value = {0};
         value.page = page;
         value.ui_initialized = true;

@@ -8,6 +8,9 @@
 #include "ui_catime.h"
 #include <SDL3/SDL.h>
 
+void bongo_cat_preferences_statistics_usage(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_page_statistics(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_statistics_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path);
 void bongo_cat_preferences_background_import(BongoCatApp *app, const char *path);

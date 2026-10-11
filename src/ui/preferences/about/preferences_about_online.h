@@ -22,12 +22,14 @@ typedef struct BongoCatAboutRequest {
     int status;
     char cache_directory[BONGO_CAT_PATH_CAP];
     bool network_only, refresh_needed;
+    bool accelerate_github;
     Uint32 event_type;
     Uint32 window_id;
 } BongoCatAboutRequest;
 
 BongoCatAboutRequest *bongo_cat_about_request(Uint32 event_type,
-    Uint32 window_id, const char *cache_root, bool network_only);
+    Uint32 window_id, const char *cache_root, bool network_only,
+    bool accelerate_github);
 void bongo_cat_about_request_free(BongoCatAboutRequest *request);
 
 #endif

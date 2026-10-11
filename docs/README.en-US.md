@@ -56,9 +56,11 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **What’s new in 2.1.2:** multi-key bubbles with readable mirrored characters, per-motion volume, custom image backgrounds, and key/effect/pointer overlays on Vulkan / Metal. Settings now explain each option; Keep on Screen has been removed. Optional renderer optimizations show their availability, with performance gains still unmeasured. See the [changelog](../CHANGELOG.md) and [hand layout guide](hand-layout.md).
+  Enable **GitHub Download Acceleration** in General settings (off by default) to use [gh-proxy.com](https://gh-proxy.com/) for update checks, packages and contributor images. Rust handles all in-app network downloads. The About-page update button downloads and verifies the package with SHA-256, then asks whether to update now or later. **Restart and Update** applies the package after shutdown and relaunches the app; **Later** keeps the current version running, with the downloaded update available from the same button during this session. Store builds still update through the store.
+
+  **What’s new in 2.1.3:** a Rust plugin tracks keyboard/mouse activity and application usage on independent background workers; disabling it removes its statistics entry. Preference groups support expanded or collapsible layouts. Mouse sensitivity, optional GitHub download acceleration, restart confirmation for downloaded updates, and lower overlay/audio overhead are included. See the [changelog](../CHANGELOG.md) and [statistics guide](statistics-plugin.md).
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -101,7 +103,7 @@ Run the commands below from the project root (the directory containing
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libfontconfig1-dev fonts-noto-cjk
   ```
 
 ### 🔧 Configure and Build
@@ -437,6 +439,14 @@ Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)\
 Made with ❤️ & ⌨️
 
 </div>
+
+### Preferences options layout
+
+Use the buttons at the top of Preferences to switch between expanded options and collapsible groups. Click Window, Model, Application or Appearance to show or hide the group. The layout choice is saved and existing option values are preserved.
+
+### Input statistics plugin
+
+The Rust statistics plugin builds with the application by default. Enable, disable or import it on the Plugins page. The Statistics page shows keyboard and mouse totals, daily and hourly charts, local persistence and CSV export. See [Statistics plugin](statistics-plugin.md). Foreground application time includes rankings, hourly totals and a separate collection switch. Sampling, storage and export run on an independent worker. The plugin registers the Statistics entry when enabled and removes it when disabled or uninstalled.
 
 ### Dynamic renderer plugins
 

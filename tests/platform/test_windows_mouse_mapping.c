@@ -61,6 +61,30 @@ static void test_display_projection(BongoCatApp *app,
     expect_position(app, &projection, true, 9000, 9000, 0.9f, 0.9f, true);
     expect_position(app, &projection, false, bounds.left + bounds.width * 0.25,
         bounds.top + bounds.height * 0.25, 0.25f, 0.25f, true);
+    /* Scale raw counts before clamping: low sensitivity can reach the edge
+       and a reversed packet immediately moves away from it. */
+    for (int hundredths = 0; hundredths <= 500; hundredths += 50) {
+        app->mver_pointer = (BongoCatMverPointerState){0};
+        float sensitivity = hundredths / 100.0f;
+        bongo_cat_settings_set_mouse_sensitivity(&app->settings, sensitivity);
+        mouse.lLastX = (LONG)(bounds.width * 0.1);
+        mouse.lLastY = (LONG)(bounds.height * 0.1);
+        bongo_cat_windows_input_motion(&input, &device, &mouse, NULL);
+        float expected = 0.5f + 0.1f * sensitivity;
+        expect_position(app, &projection, true, projection.center_x,
+            projection.center_y, expected, expected, true);
+        mouse.lLastX = mouse.lLastY = 1000000;
+        bongo_cat_windows_input_motion(&input, &device, &mouse, NULL);
+        expect_position(app, &projection, true, 9000, 9000,
+            hundredths ? 1.0f : 0.5f, hundredths ? 1.0f : 0.5f, hundredths != 0);
+        mouse.lLastX = (LONG)(-bounds.width * 0.1);
+        mouse.lLastY = (LONG)(-bounds.height * 0.1);
+        bongo_cat_windows_input_motion(&input, &device, &mouse, NULL);
+        expected = hundredths ? 1.0f - 0.1f * sensitivity : 0.5f;
+        expect_position(app, &projection, true, 9000, 9000, expected, expected,
+            hundredths != 0);
+    }
+    bongo_cat_settings_set_mouse_sensitivity(&app->settings, 1.0f);
     app->platform.native = NULL;
 }
 
@@ -68,6 +92,8 @@ void test_windows_mouse_mapping(void) {
     BongoCatApp *app = calloc(1, sizeof(*app));
     CHECK(app != NULL);
     if (!app) return;
+    bongo_cat_settings_defaults(&app->settings);
+    app->settings.model.mouse_centered = false;
     app->model_render_options.mver_projection = true;
     app->model_render_options.custom_pointer_bounds = true;
     app->model_render_options.pointer_left = 100;

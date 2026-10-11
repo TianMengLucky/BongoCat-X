@@ -8,6 +8,7 @@
 #include "ui_icons.h"
 #include "ui_paint.h"
 #include "bongo_cat/memory_policy.h"
+#include "bongo_cat/statistics.h"
 #include "bongo_cat/tray.h"
 #include "update_service.h"
 #include <SDL3/SDL_opengl.h>
@@ -55,16 +56,28 @@ static void root_style_restore(struct nk_context *context,
 static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     float width, float height, bool dark) {
     static const char *page_ids[] = {
-        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-about"};
-    static const int menu_icons[] = {
+        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-statistics", "page-about"};
+    int menu_icons[6] = {
         BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
         BONGO_CAT_UI_ICON_KEYBOARD, BONGO_CAT_UI_ICON_WAND, BONGO_CAT_UI_ICON_HEART};
-    const char *menus[] = {
+    const char *menus[6] = {
         tr(value, "pages.preference.cat.title", "Preferences"),
         tr(value, "pages.preference.model.title", "Model"),
         tr(value, "pages.preference.shortcut.title", "Shortcuts"),
         tr(value, "pages.preference.plugins.title", "Plugins"),
         tr(value, "native.support.title", "Support the Developer")};
+    int page_numbers[6] = {0, 1, 2, 3, 5};
+    int menu_count = 5;
+    const BongoCatStatisticsPage *contribution = bongo_cat_statistics_page(value->app);
+    if (contribution) {
+        menus[5] = menus[4]; menu_icons[5] = menu_icons[4]; page_numbers[5] = 5;
+        menus[4] = tr(value, contribution->title_key, contribution->title);
+        menu_icons[4] = BONGO_CAT_UI_ICON_SYNC;
+        page_numbers[4] = 4; menu_count = 6;
+    } else if (value->page == 4) value->page = 3;
+    int selected_menu = 0;
+    for (int i = 0; i < menu_count; ++i)
+        if (page_numbers[i] == value->page) selected_menu = i;
     bool modal = bongo_cat_preferences_remove_dialog_active(value->app) ||
         bongo_cat_preferences_behavior_dialog_active(value) ||
         bongo_cat_preferences_random_dialog_active(value);
@@ -90,11 +103,13 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     BongoCatUpdateSnapshot update_snapshot;
     bongo_cat_update_snapshot(value->app->update, &update_snapshot);
     bool about_badge = update_snapshot.status == BONGO_CAT_UPDATE_AVAILABLE ||
+        update_snapshot.status == BONGO_CAT_UPDATE_READY ||
         (update_snapshot.status == BONGO_CAT_UPDATE_ERROR &&
             update_snapshot.release.version[0]);
-    bongo_cat_ui_tabs(context, menus, menu_icons, 5, &value->page,
+    bongo_cat_ui_tabs(context, menus, menu_icons, menu_count, &selected_menu,
         !modal, dark, interior_height, about_badge,
         draw_icon, value);
+    value->page = page_numbers[selected_menu];
     if (!value->page_seen) {
         value->page_seen = true; value->last_page = value->page;
     } else if (value->last_page != value->page) {
@@ -108,7 +123,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bool close_requested = false;
     if (nk_group_begin(context, "preferences-content", NK_WINDOW_NO_SCROLLBAR)) {
     close_requested = bongo_cat_ui_content_header(context,
-        menus[value->page], menu_icons[value->page], !modal, dark,
+        menus[selected_menu], menu_icons[selected_menu], !modal, dark,
         native_chrome);
     if (close_requested) {
         /* Scrolled cards can overlap the header's hit area despite clipping. */
@@ -133,7 +148,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.group_padding = nk_vec2(24,
         16 + 6.0f * (1.0f - page_progress));
     context->style.window.spacing = nk_vec2(10, 10);
-    int scroll_page = NK_CLAMP(0, value->page, 4);
+    int scroll_page = NK_CLAMP(0, value->page, 5);
     bool scroll_animating = fabsf(value->scroll_current[scroll_page] - value->scroll_target[scroll_page]) > .5f;
     struct nk_style_scrollbar saved_scrollv = context->style.scrollv;
     struct nk_rect scrollbar_hit = nk_rect(body_bounds.x + body_bounds.w - 14, body_bounds.y, 14, body_bounds.h);

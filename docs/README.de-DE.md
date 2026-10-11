@@ -42,9 +42,11 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
 
-  **Neu in 2.1.2:** Mehrtastenblasen mit lesbaren gespiegelten Zeichen, Lautstärke pro Bewegung, eigene Bildhintergründe und Tasten-, Effekt- und Zeigeranzeigen unter Vulkan / Metal. Alle Einstellungsoptionen haben Erläuterungen; „Auf dem Bildschirm halten“ wurde entfernt. Optionale Renderer-Optimierungen zeigen ihre Verfügbarkeit; Leistungsgewinne sind noch nicht gemessen. Siehe [Änderungsprotokoll](../CHANGELOG.md) und [Zuschnittkonfiguration](hand-layout.md).
+  In den allgemeinen Einstellungen kann **GitHub-Downloadbeschleunigung** aktiviert werden (standardmäßig aus), um Updateprüfungen, Pakete und Mitwirkendenbilder über [gh-proxy.com](https://gh-proxy.com/) abzurufen. Rust übernimmt alle Netzwerkdownloads der Anwendung. Die Update-Schaltfläche auf der Info-Seite lädt das Paket herunter, prüft SHA-256 und fragt nach einem Neustart. **Neu starten und aktualisieren** installiert nach dem Beenden und startet die App erneut; **Später** lässt die aktuelle Version weiterlaufen und hält das Update während dieser Sitzung über dieselbe Schaltfläche bereit. Store-Versionen verwenden weiterhin den Store.
+
+  **Neu in 2.1.3:** Ein Rust-Plugin erfasst Tastatur-/Mausaktivität und Anwendungszeiten in unabhängigen Hintergrundthreads; beim Deaktivieren verschwindet der Statistikeintrag. Einstellungsgruppen lassen sich vollständig oder einzeln aufklappen. Hinzu kommen Mausempfindlichkeit, optionale GitHub-Downloadbeschleunigung, Neustartbestätigung für Updates und geringerer Overlay-/Audioaufwand. Siehe [Änderungsprotokoll](../CHANGELOG.md) und [Statistikdokumentation](statistics-plugin.md).
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -73,7 +75,7 @@ Führe die folgenden Befehle im Projektstammverzeichnis aus (dem Verzeichnis, da
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Konfiguration und Build
@@ -307,6 +309,14 @@ Copyright © 2026 - **BongoCat**<br>
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### Darstellung der Einstellungen
+
+Die Schaltflächen oben wechseln zwischen allen Optionen und klappbaren Gruppen. Ein Klick auf Fenster, Modell, Anwendung oder Darstellung öffnet oder schließt die Gruppe. Die Ansicht wird gespeichert; bestehende Werte bleiben erhalten.
+
+### Eingabestatistik-Plugin
+
+Das Rust-Statistik-Plugin wird standardmäßig mitgebaut. Auf der Plugin-Seite lässt es sich aktivieren, deaktivieren oder importieren. Die Statistik-Seite bietet Tastatur- und Mauswerte, Tages- und Stundenverläufe, lokale Speicherung und CSV-Export. Siehe [Statistik-Plugin](statistics-plugin.md). Die aktive App-Zeit bietet Ranglisten, Stundenwerte und einen eigenen Schalter. Erfassung, Speicherung und Export laufen in einem separaten Thread. Das Plugin registriert den Statistikeintrag beim Aktivieren und entfernt ihn beim Deaktivieren oder Deinstallieren.
 
 ### Dynamische Renderer-Plugins
 

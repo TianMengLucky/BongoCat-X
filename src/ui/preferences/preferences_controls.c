@@ -281,7 +281,8 @@ bool bongo_cat_pref_control_slider_rect(struct nk_context *context, const char *
     nk_fill_rect(canvas, value_box, 8, p.field);
     nk_stroke_rect(canvas, value_box, 8, 1, p.border_subtle);
     char number[24];
-    if (*value < 1.0f || fmodf(*value, 1.0f) != 0.0f)
+    if (step < 0.1f) snprintf(number, sizeof(number), "%.2f", *value);
+    else if (*value < 1.0f || fmodf(*value, 1.0f) != 0.0f)
         snprintf(number, sizeof(number), "%.1f", *value);
     else snprintf(number, sizeof(number), "%.0f", *value);
     /* Editable value box: the number editor overlays the box and draws its

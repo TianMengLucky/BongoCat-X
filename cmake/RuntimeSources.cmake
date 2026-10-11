@@ -68,7 +68,16 @@ else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
 endif()
 
+list(APPEND BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/statistics")
+
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
+  src/runtime/statistics/statistics.c
+  src/runtime/statistics/statistics_page.c
+  src/ui/preferences/preferences_options.c
+  src/runtime/statistics/statistics_install.c
+  src/runtime/statistics/statistics_usage.c
+  src/runtime/statistics/statistics_retirement.c
   src/runtime/lifecycle/app.c
   src/runtime/lifecycle/app_entry.c
   src/runtime/lifecycle/app_input.c
@@ -92,7 +101,7 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
 set(BONGO_CAT_RUNTIME_UPDATE_SOURCES
   src/runtime/update/update_channel.c
   src/runtime/update/update_http.c
-  src/runtime/update/update_http_unix.c
+  src/runtime/update/update_download.c
   src/runtime/update/update_service.c)
 
 set(BONGO_CAT_RUNTIME_DIAGNOSTIC_SOURCES
@@ -320,6 +329,8 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_renderer.c
   src/ui/preferences/preferences_background.c
   src/ui/preferences/preferences_plugins.c
+  src/ui/preferences/preferences_statistics.c
+  src/ui/preferences/preferences_statistics_usage.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c
   src/ui/preferences/preferences_render.c

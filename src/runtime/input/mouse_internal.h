@@ -9,6 +9,8 @@ typedef struct BongoCatMouseProjection {
     BongoCatMverPointerBounds bounds;
     double center_x, center_y;
     bool centered;
+    /* Relative deltas already include sensitivity before boundary clamping. */
+    bool relative;
 } BongoCatMouseProjection;
 
 bool bongo_cat_app_mouse_projection(BongoCatApp *app, double screen_x,

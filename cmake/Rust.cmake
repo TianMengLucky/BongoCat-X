@@ -28,4 +28,8 @@ corrosion_import_crate(MANIFEST_PATH
 if(MSVC)
   # Match the host's static CRT, including C dependencies built by Rust crates.
   corrosion_add_target_rustflags(bongo_safe "-Ctarget-feature=+crt-static")
+elseif(APPLE)
+  # Static Rust HTTP dependencies need native certificate and proxy frameworks.
+  target_link_libraries(bongo_safe INTERFACE
+    "-framework Security" "-framework SystemConfiguration")
 endif()

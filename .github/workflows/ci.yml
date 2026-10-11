@@ -27,6 +27,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  macos-rust-link:
+    name: quality / macos-rust-http-link
+    runs-on: macos-15
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --no-self-update
+      - name: Configure diagnostic host
+        run: |
+          cmake -S . -B build-macos-link -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF \
+            -DBONGO_CAT_REQUIRE_CUBISM=OFF \
+            -DBONGO_CAT_BUILD_INOX2D=OFF \
+            -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
+      - name: Verify native Rust dependencies link
+        run: cmake --build build-macos-link --target bongo_cat --parallel 2
+
   # The tag/version check lives in release.yml, which is the only workflow a
   # tag push triggers; keeping a second copy here would spin a runner for a
   # job that can never satisfy its condition.

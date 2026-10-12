@@ -15,6 +15,8 @@ void bongo_cat_preferences_release_render_context(BongoCatPreferences *preferenc
 void bongo_cat_preferences_close(BongoCatPreferences *preferences);
 bool bongo_cat_preferences_visible(const BongoCatPreferences *preferences);
 bool bongo_cat_preferences_needs_frame(BongoCatPreferences *preferences);
+/* A complete UI frame is being rasterized in bounded main-thread chunks. */
+bool bongo_cat_preferences_frame_pending(const BongoCatPreferences *preferences);
 void bongo_cat_preferences_model_watch(BongoCatPreferences *preferences,
     uint64_t now);
 void bongo_cat_preferences_input_begin(BongoCatPreferences *preferences);

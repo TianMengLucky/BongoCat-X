@@ -59,6 +59,7 @@ public:
         ? textures_.size() : native_alpha_.size(); }
     double texture_storage_mib() const;
     float render_quality_percent() const { return render_quality_percent_; }
+    void set_low_memory_mode(bool enabled) { low_memory_mode_ = enabled; }
     bool try_reuse_texture_quality(float quality_percent);
     void release_render_resources();
     bool canvas_size(int *width, int *height) const;
@@ -349,6 +350,7 @@ private:
     BongoCatModelRuntimeRenderOptions render_options_{};
     bool direct_textures_ = false;
     bool dynamic_texture_resolution_ = false;
+    bool low_memory_mode_ = false;
     float render_quality_percent_ = 100.0f;
     int texture_limit_ = 0;
     TextureRefresh *texture_refresh_ = nullptr;

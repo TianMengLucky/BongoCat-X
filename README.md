@@ -42,7 +42,7 @@
 
 ## 📥 下载
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
@@ -326,3 +326,9 @@ Windows 便携版为 ZIP 包，解压后请保留程序旁的 `plugins` 目录�
 在「偏好设置 → 偏好 → 窗口」启用「自定义图片背景」，点击「选择图片」导入 PNG、JPEG、WebP、BMP 或 GIF（静态首帧）。图片保持比例、居中铺满窗口，并与「纯色背景」互斥。导入图片保存在应用数据目录，原文件移动不影响使用；单张图片上限为 64 MB、1600 万像素，支持 OpenGL、Vulkan 和 Metal。
 
 Live2D 自动复用几何缓冲与连续重复的渲染状态；OpenGL 动态上传、Vulkan 上传批处理与管线缓存、Metal 共享缓冲槽及原生动态遮罩无需额外开关。新增路径的性能与平台行为待实测。
+
+设置 → 应用 →「低内存模式」默认关闭。开启后纹理画质最高 10%、边长最高 512 像素，Live2D 遮罩最高 256 像素，暂停大型渲染优化并重载渲染器。关闭后恢复原画质设置；实际占用取决于模型和驱动，50MB 是优化目标而非保证。
+
+设置 → 桌宠 →「自定义鼠标跟随范围」支持水平/垂直 25–400%，100% 为原范围，默认关闭。Mver 绘制猫爪和鼠标可扩大实际活动范围，普通 Live2D 仍保留作者的参数边界；视线和窗口位置不变。低内存模式现关闭 OpenGL MSAA，并减少未使用的 OpenGL 着色器与 Vulkan 混合管线。
+
+Windows 低内存设置窗口对 OpenGL/Vulkan 均使用分块 SDL 软件绘制及不透明背景。字体保留实际字号、屏幕 DPI 和抗锯齿采样，软件字体图集保存单通道遮罩，仅转换当前字形，避免整张图集扩展为四通道。其他平台的 OpenGL 继续复用桌宠上下文。

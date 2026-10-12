@@ -12,6 +12,7 @@ typedef struct BongoCatAboutContributor {
 } BongoCatAboutContributor;
 typedef struct BongoCatAboutFeed {
     int count;
+    int avatar_size;
     BongoCatAboutContributor people[BONGO_ABOUT_CONTRIBUTOR_CAP];
 } BongoCatAboutFeed;
 /* Parsing owns decoded avatar pixels until feed_free. */

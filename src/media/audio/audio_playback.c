@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <string.h>
+#include <stdlib.h>
 #ifdef _WIN32
 #include <windows.h>
 
@@ -21,42 +22,58 @@ static void audio_data_callback(ma_device *device, void *output, const void *inp
 
 ma_result bongo_cat_audio_initialize(BongoCatAudio *audio) {
     if (audio->initialized) return MA_SUCCESS;
+    AudioVoice *voices = calloc(AUDIO_VOICES,sizeof(*voices));
+    if (!voices) return MA_OUT_OF_MEMORY;
     ma_engine_config config = ma_engine_config_init();
 #ifdef _WIN32
     config.dataCallback = audio_data_callback;
     config.pProcessUserData = audio;
 #endif
     ma_result result = ma_engine_init(&config, &audio->engine);
-    if (result == MA_SUCCESS) audio->initialized = true;
+    if (result == MA_SUCCESS) {
+        audio->voices = voices;
+        audio->initialized = true;
+    } else free(voices);
     return result;
 }
 
 static ma_result load_voice(BongoCatAudio *audio, AudioVoice *voice, const char *path) {
-    float *samples = NULL;
-    uint64_t frames = 0;
-    unsigned int rate = 0, channels = 0;
-    /* Untrusted sound files decode in the bongo-safe Rust crate; miniaudio
-       only plays the decoded buffer. */
-    if (!bongo_safe_audio_decode_file(path, &samples, &frames, &rate, &channels))
-        return MA_INVALID_FILE;
+    AudioClip *clip = NULL;
+    for (size_t i = 0; i < AUDIO_VOICES; ++i) {
+        AudioVoice *other = &audio->voices[i];
+        if (other->ready && !strcmp(other->path, path)) {
+            clip = other->clip;
+            clip->references++;
+            break;
+        }
+    }
+    if (!clip) {
+        clip = calloc(1, sizeof(*clip));
+        if (!clip) return MA_OUT_OF_MEMORY;
+        uint64_t frames = 0;
+        if (!bongo_safe_audio_decode_file(path, &clip->samples, &frames,
+                &clip->rate, &clip->channels)) {
+            free(clip);
+            return MA_INVALID_FILE;
+        }
+        clip->frames = (ma_uint64)frames;
+        clip->sample_count = (size_t)frames * clip->channels;
+        clip->references = 1;
+    }
     ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32,
-        channels, (ma_uint64)frames, samples, NULL);
-    config.sampleRate = rate;
+        clip->channels, clip->frames, clip->samples, NULL);
+    config.sampleRate = clip->rate;
     ma_result result = ma_audio_buffer_init(&config, &voice->buffer);
     if (result != MA_SUCCESS) {
-        bongo_safe_free_samples(samples, (size_t)frames * channels);
+        bongo_cat_audio_clip_release(clip);
         return result;
     }
-    voice->samples = samples;
-    voice->sample_count = (size_t)frames * channels;
     result = ma_sound_init_from_data_source(&audio->engine, &voice->buffer,
         MA_SOUND_FLAG_NO_SPATIALIZATION, NULL, &voice->sound);
     if (result != MA_SUCCESS) {
-        voice->samples = NULL;
-        voice->sample_count = 0;
         ma_audio_buffer_uninit(&voice->buffer);
-        bongo_safe_free_samples(samples, (size_t)frames * channels);
-    }
+        bongo_cat_audio_clip_release(clip);
+    } else voice->clip = clip;
     return result;
 }
 

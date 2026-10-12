@@ -6,7 +6,7 @@ namespace bongo_cat {
 // Main render thread only; -1 appends during initialization.
 extern int vulkan_texture_rebind_slot;
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
-    VkDevice device, bool enabled);
+    VkDevice device, bool enabled, bool low_memory = false);
 void vulkan_memory_release();
 bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
     VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,

@@ -42,7 +42,7 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -315,3 +315,9 @@ Linux Wayland의 실험적 evdev 입력은 `BONGOCAT_ENABLE_EVDEV=1`로 활성�
 설정 → 설정 → 창에서 사용자 지정 이미지 배경을 선택할 수 있습니다. PNG, JPEG, WebP, BMP 또는 GIF(첫 프레임)를 지원합니다. 비율을 유지하고 중앙에 배치하여 창을 채우며, 단색 배경과 동시에 사용할 수 없습니다. 앱 데이터 폴더에 복사하므로 원본을 옮겨도 유지됩니다. 제한은 64 MB 및 1600만 픽셀입니다. OpenGL, Vulkan, Metal을 지원합니다.
 
 Live2D는 지오메트리 버퍼와 반복되는 렌더링 상태를 자동으로 재사용합니다. OpenGL 동적 업로드, Vulkan 일괄 업로드와 파이프라인 캐시, Metal 공유 버퍼 슬롯 및 네이티브 적응형 마스크에는 추가 스위치가 필요 없습니다. 새 경로의 성능과 플랫폼 동작은 실측이 필요합니다.
+
+설정 → 앱 → 저메모리 모드는 기본적으로 꺼져 있습니다. 텍스처 품질 10%, 변 512픽셀, Live2D 마스크 256픽셀로 제한하고 대규모 최적화를 중지하여 렌더러를 다시 로드합니다. 끄면 기존 품질로 복원됩니다. 50MB는 목표이며 모델과 드라이버에 따라 달라집니다.
+
+설정 → 펫 → 마우스 추적 범위: 수평/수직 25–400%, 기본 꺼짐, 100%는 기존 범위입니다. Mver 발의 실제 이동 범위가 넓어지며 Live2D는 모델 한계를 유지합니다. 시선과 창 위치는 동일합니다. 저메모리 모드는 MSAA를 끄고 미사용 셰이더와 파이프라인을 줄입니다.
+
+Windows의 저메모리 설정 창은 OpenGL/Vulkan 모두 SDL 소프트웨어 렌더링을 나누어 처리하며 불투명 배경을 사용합니다. 실제 글꼴 크기, 화면 DPI와 안티앨리어싱을 유지하고 A8 마스크에서 현재 글자만 변환합니다. 다른 플랫폼의 OpenGL은 펫 컨텍스트를 계속 재사용합니다.

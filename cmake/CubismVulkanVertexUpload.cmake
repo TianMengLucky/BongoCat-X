@@ -47,9 +47,9 @@ endfunction()
 
 function(bongo_cat_vulkan_vertex_upload_patch variable)
   set(source "${${variable}}")
-  # Draw submissions wait for the graphics queue before returning. Buffer slots
-  # are independent of acquired swapchain images, so only one set is in flight.
-  # Refuse this adaptation if an SDK update changes the synchronization contract.
+  # Async submission waits its draw fence before the next backing-set mutation.
+  # Keep one SDK set to avoid doubling model/mask memory; host frames use two slots.
+  # Refuse this adaptation if an SDK update changes its submission boundaries.
   set(submit_anchor "void CubismRenderer_Vulkan::SubmitCommand(")
   string(FIND "${source}" "${submit_anchor}" submit_start)
   string(FIND "${source}" "void CubismRenderer_Vulkan::SetConstantSettings(" submit_end)
@@ -80,7 +80,7 @@ function(bongo_cat_vulkan_vertex_upload_patch variable)
 
 ]=] source "${source}")
   bongo_cat_vertex_replace(source [=[    s_bufferSetNum = swapchainImageCount;]=]
-    [=[    // Submission completes before reuse; swapchain images are selected separately.
+    [=[    // Draw fence is waited before reuse; swapchain images are selected separately.
     (void)swapchainImageCount;
     s_bufferSetNum = 1;]=])
   bongo_cat_vertex_replace(source [=[    _textures.PushBack(image);]=]
@@ -119,6 +119,52 @@ function(bongo_cat_vulkan_vertex_upload_patch variable)
         vertexBuffers[0] = bongo_cat::vulkan_geometry_buffer(vertexBuffers[0]);
         offsets[0] = bongo_cat::vulkan_geometry_offset((size_t)index);
     }]=])
+  bongo_cat_vertex_replace(source [=[            _descriptorSets[buffer][drawAssign].uniformBufferMask.CreateBuffer(s_device, s_physicalDevice, sizeof(ModelUBO),
+                                                                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            _descriptorSets[buffer][drawAssign].uniformBufferMask.Map(s_device, VK_WHOLE_SIZE);]=]
+    [=[            // Mask UBOs are created only for drawables actually used as mask sources.]=])
+  bongo_cat_vertex_replace(source [=[    descriptor.uniformBufferMask.MemCpy(&ubo, sizeof(ModelUBO));]=]
+    [=[    if (!descriptor.uniformBufferMask.GetBuffer()) {
+        try {
+            descriptor.uniformBufferMask.CreateBuffer(s_device, s_physicalDevice, sizeof(ModelUBO),
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            descriptor.uniformBufferMask.Map(s_device, VK_WHOLE_SIZE);
+        } catch (...) {
+            descriptor.uniformBufferMask.Destroy(s_device);
+            descriptor.uniformBufferMask = CubismBufferVulkan();
+            throw;
+        }
+    }
+    descriptor.uniformBufferMask.MemCpy(&ubo, sizeof(ModelUBO));]=])
+  # Invisible drawables and unused offscreen targets need no mapped UBO.
+  bongo_cat_vertex_replace(source [=[            _descriptorSets[buffer][drawAssign].uniformBuffer.CreateBuffer(s_device, s_physicalDevice, sizeof(ModelUBO),
+                                                                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            _descriptorSets[buffer][drawAssign].uniformBuffer.Map(s_device, VK_WHOLE_SIZE);]=]
+    [=[            // Ordinary UBO allocation is deferred until this drawable is rendered.]=])
+  set(ubo_write [=[    descriptor.uniformBuffer.MemCpy(&ubo, sizeof(ModelUBO));]=])
+  string(REGEX MATCHALL "descriptor.uniformBuffer.MemCpy\\(&ubo, sizeof\\(ModelUBO\\)\\)" writes "${source}")
+  list(LENGTH writes write_count)
+  if(NOT write_count EQUAL 2)
+    message(FATAL_ERROR "Cubism ordinary uniform write sites changed")
+  endif()
+  string(REPLACE "${ubo_write}" [=[    if (!descriptor.uniformBuffer.GetBuffer()) {
+        try {
+            descriptor.uniformBuffer.CreateBuffer(s_device, s_physicalDevice, sizeof(ModelUBO),
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            descriptor.uniformBuffer.Map(s_device, VK_WHOLE_SIZE);
+        } catch (...) {
+            descriptor.uniformBuffer.Destroy(s_device);
+            descriptor.uniformBuffer = CubismBufferVulkan();
+            throw;
+        }
+    }
+    descriptor.uniformBuffer.MemCpy(&ubo, sizeof(ModelUBO));]=] source "${source}")
   bongo_cat_vulkan_skip_empty_masks(source)
   bongo_cat_vertex_replace(source [=[#include "CubismRenderer_Vulkan.hpp"]=]
     [=[#include "CubismRenderer_Vulkan.hpp"

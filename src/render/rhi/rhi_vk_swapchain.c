@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 static bool create_render_pass(BongoCatRhiVk *vk, BongoCatError *error);
+static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error);
 
 void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
     bongo_cat_rhi_vk_release_corner_framebuffers(vk);
@@ -22,6 +23,13 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
         free(vk->views);
         vk->views = NULL;
     }
+    if (vk->present_semaphores) {
+        for (uint32_t i = 0; i < vk->image_count; ++i)
+            if (vk->present_semaphores[i])
+                vk->vkDestroySemaphore(vk->device, vk->present_semaphores[i], NULL);
+        free(vk->present_semaphores);
+        vk->present_semaphores = NULL;
+    }
     if (vk->images) {
         free(vk->images);
         vk->images = NULL;
@@ -30,8 +38,12 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
         vk->vkDestroySwapchainKHR(vk->device, vk->swapchain, NULL);
         vk->swapchain = VK_NULL_HANDLE;
     }
+    if (vk->layered_image) vk->vkDestroyImage(vk->device, vk->layered_image, NULL);
+    if (vk->layered_memory) vk->vkFreeMemory(vk->device, vk->layered_memory, NULL);
+    vk->layered_image = VK_NULL_HANDLE; vk->layered_memory = VK_NULL_HANDLE;
+    vk->layered_target = false;
     vk->frame_ready = false;
-    bongo_cat_rhi_vk_release_readback(vk);
+    vk->pixels_valid = false;
     bongo_cat_rhi_vk_release_background(vk);
     vk->image_count = 0;
     vk->current_image = VK_NULL_HANDLE;
@@ -44,6 +56,13 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
 
 bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
     BongoCatError *error) {
+#ifdef _WIN32
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false)) {
+        if (!bongo_cat_rhi_vk_create_layered_target(vk, width, height)) return false;
+        vk->image_count = 1;
+        return create_render_pass(vk, error) && create_targets(vk, error);
+    }
+#endif
     VkSurfaceCapabilitiesKHR caps;
     if (vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical,
             vk->surface, &caps) != VK_SUCCESS) {
@@ -89,7 +108,8 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
             "Vulkan surface requires an unsupported readback format");
         return false;
     }
-    uint32_t image_count = caps.minImageCount + 1;
+    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
+    uint32_t image_count = caps.minImageCount + (low_memory ? 0u : 1u);
     if (caps.maxImageCount && image_count > caps.maxImageCount)
         image_count = caps.maxImageCount;
     VkExtent2D extent = caps.currentExtent;
@@ -162,19 +182,32 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
             "vkGetSwapchainImagesKHR failed");
         return false;
     }
+    return create_targets(vk, error);
+}
+
+static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error) {
     vk->images = malloc(vk->image_count * sizeof(VkImage));
     vk->views = calloc(vk->image_count, sizeof(VkImageView));
     vk->framebuffers = calloc(vk->image_count, sizeof(VkFramebuffer));
     uint32_t queried_count = vk->image_count;
     if (!vk->images || !vk->views || !vk->framebuffers ||
-        vk->vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
-            &queried_count, vk->images) != VK_SUCCESS) {
+        (!vk->layered_target && vk->vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
+            &queried_count, vk->images) != VK_SUCCESS)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY,
             "Cannot query the Vulkan swapchain images");
         return false;
     }
+    if (vk->layered_target) vk->images[0] = vk->layered_image;
     vk->image_count = queried_count;
+    if (!vk->layered_target) {
+        vk->present_semaphores = calloc(vk->image_count, sizeof(VkSemaphore));
+        if (!vk->present_semaphores) return false;
+    }
     for (uint32_t i = 0; i < vk->image_count; ++i) {
+        VkSemaphoreCreateInfo signal = {0};
+        signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        if (!vk->layered_target && vk->vkCreateSemaphore(vk->device, &signal, NULL,
+                &vk->present_semaphores[i]) != VK_SUCCESS) return false;
         VkImageViewCreateInfo view = {0};
         view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         view.image = vk->images[i];
@@ -248,7 +281,11 @@ static bool create_render_pass(BongoCatRhiVk *vk, BongoCatError *error) {
 bool bongo_cat_rhi_vk_recreate_swapchain(BongoCatRhiVk *vk, int width,
     int height) {
     if (!vk || !vk->device || width <= 0 || height <= 0) return false;
-    if (vk->vkDeviceWaitIdle(vk->device) != VK_SUCCESS) return false;
+    if (vk->failed || vk->vkDeviceWaitIdle(vk->device) != VK_SUCCESS) return false;
+    for (unsigned i = 0; i < BONGO_CAT_VK_FRAMES; ++i) vk->frames[i].pending = false;
+    /* Drop old-size mappings even if the window becomes idle after resizing. */
+    if (vk->extent.width != (uint32_t)width || vk->extent.height != (uint32_t)height)
+        bongo_cat_rhi_vk_release_readback(vk);
     bongo_cat_rhi_vk_destroy_swapchain_objects(vk);
     BongoCatError error = {0};
     if (bongo_cat_rhi_vk_create_swapchain(vk, width, height, &error)) return true;

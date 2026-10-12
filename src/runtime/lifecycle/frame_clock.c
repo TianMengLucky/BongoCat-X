@@ -3,7 +3,7 @@
 #include "bongo_cat/preferences.h"
 #include <stdlib.h>
 
-static uint64_t frame_interval_ns(const BongoCatApp *app) {
+uint64_t bongo_cat_frame_interval_ns(const BongoCatApp *app) {
 #ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     int fps = app && app->settings.model.max_fps > 0 ?
         app->settings.model.max_fps : 60;
@@ -27,14 +27,15 @@ static int remaining_ms(uint64_t deadline, uint64_t now) {
 bool bongo_cat_model_frame_due(const BongoCatApp *app, uint64_t now) {
     return app && app->session.window.visible && !app->window_minimized &&
         (!app->last_frame_ns || now >= app->last_frame_ns +
-            frame_interval_ns(app));
+            bongo_cat_frame_interval_ns(app));
 }
 
 int bongo_cat_window_wait_timeout(const BongoCatApp *app, uint64_t now) {
     if (!app) return 250;
-    uint64_t frame_deadline = app->last_frame_ns + frame_interval_ns(app);
+    uint64_t frame_deadline = app->last_frame_ns + bongo_cat_frame_interval_ns(app);
     int wait_ms = app->session.window.visible && !app->window_minimized ? remaining_ms(
         frame_deadline, now) : 250;
+    if (app->native_async_pending && wait_ms > 2) wait_ms = 2;
     /* Service bounded upload/retirement work independently of animation FPS.
        A ready CPU batch otherwise waits for a full 16 ms frame interval before
        the GL thread can consume it. Keep the shorter wakeup only while a job
@@ -43,6 +44,10 @@ int bongo_cat_window_wait_timeout(const BongoCatApp *app, uint64_t now) {
         wait_ms = 8;
     if (bongo_cat_preferences_needs_frame(app->preferences) && wait_ms > 4)
         wait_ms = 4;
+    // Finish an existing software frame promptly without raising the pet FPS
+    // or keeping this short wakeup after the settings become idle.
+    if (bongo_cat_preferences_frame_pending(app->preferences) && wait_ms > 1)
+        wait_ms = 1;
     if (app->wheel_animation_active) {
         int wheel_wait = remaining_ms(app->wheel_animation_ns +
             BONGO_CAT_WHEEL_FRAME_INTERVAL_NS, now);
@@ -93,30 +98,30 @@ bool bongo_cat_window_wait_timeout_self_test(void) {
     app->last_frame_ns = now;
 #ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     app->settings.model.max_fps = 30;
-    uint64_t interval_30 = frame_interval_ns(app);
+    uint64_t interval_30 = bongo_cat_frame_interval_ns(app);
     app->settings.model.max_fps = 60;
-    uint64_t interval_60 = frame_interval_ns(app);
+    uint64_t interval_60 = bongo_cat_frame_interval_ns(app);
     app->settings.model.max_fps = 120;
-    uint64_t interval_120 = frame_interval_ns(app);
+    uint64_t interval_120 = bongo_cat_frame_interval_ns(app);
     if (!(interval_30 > interval_60 && interval_60 > interval_120) ||
         bongo_cat_model_frame_due(app, now + interval_120 - 1) ||
         !bongo_cat_model_frame_due(app, now + interval_120)) goto done;
     app->settings.model.max_fps = BONGO_CAT_DISPLAY_MAX_FPS;
     app->startup_display_fps = 144;
-    uint64_t interval_display = frame_interval_ns(app);
+    uint64_t interval_display = bongo_cat_frame_interval_ns(app);
     if (interval_display != 1000000000ull / 144 ||
         bongo_cat_model_frame_due(app, now + interval_display - 1) ||
         !bongo_cat_model_frame_due(app, now + interval_display)) goto done;
     const int fallback_fps[] = {0, 50, 60};
     for (size_t i = 0; i < sizeof(fallback_fps) / sizeof(fallback_fps[0]); ++i) {
         app->startup_display_fps = fallback_fps[i];
-        if (frame_interval_ns(app) != interval_60) goto done;
+        if (bongo_cat_frame_interval_ns(app) != interval_60) goto done;
     }
     app->startup_display_fps = 144;
     app->settings.model.max_fps = 60;
-    if (frame_interval_ns(app) != interval_60) goto done;
+    if (bongo_cat_frame_interval_ns(app) != interval_60) goto done;
 #endif
-    int frame_wait = remaining_ms(now + frame_interval_ns(app), now);
+    int frame_wait = remaining_ms(now + bongo_cat_frame_interval_ns(app), now);
     if (bongo_cat_window_wait_timeout(app, now) != frame_wait ||
         bongo_cat_model_frame_due(app, now)) goto done;
     app->pointer_hit_dirty = true;
@@ -143,16 +148,16 @@ bool bongo_cat_window_wait_timeout_self_test(void) {
     if (bongo_cat_window_wait_timeout(app, now) != 16) goto done;
     app->settings.window.always_on_top = false;
     if (bongo_cat_window_wait_timeout(app, now) !=
-        remaining_ms(now + frame_interval_ns(app), now)) goto done;
+        remaining_ms(now + bongo_cat_frame_interval_ns(app), now)) goto done;
     app->settings.window.pass_through = false;
     app->settings.window.hide_on_hover = false;
 #ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     app->settings.model.max_fps = 60;
 #endif
     if (!bongo_cat_model_frame_due(app,
-        now + frame_interval_ns(app))) goto done;
+        now + bongo_cat_frame_interval_ns(app))) goto done;
     app->window_minimized = true;
-    if (bongo_cat_model_frame_due(app, now + frame_interval_ns(app)) ||
+    if (bongo_cat_model_frame_due(app, now + bongo_cat_frame_interval_ns(app)) ||
         bongo_cat_window_wait_timeout(app, now) != 250) goto done;
     app->window_minimized = false;
     app->session.window.visible = false;

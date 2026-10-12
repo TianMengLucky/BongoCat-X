@@ -56,7 +56,7 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -449,3 +449,9 @@ Nightly prereleases reuse the [nightly release page](https://github.com/TianMeng
 Preferences → Preferences → Window includes Custom Image Background. Choose Image imports PNG, JPEG, WebP, BMP or GIF (first frame). The image fills the window centered while preserving its aspect ratio; enabling it disables Solid Background and vice versa. Imported images are stored in the application data directory and remain available after the original is moved. Limits: 64 MB and 16 megapixels per image. OpenGL, Vulkan and Metal are supported.
 
 Live2D automatically reuses geometry buffers and repeated render state. OpenGL streaming, Vulkan upload batching and pipeline caching, Metal shared buffer slots, and native adaptive masks require no additional switch. Performance and platform behavior of these new paths remain to be measured.
+
+Settings → Application → Low Memory Mode is off by default. It caps texture quality at 10%, edges at 512 pixels and Live2D masks at 256 pixels, suspends large rendering optimizations and reloads the renderer. Disabling restores saved quality; memory depends on the model and driver. 50MB is a target, not a guarantee.
+
+Settings → Pet → Custom Mouse Follow Range provides horizontal/vertical 25–400%, default off; 100% keeps the original range. Drawn Mver hands and mice can move farther; Live2D retains authored parameter limits. Gaze and window position are unchanged. Low Memory Mode disables OpenGL MSAA and reduces unused OpenGL shaders and Vulkan blend pipelines.
+
+On Windows, low-memory settings use chunked SDL software drawing and an opaque background for OpenGL/Vulkan. Fonts retain their actual sizes, display DPI and antialiasing. The software atlas stores A8 coverage and converts only the glyph being drawn. OpenGL on other platforms continues to reuse the pet context.

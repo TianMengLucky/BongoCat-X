@@ -247,6 +247,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->model.mouse_centered = true;
     config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;
     config->model.dynamic_texture_resolution = true;
+    config->model.mouse_range_x_percent = config->model.mouse_range_y_percent = 100.0f;
     config->model.render_quality_percent =
         BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT;
     config->window.always_on_top = true;
@@ -261,6 +262,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->window.sequential_model_interval_seconds =
         BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
+    config->app.low_memory_mode = false;
     config->app.large_render_optimization = false;
     config->app.render_parallel_recording = true;
     config->app.render_bindless = true;
@@ -294,6 +296,10 @@ void bongo_cat_settings_validate(BongoCatSettings *config) {
     config->model.render_quality_percent =
         bongo_cat_settings_snap_render_quality(
             config->model.render_quality_percent);
+    config->model.mouse_range_x_percent = clampf_or(
+        config->model.mouse_range_x_percent, 25.0f, 400.0f, 100.0f);
+    config->model.mouse_range_y_percent = clampf_or(
+        config->model.mouse_range_y_percent, 25.0f, 400.0f, 100.0f);
     if (config->model.max_fps != BONGO_CAT_DISPLAY_MAX_FPS &&
         (config->model.max_fps < 1 || config->model.max_fps > 360))
         config->model.max_fps = BONGO_CAT_DEFAULT_MAX_FPS;

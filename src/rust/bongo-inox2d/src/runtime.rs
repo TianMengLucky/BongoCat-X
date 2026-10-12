@@ -17,6 +17,7 @@ pub struct Runtime {
     pub width: i32,
     pub height: i32,
     pub backend: i32,
+    pub low_memory: bool,
     pub large_allocation: bool,
     pub parallel_recording: bool,
     pub mirror: bool,
@@ -42,6 +43,7 @@ impl Runtime {
             width: 612,
             height: 354,
             backend: 0,
+            low_memory: false,
             large_allocation: false,
             parallel_recording: false,
             mirror: false,
@@ -58,7 +60,9 @@ impl Runtime {
     ) -> Result<(), String> {
         let file = directory.join(setting);
         let bytes = bongo_safe::inochi::read_file(&file)?;
-        let (model, json) = bongo_safe::inochi::parse(&bytes)?;
+        let (mut model, json) = bongo_safe::inochi::parse(&bytes)?;
+        drop(bytes);
+        if self.low_memory { crate::low_memory::shrink_textures(&mut model, quality)?; }
         let mut hidden = HashSet::new();
         hidden_nodes(&json["nodes"], false, &mut hidden);
         let base = Bounds::measure(&model, &hidden)?;

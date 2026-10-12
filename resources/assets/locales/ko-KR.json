@@ -50,6 +50,9 @@
           "verticalFlip": "거꾸로 매달리기 모드",
           "mouseVerticalFlip": "마우스 상하 반전",
           "mouseMirror": "마우스 좌우 반전",
+          "customMouseRange": "마우스 추적 범위 설정",
+          "mouseRangeX": "수평 이동 범위 (%)",
+          "mouseRangeY": "수직 이동 범위 (%)",
           "mouseCentered": "마우스를 데스크톱 펫 중심으로 설정하는 기능 끄기",
           "ignoreMouse": "마우스 이벤트 무시",
           "forceMouseInput": "마우스 입력 강제 수신",
@@ -80,6 +83,7 @@
           "renderQuality": "여러 수준을 시도하여 시각적 균형과 메모리 절약 사이의 최적점을 찾아보세요.",
           "hoverRequires": "위에 있는 [클릭 통과]와 [항상 위에 표시]를 모두 켜야 합니다.",
           "hoverUnavailable": "현재 데스크톱 환경에서는 마우스를 올려 숨기기 기능을 사용할 수 없습니다.",
+          "customMouseRange": "100%는 원래 범위입니다. 늘리면 Mver의 그려진 고양이 발과 마우스 이동 범위가 넓어집니다. Live2D는 모델이 정한 한계를 유지합니다. 시선과 창 위치는 바뀌지 않습니다.",
           "gamepadFourHands": "게임패드 모드에서 손 두 개를 추가로 항상 표시합니다. 모습은 모델에 따라 달라집니다",
           "forceMouseInput": "장치의 원시 이동량으로 모델을 구동하여 게임이 커서를 숨겨도 마우스를 따라갑니다",
           "passThrough": "트레이 아이콘을 우클릭해서도 끌 수 있습니다",
@@ -97,6 +101,7 @@
       "general": {
         "title": "일반",
         "labels": {
+          "lowMemoryMode": "저메모리 모드",
           "largeRenderOptimization": "대규모 렌더링 최적화",
           "appSettings": "앱",
           "launchOnStartup": "시작할 때 실행",
@@ -123,6 +128,7 @@
           "darkMode": "다크"
         },
         "hints": {
+          "lowMemoryMode": "텍스처 품질을 최대 10%, 변을 512픽셀, Live2D 마스크를 256픽셀로 제한하고 대규모 렌더링 최적화를 중지합니다. 전환 시 렌더러를 다시 로드하며 끄면 기존 품질로 복원됩니다. 메모리 사용량은 모델과 드라이버에 따라 다릅니다.",
           "largeRenderOptimization": "현재 백엔드가 지원하는 최적화를 선택하세요. 지원하지 않는 요청은 사용 불가로 표시됩니다. 메모리 사용량이 늘 수 있으며 변경 시 렌더러와 모델을 다시 로드합니다.",
           "largeRenderUnavailable": "현재 모델 렌더러는 이 최적화를 지원하지 않아 렌더링에 영향을 주지 않습니다.",
           "showTrayIcon": "활성화하면 시스템 트레이에 앱 아이콘이 표시됩니다.",
@@ -138,7 +144,7 @@
           "portableModeDisabled": "재시작 후 시스템 데이터 위치로 돌아갑니다",
           "portableModeFailed": "포터블 모드 설정을 변경할 수 없습니다",
           "inputMonitoringPermission": "허용한 뒤 다시 시작하세요.",
-          "inputMonitoringPermissionGuide": "입력 모니터링 권한이 있으면 BongoCat이 다른 앱에서 누른 키를 받을 수 있습니다. 마우스는 권한 없이도 동작합니다. BongoCat은 시작할 때 감시를 만들기 때문에 권한을 바꾼 뒤에는 다시 시작해야 합니다.\n\n단계:\n1. 시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링을 엽니다.\n2. 목록에 이미 있는 BongoCat 항목을 켭니다. 기존 항목은 삭제하지 마세요.\n3. 목록에 BongoCat이 없으면 \"+\"를 클릭해 현재 실행 중인 앱을 추가합니다(앱 위치를 확인하세요).\n4. BongoCat을 완전히 종료한 뒤 다시 시작해 감시를 다시 만들게 합니다.\n\n키보드가 계속 반응하지 않으면 BongoCat 항목을 직접 삭제하고 다시 추가해 확인할 수 있습니다.",
+          "inputMonitoringPermissionGuide": "입력 모니터링 권한이 있으면 BongoCat-X이 다른 앱에서 누른 키를 받을 수 있습니다. 마우스는 권한 없이도 동작합니다. BongoCat-X은 시작할 때 감시를 만들기 때문에 권한을 바꾼 뒤에는 다시 시작해야 합니다.\n\n단계:\n1. 시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링을 엽니다.\n2. 목록에 이미 있는 BongoCat-X 항목을 켭니다. 기존 항목은 삭제하지 마세요.\n3. 목록에 BongoCat-X이 없으면 \"+\"를 클릭해 현재 실행 중인 앱을 추가합니다(앱 위치를 확인하세요).\n4. BongoCat-X을 완전히 종료한 뒤 다시 시작해 감시를 다시 만들게 합니다.\n\n키보드가 계속 반응하지 않으면 BongoCat-X 항목을 직접 삭제하고 다시 추가해 확인할 수 있습니다.",
           "administratorPermission": "앱을 관리자로 실행하면 일부 시스템 키와 입력 이벤트를 더 안정적으로 캡처할 수 있습니다.",
           "administratorPermissionGuide": "일부 시스템 키와 입력 이벤트를 더 안정적으로 캡처하려면 앱을 관리자로 실행하는 것이 좋습니다.\n\n방법:\n1. 먼저 앱을 종료합니다.\n2. 파일 탐색기에서 앱의 exe 파일 또는 바로 가기를 찾습니다.\n3. 실행 방법을 선택합니다:\n   - 한 번만: 마우스 오른쪽 버튼을 누르고 \"관리자 권한으로 실행\"을 선택합니다.\n   - 항상: 오른쪽 클릭 > 속성 > 호환성 > \"관리자 권한으로 이 프로그램 실행\" 선택 > 확인."
         },
@@ -299,9 +305,9 @@
       "reload": "Reload",
       "qrFailed": "QR code unavailable. Click to retry.",
       "contributorsTitle": "Open source & community contributions",
-      "contributorsText": "Every step of BongoCat comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
+      "contributorsText": "Every step of BongoCat-X comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
       "joinTitle": "Want to appear in the contributors list?",
-      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat better.",
+      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat-X better.",
       "code": "Code",
       "docs": "Documentation",
       "bugs": "Bug reports",
@@ -317,16 +323,16 @@
     "removeDesktopPet": "이 데스크톱 펫 닫기",
     "modelLoadFailed": "이 모델을 표시할 수 없습니다",
     "noBehaviors": "항목 없음",
-    "preferencesWindowTitle": "BongoCat - Settings",
+    "preferencesWindowTitle": "BongoCat-X - Settings",
     "startup": {
-      "failed": "BongoCat을 시작할 수 없습니다.",
+      "failed": "BongoCat-X을 시작할 수 없습니다.",
       "detail": "기술적인 세부 정보는 진단 로그를 확인하세요.",
       "diagnosticLog": "진단 로그:"
     },
     "support": {
       "title": "정보",
       "website": "공식 웹사이트: bongocat.pet",
-      "heroText": "지원해 주셔서 감사합니다. 사용할 때마다, 공유할 때마다 BongoCat이 계속 성장하는 데 도움이 됩니다.",
+      "heroText": "지원해 주셔서 감사합니다. 사용할 때마다, 공유할 때마다 BongoCat-X이 계속 성장하는 데 도움이 됩니다.",
       "version": "앱 버전",
       "checkUpdate": "업데이트 확인",
       "feedback": "피드백",
@@ -341,7 +347,7 @@
       "openStore": "Microsoft Store 열기",
       "viewReleases": "릴리스 보기",
       "openUpdateFailed": "업데이트 페이지를 열 수 없습니다",
-      "refactorDeveloper": "BongoCat을 C 언어로 재작성한 개발자이자 현재 유지보수 담당자",
+      "refactorDeveloper": "BongoCat-X을 C 언어로 재작성한 개발자이자 현재 유지보수 담당자",
       "community": "커뮤니티",
       "qqGroup": "QQ 그룹",
       "coffee": "개발자에게 커피 한 잔을 선물할까요?",

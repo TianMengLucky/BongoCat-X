@@ -42,7 +42,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -325,3 +325,9 @@ Experimentelle evdev-Eingabe unter Linux Wayland wird mit `BONGOCAT_ENABLE_EVDEV
 Unter Einstellungen → Einstellungen → Fenster bietet Eigenes Hintergrundbild die Auswahl von PNG, JPEG, WebP, BMP oder GIF (erstes Bild). Das Bild füllt das Fenster zentriert und proportional; einfarbiger Hintergrund und Bild schließen sich aus. Importierte Bilder bleiben im App-Datenverzeichnis gespeichert, auch wenn das Original verschoben wird. Maximal 64 MB und 16 Megapixel pro Bild; unterstützt OpenGL, Vulkan und Metal.
 
 Live2D verwendet Geometriepuffer und wiederholte Renderzustände automatisch wieder. OpenGL-Streaming, Vulkan-Upload-Batches und Pipeline-Caches, gemeinsame Metal-Puffer sowie adaptive native Masken benötigen keinen zusätzlichen Schalter. Leistung und Plattformverhalten sind noch zu prüfen.
+
+Einstellungen → Anwendung → Speichersparmodus ist standardmäßig aus. Er begrenzt Texturqualität auf 10%, Kanten auf 512 Pixel und Live2D-Masken auf 256 Pixel, pausiert große Renderoptimierungen und lädt neu. Ausschalten stellt die gespeicherte Qualität wieder her. 50MB sind ein Ziel; der Bedarf hängt von Modell und Treiber ab.
+
+Einstellungen → Haustier → Maus-Folgebereich: horizontal/vertikal 25–400%, standardmäßig aus, 100% unverändert. Gezeichnete Mver-Pfoten bewegen sich weiter; Live2D behält Modellgrenzen. Blick und Fenster bleiben gleich. Der Speichersparmodus deaktiviert OpenGL-MSAA und reduziert ungenutzte Shader und Vulkan-Pipelines.
+
+Unter Windows nutzen speichersparende Einstellungen für OpenGL/Vulkan abschnittsweise SDL-Softwaredarstellung mit undurchsichtigem Hintergrund. Schriftgröße, Bildschirm-DPI und Kantenglättung bleiben erhalten. Der Schriftatlas speichert A8-Masken und konvertiert nur das gezeichnete Zeichen. Auf anderen Plattformen nutzt OpenGL weiterhin den Kontext des Begleiters.

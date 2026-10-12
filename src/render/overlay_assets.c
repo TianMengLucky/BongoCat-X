@@ -11,6 +11,7 @@ void bongo_cat_overlay_clear_textures(BongoCatOverlay *value) {
     bongo_cat_image_free(&value->native_background);
     if (value->native_canvas) SDL_DestroySurface(value->native_canvas);
     value->native_canvas = NULL;
+    value->native_canvas_uploaded = false;
     if (!value->native && value->background) glDeleteTextures(1, &value->background);
     if (value->composite) glDeleteTextures(1, &value->composite);
     value->background = 0;

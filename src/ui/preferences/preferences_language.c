@@ -29,7 +29,7 @@ bool bongo_cat_preferences_reload_language(BongoCatPreferences *value) {
     bongo_cat_ui_paint_destroy(&value->ui);
     if (value->window) SDL_SetWindowTitle(value->window,
         bongo_cat_i18n_get(value->app->i18n,
-            "native.preferencesWindowTitle", "BongoCat - Settings"));
+            "native.preferencesWindowTitle", "BongoCat-X - Settings"));
     if (value->app->tray) bongo_cat_tray_sync(value->app->tray);
     value->render_dirty = true;
     return true;

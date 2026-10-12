@@ -64,12 +64,12 @@ bool NativeModel::load_textures_native(BongoCatError *error,
     if (display_width <= 0 || display_height <= 0) {
         display_width = viewport_width_; display_height = viewport_height_;
     }
-    int limit = 16384;
+    int limit = low_memory_mode_ ? 512 : 16384;
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (rhi_info_.backend == BONGO_CAT_RHI_VULKAN) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties((VkPhysicalDevice)rhi_info_.vulkan_physical_device, &properties);
-        limit = (int)properties.limits.maxImageDimension2D;
+        limit = std::min(limit, (int)properties.limits.maxImageDimension2D);
     }
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
@@ -119,7 +119,7 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         }
         width = resized.width; height = resized.height;
         const size_t pixel_bytes = (size_t)width * (size_t)height * 4;
-        // Keep the resize result owned until the synchronous upload completes.
+        // CPU pixels are copied into staging; only the GPU staging survives async submission.
         auto *pixels = resized.pixels;
         for (size_t p = 0; p < pixel_bytes; p += 4) {
             unsigned alpha = pixels[p + 3];
@@ -156,7 +156,7 @@ bool NativeModel::load_textures_native(BongoCatError *error,
 
 void NativeModel::prepare_native_mask_sizes() {
     // Bound atlas memory while retaining the same layout and resize hysteresis.
-    const int limit = std::min(texture_limit_ > 0 ? texture_limit_ : 16384, 2048);
+    const int limit = std::min(texture_limit_ > 0 ? texture_limit_ : 16384, low_memory_mode_ ? 256 : 2048);
     drawable_masks_.size = mask_target_size(drawable_masks_.layout,
         viewport_width_, viewport_height_, limit, drawable_masks_.size);
     offscreen_masks_.size = mask_target_size(offscreen_masks_.layout,

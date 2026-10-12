@@ -127,7 +127,7 @@ bool vulkan_geometry_upload(VkCommandBuffer command) {
             geometry->uploaded = true;
             return true;
         }
-        // Frame submissions complete before reuse. Only copy the changed span;
+        // The draw fence is waited before reuse. Only copy the changed span;
         // Raw SDK staging starts at zero; borrowed VMA staging keeps mesh offsets.
         const VkDeviceSize length = geometry->dirty_end - geometry->dirty_begin;
         if (!geometry->mapped_packing) {

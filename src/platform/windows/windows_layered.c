@@ -111,7 +111,7 @@ static bool ensure_proxy(BongoCatPlatform *platform) {
     value->source = source;
     if (value->proxy) return true;
     if (!register_proxy_class()) return false;
-    wchar_t title[128] = L"BongoCat - Pet";
+    wchar_t title[128] = L"BongoCat-X - Pet";
     GetWindowTextW(source, title, (int)(sizeof(title) / sizeof(title[0])));
     DWORD style = WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
     if (value->forced) style |= WS_EX_TRANSPARENT;

@@ -16,6 +16,7 @@ typedef struct BongoCatGL {
     PFNGLGETSHADERINFOLOGPROC get_shader_log;
     PFNGLCREATEPROGRAMPROC create_program;
     PFNGLATTACHSHADERPROC attach_shader;
+    PFNGLDETACHSHADERPROC detach_shader;
     PFNGLLINKPROGRAMPROC link_program;
     PFNGLGETPROGRAMIVPROC get_program_iv;
     PFNGLGETPROGRAMINFOLOGPROC get_program_log;
@@ -28,6 +29,7 @@ typedef struct BongoCatGL {
     PFNGLGENBUFFERSPROC gen_buffers;
     PFNGLBINDBUFFERPROC bind_buffer;
     PFNGLBUFFERDATAPROC buffer_data;
+    PFNGLBUFFERSUBDATAPROC buffer_sub_data;
     PFNGLDELETEBUFFERSPROC delete_buffers;
     PFNGLENABLEVERTEXATTRIBARRAYPROC enable_attribute;
     PFNGLVERTEXATTRIBPOINTERPROC attribute_pointer;

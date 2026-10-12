@@ -61,6 +61,7 @@ bool bongo_cat_model_plugin_open(BongoCatModelRuntime *target,
     } else SDL_ClearError();
     uint32_t supported = target->rhi.backend == BONGO_CAT_RHI_VULKAN ? BONGO_CAT_OPTIMIZE_ALL :
         target->rhi.backend == BONGO_CAT_RHI_METAL ? BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION : 0;
+    supported |= BONGO_CAT_OPTIMIZE_LOW_MEMORY;
     uint32_t requested = (uint32_t)SDL_GetNumberProperty(SDL_GetGlobalProperties(),
         "BongoCat.RenderOptimizationFlags", 0) & supported;
     union { SDL_FunctionPointer function; BongoCatModelPluginOptimize optimize; } extension;

@@ -61,6 +61,9 @@ typedef struct BongoCatModelPreferences {
     bool force_mouse_input;
     bool gamepad_four_hands;
     bool dynamic_texture_resolution;
+    bool custom_mouse_range;
+    float mouse_range_x_percent;
+    float mouse_range_y_percent;
     /* Approximate texture-memory budget: 0.1, 1, then 10 to 100 percent. */
     float render_quality_percent;
     int max_fps;
@@ -121,6 +124,7 @@ typedef struct BongoCatApplicationPreferences {
     /* Relaunch elevated; the registry autostart entry is independent of it. */
     bool run_as_admin;
     bool tray_visible;
+    bool low_memory_mode;
     bool large_render_optimization;
     bool render_parallel_recording;
     bool render_bindless;

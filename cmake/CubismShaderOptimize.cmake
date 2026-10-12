@@ -118,6 +118,8 @@ void CubismShader_OpenGLES2::SetupShaderProgramForDrawable]=])
   bongo_cat_replace_cubism_text(source "${offscreen_setup}" "${offscreen_lazy}"
     "offscreen lazy shader call")
 
+  include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CubismOpenGLLazyBase.cmake")
+  bongo_cat_gl_lazy_base(source)
   bongo_cat_core_profile_patch_shader(source)
   bongo_cat_gl_cache_state(source)
 

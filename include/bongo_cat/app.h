@@ -159,6 +159,8 @@ typedef struct BongoCatApp {
     uint64_t last_frame_ns;
     int startup_display_fps;
     uint64_t render_retry_ns;
+    uint64_t native_next_submit_ns;
+    bool native_async_pending;
     uint64_t frame_geometry_retry_ns;
     uint64_t smoke_deadline_ns;
     uint64_t hover_deadline_ns;

@@ -9,6 +9,8 @@ void bongo_cat_memory_policy_ui_frame_presented(void);
 /* Teardown may leave no further UI/model frames. Service reclamation from
    the main loop, outside synchronous model loading and native callbacks. */
 void bongo_cat_memory_policy_ui_released(void);
+/* Coalesce temporary heap reclamation after resize/upload activity settles. */
+void bongo_cat_memory_policy_temporary_released(void);
 void bongo_cat_memory_policy_poll(void);
 
 #endif

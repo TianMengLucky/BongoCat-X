@@ -1,4 +1,5 @@
 #include "ui_backend.h"
+#include "ui_software.h"
 #include "ui_font_atlas.h"
 #include "ui_paint.h"
 #include "ui_paint_cache.h"
@@ -82,7 +83,7 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
     const char *body_korean_fallback_path, const char *heading_font_path,
     const char *heading_fallback_path,
     const char *heading_korean_fallback_path,
-    const nk_rune *glyph_ranges, float layout_scale, float raster_scale,
+    const nk_rune *glyph_ranges, const nk_rune *heading_ranges, float layout_scale, float raster_scale,
     BongoCatError *error) {
     memset(ui, 0, sizeof(*ui));
     ui->window = window;
@@ -93,10 +94,11 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
     ui->vertices = malloc(ui->vertex_capacity);
     ui->elements = malloc(ui->element_capacity);
     if (!ui->vertices || !ui->elements || !nk_init_default(&ui->context, NULL) ||
-        !create_device(ui, error) || !bongo_cat_ui_font_atlas_create(ui,
+        !(SDL_GetBooleanProperty(SDL_GetWindowProperties(window), "BongoCat.SoftwareUI", false) ?
+            bongo_cat_ui_software_create(ui) : create_device(ui, error)) || !bongo_cat_ui_font_atlas_create(ui,
             body_font_path, body_fallback_path, body_korean_fallback_path,
             heading_font_path, heading_fallback_path,
-            heading_korean_fallback_path, glyph_ranges, raster_scale)) {
+            heading_korean_fallback_path, glyph_ranges, heading_ranges, raster_scale)) {
         if (error && !error->message[0]) bongo_cat_error_set(error,
             BONGO_CAT_ERROR_MEMORY, "Preferences UI resources could not be created");
         bongo_cat_ui_destroy(ui);
@@ -112,6 +114,9 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
 static void release(BongoCatUIBackend *ui, bool release_gl) {
     if (!ui) return;
     if (context_backend == ui) context_backend = NULL;
+    // Destroying a pending software job cancels it before its context is freed.
+    ui->software_pending = false;
+    ui->software_frame_valid = false;
     if (release_gl) {
         bongo_cat_ui_paint_destroy(ui);
         bongo_cat_ui_resize_cache_destroy(ui);
@@ -124,11 +129,15 @@ static void release(BongoCatUIBackend *ui, bool release_gl) {
     nk_buffer_free(&ui->commands);
     nk_free(&ui->context);
     if (release_gl) {
-        if (ui->font_texture) glDeleteTextures(1, &ui->font_texture);
+        if (ui->font_texture) bongo_cat_ui_texture_delete(ui, 1, &ui->font_texture);
         if (ui->vbo) ui->gl.delete_buffers(1, &ui->vbo);
         if (ui->ebo) ui->gl.delete_buffers(1, &ui->ebo);
         if (ui->vao) ui->gl.delete_vertex_arrays(1, &ui->vao);
         if (ui->program) ui->gl.delete_program(ui->program);
+    }
+    if (ui->software_renderer) {
+        SDL_ClearProperty(SDL_GetWindowProperties(ui->window), "BongoCat.SoftwareUIRenderer");
+        SDL_DestroyRenderer(ui->software_renderer);
     }
     free(ui->vertices);
     free(ui->elements);
@@ -157,9 +166,14 @@ static bool convert(BongoCatUIBackend *ui) {
         {NK_VERTEX_LAYOUT_END}
     };
     struct nk_convert_config config = {0};
-    config.vertex_layout = layout;
-    config.vertex_size = sizeof(UIVertex);
-    config.vertex_alignment = NK_ALIGNOF(UIVertex);
+    static const struct nk_draw_vertex_layout_element software_layout[] = {
+        {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, offsetof(SDL_Vertex, position)},
+        {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, offsetof(SDL_Vertex, tex_coord)},
+        {NK_VERTEX_COLOR, NK_FORMAT_R32G32B32A32_FLOAT, offsetof(SDL_Vertex, color)},
+        {NK_VERTEX_LAYOUT_END}};
+    config.vertex_layout = ui->software_renderer ? software_layout : layout;
+    config.vertex_size = ui->software_renderer ? sizeof(SDL_Vertex) : sizeof(UIVertex);
+    config.vertex_alignment = ui->software_renderer ? NK_ALIGNOF(SDL_Vertex) : NK_ALIGNOF(UIVertex);
     config.tex_null = ui->null_texture;
     config.global_alpha = 1.0f;
     config.circle_segment_count = 36;
@@ -186,6 +200,7 @@ static bool convert(BongoCatUIBackend *ui) {
     }
     ui->last_vertex_bytes = vertices.allocated;
     ui->last_element_bytes = elements.allocated;
+    if (ui->software_renderer) return true;
     if (vertices.allocated >= sizeof(UIVertex)) {
         const UIVertex *sample = ui->vertices;
         size_t count = vertices.allocated / sizeof(*sample);
@@ -197,11 +212,17 @@ static bool convert(BongoCatUIBackend *ui) {
     }
     ui->gl.bind_vertex_array(ui->vao);
     ui->gl.bind_buffer(GL_ARRAY_BUFFER, ui->vbo);
-    ui->gl.buffer_data(GL_ARRAY_BUFFER, (GLsizeiptr)vertices.allocated,
-        ui->vertices, GL_STREAM_DRAW);
+    if (ui->gpu_vertex_capacity < vertices.allocated) {
+        ui->gl.buffer_data(GL_ARRAY_BUFFER, (GLsizeiptr)ui->vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+        ui->gpu_vertex_capacity = ui->vertex_capacity;
+    }
+    ui->gl.buffer_sub_data(GL_ARRAY_BUFFER, 0, (GLsizeiptr)vertices.allocated, ui->vertices);
     ui->gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, ui->ebo);
-    ui->gl.buffer_data(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)elements.allocated,
-        ui->elements, GL_STREAM_DRAW);
+    if (ui->gpu_element_capacity < elements.allocated) {
+        ui->gl.buffer_data(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)ui->element_capacity, NULL, GL_DYNAMIC_DRAW);
+        ui->gpu_element_capacity = ui->element_capacity;
+    }
+    ui->gl.buffer_sub_data(GL_ELEMENT_ARRAY_BUFFER, 0, (GLsizeiptr)elements.allocated, ui->elements);
     return true;
 }
 
@@ -217,7 +238,7 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
     }
     float projection[4][4] = {{2.0f / width, 0, 0, 0}, {0, -2.0f / height, 0, 0},
         {0, 0, -1, 0}, {-1, 1, 0, 1}};
-    bongo_cat_gl_clear_errors();
+    if (!ui->software_renderer) bongo_cat_gl_clear_errors();
     if (!convert(ui)) {
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "UI conversion rejected incomplete geometry (flags %d)",
             ui->last_convert_result);
@@ -227,6 +248,7 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
         nk_buffer_clear(&ui->commands);
         return false;
     }
+    if (ui->software_renderer) return bongo_cat_ui_software_render(ui, width, height);
     glViewport(0, 0, pixel_width, pixel_height);
     glEnable(GL_BLEND);
     ui->gl.blend_equation(GL_FUNC_ADD);
@@ -234,6 +256,7 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
         GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
     glEnable(GL_SCISSOR_TEST);
     ui->gl.use_program(ui->program);
     ui->gl.uniform_1i(ui->texture_location, 0);
@@ -294,7 +317,7 @@ bool bongo_cat_ui_frame_valid(const BongoCatUIBackend *ui) {
         ui->last_vertex_bytes && ui->last_element_bytes &&
         ui->last_draw_commands && ui->last_draw_elements &&
         ui->nonzero_alpha_vertices && ui->max_alpha &&
-        ui->font_probe_loaded &&
+        ui->font_probe_loaded && (!ui->software_renderer || ui->software_frame_valid) &&
         ui->last_gl_error == GL_NO_ERROR;
 }
 

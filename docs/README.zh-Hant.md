@@ -60,7 +60,7 @@
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 
@@ -342,3 +342,9 @@ Linux Wayland 的實驗性 evdev 輸入可用 `BONGOCAT_ENABLE_EVDEV=1` 啟用�
 在「偏好設定 → 偏好 → 視窗」啟用「自訂圖片背景」，點選「選擇圖片」匯入 PNG、JPEG、WebP、BMP 或 GIF（靜態首幀）。圖片保持比例、置中填滿視窗，與「純色背景」互斥。圖片儲存在應用程式資料目錄，移動原始檔不影響使用；上限為 64 MB、1600 萬像素，支援 OpenGL、Vulkan 和 Metal。
 
 Live2D 自動重用幾何緩衝與連續重複的渲染狀態；OpenGL 動態上傳、Vulkan 上傳批次與管線快取、Metal 共用緩衝槽及原生動態遮罩無需額外開關。新增路徑的效能與平台行為待實測。
+
+設定 → 應用 →「低記憶體模式」預設關閉。開啟後紋理畫質最高 10%、邊長最高 512 像素，Live2D 遮罩最高 256 像素，暫停大型渲染最佳化並重新載入渲染器。關閉後恢復原畫質；實際用量取決於模型與驅動，50MB 是目標而非保證。
+
+設定 → 桌寵 → 自訂滑鼠跟隨範圍提供水平/垂直 25–400%，預設關閉，100% 保持原範圍。Mver 繪製貓爪與滑鼠可擴大移動範圍，Live2D 保留作者參數邊界。視線與視窗位置不變。低記憶體模式關閉 OpenGL MSAA 並減少未使用的著色器與 Vulkan 混合管線。
+
+Windows 低記憶體設定視窗對 OpenGL/Vulkan 均使用分塊 SDL 軟體繪製及不透明背景。字型保留實際字號、螢幕 DPI 和抗鋸齒取樣，軟體字型圖集保存單通道遮罩，僅轉換當前字形。其他平台的 OpenGL 繼續重用桌寵上下文。

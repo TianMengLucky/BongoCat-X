@@ -25,7 +25,8 @@ struct BongoCatMverPointerOverlay {
     BongoCatPointerTexture side;
     BongoCatMverPointerConfig geometry;
     BongoCatMverPointerGeometry cached_geometry;
-    float geometry_cache_key[6];
+    float geometry_cache_key[8];
+    float range_x, range_y;
     int reference_width;
     int reference_height;
     float scale;

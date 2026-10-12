@@ -50,6 +50,9 @@
           "verticalFlip": "Hang Upside Down",
           "mouseVerticalFlip": "Mouse Vertical Flip",
           "mouseMirror": "Mouse Horizontal Flip",
+          "customMouseRange": "Custom Mouse Follow Range",
+          "mouseRangeX": "Horizontal range (%)",
+          "mouseRangeY": "Vertical range (%)",
           "mouseCentered": "Disable Mouse Centering on Desktop Pet",
           "ignoreMouse": "Ignore Mouse Events",
           "forceMouseInput": "Force Mouse Input",
@@ -80,6 +83,7 @@
           "renderQuality": "Try different levels to find the best visual balance and save memory.",
           "hoverRequires": "Requires both [Pass Through] and [Always on Top] above to be enabled.",
           "hoverUnavailable": "Hover hiding is unavailable in the current desktop environment.",
+          "customMouseRange": "100% preserves the original range. Increase to extend the drawn Mver hand and mouse. Live2D parameters stay within authored limits. Gaze and window position are unchanged.",
           "gamepadFourHands": "Keep two extra hands visible in gamepad mode. Appearance depends on the model",
           "forceMouseInput": "Drive the model with raw device motion so it keeps following the mouse when a game hides the cursor",
           "passThrough": "You can also turn this off by right-clicking the tray icon",
@@ -97,6 +101,7 @@
       "general": {
         "title": "General",
         "labels": {
+          "lowMemoryMode": "Low Memory Mode",
           "largeRenderOptimization": "Large Rendering Optimization",
           "appSettings": "Application",
           "launchOnStartup": "Launch on Startup",
@@ -123,6 +128,7 @@
           "darkMode": "Dark"
         },
         "hints": {
+          "lowMemoryMode": "Limit texture quality to 10%, texture edges to 512 pixels and Live2D masks to 256 pixels. Suspend large rendering optimizations. Reloads the renderer; disabling restores saved quality. Memory depends on the model and driver.",
           "largeRenderOptimization": "Select optimizations supported by the current backend. Unsupported requests remain unavailable. May use more memory; changes reload the renderer and model.",
           "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",
@@ -138,7 +144,7 @@
           "portableModeDisabled": "The system data location will be used after a restart",
           "portableModeFailed": "Unable to change the portable mode setting",
           "inputMonitoringPermission": "Restart after granting it.",
-          "inputMonitoringPermissionGuide": "Input Monitoring lets BongoCat see keys pressed in other apps; the mouse keeps working without it. BongoCat builds the listener when it starts, so a permission change needs a restart.\n\nSteps:\n1. Open System Settings → Privacy & Security → Input Monitoring.\n2. Turn on the BongoCat entry that is already listed; do not remove existing entries.\n3. If BongoCat is not listed, click the \"+\" button and add the copy you are running (check the app location).\n4. Quit BongoCat completely and start it again, so it rebuilds the listener.\n\nIf the keyboard still stays silent, you can remove and re-add the BongoCat entry yourself.",
+          "inputMonitoringPermissionGuide": "Input Monitoring lets BongoCat-X see keys pressed in other apps; the mouse keeps working without it. BongoCat-X builds the listener when it starts, so a permission change needs a restart.\n\nSteps:\n1. Open System Settings → Privacy & Security → Input Monitoring.\n2. Turn on the BongoCat-X entry that is already listed; do not remove existing entries.\n3. If BongoCat-X is not listed, click the \"+\" button and add the copy you are running (check the app location).\n4. Quit BongoCat-X completely and start it again, so it rebuilds the listener.\n\nIf the keyboard still stays silent, you can remove and re-add the BongoCat-X entry yourself.",
           "administratorPermission": "Running the app as administrator helps capture some system-level keys and input events more reliably.",
           "administratorPermissionGuide": "To capture some system-level keys and input events more reliably, it is recommended to run the app as administrator.\n\nHow to do it:\n1. Exit the app first.\n2. Find the app exe or its shortcut in File Explorer.\n3. Choose how to launch:\n   • One-time: Right-click and choose \"Run as administrator\".\n   • Always (default): Right-click → Properties → Compatibility tab → check \"Run this program as an administrator\" → OK."
         },
@@ -299,9 +305,9 @@
       "reload": "Reload",
       "qrFailed": "QR code unavailable. Click to retry.",
       "contributorsTitle": "Open source & community contributions",
-      "contributorsText": "Every step of BongoCat comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
+      "contributorsText": "Every step of BongoCat-X comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
       "joinTitle": "Want to appear in the contributors list?",
-      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat better.",
+      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat-X better.",
       "code": "Code",
       "docs": "Documentation",
       "bugs": "Bug reports",
@@ -317,16 +323,16 @@
     "removeDesktopPet": "Close this desktop pet",
     "modelLoadFailed": "Unable to display this model",
     "noBehaviors": "No items",
-    "preferencesWindowTitle": "BongoCat - Settings",
+    "preferencesWindowTitle": "BongoCat-X - Settings",
     "startup": {
-      "failed": "BongoCat could not start.",
+      "failed": "BongoCat-X could not start.",
       "detail": "See the diagnostic log for technical details.",
       "diagnosticLog": "Diagnostic log:"
     },
     "support": {
       "title": "About",
       "website": "Website: bongocat.pet",
-      "heroText": "Thank you for your support. Every use and share helps BongoCat continue to grow.",
+      "heroText": "Thank you for your support. Every use and share helps BongoCat-X continue to grow.",
       "version": "App version",
       "checkUpdate": "Check for updates",
       "feedback": "Feedback",
@@ -341,7 +347,7 @@
       "openStore": "Open Microsoft Store",
       "viewReleases": "View releases",
       "openUpdateFailed": "Unable to open the update page",
-      "refactorDeveloper": "Developer who rewrote BongoCat in C and is also its current maintainer",
+      "refactorDeveloper": "Developer who rewrote BongoCat-X in C and is also its current maintainer",
       "community": "Community",
       "qqGroup": "QQ Group",
       "coffee": "Buy the developer a coffee?",

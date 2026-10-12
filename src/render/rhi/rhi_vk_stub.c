@@ -19,6 +19,9 @@ bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
     return false;
 }
 
+BongoCatRhiAsyncState bongo_cat_rhi_vk_async_frame_state(const BongoCatRhi *rhi) {
+    (void)rhi; return BONGO_CAT_RHI_ASYNC_DISABLED;
+}
 bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) { (void)rhi; return false; }
 bool bongo_cat_rhi_vk_wait_idle(const BongoCatRhi *rhi) { (void)rhi; return false; }
 
@@ -66,3 +69,7 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
 
 bool bongo_cat_rhi_vk_get_frame_info(const BongoCatRhi *rhi,
     BongoCatRhiVulkanFrameInfo *info) { (void)rhi; (void)info; return false; }
+
+bool bongo_cat_rhi_vk_background_matches(const BongoCatRhi *rhi, int w, int h, uint64_t revision) {
+    (void)rhi; (void)w; (void)h; (void)revision; return false;
+}

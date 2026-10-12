@@ -97,7 +97,7 @@ static bool create_window(BongoCatPreferences *value, int width, int height,
     if (SDL_getenv("BONGO_CAT_TEST_DISABLE_PREFERENCES_TRANSPARENCY"))
         transparent = false;
     const char *title = bongo_cat_i18n_get(value->app->i18n,
-        "native.preferencesWindowTitle", "BongoCat - Settings");
+        "native.preferencesWindowTitle", "BongoCat-X - Settings");
     value->window = SDL_CreateWindow(title,
         width, height,
         flags | (transparent ? SDL_WINDOW_TRANSPARENT : 0));
@@ -121,7 +121,13 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
             !SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) ||
             !SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8)) return false;
     }
-    SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS |
+    bool software = value->app->settings.app.low_memory_mode && !value->app->gl_context;
+#ifdef _WIN32
+    // Keep low-memory settings independent of both native and OpenGL pet draws.
+    // A second WGL drawable can retain its own driver-managed framebuffers.
+    software = value->app->settings.app.low_memory_mode;
+#endif
+    SDL_WindowFlags flags = (software ? 0 : SDL_WINDOW_OPENGL) | SDL_WINDOW_BORDERLESS |
         SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
     SDL_DisplayID display = SDL_GetPrimaryDisplay();
     float layout_scale = bongo_cat_ui_display_layout_scale(display);
@@ -131,11 +137,13 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
 #ifdef _WIN32
     SDL_SetHint(SDL_HINT_WINDOWS_ERASE_BACKGROUND_MODE, "0");
 #endif
-    if (!create_window(value, width, height, flags, true)) {
+    if (!create_window(value, width, height, flags, !software)) {
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
             "Transparent preferences window unavailable: %s", SDL_GetError());
         if (!create_window(value, width, height, flags, false)) return false;
     }
+    SDL_SetBooleanProperty(SDL_GetWindowProperties(value->window), "BongoCat.SoftwareUI", (SDL_GetWindowFlags(value->window) & SDL_WINDOW_OPENGL) == 0);
+    SDL_SetBooleanProperty(SDL_GetWindowProperties(value->window), "BongoCat.AsyncSoftwareUI", software);
     bongo_cat_platform_configure_preferences_window(value->window);
     SDL_SetWindowPosition(value->window, SDL_WINDOWPOS_CENTERED_DISPLAY(display),
         SDL_WINDOWPOS_CENTERED_DISPLAY(display));
@@ -173,7 +181,7 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
     BongoCatError error = {0};
     if (!bongo_cat_ui_init(&value->ui, value->window, fonts.body,
         fonts.body_fallback, fonts.body_korean_fallback, fonts.heading,
-        fonts.heading_fallback, fonts.heading_korean_fallback, fonts.ranges,
+        fonts.heading_fallback, fonts.heading_korean_fallback, fonts.ranges, fonts.heading_ranges,
         layout_scale, raster_scale, &error)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", error.message);
         return false;
@@ -191,7 +199,7 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
         value->owns_gl_context, value->transparent_window,
         pixel_width, pixel_height,
         layout_scale, raster_scale);
-    if (!SDL_GL_SetSwapInterval(0)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
+    if (!value->ui.software_renderer && !SDL_GL_SetSwapInterval(0)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
         "Preferences VSync disable unavailable: %s", SDL_GetError());
     SDL_StartTextInput(value->window);
     value->render_dirty = true;
@@ -219,7 +227,7 @@ bool bongo_cat_preferences_scale_event(BongoCatPreferences *value,
         &width, &height, &minimum_width, &minimum_height);
     bool was_rendering = value->live_resize_rendering;
     value->live_resize_rendering = true;
-    bool context_ready = SDL_GL_MakeCurrent(value->window, value->gl_context);
+    bool context_ready = bongo_cat_preferences_gl_make_current(value);
     value->ui.layout_scale = layout_scale;
     if (fabsf(raster_scale - old_raster) > 0.01f) {
         value->pending_raster_scale = raster_scale;

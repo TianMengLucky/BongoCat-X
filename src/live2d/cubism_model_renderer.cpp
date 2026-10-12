@@ -13,6 +13,7 @@
 #include <SDL3/SDL_video.h>
 #include <Rendering/OpenGL/CubismOffscreenManager_OpenGLES2.hpp>
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+#include "cubism_vulkan_submission.hpp"
 #include <Rendering/Vulkan/CubismDeviceInfo_Vulkan.hpp>
 #endif
 
@@ -383,6 +384,9 @@ void NativeModel::release_renderer() {
     // A retired model may be deleted after its replacement has created caches.
     const bool had_renderer = GetRenderer<Csm::Rendering::CubismRenderer>() != nullptr;
 #endif
+#ifdef BONGO_CAT_HAS_CUBISM_VULKAN
+    if (had_renderer && rhi_info_.backend == BONGO_CAT_RHI_VULKAN) vulkan_submit_wait();
+#endif
     DeleteRenderer();
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     vulkan_geometry_.reset();
@@ -451,7 +455,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
             release_renderer();
             return false;
         }
-        mask_texture_limit_ = (int)texture_limit;
+        mask_texture_limit_ = low_memory_mode_ ? std::min((int)texture_limit, 256) : (int)texture_limit;
         bind_textures();
         if (!update_mask_buffers()) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM,

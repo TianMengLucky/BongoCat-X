@@ -15,6 +15,11 @@ const BongoCatRhiPresentOps *bongo_cat_rhi_active_present_ops(void) {
     return active_rhi ? &active_rhi->present : NULL;
 }
 
+BongoCatRhiAsyncState bongo_cat_rhi_async_frame_state(const BongoCatRhi *rhi) {
+    return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN ?
+        bongo_cat_rhi_vk_async_frame_state(rhi) : BONGO_CAT_RHI_ASYNC_DISABLED;
+}
+
 bool bongo_cat_rhi_active_is_gl(void) {
     return !active_rhi || active_rhi->backend == BONGO_CAT_RHI_OPENGL;
 }
@@ -252,4 +257,10 @@ bool bongo_cat_rhi_get_vulkan_frame_info(const BongoCatRhi *rhi,
     memset(info, 0, sizeof(*info));
     return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN &&
         bongo_cat_rhi_vk_get_frame_info(rhi, info);
+}
+
+bool bongo_cat_rhi_background_matches(const BongoCatRhi *rhi, int width, int height,
+    uint64_t revision) {
+    return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN &&
+        bongo_cat_rhi_vk_background_matches(rhi,width,height,revision);
 }

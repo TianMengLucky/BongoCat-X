@@ -50,6 +50,9 @@
           "verticalFlip": "倒掛模式",
           "mouseMirror": "滑鼠左右反轉",
           "mouseVerticalFlip": "滑鼠上下反轉",
+          "customMouseRange": "自訂滑鼠跟隨範圍",
+          "mouseRangeX": "水平活動範圍 (%)",
+          "mouseRangeY": "垂直活動範圍 (%)",
           "mouseCentered": "關閉滑鼠以桌寵為中心",
           "ignoreMouse": "忽略滑鼠事件",
           "forceMouseInput": "強制接收滑鼠輸入",
@@ -80,6 +83,7 @@
           "renderQuality": "嘗試不同等級以找到視覺平衡點，從而節約記憶體",
           "hoverRequires": "需要同時開啟上面的[滑鼠穿透]和[置頂]選項",
           "hoverUnavailable": "目前桌面環境暫不支援滑鼠移入隱藏。",
+          "customMouseRange": "100% 為原範圍，調大可擴大 Mver 繪製貓爪與滑鼠的活動範圍。Live2D 參數仍受模型作者的邊界限制。不會改變視線或視窗位置。",
           "gamepadFourHands": "在手把模式下常駐顯示額外兩隻手，四手一起玩！實際效果依模型而定",
           "forceMouseInput": "使用裝置原始移動量驅動模型，遊戲隱藏游標時仍可跟隨滑鼠",
           "passThrough": "右鍵點擊系統匣圖示也可關閉此功能",
@@ -97,6 +101,7 @@
       "general": {
         "title": "一般設定",
         "labels": {
+          "lowMemoryMode": "低記憶體模式",
           "largeRenderOptimization": "大型渲染最佳化",
           "appSettings": "應用程式",
           "launchOnStartup": "開機自動啟動",
@@ -123,6 +128,7 @@
           "darkMode": "深色模式"
         },
         "hints": {
+          "lowMemoryMode": "紋理畫質最高 10%，紋理邊長上限 512 像素、Live2D 遮罩上限 256 像素，暫停大型渲染最佳化。切換會重新載入渲染器，關閉後恢復原畫質設定。實際記憶體取決於模型和顯示卡驅動。",
           "largeRenderOptimization": "選擇目前後端支援的最佳化項目；不支援的請求會顯示不可用。可能增加記憶體用量；修改後重新載入渲染器與模型。",
           "largeRenderUnavailable": "目前模型渲染器未提供這些最佳化，開關暫不影響繪製。",
           "showTrayIcon": "啟用後，在系統托盤中顯示應用程式圖示。",
@@ -138,7 +144,7 @@
           "portableModeDisabled": "已關閉可攜模式，重新啟動後恢復系統資料目錄",
           "portableModeFailed": "無法變更可攜模式設定",
           "inputMonitoringPermission": "授權後請重新啟動",
-          "inputMonitoringPermissionGuide": "輸入監控權限讓 BongoCat 能接收其他應用程式中的按鍵；滑鼠移動和點擊無需該權限。BongoCat 在啟動時建立監聽，因此權限變更後需要重新啟動。\n\n操作方式：\n1. 開啟「系統設定」→「隱私權與安全性」→「輸入監控」。\n2. 直接開啟清單中已有的 BongoCat 項目，不要刪除現有項目。\n3. 若清單中沒有 BongoCat，點擊「+」按鈕，加入你目前執行的那份應用程式（請確認應用程式位置）。\n4. 完全結束 BongoCat 後重新啟動，讓它重建監聽。\n\n若鍵盤仍然沒有反應，可由你自行移除並重新加入 BongoCat 項目來排解問題。",
+          "inputMonitoringPermissionGuide": "輸入監控權限讓 BongoCat-X 能接收其他應用程式中的按鍵；滑鼠移動和點擊無需該權限。BongoCat-X 在啟動時建立監聽，因此權限變更後需要重新啟動。\n\n操作方式：\n1. 開啟「系統設定」→「隱私權與安全性」→「輸入監控」。\n2. 直接開啟清單中已有的 BongoCat-X 項目，不要刪除現有項目。\n3. 若清單中沒有 BongoCat-X，點擊「+」按鈕，加入你目前執行的那份應用程式（請確認應用程式位置）。\n4. 完全結束 BongoCat-X 後重新啟動，讓它重建監聽。\n\n若鍵盤仍然沒有反應，可由你自行移除並重新加入 BongoCat-X 項目來排解問題。",
           "administratorPermission": "以系統管理員身分執行應用程式，可以更穩定地擷取部分系統層級按鍵與輸入事件。",
           "administratorPermissionGuide": "為了能更穩定地擷取部分系統層級按鍵與輸入事件，建議以系統管理員身分執行應用程式。\n\n操作方式：\n1. 先退出應用程式。\n2. 在檔案總管中找到應用程式的 exe 或捷徑。\n3. 根據需求選擇啟動方式：\n   • 僅本次：右鍵並選擇「以系統管理員身分執行」。\n   • 永久預設：右鍵 → 內容 → 相容性索引標籤 → 勾選「以系統管理員身分執行此程式」→ 確定。"
         },
@@ -299,9 +305,9 @@
       "reload": "重新載入",
       "qrFailed": "二維碼暫時無法載入，點擊重新載入",
       "contributorsTitle": "開源共建與 社群貢獻",
-      "contributorsText": "BongoCat 的每一步都源於開源的力量。感謝所有社群貢獻者的無私付出，是你們讓桌面陪伴變得更加自由與純粹。",
+      "contributorsText": "BongoCat-X 的每一步都源於開源的力量。感謝所有社群貢獻者的無私付出，是你們讓桌面陪伴變得更加自由與純粹。",
       "joinTitle": "想出現在貢獻者名單中嗎？",
-      "joinText": "無論是提交程式碼、改善文件、回報 Bug 還是貢獻多語言翻譯，你的每一次參與都在讓 BongoCat 變得更好。",
+      "joinText": "無論是提交程式碼、改善文件、回報 Bug 還是貢獻多語言翻譯，你的每一次參與都在讓 BongoCat-X 變得更好。",
       "code": "程式碼貢獻",
       "docs": "文件改進",
       "bugs": "Bug 回報",
@@ -317,16 +323,16 @@
     "removeDesktopPet": "關閉此桌寵",
     "modelLoadFailed": "模型無法顯示",
     "noBehaviors": "暫無可用項目",
-    "preferencesWindowTitle": "BongoCat - Settings",
+    "preferencesWindowTitle": "BongoCat-X - Settings",
     "startup": {
-      "failed": "BongoCat 無法啟動。",
+      "failed": "BongoCat-X 無法啟動。",
       "detail": "請查看診斷日誌以瞭解技術詳情。",
       "diagnosticLog": "診斷日誌："
     },
     "support": {
       "title": "關於",
       "website": "官網: bongocat.pet",
-      "heroText": "感謝你的支持。每一次使用與分享，都讓 BongoCat 持續成長。",
+      "heroText": "感謝你的支持。每一次使用與分享，都讓 BongoCat-X 持續成長。",
       "version": "應用程式版本",
       "checkUpdate": "檢查更新",
       "feedback": "意見回饋",
@@ -341,7 +347,7 @@
       "openStore": "開啟 Microsoft Store",
       "viewReleases": "查看發佈版本",
       "openUpdateFailed": "無法開啟更新頁面",
-      "refactorDeveloper": "將BongoCat用C語言重構的開發者，同時也是現任維護者",
+      "refactorDeveloper": "將BongoCat-X用C語言重構的開發者，同時也是現任維護者",
       "community": "社群",
       "qqGroup": "QQ 群",
       "coffee": "請開發者喝杯咖啡？",

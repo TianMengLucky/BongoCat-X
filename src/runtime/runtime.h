@@ -69,6 +69,7 @@ void bongo_cat_window_schedule_hit_check(BongoCatApp *app);
 int bongo_cat_window_wait_timeout(const BongoCatApp *app, uint64_t now);
 bool bongo_cat_window_wait_timeout_self_test(void);
 bool bongo_cat_modal_frame_self_test(void);
+uint64_t bongo_cat_frame_interval_ns(const BongoCatApp *app);
 bool bongo_cat_model_frame_due(const BongoCatApp *app, uint64_t now);
 bool bongo_cat_wait_event(SDL_Event *event, int timeout_ms);
 bool bongo_cat_app_step_live2d(BongoCatApp *app, float elapsed_seconds);

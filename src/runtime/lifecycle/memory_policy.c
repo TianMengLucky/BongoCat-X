@@ -7,6 +7,7 @@ static unsigned pending_presented_frames;
 static bool pending_ui_frame;
 static bool pending_ui_release;
 static uint64_t model_trim_deadline_ms;
+static uint64_t temporary_trim_deadline_ms;
 
 static void trim_model(void) {
     pending_presented_frames = 0;
@@ -52,12 +53,19 @@ void bongo_cat_memory_policy_ui_released(void) {
     pending_ui_release = true;
 }
 
+void bongo_cat_memory_policy_temporary_released(void) {
+    temporary_trim_deadline_ms = SDL_GetTicks() + 250;
+}
+
 void bongo_cat_memory_policy_poll(void) {
     /* A static PNG/model can present only once after a switch. Do not leave
        its unused heap pages waiting indefinitely for a second dirty frame. */
     bool model_due = model_trim_deadline_ms &&
         SDL_GetTicks() >= model_trim_deadline_ms;
-    if (!model_due && !pending_ui_release) return;
+    bool temporary_due = temporary_trim_deadline_ms &&
+        SDL_GetTicks() >= temporary_trim_deadline_ms;
+    if (!model_due && !pending_ui_release && !temporary_due) return;
+    if (temporary_due) temporary_trim_deadline_ms = 0;
     pending_ui_release = false;
     if (model_due) trim_model();
     else bongo_cat_platform_trim_memory();

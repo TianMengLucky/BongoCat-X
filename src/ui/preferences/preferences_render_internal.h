@@ -10,4 +10,6 @@ bool bongo_cat_preferences_draw_frame(BongoCatPreferences *value,
    must skip painting this frame (fade in progress or close just finished). */
 bool bongo_cat_preferences_window_fade_tick(BongoCatPreferences *value);
 
+float bongo_cat_preferences_animation_delta(uint64_t previous_ns, uint64_t now_ns);
+
 #endif

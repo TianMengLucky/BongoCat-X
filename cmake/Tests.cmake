@@ -1,4 +1,5 @@
 if(BUILD_TESTING)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/VulkanSlotTests.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/MverCacheTests.cmake")
   if(TARGET bongo_inox2d-shared)
     add_executable(bongo_cat_model_plugin_tests tests/model_import/test_model_plugins.c)
@@ -111,7 +112,6 @@ if(BUILD_TESTING)
     bongo_cat_core SDL3::SDL3-static bongo_cat_warnings)
   add_test(NAME safe-ffi COMMAND bongo_cat_safe_ffi_tests)
   set_tests_properties(safe-ffi PROPERTIES TIMEOUT 30)
-
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(bongo_cat_linux_evdev_tests tests/platform/test_linux_evdev.c)
     target_include_directories(bongo_cat_linux_evdev_tests PRIVATE

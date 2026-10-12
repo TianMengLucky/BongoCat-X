@@ -220,11 +220,19 @@ void test_config(void) {
     // silently revert to full-size textures on the next application start.
     const float quality_levels[] = {0.1f, 1.0f, 10.0f, 100.0f};
     for (size_t i = 0; i < sizeof(quality_levels) / sizeof(quality_levels[0]); ++i) {
+        settings.app.low_memory_mode = i % 2 == 0;
+        settings.model.custom_mouse_range = true;
+        settings.model.mouse_range_x_percent = 200.0f;
+        settings.model.mouse_range_y_percent = 150.0f;
         settings.model.render_quality_percent = quality_levels[i];
         CHECK(bongo_cat_settings_save(settings_path, &settings, &error) == BONGO_CAT_OK);
         loaded_settings.model.render_quality_percent = -1.0f;
         CHECK(bongo_cat_settings_load(settings_path, &loaded_settings, &error) == BONGO_CAT_OK);
         CHECK(loaded_settings.model.render_quality_percent == quality_levels[i]);
+        CHECK(loaded_settings.app.low_memory_mode == settings.app.low_memory_mode);
+        CHECK(loaded_settings.model.custom_mouse_range);
+        CHECK(loaded_settings.model.mouse_range_x_percent == 200.0f);
+        CHECK(loaded_settings.model.mouse_range_y_percent == 150.0f);
     }
 
     const char *unsupported = "bongocat-unsupported.json";

@@ -15,11 +15,9 @@
 #ifdef _WIN32
 #include "windows_game_compatibility.h"
 #endif
-
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
-
 static const char *tr(BongoCatApp *app, const char *key, const char *fallback) {
     return bongo_cat_i18n_get(app->i18n, key, fallback);
 }
@@ -218,6 +216,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         "pages.preference.cat.labels.mouseVerticalFlip", "Mouse Vertical Flip"), "",
         &model->mouse_vertical_flip))
         bongo_cat_app_reset_pointer_tracking(app);
+    bongo_cat_preferences_mouse_range_row(app, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_CENTERED);
     bool disable_mouse_centered = !model->mouse_centered;
     if (bongo_cat_pref_toggle(context, "mouse-centered", tr(app,
@@ -251,7 +250,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         BongoCatError reload_error = {0};
         bool reloaded = !app->loaded_model[0] ||
             bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
-                model->render_quality_percent) ||
+                app->settings.app.low_memory_mode ? SDL_min(model->render_quality_percent, 10.0f) : model->render_quality_percent) ||
             bongo_cat_app_reload_model_with_error(app, &reload_error);
         if (!reloaded) {
             model->render_quality_percent = quality_reload_from;
@@ -453,6 +452,7 @@ static void page_general(BongoCatApp *app, struct nk_context *context) {
         }
     }
     bongo_cat_preferences_render_backend_row(app, options, context);
+    bongo_cat_preferences_low_memory_row(app, options, context);
     bongo_cat_preferences_large_render_row(app, options, context);
     section_gap(context, 7);
     bongo_cat_pref_section_icon(context, tr(app,

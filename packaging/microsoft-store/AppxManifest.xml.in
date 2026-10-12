@@ -13,7 +13,7 @@
     ProcessorArchitecture="@PROCESSOR_ARCHITECTURE@" />
 
   <Properties>
-    <DisplayName>BongoCat</DisplayName>
+    <DisplayName>BongoCat-X</DisplayName>
     <PublisherDisplayName>vladelaina</PublisherDisplayName>
     <Description>A Live2D desktop pet that reacts to keyboard and mouse input.</Description>
     <Logo>Assets\StoreLogo.png</Logo>
@@ -45,7 +45,7 @@
       Executable="BongoCat.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="BongoCat"
+        DisplayName="BongoCat-X"
         Description="A Live2D desktop pet that reacts to keyboard and mouse input."
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -58,7 +58,7 @@
           <desktop7:Shortcut
             File="$(Desktop)\BongoCat.lnk"
             Icon="BongoCat.exe"
-            Description="BongoCat desktop pet" />
+            Description="BongoCat-X desktop pet" />
         </desktop7:Extension>
       </Extensions>
     </Application>

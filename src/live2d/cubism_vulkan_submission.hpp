@@ -1,9 +1,11 @@
 #pragma once
 #include <vulkan/vulkan.h>
 namespace bongo_cat {
-void vulkan_submit_initialize(VkDevice device, VkQueue queue, VkCommandPool pool);
+void vulkan_submit_initialize(VkDevice device, VkQueue queue, VkCommandPool pool, bool retain_pipeline_cache = true);
 void vulkan_submit_release();
 void vulkan_submit_cancel();
+void vulkan_draw_wait();
+void vulkan_submit_wait();
 void vulkan_upload_batch_begin();
 void vulkan_upload_budget(VkDeviceSize bytes);
 VkCommandBuffer vulkan_upload_begin();

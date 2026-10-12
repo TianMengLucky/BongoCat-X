@@ -12,12 +12,15 @@ mod native_vulkan;
 mod parameters;
 mod renderer;
 mod runtime;
+mod low_memory;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_pipeline;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_recording;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_resources;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+mod vulkan_commands;
 use abi::*;
 use std::sync::atomic::{AtomicPtr, Ordering};
 // The pinned upstream UUID is repr(transparent) over u32 but has no accessor.

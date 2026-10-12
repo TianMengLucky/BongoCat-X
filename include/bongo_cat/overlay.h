@@ -29,6 +29,7 @@ bool bongo_cat_overlay_effect(BongoCatOverlay *overlay, const char *path);
 bool bongo_cat_overlay_hand_active(const BongoCatOverlay *overlay, bool right);
 bool bongo_cat_overlay_mver_pointer_enabled(const BongoCatOverlay *overlay);
 bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *overlay);
+void bongo_cat_overlay_set_mouse_range(BongoCatOverlay *overlay, float x_scale, float y_scale);
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *overlay,
     float x_ratio, float y_ratio, bool left, bool right, bool side);
 void bongo_cat_overlay_set_vertical_flip(BongoCatOverlay *overlay, bool flipped);

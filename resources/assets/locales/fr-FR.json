@@ -50,6 +50,9 @@
           "verticalFlip": "Suspendre la tête en bas",
           "mouseVerticalFlip": "Inverser la souris verticalement",
           "mouseMirror": "Inverser la souris horizontalement",
+          "customMouseRange": "Plage de suivi de la souris",
+          "mouseRangeX": "Plage horizontale (%)",
+          "mouseRangeY": "Plage verticale (%)",
           "mouseCentered": "Désactiver le centrage de la souris sur le compagnon",
           "ignoreMouse": "Ignorer les événements de souris",
           "forceMouseInput": "Forcer l'entrée souris",
@@ -80,6 +83,7 @@
           "renderQuality": "Essayez différents niveaux pour trouver le meilleur équilibre visuel et économiser de la mémoire.",
           "hoverRequires": "Activez les options [Passage des clics] et [Toujours au premier plan] ci-dessus.",
           "hoverUnavailable": "Le masquage au survol est indisponible dans cet environnement de bureau.",
+          "customMouseRange": "100% conserve la plage initiale. Augmenter étend la patte et la souris dessinées de Mver. Live2D respecte les limites du modèle. Le regard et la position de la fenêtre restent inchangés.",
           "gamepadFourHands": "Affiche en permanence deux mains supplémentaires en mode manette. Le rendu dépend du modèle",
           "forceMouseInput": "Anime le modèle avec le mouvement brut du périphérique afin de suivre la souris même si le jeu masque le curseur",
           "passThrough": "Désactivation possible aussi par clic droit sur l’icône de la zone de notification",
@@ -97,6 +101,7 @@
       "general": {
         "title": "Général",
         "labels": {
+          "lowMemoryMode": "Mode mémoire réduite",
           "largeRenderOptimization": "Optimisation des rendus volumineux",
           "appSettings": "Application",
           "launchOnStartup": "Lancer au démarrage",
@@ -123,6 +128,7 @@
           "darkMode": "Sombre"
         },
         "hints": {
+          "lowMemoryMode": "Limite la qualité des textures à 10%, leurs côtés à 512 pixels et les masques Live2D à 256 pixels. Suspend les grandes optimisations de rendu et recharge le moteur. La désactivation restaure la qualité enregistrée. La mémoire dépend du modèle et du pilote.",
           "largeRenderOptimization": "Choisissez les optimisations prises en charge par le moteur actuel. Les demandes non prises en charge restent indisponibles. Peut utiliser plus de mémoire ; les modifications rechargent le moteur et le modèle.",
           "largeRenderUnavailable": "Le moteur du modèle actuel ne propose aucune de ces optimisations ; le rendu reste inchangé.",
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",
@@ -138,7 +144,7 @@
           "portableModeDisabled": "L'emplacement système des données sera rétabli après un redémarrage",
           "portableModeFailed": "Impossible de modifier le réglage du mode portable",
           "inputMonitoringPermission": "Redémarrez après l'autorisation.",
-          "inputMonitoringPermissionGuide": "La surveillance des entrées permet à BongoCat de voir les touches pressées dans d'autres applications ; la souris continue de fonctionner sans elle. BongoCat construit l'écoute à son démarrage, un changement d'autorisation demande donc un redémarrage.\n\nÉtapes :\n1. Ouvrez Réglages Système → Confidentialité et sécurité → Surveillance de l'entrée.\n2. Activez l'entrée BongoCat déjà présente dans la liste ; ne supprimez aucune entrée.\n3. Si BongoCat n'est pas listé, cliquez sur \"+\" et ajoutez la copie que vous exécutez (vérifiez son emplacement).\n4. Quittez complètement BongoCat puis relancez-le pour qu'il reconstruise l'écoute.\n\nSi le clavier reste sans réponse, vous pouvez supprimer puis rajouter vous-même l'entrée BongoCat.",
+          "inputMonitoringPermissionGuide": "La surveillance des entrées permet à BongoCat-X de voir les touches pressées dans d'autres applications ; la souris continue de fonctionner sans elle. BongoCat-X construit l'écoute à son démarrage, un changement d'autorisation demande donc un redémarrage.\n\nÉtapes :\n1. Ouvrez Réglages Système → Confidentialité et sécurité → Surveillance de l'entrée.\n2. Activez l'entrée BongoCat-X déjà présente dans la liste ; ne supprimez aucune entrée.\n3. Si BongoCat-X n'est pas listé, cliquez sur \"+\" et ajoutez la copie que vous exécutez (vérifiez son emplacement).\n4. Quittez complètement BongoCat-X puis relancez-le pour qu'il reconstruise l'écoute.\n\nSi le clavier reste sans réponse, vous pouvez supprimer puis rajouter vous-même l'entrée BongoCat.",
           "administratorPermission": "Exécuter l'application en tant qu'administrateur permet de capturer plus fiablement certaines touches système et certains événements d'entrée.",
           "administratorPermissionGuide": "Pour capturer plus fiablement certaines touches système et certains événements d'entrée, il est recommandé d'exécuter l'application en tant qu'administrateur.\n\nProcédure :\n1. Quittez d'abord l'application.\n2. Trouvez le fichier exe ou son raccourci dans l'Explorateur de fichiers.\n3. Choisissez le mode de lancement :\n   - Une fois : faites un clic droit et choisissez \"Exécuter en tant qu'administrateur\".\n   - Toujours : clic droit > Propriétés > onglet Compatibilité > cochez \"Exécuter ce programme en tant qu'administrateur\" > OK."
         },
@@ -299,9 +305,9 @@
       "reload": "Reload",
       "qrFailed": "QR code unavailable. Click to retry.",
       "contributorsTitle": "Open source & community contributions",
-      "contributorsText": "Every step of BongoCat comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
+      "contributorsText": "Every step of BongoCat-X comes from the power of open source. Thank you to all community contributors for making desktop companionship freer and simpler.",
       "joinTitle": "Want to appear in the contributors list?",
-      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat better.",
+      "joinText": "Whether you contribute code, improve documentation, report bugs or translate, every contribution makes BongoCat-X better.",
       "code": "Code",
       "docs": "Documentation",
       "bugs": "Bug reports",
@@ -317,7 +323,7 @@
     "removeDesktopPet": "Fermer cette mascotte de bureau",
     "modelLoadFailed": "Impossible d'afficher ce modèle",
     "noBehaviors": "Aucun élément",
-    "preferencesWindowTitle": "BongoCat - Settings",
+    "preferencesWindowTitle": "BongoCat-X - Settings",
     "startup": {
       "failed": "Impossible de démarrer BongoCat.",
       "detail": "Consultez le journal de diagnostic pour les détails techniques.",
@@ -326,7 +332,7 @@
     "support": {
       "title": "À propos",
       "website": "Site web: bongocat.pet",
-      "heroText": "Merci pour votre soutien. Chaque utilisation et chaque partage aide BongoCat à continuer de grandir.",
+      "heroText": "Merci pour votre soutien. Chaque utilisation et chaque partage aide BongoCat-X à continuer de grandir.",
       "version": "Version de l'application",
       "checkUpdate": "Rechercher des mises à jour",
       "feedback": "Commentaires",
@@ -341,7 +347,7 @@
       "openStore": "Ouvrir Microsoft Store",
       "viewReleases": "Voir les versions",
       "openUpdateFailed": "Impossible d'ouvrir la page de mise à jour",
-      "refactorDeveloper": "Développeur qui a réécrit BongoCat en C et qui en est aussi le mainteneur actuel",
+      "refactorDeveloper": "Développeur qui a réécrit BongoCat-X en C et qui en est aussi le mainteneur actuel",
       "community": "Communauté",
       "qqGroup": "Groupe QQ",
       "coffee": "Offrir un café au développeur ?",

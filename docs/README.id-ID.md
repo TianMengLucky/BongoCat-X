@@ -61,7 +61,7 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -440,3 +440,9 @@ Input evdev eksperimental di Linux Wayland diaktifkan dengan `BONGOCAT_ENABLE_EV
 Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG, JPEG, WebP, BMP, atau GIF (bingkai pertama). Gambar memenuhi jendela di tengah dengan rasio aspek tetap; latar gambar dan latar warna solid saling menonaktifkan. Salinan disimpan di direktori data aplikasi sehingga pemindahan berkas asli tidak memengaruhinya. Batas: 64 MB dan 16 megapiksel. Mendukung OpenGL, Vulkan, dan Metal.
 
 Live2D otomatis menggunakan kembali buffer geometri dan status render berulang. Streaming OpenGL, unggahan berkelompok dan cache pipeline Vulkan, slot buffer bersama Metal, serta mask native adaptif tidak memerlukan sakelar tambahan. Kinerja dan perilaku platform masih perlu diukur.
+
+Pengaturan → Aplikasi → Mode Memori Rendah nonaktif secara default. Mode ini membatasi kualitas tekstur ke 10%, sisi ke 512 piksel dan masker Live2D ke 256 piksel, menunda optimasi render besar dan memuat ulang renderer. Menonaktifkan memulihkan kualitas tersimpan. 50MB adalah target, bergantung pada model dan driver.
+
+Pengaturan → Pet → Rentang mouse: horizontal/vertikal 25–400%, default nonaktif; 100% mempertahankan semula. Kaki Mver yang digambar bergerak lebih jauh; Live2D mempertahankan batas model. Pandangan dan posisi jendela tetap. Mode memori rendah menonaktifkan MSAA dan mengurangi shader dan pipeline yang tidak digunakan.
+
+Di Windows, pengaturan hemat memori menggunakan perenderan perangkat lunak SDL bertahap dengan latar buram untuk OpenGL/Vulkan. Ukuran font, DPI layar dan antialiasing dipertahankan. Atlas menyimpan masker A8 dan hanya mengonversi glif yang digambar. OpenGL di platform lain tetap memakai konteks pet.

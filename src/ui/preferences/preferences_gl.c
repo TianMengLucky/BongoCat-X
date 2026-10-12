@@ -23,10 +23,22 @@ static bool fail(BongoCatPreferences *value, const char *message) {
     return false;
 }
 
+bool bongo_cat_preferences_gl_make_current(BongoCatPreferences *value) {
+    return value && value->window && (SDL_GetBooleanProperty(SDL_GetWindowProperties(value->window),
+        "BongoCat.SoftwareUI", false) || SDL_GL_MakeCurrent(value->window, value->gl_context));
+}
 bool bongo_cat_preferences_gl_create(BongoCatPreferences *value) {
     if (!value || !value->app || !value->window || !value->app->window)
         return false;
+    if (SDL_GetBooleanProperty(SDL_GetWindowProperties(value->window), "BongoCat.SoftwareUI", false)) return true;
     bool share = value->app->gl_context != NULL;
+    if (share && value->app->settings.app.low_memory_mode &&
+        SDL_GL_MakeCurrent(value->window, value->app->gl_context)) {
+        value->gl_context = value->app->gl_context;
+        value->owns_gl_context = false;
+        return true;
+    }
+    SDL_ClearError();
     if (share && !SDL_GL_MakeCurrent(value->app->window, value->app->gl_context))
         return fail(value, SDL_GetError());
     if (!SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, share ? 1 : 0))

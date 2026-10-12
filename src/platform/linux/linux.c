@@ -317,7 +317,7 @@ BongoCatResult bongo_cat_platform_set_autostart(bool enabled, bool administrator
     }
     FILE *file = fopen(path, "wb");
     if (!file) return BONGO_CAT_ERROR_IO;
-    bool written = fprintf(file, "[Desktop Entry]\nType=Application\nName=BongoCat\n"
+    bool written = fprintf(file, "[Desktop Entry]\nType=Application\nName=BongoCat-X\n"
         "Exec=\"%s\" --autostart\nTerminal=false\nX-GNOME-Autostart-enabled=true\n", executable) > 0;
     if (fclose(file) != 0) written = false;
     if (written) return BONGO_CAT_OK;

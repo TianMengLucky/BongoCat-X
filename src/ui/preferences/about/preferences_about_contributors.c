@@ -1,3 +1,4 @@
+#include "ui_software.h"
 #include "preferences_state.h"
 #include "preferences_about_internal.h"
 #include <SDL3/SDL_opengl.h>
@@ -14,7 +15,7 @@ static void contributors_load(BongoCatPreferences *value) {
     bongo_cat_about_refresh(value);
     if (s->contributors && !s->portraits_loaded) {
         if (!s->portraits_next) {
-            glDeleteTextures(BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
+            bongo_cat_ui_texture_delete(&value->ui, BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
             memset(s->portraits, 0, sizeof(s->portraits));
         }
         /* Bound GL work per frame, including the maximum-size contributor list. */
@@ -22,14 +23,8 @@ static void contributors_load(BongoCatPreferences *value) {
         for (int i = s->portraits_next; i < end; i++) {
             unsigned char *pixels = s->contributors->people[i].pixels;
             if (!pixels) continue;
-            glGenTextures(1, &s->portraits[i]);
-            glBindTexture(GL_TEXTURE_2D, s->portraits[i]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BONGO_ABOUT_AVATAR_SIZE,
-                BONGO_ABOUT_AVATAR_SIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+            s->portraits[i] = bongo_cat_ui_texture_upload(&value->ui, pixels,
+                s->contributors->avatar_size, s->contributors->avatar_size, false);
         }
         s->portraits_next = end;
         s->portraits_loaded = end == s->contributors->count;

@@ -81,7 +81,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.group_padding = nk_vec2(0, 0);
     bool title_clicked = false;
     if (nk_group_begin(context, "preferences-sidebar", NK_WINDOW_NO_SCROLLBAR)) {
-    bongo_cat_ui_header(context, "BongoCat",
+    bongo_cat_ui_header(context, "BongoCat-X",
         value->ui.heading_font, value->logo_texture, &title_clicked, !modal, dark, native_chrome);
     if (title_clicked &&
         !SDL_OpenURL("https://github.com/TianMengLucky/BongoCat-X"))

@@ -23,6 +23,7 @@ struct BongoCatOverlay {
     int backdrop_width, backdrop_height;
     char custom_path[BONGO_CAT_PATH_CAP];
     SDL_Surface *native_canvas;
+    bool native_canvas_uploaded;
     int native_geometry[6];
     uint32_t native_color;
     bool native_mirror, native_flip, native_opaque;

@@ -215,6 +215,7 @@ bool NativeModel::load_textures(BongoCatError *error,
     BongoCatModelRuntimeLoadProgress progress, void *userdata,
     int display_width, int display_height, float render_quality_percent) {
     if (!texture_quality_valid(render_quality_percent)) render_quality_percent = 100.0f;
+    if (low_memory_mode_) render_quality_percent = std::min(render_quality_percent, 10.0f);
     render_quality_percent_ = render_quality_percent;
     if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
         return load_textures_native(error, progress, userdata, display_width, display_height);
@@ -237,6 +238,7 @@ bool NativeModel::load_textures(BongoCatError *error,
     }
     GLint texture_limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_limit);
+    if (low_memory_mode_) texture_limit = std::min(texture_limit, 512);
     texture_limit_ = texture_limit;
     TextureProgressContext texture_context = {progress, userdata, .50f,
         .45f / (float)(count > 0 ? count : 1)};

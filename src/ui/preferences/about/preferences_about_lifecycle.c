@@ -1,3 +1,4 @@
+#include "ui_software.h"
 #include "preferences_state.h"
 #include "preferences_about_internal.h"
 #include <SDL3/SDL_opengl.h>
@@ -10,13 +11,13 @@ void bongo_cat_about_ensure_event(BongoCatPreferences *value) {
 }
 
 static bool same_contributors(const BongoCatAboutFeed *a, const BongoCatAboutFeed *b) {
-    if (!a || !b || a->count != b->count) return false;
+    if (!a || !b || a->count != b->count || a->avatar_size != b->avatar_size) return false;
     for (int i = 0; i < a->count; i++) {
         const BongoCatAboutContributor *left = &a->people[i], *right = &b->people[i];
         if (strcmp(left->name, right->name) || strcmp(left->profile, right->profile) ||
             (!left->pixels != !right->pixels) ||
             (left->pixels && memcmp(left->pixels, right->pixels,
-                BONGO_ABOUT_AVATAR_SIZE * BONGO_ABOUT_AVATAR_SIZE * 4))) return false;
+                (size_t)a->avatar_size * a->avatar_size * 4))) return false;
     }
     return true;
 }
@@ -29,9 +30,9 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
     for (int i = 0; i < (int)(sizeof(slots) / sizeof(slots[0])); i++) {
         BongoCatAboutRequest *job = *slots[i];
         if (!job || !SDL_GetAtomicInt(&job->done)) continue;
-        bool refresh = value->visible && job->refresh_needed &&
+        bool refresh = value->visible && value->page == 4 && job->refresh_needed &&
             !SDL_GetAtomicInt(&job->cancel);
-        if (value->visible && job->status == 200 && !SDL_GetAtomicInt(&job->cancel)) {
+        if (value->visible && value->page == 4 && job->status == 200 && !SDL_GetAtomicInt(&job->cancel)) {
             if (value->page == 4) value->render_dirty = true;
             if (!same_contributors(s->contributors, job->feed)) {
                 bongo_cat_about_feed_free(s->contributors);
@@ -47,7 +48,7 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
             *slots[i] = bongo_cat_about_request(s->event_type,
                 SDL_GetWindowID(value->window), value->app->cache_root, true);
     }
-    if (!value->visible) return;
+    if (!value->visible || value->page != 4) return;
     bongo_cat_about_ensure_event(value);
     if (!s->contributors_attempted && !s->contributors_request) {
         s->contributors_attempted = true;
@@ -68,7 +69,7 @@ bool bongo_cat_about_event(BongoCatPreferences *value, const SDL_Event *event) {
 void bongo_cat_about_assets_clear(BongoCatPreferences *value, bool gl_ready) {
     BongoCatAboutState *s = &value->about;
     if (gl_ready) {
-        glDeleteTextures(BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
+        bongo_cat_ui_texture_delete(&value->ui, BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
     }
     memset(s->portraits, 0, sizeof(s->portraits));
     s->portraits_loaded = false;

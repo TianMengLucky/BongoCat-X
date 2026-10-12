@@ -44,5 +44,6 @@ bool bongo_cat_overlay_set_custom_background(BongoCatOverlay *value,
     snprintf(value->custom_path, sizeof(value->custom_path), "%s", path);
     SDL_DestroySurface(value->native_canvas);
     value->native_canvas = NULL;
+    value->native_canvas_uploaded = false;
     return true;
 }

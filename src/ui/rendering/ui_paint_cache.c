@@ -1,3 +1,4 @@
+#include "ui_software.h"
 #include "ui_paint_cache.h"
 
 #include <SDL3/SDL_opengl.h>
@@ -21,13 +22,15 @@ static BongoCatUIPaintTexture textures[PAINT_CACHE_COUNT];
 static uint64_t use_counter;
 
 static void release_texture(BongoCatUIPaintTexture *item) {
-    if (item->texture) glDeleteTextures(1, &item->texture);
+    if (item->texture) bongo_cat_ui_texture_delete(item->backend, 1, &item->texture);
     memset(item, 0, sizeof(*item));
 }
 
 static bool reserve_bytes(BongoCatUIBackend *backend,
     BongoCatUIPaintTexture *keep, size_t required) {
-    if (required > PAINT_CACHE_BYTE_LIMIT) return false;
+    size_t limit = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) ?
+        512u * 1024u : PAINT_CACHE_BYTE_LIMIT;
+    if (required > limit) return false;
     for (;;) {
         size_t used = 0;
         BongoCatUIPaintTexture *oldest = NULL;
@@ -40,8 +43,8 @@ static bool reserve_bytes(BongoCatUIBackend *backend,
                 item->used < backend->paint_frame_marker;
             if (stale && (!oldest || item->used < oldest->used)) oldest = item;
         }
-        if (used <= PAINT_CACHE_BYTE_LIMIT &&
-            required <= PAINT_CACHE_BYTE_LIMIT - used) return true;
+        if (used <= limit &&
+            required <= limit - used) return true;
         if (!oldest) return false;
         release_texture(oldest);
     }
@@ -68,6 +71,16 @@ BongoCatUIPaintTexture *bongo_cat_ui_paint_cache_get(
     release_texture(item);
     item->backend = backend;
     item->key = *key;
+    /* Software effects always occupy RGBA storage. Check/reserve the bounded
+       cache before callers allocate and rasterize a texture we cannot keep. */
+    if (backend->software_renderer && SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
+            "BongoCat.LowMemoryMode", false)) {
+        if (key->width <= 0 || key->height <= 0 ||
+            (size_t)key->width > SIZE_MAX/4/(size_t)key->height ||
+            !reserve_bytes(backend,item,(size_t)key->width*key->height*4)) {
+            memset(item,0,sizeof(*item)); return NULL;
+        }
+    }
     item->used = ++use_counter;
     return item;
 }
@@ -81,7 +94,7 @@ bool bongo_cat_ui_paint_cache_upload(BongoCatUIPaintTexture *item,
     const unsigned char *pixels, bool single_channel) {
     if (!item || !pixels || item->key.width <= 0 || item->key.height <= 0)
         return false;
-    size_t channels = single_channel ? 1u : 4u;
+    size_t channels = single_channel && !item->backend->software_renderer ? 1u : 4u;
     if ((size_t)item->key.width > SIZE_MAX / (size_t)item->key.height ||
         (size_t)item->key.width * (size_t)item->key.height >
             SIZE_MAX / channels) return false;
@@ -92,34 +105,8 @@ bool bongo_cat_ui_paint_cache_upload(BongoCatUIPaintTexture *item,
             (unsigned long long)bytes);
         return false;
     }
-    bongo_cat_gl_clear_errors();
-    glGenTextures(1, &item->texture);
-    glBindTexture(GL_TEXTURE_2D, item->texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    if (single_channel) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-    }
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, single_channel ? GL_R8 : GL_RGBA8,
-        item->key.width, item->key.height, 0,
-        single_channel ? GL_RED : GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    GLenum upload_error = glGetError();
-    if (item->texture && upload_error == GL_NO_ERROR) {
-        item->bytes = bytes;
-        return true;
-    }
-    SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-        "UI paint texture upload failed for %dx%d (0x%x)",
-        item->key.width, item->key.height, (unsigned)upload_error);
-    if (item->texture) glDeleteTextures(1, &item->texture);
-    item->texture = 0;
+    item->texture = bongo_cat_ui_texture_upload(item->backend, pixels, item->key.width, item->key.height, single_channel);
+    if (item->texture) { item->bytes = bytes; return true; }
     return false;
 }
 

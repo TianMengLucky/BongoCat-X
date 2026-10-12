@@ -42,7 +42,7 @@ Escanea el código QR con QQ o busca el grupo **211957388** para unirte a la com
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Descarga la última versión desde [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -326,3 +326,9 @@ La entrada evdev experimental en Linux Wayland se activa con `BONGOCAT_ENABLE_EV
 Preferencias → Preferencias → Ventana permite elegir una imagen de fondo personalizada: PNG, JPEG, WebP, BMP o GIF (primer fotograma). La imagen llena la ventana centrada, conservando sus proporciones, y es incompatible con el fondo de color sólido. Se guarda en el directorio de datos de la aplicación, por lo que mover el original no afecta al fondo. Máximo: 64 MB y 16 megapíxeles. Compatible con OpenGL, Vulkan y Metal.
 
 Live2D reutiliza automáticamente los búferes de geometría y estados de renderizado repetidos. Las cargas dinámicas de OpenGL, los lotes y la caché de Vulkan, los búferes compartidos de Metal y las máscaras nativas adaptativas no requieren otro interruptor. El rendimiento y el comportamiento por plataforma están pendientes de medición.
+
+Ajustes → Aplicación → Modo de memoria reducida está desactivado por defecto. Limita la calidad al 10%, los lados de texturas a 512 píxeles y las máscaras Live2D a 256, suspende grandes optimizaciones y recarga el renderizador. Desactivar restaura la calidad guardada. 50MB es un objetivo; depende del modelo y controlador.
+
+Ajustes → Mascota → Rango de seguimiento: horizontal/vertical 25–400%, desactivado por defecto; 100% conserva el rango. Las patas Mver dibujadas pueden moverse más; Live2D mantiene sus límites. Mirada y ventana no cambian. El modo de memoria reducida desactiva MSAA y reduce shaders y pipelines sin uso.
+
+En Windows, los ajustes de memoria reducida usan renderizado SDL por software en bloques y fondo opaco con OpenGL/Vulkan. Se conservan el tamaño real, DPI y antialiasing de las fuentes. El atlas almacena máscaras A8 y convierte solo el glifo dibujado. OpenGL en otras plataformas sigue reutilizando el contexto de la mascota.

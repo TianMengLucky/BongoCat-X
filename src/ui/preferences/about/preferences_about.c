@@ -125,7 +125,7 @@ static void star_button(BongoCatPreferences *value,
 static void hero_title(BongoCatPreferences *value, struct nk_context *context,
     struct nk_command_buffer *canvas, struct nk_rect bounds,
     BongoCatUIPalette p) {
-    const char *title = "BongoCat";
+    const char *title = "BongoCat-X";
     const char *by = tr(value, "native.support.by", "by ");
     const char *developer = "vladelaina";
     float gap = 8, title_width = width(value->ui.hero_font, title);

@@ -12,7 +12,7 @@ AppPublisher=vladelaina
 AppPublisherURL=@PROJECT_HOMEPAGE_URL@
 AppSupportURL=@PROJECT_HOMEPAGE_URL@
 DefaultDirName={code:GetInstallDir}
-DefaultGroupName=BongoCat
+DefaultGroupName=BongoCat-X
 PrivilegesRequired=lowest
 DisableProgramGroupPage=yes
 DisableWelcomePage=yes
@@ -37,12 +37,12 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userdesktop}\BongoCat"; Filename: "{app}\BongoCat.exe"; Parameters: "--nearby-root=""{userdesktop}"""; WorkingDir: "{userdesktop}"
-Name: "{userprograms}\BongoCat\BongoCat"; Filename: "{app}\BongoCat.exe"; Parameters: "--nearby-root=""{userprograms}\BongoCat"""; WorkingDir: "{userprograms}\BongoCat"
+Name: "{userdesktop}\BongoCat-X"; Filename: "{app}\BongoCat.exe"; Parameters: "--nearby-root=""{userdesktop}"""; WorkingDir: "{userdesktop}"
+Name: "{userprograms}\BongoCat\BongoCat-X"; Filename: "{app}\BongoCat.exe"; Parameters: "--nearby-root=""{userprograms}\BongoCat"""; WorkingDir: "{userprograms}\BongoCat"
 Name: "{userprograms}\BongoCat\Uninstall"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\BongoCat.exe"; Description: "Launch BongoCat"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\BongoCat.exe"; Description: "Launch BongoCat-X"; Flags: nowait postinstall skipifsilent
 
 [Code]
 #include "install-lifecycle.iss"

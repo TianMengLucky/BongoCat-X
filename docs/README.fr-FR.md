@@ -58,7 +58,7 @@ Scannez le QR code avec QQ ou recherchez le groupe **211957388** pour rejoindre 
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.2))
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Téléchargez la dernière version depuis [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -462,3 +462,9 @@ L’entrée evdev expérimentale sous Linux Wayland s’active avec `BONGOCAT_EN
 Préférences → Préférences → Fenêtre permet de choisir une image de fond personnalisée : PNG, JPEG, WebP, BMP ou GIF (première image). Elle remplit la fenêtre centrée, en conservant ses proportions, et exclut le fond uni. Elle est copiée dans le dossier de données de l’application et reste disponible si l’original est déplacé. Limites : 64 Mo et 16 mégapixels. Compatible avec OpenGL, Vulkan et Metal.
 
 Live2D réutilise automatiquement les tampons de géométrie et les états de rendu répétés. Les transferts OpenGL, les lots et le cache Vulkan, les tampons partagés Metal et les masques natifs adaptatifs ne nécessitent aucun interrupteur supplémentaire. Les performances et le comportement par plateforme restent à mesurer.
+
+Paramètres → Application → Mode mémoire réduite est désactivé par défaut. Il limite la qualité à 10%, les textures à 512 pixels par côté et les masques Live2D à 256, suspend les grandes optimisations et recharge le moteur. La désactivation restaure la qualité enregistrée. 50MB est un objectif dépendant du modèle et du pilote.
+
+Paramètres → Animal → Plage de suivi : horizontal/vertical 25–400%, désactivée par défaut, 100% inchangé. Les pattes Mver dessinées vont plus loin ; Live2D garde les limites du modèle. Regard et fenêtre inchangés. Le mode mémoire réduite désactive MSAA et réduit les shaders et pipelines inutilisés.
+
+Sous Windows, les paramètres en basse mémoire utilisent un rendu logiciel SDL par blocs et un fond opaque avec OpenGL/Vulkan. Taille réelle, DPI et anticrénelage des polices sont conservés. L’atlas stocke des masques A8 et convertit uniquement le glyphe dessiné. Sur les autres plateformes, OpenGL réutilise le contexte du compagnon.

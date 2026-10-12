@@ -79,7 +79,7 @@ BongoCatWindowsSnapshot *bongo_cat_windows_snapshot_create(SDL_Window *source,
     /* Bound the temporary desktop surface as well as the captured texture. */
     if (width <= 0 || height <= 0 || (size_t)width * height > SNAPSHOT_MAX_PIXELS ||
         !bongo_cat_windows_snapshot_capture(s)) goto failed;
-    s->window = SDL_CreateWindow("BongoCat interaction preview", width, height,
+    s->window = SDL_CreateWindow("BongoCat-X interaction preview", width, height,
         SDL_WINDOW_HIDDEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_TRANSPARENT |
         SDL_WINDOW_UTILITY | SDL_WINDOW_NOT_FOCUSABLE);
     if (!s->window) goto failed;

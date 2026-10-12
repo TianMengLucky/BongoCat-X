@@ -26,10 +26,13 @@ if(BONGO_CAT_FETCH_DEPS)
   set(SDL_TESTS OFF CACHE BOOL "" FORCE)
   set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
-  set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+  set(SDL_RENDER ON CACHE BOOL "" FORCE)
+  foreach(renderer IN ITEMS D3D D3D11 D3D12 GPU METAL VULKAN)
+    set(SDL_RENDER_${renderer} OFF CACHE BOOL "" FORCE)
+  endforeach()
   set(SDL_GPU OFF CACHE BOOL "" FORCE)
   # Keep SDL's window integration for all supported graphics backends;
-  # rendering itself stays in the RHI, not SDL_Renderer or SDL_GPU.
+  # Pet rendering stays in the RHI; native low-memory settings use SDL software.
   set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
   set(SDL_VULKAN ${BONGO_CAT_PLATFORM_VULKAN} CACHE BOOL "" FORCE)
   set(SDL_METAL ${APPLE} CACHE BOOL "" FORCE)

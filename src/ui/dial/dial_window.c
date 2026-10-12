@@ -87,7 +87,7 @@ static bool create(Dial *d) {
         /* A desktop pet may be nonactivating or fully transparent. A native
            child popup inherits its focus/stacking restrictions on Win32.
            An independent SDL utility window owns its focus and GL surface. */
-        d->window = SDL_CreateWindow("BongoCat - Menu",size,size,flags |
+        d->window = SDL_CreateWindow("BongoCat-X - Menu",size,size,flags |
             SDL_WINDOW_BORDERLESS | SDL_WINDOW_UTILITY | SDL_WINDOW_ALWAYS_ON_TOP);
         if (d->window) {
             SDL_GetGlobalMouseState(&x,&y);

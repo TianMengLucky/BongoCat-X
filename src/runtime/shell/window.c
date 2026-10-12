@@ -29,6 +29,8 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
     }
     /* The dispatcher falls back to the OpenGL compatibility ladder when the
        selected backend is unavailable or fails to initialize. */
+    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode",
+        app->settings.app.low_memory_mode);
     BongoCatRhi choice = {0};
     choice.backend = resolve_rhi_backend(app->settings.app.render_backend);
     if (!bongo_cat_rhi_live2d_supported(&choice)) choice.backend = BONGO_CAT_RHI_OPENGL;

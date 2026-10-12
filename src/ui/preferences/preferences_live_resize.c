@@ -1,3 +1,4 @@
+#include "preferences_gl.h"
 #include "preferences_state.h"
 #include "ui_present.h"
 
@@ -34,7 +35,7 @@ static void render_live(BongoCatPreferences *value) {
 
 static bool capture_live(BongoCatPreferences *value) {
     if (!value || value->app->loading_model[0] ||
-        !SDL_GL_MakeCurrent(value->window, value->gl_context))
+        !bongo_cat_preferences_gl_make_current(value))
         return false;
     bool result = bongo_cat_ui_resize_cache_capture(&value->ui);
     bongo_cat_preferences_gl_restore_main(value);
@@ -43,7 +44,7 @@ static bool capture_live(BongoCatPreferences *value) {
 
 static bool present_live(BongoCatPreferences *value) {
     if (!value || value->app->loading_model[0] ||
-        !SDL_GL_MakeCurrent(value->window, value->gl_context))
+        !bongo_cat_preferences_gl_make_current(value))
         return false;
     bool result = bongo_cat_ui_resize_cache_present(&value->ui) &&
         bongo_cat_ui_present(value->window);
@@ -113,7 +114,7 @@ static LRESULT CALLBACK live_resize_proc(HWND window, UINT message,
         pump_pet(value);
         value->live_resize_modal_ready = false;
         if (!value->app->loading_model[0] &&
-            SDL_GL_MakeCurrent(value->window, value->gl_context)) {
+            bongo_cat_preferences_gl_make_current(value)) {
             bongo_cat_ui_resize_cache_destroy(&value->ui);
             bongo_cat_preferences_gl_restore_main(value);
         }

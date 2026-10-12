@@ -172,6 +172,9 @@ static void reload_secondary_settings(BongoCatApp *app) {
             app->settings.model.dynamic_texture_resolution ||
         settings.model.render_quality_percent !=
             app->settings.model.render_quality_percent ||
+        settings.model.custom_mouse_range != app->settings.model.custom_mouse_range ||
+        settings.model.mouse_range_x_percent != app->settings.model.mouse_range_x_percent ||
+        settings.model.mouse_range_y_percent != app->settings.model.mouse_range_y_percent ||
         settings.model.max_fps != app->settings.model.max_fps;
     bool texture_resolution_changed =
         settings.model.dynamic_texture_resolution !=
@@ -201,9 +204,15 @@ static void reload_secondary_settings(BongoCatApp *app) {
             app->settings.window.random_motion_interval_seconds ||
         settings.window.corner_radius_percent !=
             app->settings.window.corner_radius_percent;
-    bool pointer_orientation_changed = settings.model.vertical_flip !=
+    bool pointer_orientation_changed =
+        settings.model.custom_mouse_range != app->settings.model.custom_mouse_range ||
+        settings.model.mouse_range_x_percent != app->settings.model.mouse_range_x_percent ||
+        settings.model.mouse_range_y_percent != app->settings.model.mouse_range_y_percent ||
+        settings.model.vertical_flip !=
         app->settings.model.vertical_flip ||
         settings.model.mouse_vertical_flip != app->settings.model.mouse_vertical_flip;
+    if (settings.app.low_memory_mode != app->settings.app.low_memory_mode)
+        app->render_backend_swap_pending = true;
     app->settings = settings;
     if (pointer_orientation_changed) bongo_cat_app_reset_pointer_tracking(app);
     if (hands_changed) bongo_cat_app_refresh_hands(app);
@@ -212,7 +221,8 @@ static void reload_secondary_settings(BongoCatApp *app) {
         bool reused = settings.model.dynamic_texture_resolution ==
             previous_settings.model.dynamic_texture_resolution &&
             bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
-                settings.model.render_quality_percent);
+                settings.app.low_memory_mode ?
+                    SDL_min(settings.model.render_quality_percent, 10.0f) : settings.model.render_quality_percent);
         if (!reused && !bongo_cat_app_reload_model_with_error(app, &reload_error)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                 "[runtime] Multi-pet texture resolution reload failed: %s",

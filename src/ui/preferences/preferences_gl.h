@@ -7,6 +7,7 @@ typedef struct BongoCatPreferences BongoCatPreferences;
 
 void bongo_cat_preferences_gl_restore_main(BongoCatPreferences *value);
 
+bool bongo_cat_preferences_gl_make_current(BongoCatPreferences *value);
 bool bongo_cat_preferences_gl_create(BongoCatPreferences *value);
 bool bongo_cat_preferences_gl_destroy(BongoCatPreferences *value);
 

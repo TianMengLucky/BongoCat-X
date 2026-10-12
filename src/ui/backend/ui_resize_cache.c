@@ -17,7 +17,7 @@ void bongo_cat_ui_resize_cache_destroy(BongoCatUIBackend *ui) {
 }
 
 bool bongo_cat_ui_resize_cache_capture(BongoCatUIBackend *ui) {
-    if (!ui || !ui->window) return false;
+    if (!ui || !ui->window || ui->software_renderer) return false;
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(ui->window, &width, &height);
     if (width < 1 || height < 1) return false;

@@ -1,5 +1,8 @@
 //! RAII for plugin-owned resources. The host retains ownership of instance/device/queue.
-use crate::abi::RhiInfo;
+use crate::{
+    abi::RhiInfo,
+    vulkan_commands::{CommandSlots, Commands},
+};
 use ash::{vk, vk::Handle};
 use gpu_allocator::{
     vulkan::{Allocation, AllocationCreateDesc, AllocationScheme, Allocator, AllocatorCreateDesc},
@@ -11,6 +14,7 @@ pub struct Gpu {
     pub instance: ash::Instance,
     pub allocator: RefCell<Allocator>,
     pub info: RhiInfo,
+    pub command_slots: RefCell<CommandSlots>,
     _entry: ash::Entry,
 }
 impl Gpu {
@@ -38,16 +42,22 @@ impl Gpu {
             ),
             debug_settings: Default::default(),
             buffer_device_address: false,
-            // Small pets avoid the library's 256/64 MiB default pools. Larger
-            // pools reduce driver allocations for many meshes/textures.
+            // Use the pinned allocator's supported 4 MiB minimum per block.
+            // The optional large-allocation setting keeps its larger pools.
             allocation_sizes: if large_allocation {
                 AllocationSizes::new(64 * 1024 * 1024, 16 * 1024 * 1024)
             } else {
-                AllocationSizes::new(16 * 1024 * 1024, 8 * 1024 * 1024)
+                AllocationSizes::new(4 * 1024 * 1024, 4 * 1024 * 1024)
             },
         })
         .map_err(|e| e.to_string())?;
+        let command_slots = CommandSlots::new(
+            device.clone(),
+            vk::Queue::from_raw(info.vulkan_queue as usize as u64),
+            info.queue_family,
+        )?;
         Ok(Rc::new(Self {
+            command_slots: RefCell::new(command_slots),
             device,
             instance,
             allocator: RefCell::new(allocator),
@@ -168,21 +178,14 @@ impl Gpu {
             .map_err(|e| e.to_string())?;
         Ok(result)
     }
-    pub unsafe fn commands(&self) -> Result<Commands, String> {
-        let begin = crate::host()
-            .begin_commands
-            .ok_or("Missing host command service")?;
-        let raw = begin(self.info.rhi_handle);
-        if raw.is_null() {
-            return Err("Cannot allocate host Vulkan commands".into());
-        }
-        Ok(Commands {
-            raw: vk::CommandBuffer::from_raw(raw as usize as u64),
-            rhi: self.info.rhi_handle,
-            submitted: false,
-        })
+    pub unsafe fn commands(self: &Rc<Self>) -> Result<Commands, String> {
+        Commands::begin(self.clone())
+    }
+    pub unsafe fn wait_commands(&self) -> Result<(), String> {
+        self.command_slots.borrow_mut().wait_all()
     }
 }
+
 pub struct Buffer {
     pub gpu: Rc<Gpu>,
     pub raw: vk::Buffer,
@@ -254,34 +257,4 @@ pub unsafe fn barrier(
         &[],
         &[*b],
     );
-}
-pub struct Commands {
-    pub raw: vk::CommandBuffer,
-    rhi: *const std::ffi::c_void,
-    submitted: bool,
-}
-impl Commands {
-    pub unsafe fn submit(mut self) -> Result<(), String> {
-        self.submitted = true;
-        if crate::host()
-            .submit_commands
-            .ok_or("Missing Vulkan submit service")?(
-            self.rhi, self.raw.as_raw() as usize as *mut _
-        ) {
-            Ok(())
-        } else {
-            Err("Vulkan command submission failed".into())
-        }
-    }
-}
-impl Drop for Commands {
-    fn drop(&mut self) {
-        if !self.submitted {
-            if let Some(submit) = crate::host().submit_commands {
-                unsafe {
-                    submit(self.rhi, self.raw.as_raw() as usize as *mut _);
-                }
-            }
-        }
-    }
 }

@@ -186,7 +186,7 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
 }
 
 static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error) {
-    vk->images = malloc(vk->image_count * sizeof(VkImage));
+    vk->images = calloc(vk->image_count, sizeof(VkImage));
     vk->views = calloc(vk->image_count, sizeof(VkImageView));
     vk->framebuffers = calloc(vk->image_count, sizeof(VkFramebuffer));
     uint32_t queried_count = vk->image_count;
@@ -197,6 +197,8 @@ static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error) {
             "Cannot query the Vulkan swapchain images");
         return false;
     }
+    if (!queried_count || queried_count > vk->image_count ||
+        (vk->layered_target && queried_count != 1)) return false;
     if (vk->layered_target) vk->images[0] = vk->layered_image;
     vk->image_count = queried_count;
     if (!vk->layered_target) {
@@ -210,6 +212,7 @@ static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error) {
                 &vk->present_semaphores[i]) != VK_SUCCESS) return false;
         VkImageViewCreateInfo view = {0};
         view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        if (!vk->images[i]) return false;
         view.image = vk->images[i];
         view.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view.format = vk->format;

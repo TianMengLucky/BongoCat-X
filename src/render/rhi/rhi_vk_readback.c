@@ -132,6 +132,7 @@ bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed)
     if (changed.x < 0 || changed.y < 0 || changed.w <= 0 || changed.h <= 0 ||
         (uint64_t)changed.x + changed.w > vk->extent.width ||
         (uint64_t)changed.y + changed.h > vk->extent.height) return false;
+    BongoCatRhiVkReadback *frame = &vk->readbacks[vk->readback_slot];
     VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
     if (!command) return false;
     VkBufferMemoryBarrier host = {0};
@@ -139,7 +140,7 @@ bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed)
     host.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
     host.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     host.srcQueueFamilyIndex = host.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    host.buffer = vk->readback_buffer; host.size = vk->readback_size;
+    host.buffer = frame->readback_buffer; host.size = frame->readback_size;
     VkImageMemoryBarrier barrier = {0};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = vk->frame_layout;
@@ -157,14 +158,15 @@ bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed)
     region.imageSubresource = (VkImageSubresourceLayers){VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     region.imageOffset = (VkOffset3D){changed.x, changed.y, 0};
     region.imageExtent = (VkExtent3D){(uint32_t)changed.w, (uint32_t)changed.h, 1};
-    vk->vkCmdCopyBufferToImage(command, vk->readback_buffer, vk->current_image,
+    vk->vkCmdCopyBufferToImage(command, frame->readback_buffer, vk->current_image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = 0;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    barrier.newLayout = vk->frame_layout;
+    if (vk->layered_target) barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+        vk->layered_target ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
     return bongo_cat_rhi_vk_submit_commands(vk->owner, command);
 }
 

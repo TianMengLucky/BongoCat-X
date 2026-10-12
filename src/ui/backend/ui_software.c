@@ -116,7 +116,8 @@ static bool quad(const SDL_Vertex *vertices, const nk_draw_index *indices,
         const SDL_Vertex *v = &vertices[indices[i]];
         if (!isfinite(v->position.x) || !isfinite(v->position.y) ||
             !isfinite(v->tex_coord.x) || !isfinite(v->tex_coord.y) ||
-            memcmp(&v->color, &first->color, sizeof(v->color))) return false;
+            v->color.r != first->color.r || v->color.g != first->color.g ||
+            v->color.b != first->color.b || v->color.a != first->color.a) return false;
         left = SDL_min(left, v->position.x); right = SDL_max(right, v->position.x);
         top = SDL_min(top, v->position.y); bottom = SDL_max(bottom, v->position.y);
     }

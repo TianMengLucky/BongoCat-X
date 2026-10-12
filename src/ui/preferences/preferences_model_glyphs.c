@@ -46,11 +46,6 @@ static void add_text(uint32_t *ranges, size_t capacity,
     }
 }
 
-void bongo_cat_preferences_text_glyphs(uint32_t *ranges, size_t capacity, const char *text) {
-    size_t used = 0;
-    while (used + 1 < capacity && ranges[used]) used += 2;
-    add_text(ranges, capacity, &used, text);
-}
 
 static bool text_covered(const uint32_t *ranges, size_t capacity,
     const char *text) {

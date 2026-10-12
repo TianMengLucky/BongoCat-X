@@ -128,7 +128,6 @@
           "renderQuality": "Réduit la résolution des textures pour économiser la mémoire vidéo. Recharge après le réglage ; double-cliquez pour rétablir la valeur par défaut.",
           "hoverRequires": "Masque au survol puis réaffiche au départ du pointeur. Réglez le fondu ; nécessite [Clics traversants] et [Toujours au premier plan].",
           "hoverUnavailable": "Le masquage au survol est indisponible dans cet environnement de bureau.",
-          "keepInScreen": "Lorsque cette option est activée, la fenêtre reste automatiquement dans les limites de l'écran.",
           "customMouseRange": "100% conserve la plage initiale. Augmenter étend la patte et la souris dessinées de Mver. Live2D respecte les limites du modèle. Le regard et la position de la fenêtre restent inchangés.",
           "gamepadFourHands": "Affiche deux mains supplémentaires en mode manette si le modèle les fournit.",
           "multiKeyDisplay": "Mver uniquement : relie les touches maintenues avec + dans une bulle par côté. Les caractères restent lisibles en miroir ; définissez les découpes dans hand-layout.json.",

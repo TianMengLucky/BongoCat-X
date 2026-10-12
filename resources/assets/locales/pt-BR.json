@@ -128,7 +128,6 @@
           "renderQuality": "Reduz a resolução das texturas para economizar memória de vídeo. Recarrega após o ajuste; clique duplo restaura o padrão.",
           "hoverRequires": "Oculta ao passar o ponteiro e mostra ao afastá-lo. Ajuste a transição; requer [Janela Transparente] e [Sempre no Topo].",
           "hoverUnavailable": "Ocultar ao passar o mouse não está disponível no ambiente de desktop atual.",
-          "keepInScreen": "Quando ativado, a janela permanece automaticamente dentro dos limites da tela.",
           "customMouseRange": "100% mantém a faixa original. Aumentar amplia o movimento da pata e do mouse desenhados de Mver. Live2D respeita os limites do modelo. Olhar e posição da janela não mudam.",
           "gamepadFourHands": "Mantém duas mãos extras visíveis no modo controle se o modelo as fornecer.",
           "multiKeyDisplay": "Somente Mver: conecta as teclas pressionadas com + em um balão por lado. Os caracteres continuam legíveis ao espelhar; configure os recortes em hand-layout.json.",

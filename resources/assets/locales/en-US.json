@@ -128,7 +128,6 @@
           "renderQuality": "Lower texture resolution to save video memory. Changes settle before textures reload; double-click restores the default.",
           "hoverRequires": "Hide on hover and reappear when the pointer leaves. Set the fade time; requires [Pass Through] and [Always on Top].",
           "hoverUnavailable": "Hover hiding is unavailable in the current desktop environment.",
-          "keepInScreen": "When enabled, the window automatically stays within the screen boundaries.",
           "customMouseRange": "100% preserves the original range. Increase to extend the drawn Mver hand and mouse. Live2D parameters stay within authored limits. Gaze and window position are unchanged.",
           "gamepadFourHands": "Keep two extra hands visible in gamepad mode, if the model supplies them.",
           "multiKeyDisplay": "Mver only: join held keys with + in one bubble per side. Mirrored characters stay readable; configure crops in hand-layout.json.",

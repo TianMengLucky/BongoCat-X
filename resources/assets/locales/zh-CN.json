@@ -128,7 +128,6 @@
           "renderQuality": "降低纹理分辨率以节省显存；停止调整后再重载纹理，双击恢复默认值。",
           "hoverRequires": "鼠标移入时隐藏，移出后恢复；可设置渐变时长，需要开启[鼠标穿透]和[置顶]。",
           "hoverUnavailable": "当前桌面环境暂不支持鼠标移入隐藏。",
-          "keepInScreen": "启用后，窗口会自动调整位置，防止超出屏幕边界。",
           "customMouseRange": "100% 为原范围，调大可扩大 Mver 绘制猫爪和鼠标的活动范围。Live2D 参数仍受模型作者设定的边界限制。不会改变视线或窗口位置。",
           "gamepadFourHands": "在手柄模式下常驻额外两只手，需要模型提供对应图片。",
           "multiKeyDisplay": "仅支持 Mver：每侧按住的键在同一气泡中用 + 连接，镜像时字符保持可读；裁剪区域可在 hand-layout.json 中配置。",

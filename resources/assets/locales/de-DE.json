@@ -128,7 +128,6 @@
           "renderQuality": "Texturauflösung senken, um Grafikspeicher zu sparen. Nach der Anpassung neu laden; Doppelklick stellt den Standard wieder her.",
           "hoverRequires": "Beim Überfahren ausblenden, danach wieder einblenden. Überblendzeit einstellen; [Klicks durchlassen] und [Immer im Vordergrund] sind nötig.",
           "hoverUnavailable": "Ausblenden bei Mausberührung ist in dieser Desktop-Umgebung nicht verfügbar.",
-          "keepInScreen": "Wenn aktiviert, bleibt das Fenster automatisch innerhalb der Bildschirmgrenzen.",
           "customMouseRange": "100% entspricht dem ursprünglichen Bereich. Größere Werte erweitern die gezeichnete Mver-Pfote und Maus. Live2D bleibt innerhalb der Modellgrenzen. Blick und Fensterposition bleiben gleich.",
           "gamepadFourHands": "Im Gamepad-Modus zwei zusätzliche Hände ständig anzeigen, sofern das Modell sie enthält.",
           "multiKeyDisplay": "Nur Mver: gehaltene Tasten pro Seite in einer Blase mit + verbinden. Gespiegelte Zeichen bleiben lesbar; Zuschnitte in hand-layout.json festlegen.",

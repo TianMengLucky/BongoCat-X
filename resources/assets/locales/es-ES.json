@@ -128,7 +128,6 @@
           "renderQuality": "Reduce la resolución de las texturas para ahorrar memoria gráfica. Se recargan al terminar el ajuste; doble clic restaura el valor predeterminado.",
           "hoverRequires": "Oculta al pasar el puntero y muestra al retirarlo. Ajusta el fundido; requiere [Dejar pasar clics] y [Siempre visible].",
           "hoverUnavailable": "Ocultar al pasar el cursor no está disponible en el entorno de escritorio actual.",
-          "keepInScreen": "Al activarlo, la ventana se mantiene automáticamente dentro de los límites de la pantalla.",
           "customMouseRange": "100% conserva el rango original. Aumentarlo amplía el movimiento de la pata y el ratón dibujados de Mver. Live2D respeta los límites del modelo. La mirada y la posición de ventana no cambian.",
           "gamepadFourHands": "Muestra dos manos adicionales en modo mando si el modelo dispone de ellas.",
           "multiKeyDisplay": "Solo Mver: une las teclas pulsadas con + en una burbuja por lado. Los caracteres siguen siendo legibles al reflejar; configura los recortes en hand-layout.json.",

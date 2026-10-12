@@ -27,7 +27,9 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
         if (!started) return false;
         if (behavior->sound[0]) {
             BongoCatError error = {0};
-            bongo_cat_audio_play(app->audio, behavior->sound, &error);
+            bongo_cat_audio_play_motion(app->audio, behavior->sound, behavior->id,
+                bongo_cat_settings_motion_volume(&app->settings, behavior->id) / 100.0f,
+                &error);
         }
     } else {
         int expression = bongo_cat_model_runtime_expression(app->model_runtime) ==

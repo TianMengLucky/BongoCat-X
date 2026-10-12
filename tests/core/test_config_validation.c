@@ -7,6 +7,26 @@
 #include <math.h>
 #include <string.h>
 
+static void check_mouse_sensitivity(void) {
+    static BongoCatSettings settings;
+    bongo_cat_settings_defaults(&settings);
+    CHECK(bongo_cat_settings_mouse_sensitivity(&settings) == 1.0f);
+    /* The setting occupies old padding, preserving existing field offsets. */
+    CHECK(sizeof(BongoCatWindowPreferences) == 1068);
+    CHECK(offsetof(BongoCatWindowPreferences, custom_background_path) == 41);
+    CHECK(offsetof(BongoCatWindowPreferences, mouse_sensitivity_hundredths) == 1066);
+    const float inputs[] = {0, 0.01f, 0.5f, 1, 1.23f, 4.99f, 5, -1, 6, NAN, INFINITY};
+    const uint16_t expected[] = {0, 1, 50, 100, 123, 499, 500, 0, 500, 100, 100};
+    for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
+        bongo_cat_settings_set_mouse_sensitivity(&settings, inputs[i]);
+        bongo_cat_settings_validate(&settings);
+        CHECK(settings.window.mouse_sensitivity_hundredths == expected[i]);
+    }
+    settings.window.mouse_sensitivity_hundredths = UINT16_MAX;
+    bongo_cat_settings_validate(&settings);
+    CHECK(bongo_cat_settings_mouse_sensitivity(&settings) == 5.0f);
+}
+
 static void check_defaults_and_validation(void) {
     static BongoCatSettings settings;
     static BongoCatSessionState session;
@@ -16,6 +36,7 @@ static void check_defaults_and_validation(void) {
         !settings.model.multiple_pets);
     CHECK(settings.window.always_on_top);
     CHECK(!settings.window.obs_background);
+    CHECK(!settings.window.keep_in_screen);
     CHECK(!settings.model.gamepad_four_hands);
     CHECK(settings.model.dynamic_texture_resolution);
     CHECK(settings.model.render_quality_percent == 100.0f);
@@ -219,6 +240,7 @@ static void check_custom_background(void) {
 }
 
 void test_config_validation(void) {
+    check_mouse_sensitivity();
     check_custom_background();
     check_defaults_and_validation();
     check_behavior_companions();

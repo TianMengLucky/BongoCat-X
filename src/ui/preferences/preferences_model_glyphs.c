@@ -164,3 +164,10 @@ void bongo_cat_preferences_model_glyphs(const BongoCatApp *app,
                 preferences->pending_import_names[i]);
     }
 }
+
+void bongo_cat_preferences_text_glyphs(uint32_t *ranges, size_t capacity, const char *text) {
+    if (!ranges || !capacity) return;
+    size_t used = 0;
+    while (used < capacity && ranges[used]) ++used;
+    if (used < capacity && !(used & 1)) add_text(ranges, capacity, &used, text);
+}

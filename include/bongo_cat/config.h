@@ -4,6 +4,8 @@
 #include "bongo_cat/common.h"
 
 #define BONGO_CAT_DEFAULT_MAX_FPS 60
+#define BONGO_CAT_DEFAULT_MOUSE_SENSITIVITY 1.0f
+#define BONGO_CAT_MAX_MOUSE_SENSITIVITY 5.0f
 #define BONGO_CAT_DEFAULT_RENDER_QUALITY_PERCENT 100
 /* Resolve this saved choice using the display refresh rate cached at startup. */
 #define BONGO_CAT_DISPLAY_MAX_FPS (-1)
@@ -64,6 +66,10 @@ typedef struct BongoCatModelPreferences {
     bool custom_mouse_range;
     float mouse_range_x_percent;
     float mouse_range_y_percent;
+    /* Join simultaneously held key characters with + inside one bubble (Mver
+       models on OpenGL; crop regions come from the model's
+       resources/<group>/hand-layout.json). */
+    bool multi_key_display;
     /* Approximate texture-memory budget: 0.1, 1, then 10 to 100 percent. */
     float render_quality_percent;
     int max_fps;
@@ -73,7 +79,7 @@ typedef struct BongoCatWindowPreferences {
     bool pass_through;
     bool always_on_top;
     bool hide_on_hover;
-    bool keep_in_screen;
+    bool keep_in_screen; /* Reuses the reserved slot; C/Rust ABI is unchanged. */
     bool edge_snap;
     /*
      * 只在录屏/直播软件里可见: 桌面上看不见这个窗口, 但 OBS 之类的采集
@@ -98,6 +104,9 @@ typedef struct BongoCatWindowPreferences {
     float corner_radius_percent;
     bool custom_background;
     char custom_background_path[BONGO_CAT_PATH_CAP];
+    /* Hundredths, 0..500. Uses trailing padding to retain the C/Rust ABI;
+       serialized under rendering.mouseSensitivity. Use the settings accessors. */
+    uint16_t mouse_sensitivity_hundredths;
 } BongoCatWindowPreferences;
 
 typedef struct BongoCatWindowState {
@@ -129,6 +138,8 @@ typedef struct BongoCatApplicationPreferences {
     bool render_parallel_recording;
     bool render_bindless;
     bool render_large_allocation;
+    /* Uses the last padding byte before theme; existing field offsets stay stable. */
+    bool github_download_acceleration;
     BongoCatTheme theme;
     BongoCatLanguage language;
     BongoCatRenderBackend render_backend;
@@ -151,6 +162,11 @@ typedef struct BongoCatBehaviorShortcut {
     /* Runtime only: the shortcut is owned by the model's Mver config. */
     bool shortcut_external;
 } BongoCatBehaviorShortcut;
+
+typedef struct BongoCatMotionVolume {
+    char id[BONGO_CAT_BEHAVIOR_ID_CAP];
+    float percent; /* 0..100; unlisted motions use 100. */
+} BongoCatMotionVolume;
 
 typedef struct BongoCatModelLabel {
     char id[BONGO_CAT_ID_CAP];
@@ -191,6 +207,8 @@ typedef struct BongoCatSettings {
     BongoCatRemovedModel model_order[BONGO_CAT_MODEL_CAP];
     size_t model_order_count;
     char extensions_json[BONGO_CAT_SETTINGS_EXTENSIONS_CAP];
+    BongoCatMotionVolume motion_volumes[BONGO_CAT_BEHAVIOR_BINDING_CAP];
+    size_t motion_volume_count;
 } BongoCatSettings;
 
 typedef struct BongoCatSessionState {
@@ -211,9 +229,17 @@ extern "C" {
 
 void bongo_cat_settings_defaults(BongoCatSettings *settings);
 void bongo_cat_settings_validate(BongoCatSettings *settings);
+float bongo_cat_settings_mouse_sensitivity(const BongoCatSettings *settings);
+void bongo_cat_settings_set_mouse_sensitivity(BongoCatSettings *settings,
+    float sensitivity);
 /* Snaps a render quality percent to the nearest valid level
    (0.1, 1, 10, 20, ... 100). */
 float bongo_cat_settings_snap_render_quality(float percent);
+float bongo_cat_settings_motion_volume(const BongoCatSettings *settings,
+    const char *behavior_id);
+bool bongo_cat_settings_set_motion_volume(BongoCatSettings *settings,
+    const char *behavior_id, float percent);
+void bongo_cat_settings_validate_motion_volumes(BongoCatSettings *settings);
 void bongo_cat_session_defaults(BongoCatSessionState *session);
 void bongo_cat_session_validate(BongoCatSessionState *session);
 bool bongo_cat_session_model_active(const BongoCatSessionState *session,

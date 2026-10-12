@@ -24,10 +24,10 @@ const RANDOM_DISABLED_CAP: usize = 256;
 const UPDATE_VERSION_CAP: usize = 32;
 const EXTENSIONS_CAP: usize = 4096;
 
-const OK: c_int = 0;
+pub(crate) const OK: c_int = 0;
 const FORMAT: c_int = 3;
 const MEMORY: c_int = 4;
-const LAYOUT: c_int = -1;
+pub(crate) const LAYOUT: c_int = -1;
 
 const SETTINGS_FORMAT: &str = "bongocat/settings";
 const SESSION_FORMAT: &str = "bongocat/session";
@@ -48,6 +48,7 @@ struct ModelPreferences {
     custom_mouse_range: bool,
     mouse_range_x_percent: f32,
     mouse_range_y_percent: f32,
+    multi_key_display: bool,
     render_quality_percent: f32,
     max_fps: c_int,
 }
@@ -75,6 +76,8 @@ struct WindowPreferences {
     corner_radius_percent: f32,
     custom_background: bool,
     custom_background_path: [c_char; PATH_CAP],
+    // Trailing padding in the existing C ABI; belongs to rendering in JSON.
+    mouse_sensitivity_hundredths: u16,
 }
 
 #[repr(C)]
@@ -87,6 +90,7 @@ struct ApplicationPreferences {
     render_parallel_recording: bool,
     render_bindless: bool,
     render_large_allocation: bool,
+    github_download_acceleration: bool,
     theme: c_int,
     language: c_int,
     render_backend: c_int,
@@ -109,6 +113,12 @@ struct BehaviorShortcut {
     label: [c_char; ID_CAP],
     shortcut_disabled: bool,
     shortcut_external: bool,
+}
+
+#[repr(C)]
+struct MotionVolume {
+    id: [c_char; BEHAVIOR_ID_CAP],
+    percent: f32,
 }
 
 #[repr(C)]
@@ -147,6 +157,8 @@ pub struct Settings {
     model_order: [RemovedModel; MODEL_CAP],
     model_order_count: usize,
     extensions_json: [c_char; EXTENSIONS_CAP],
+    motion_volumes: [MotionVolume; BEHAVIOR_BINDING_CAP],
+    motion_volume_count: usize,
 }
 
 #[repr(C)]
@@ -180,13 +192,13 @@ pub struct SessionState {
 
 /// Accumulates the format message for the C-side `BongoCatError`.
 #[derive(Debug)]
-struct Failure {
+pub(crate) struct Failure {
     code: c_int,
     message: String,
 }
 
 impl Failure {
-    fn format(message: String) -> Self {
+    pub(crate) fn format(message: String) -> Self {
         Failure {
             code: FORMAT,
             message,
@@ -203,7 +215,7 @@ impl Failure {
 
 type Outcome<T> = Result<T, Failure>;
 
-fn object<'a>(
+pub(crate) fn object<'a>(
     parent: &'a Map<String, Value>,
     description: &str,
     key: &str,
@@ -270,7 +282,7 @@ fn boolean(
     }
 }
 
-fn integer(
+pub(crate) fn integer(
     parent: &Map<String, Value>,
     description: &str,
     key: &str,
@@ -413,6 +425,13 @@ fn background_color_from_text(value: &str) -> Option<u32> {
     Some(rgb)
 }
 
+fn read_mouse_sensitivity(object: &Map<String, Value>, value: &mut u16) -> Outcome<()> {
+    let mut sensitivity = *value as f32 / 100.0;
+    real(object, "Settings", "mouseSensitivity", &mut sensitivity)?;
+    *value = (sensitivity.clamp(0.0, 5.0) * 100.0).round() as u16;
+    Ok(())
+}
+
 fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outcome<()> {
     const DESCRIPTION: &str = "Settings";
     boolean(
@@ -470,6 +489,12 @@ fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outc
         "dynamicTextureResolution",
         &mut value.dynamic_texture_resolution,
     )?;
+    boolean(
+        object,
+        DESCRIPTION,
+        "multiKeyDisplay",
+        &mut value.multi_key_display,
+    )?;
     real(
         object,
         DESCRIPTION,
@@ -496,12 +521,7 @@ fn read_window(object: &Map<String, Value>, value: &mut WindowPreferences) -> Ou
         "hideOnPointerOver",
         &mut value.hide_on_hover,
     )?;
-    boolean(
-        object,
-        DESCRIPTION,
-        "keepOnScreen",
-        &mut value.keep_in_screen,
-    )?;
+    boolean(object, DESCRIPTION, "keepOnScreen", &mut value.keep_in_screen)?;
     boolean(object, DESCRIPTION, "edgeSnap", &mut value.edge_snap)?;
     boolean(object, DESCRIPTION, "captureOnly", &mut value.capture_only)?;
     boolean(
@@ -613,6 +633,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     const DESCRIPTION: &str = "Settings";
     boolean(object, DESCRIPTION, "launchAtLogin", &mut value.autostart)?;
     boolean(object, DESCRIPTION, "runAsAdmin", &mut value.run_as_admin)?;
+    boolean(object, DESCRIPTION, "githubDownloadAcceleration", &mut value.github_download_acceleration)?;
     /* Settings written before the option was renamed carried the same
     meaning under the old key; the new key wins when both are present. */
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
@@ -754,6 +775,34 @@ fn read_behaviors(array: Option<&Vec<Value>>, settings: &mut Settings) -> Outcom
         settings.behavior_shortcut_count += 1;
     }
     Ok(())
+}
+
+fn read_motion_volumes(object: Option<&Map<String, Value>>, settings: &mut Settings) -> Outcome<()> {
+    let Some(object) = object else { return Ok(()) };
+    if object.len() > BEHAVIOR_BINDING_CAP {
+        return Err(Failure::format("Settings motionVolumes exceeds the entry limit".to_string()));
+    }
+    settings.motion_volume_count = 0;
+    for (id, value) in object {
+        let percent = value.as_f64().filter(|p| p.is_finite() && (0.0..=100.0).contains(p))
+            .ok_or_else(|| Failure::format("Settings motionVolumes must contain percentages from 0 to 100".to_string()))?;
+        if id.is_empty() {
+            return Err(Failure::format("Settings motionVolumes ids must not be empty".to_string()));
+        }
+        let entry = &mut settings.motion_volumes[settings.motion_volume_count];
+        *entry = MotionVolume { id: [0; BEHAVIOR_ID_CAP], percent: percent as f32 };
+        copy_text("Settings", &mut entry.id, id, "motionVolumes id")?;
+        settings.motion_volume_count += 1;
+    }
+    Ok(())
+}
+
+fn write_motion_volumes(settings: &Settings) -> Value {
+    let mut object = Map::new();
+    for entry in &settings.motion_volumes[..settings.motion_volume_count.min(BEHAVIOR_BINDING_CAP)] {
+        object.insert(c_string(&entry.id), serde_json::json!(entry.percent));
+    }
+    Value::Object(object)
 }
 
 fn read_random_disabled(array: Option<&Vec<Value>>, settings: &mut Settings) -> Outcome<()> {
@@ -940,7 +989,7 @@ pub unsafe extern "C" fn bongo_safe_settings_parse(
     })
 }
 
-fn write_message(message: *mut c_char, message_capacity: usize, failure: &Failure) -> c_int {
+pub(crate) fn write_message(message: *mut c_char, message_capacity: usize, failure: &Failure) -> c_int {
     let out = unsafe { std::slice::from_raw_parts_mut(message.cast::<u8>(), message_capacity) };
     let bytes = failure.message.as_bytes();
     let copied = bytes.len().min(out.len().saturating_sub(1));
@@ -962,12 +1011,14 @@ fn parse_settings(bytes: &[u8], settings: &mut Settings) -> Outcome<()> {
     let removed_models = array(&root, description, "removedModels")?;
     let hidden_models = array(&root, description, "hiddenModels")?;
     let model_order = array(&root, description, "modelOrder")?;
+    let motion_volumes = object(&root, description, "motionVolumes")?;
     let extensions = match root.get("extensions") {
         None | Some(Value::Null) => None,
         Some(value) => Some(value),
     };
     if let Some(model) = model {
         read_model(model, &mut settings.model)?;
+        read_mouse_sensitivity(model, &mut settings.window.mouse_sensitivity_hundredths)?;
     }
     if let Some(window) = window {
         read_window(window, &mut settings.window)?;
@@ -979,6 +1030,7 @@ fn parse_settings(bytes: &[u8], settings: &mut Settings) -> Outcome<()> {
         read_shortcuts(shortcuts, &mut settings.shortcuts)?;
     }
     read_behaviors(behaviors, settings)?;
+    read_motion_volumes(motion_volumes, settings)?;
     read_random_disabled(random_disabled, settings)?;
     read_model_labels(models, settings)?;
     read_model_id_array(
@@ -1007,7 +1059,7 @@ fn string_value(field: &[c_char]) -> Value {
     Value::String(c_string(field))
 }
 
-fn write_model(value: &ModelPreferences) -> Value {
+fn write_model(value: &ModelPreferences, mouse_sensitivity_hundredths: u16) -> Value {
     serde_json::json!({
         "multiplePets": value.multiple_pets,
         "modelMirrored": value.mirror,
@@ -1017,11 +1069,13 @@ fn write_model(value: &ModelPreferences) -> Value {
         "centerPointerTracking": value.mouse_centered,
         "ignorePointerInput": value.ignore_mouse,
         "forceMouseInput": value.force_mouse_input,
+        "mouseSensitivity": mouse_sensitivity_hundredths as f64 / 100.0,
         "gamepadFourHands": value.gamepad_four_hands,
         "dynamicTextureResolution": value.dynamic_texture_resolution,
         "customMouseRange": value.custom_mouse_range,
         "mouseRangeXPercent": value.mouse_range_x_percent,
         "mouseRangeYPercent": value.mouse_range_y_percent,
+        "multiKeyDisplay": value.multi_key_display,
         "renderQualityPercent": value.render_quality_percent,
         "maximumFps": value.max_fps,
     })
@@ -1062,6 +1116,7 @@ fn write_app(value: &ApplicationPreferences) -> Value {
     serde_json::json!({
         "launchAtLogin": value.autostart,
         "runAsAdmin": value.run_as_admin,
+        "githubDownloadAcceleration": value.github_download_acceleration,
         "showTrayIcon": value.tray_visible,
         "lowMemoryMode": value.low_memory_mode,
         "largeRenderOptimization": value.large_render_optimization,
@@ -1159,11 +1214,13 @@ fn build_settings_json(settings: &Settings) -> Outcome<Value> {
     let mut root = Map::new();
     root.insert("format".into(), Value::String(SETTINGS_FORMAT.into()));
     root.insert("schemaVersion".into(), Value::Number(SCHEMA_VERSION.into()));
-    root.insert("rendering".into(), write_model(&settings.model));
+    root.insert("rendering".into(), write_model(&settings.model,
+        settings.window.mouse_sensitivity_hundredths));
     root.insert("window".into(), write_window(&settings.window));
     root.insert("application".into(), write_app(&settings.app));
     root.insert("shortcuts".into(), write_shortcuts(&settings.shortcuts));
     root.insert("behaviorOverrides".into(), write_behaviors(settings));
+    root.insert("motionVolumes".into(), write_motion_volumes(settings));
     root.insert(
         "randomBehaviorDisabled".into(),
         write_random_disabled(settings),
@@ -1547,6 +1604,49 @@ mod tests {
     use super::*;
 
     #[test]
+    fn mouse_sensitivity_round_trips_clamps_and_keeps_older_defaults() {
+        let model: ModelPreferences = unsafe { std::mem::zeroed() };
+        let mut hundredths = 100;
+        for input in [serde_json::json!({}), serde_json::json!({"mouseSensitivity": null})] {
+            read_mouse_sensitivity(input.as_object().unwrap(), &mut hundredths).unwrap();
+            assert_eq!(hundredths, 100);
+        }
+        for (input, expected) in [(0.0, 0), (0.01, 1), (1.0, 100), (1.23, 123),
+            (4.99, 499), (5.0, 500), (-1.0, 0), (6.0, 500)] {
+            let json = serde_json::json!({"mouseSensitivity": input});
+            read_mouse_sensitivity(json.as_object().unwrap(), &mut hundredths).unwrap();
+            assert_eq!(hundredths, expected);
+            let saved = write_model(&model, hundredths);
+            let mut restored = 100;
+            read_mouse_sensitivity(saved.as_object().unwrap(), &mut restored).unwrap();
+            assert_eq!(restored, expected);
+        }
+        for invalid in [serde_json::json!("1"), serde_json::json!(true),
+            serde_json::json!([]), serde_json::json!(1e100)] {
+            let json = serde_json::json!({"mouseSensitivity": invalid});
+            assert!(read_mouse_sensitivity(json.as_object().unwrap(), &mut hundredths).is_err());
+        }
+        assert_eq!(std::mem::size_of::<WindowPreferences>(), 1068);
+        assert_eq!(std::mem::offset_of!(WindowPreferences, custom_background_path), 41);
+        assert_eq!(std::mem::offset_of!(WindowPreferences, mouse_sensitivity_hundredths), 1066);
+    }
+
+    #[test]
+    fn multi_key_display_round_trips_and_keeps_older_defaults() {
+        let mut model: ModelPreferences = unsafe { std::mem::zeroed() };
+        model.multi_key_display = true;
+        read_model(serde_json::json!({}).as_object().unwrap(), &mut model).unwrap();
+        assert!(model.multi_key_display);
+        for enabled in [false, true] {
+            read_model(serde_json::json!({"multiKeyDisplay": enabled})
+                .as_object().unwrap(), &mut model).unwrap();
+            assert_eq!(write_model(&model, 100)["multiKeyDisplay"], enabled);
+        }
+        assert!(read_model(serde_json::json!({"multiKeyDisplay": "true"})
+            .as_object().unwrap(), &mut model).is_err());
+    }
+
+    #[test]
     fn metal_backend_survives_settings_serialization() {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
@@ -1555,6 +1655,7 @@ mod tests {
             render_parallel_recording: true,
             render_bindless: true,
             render_large_allocation: true,
+            github_download_acceleration: false,
             theme: 0, language: 0, render_backend: 3,
         };
         let json = write_app(&app);
@@ -1662,6 +1763,29 @@ mod tests {
     }
 
     #[test]
+    fn keep_on_screen_round_trips_without_changing_older_defaults() {
+        let mut window: WindowPreferences = unsafe { std::mem::zeroed() };
+        for enabled in [false, true] {
+            window.keep_in_screen = enabled;
+            read_window(serde_json::json!({}).as_object().unwrap(), &mut window).unwrap();
+            assert_eq!(window.keep_in_screen, enabled);
+            let input = serde_json::json!({"keepOnScreen": !enabled, "edgeSnap": enabled});
+            read_window(input.as_object().unwrap(), &mut window).unwrap();
+            let saved = write_window(&window);
+            assert_eq!(saved["keepOnScreen"], !enabled);
+            assert_eq!(saved["edgeSnap"], enabled);
+            let mut restored: WindowPreferences = unsafe { std::mem::zeroed() };
+            read_window(saved.as_object().unwrap(), &mut restored).unwrap();
+            assert_eq!(restored.keep_in_screen, !enabled);
+            assert_eq!(restored.edge_snap, enabled);
+        }
+        for invalid in [serde_json::json!("true"), serde_json::json!(1)] {
+            let input = serde_json::json!({"keepOnScreen": invalid});
+            assert!(read_window(input.as_object().unwrap(), &mut window).is_err());
+        }
+    }
+
+    #[test]
     fn custom_background_round_trip_and_exclusion() {
         let mut window: WindowPreferences = unsafe { std::mem::zeroed() };
         let input = serde_json::json!({
@@ -1678,6 +1802,29 @@ mod tests {
         assert!(!window.custom_background);
         let invalid = serde_json::json!({"customBackgroundPath": 42});
         assert!(read_window(invalid.as_object().unwrap(), &mut window).is_err());
+    }
+
+    #[test]
+    fn github_acceleration_round_trips_and_preserves_the_application_abi() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        read_app(serde_json::json!({}).as_object().unwrap(), &mut app).unwrap();
+        assert!(!app.github_download_acceleration);
+        for enabled in [true, false] {
+            let input = serde_json::json!({"githubDownloadAcceleration": enabled});
+            read_app(input.as_object().unwrap(), &mut app).unwrap();
+            let saved = write_app(&app);
+            let mut restored: ApplicationPreferences = unsafe { std::mem::zeroed() };
+            read_app(saved.as_object().unwrap(), &mut restored).unwrap();
+            assert_eq!(restored.github_download_acceleration, enabled);
+        }
+        for invalid in [serde_json::json!("true"), serde_json::json!(1), serde_json::json!([])] {
+            let input = serde_json::json!({"githubDownloadAcceleration": invalid});
+            assert!(read_app(input.as_object().unwrap(), &mut app).is_err());
+        }
+        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 20);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, theme), 8);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, language), 12);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, render_backend), 16);
     }
 
     #[test]

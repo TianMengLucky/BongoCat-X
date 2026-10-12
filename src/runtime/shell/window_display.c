@@ -34,27 +34,32 @@ static bool intersects_available_display(const SDL_Rect *window, bool *known) {
 
 static SDL_Point fitted_position(const SDL_Rect *window,
     const SDL_Rect *bounds) {
-    int max_x = SDL_max(bounds->x, bounds->x + bounds->w - window->w);
-    int max_y = SDL_max(bounds->y, bounds->y + bounds->h - window->h);
-    SDL_Point point = {SDL_clamp(window->x, bounds->x, max_x),
-        SDL_clamp(window->y, bounds->y, max_y)};
+    /* Oversized pets may pan while still covering the usable display. */
+    int far_x = bounds->x + bounds->w - window->w;
+    int far_y = bounds->y + bounds->h - window->h;
+    SDL_Point point = {
+        SDL_clamp(window->x, SDL_min(bounds->x, far_x), SDL_max(bounds->x, far_x)),
+        SDL_clamp(window->y, SDL_min(bounds->y, far_y), SDL_max(bounds->y, far_y))};
     return point;
 }
 
 static bool clipped_rect(const SDL_Rect *window, const SDL_Rect *bounds,
     SDL_Rect *clip) {
-    int right = SDL_min(window->x + window->w, bounds->x + bounds->w);
-    int bottom = SDL_min(window->y + window->h, bounds->y + bounds->h);
+    int64_t right = SDL_min((int64_t)window->x + window->w,
+        (int64_t)bounds->x + bounds->w);
+    int64_t bottom = SDL_min((int64_t)window->y + window->h,
+        (int64_t)bounds->y + bounds->h);
     clip->x = SDL_max(window->x, bounds->x);
     clip->y = SDL_max(window->y, bounds->y);
-    clip->w = right - clip->x;
-    clip->h = bottom - clip->y;
-    return clip->w > 0 && clip->h > 0;
+    if (right <= clip->x || bottom <= clip->y) return false;
+    clip->w = (int)(right - clip->x);
+    clip->h = (int)(bottom - clip->y);
+    return true;
 }
 
-static void sort_edges(int *values, int count) {
+static void sort_edges(int64_t *values, int count) {
     for (int i = 1; i < count; ++i) {
-        int value = values[i], j = i;
+        int64_t value = values[i]; int j = i;
         while (j > 0 && values[j - 1] > value) {
             values[j] = values[j - 1]; --j;
         }
@@ -76,29 +81,34 @@ static bool bounds_cover_window(const SDL_Rect *window,
     const SDL_Rect *bounds, int count) {
     if (!window || !bounds || window->w <= 0 || window->h <= 0 ||
         count < 1 || count > DISPLAY_RECT_CAP) return false;
+    /* Most moves stay on one display; avoid sorting for that common case. */
+    for (int i = 0; i < count; ++i)
+        if (window->x >= bounds[i].x && window->y >= bounds[i].y &&
+            (int64_t)window->x + window->w <= (int64_t)bounds[i].x + bounds[i].w &&
+            (int64_t)window->y + window->h <= (int64_t)bounds[i].y + bounds[i].h) return true;
     SDL_Rect clips[DISPLAY_RECT_CAP];
-    int edges[DISPLAY_RECT_CAP * 2 + 2];
+    int64_t edges[DISPLAY_RECT_CAP * 2 + 2];
     int clip_count = 0, edge_count = 2;
-    edges[0] = window->x; edges[1] = window->x + window->w;
+    edges[0] = window->x; edges[1] = (int64_t)window->x + window->w;
     for (int i = 0; i < count; ++i) {
         SDL_Rect clip;
         if (!clipped_rect(window, &bounds[i], &clip)) continue;
         clips[clip_count++] = clip;
         edges[edge_count++] = clip.x;
-        edges[edge_count++] = clip.x + clip.w;
+        edges[edge_count++] = (int64_t)clip.x + clip.w;
     }
     if (!clip_count) return false;
     sort_edges(edges, edge_count); sort_clips(clips, clip_count);
-    int window_bottom = window->y + window->h;
+    int64_t window_bottom = (int64_t)window->y + window->h;
     for (int edge = 1; edge < edge_count; ++edge) {
-        int left = edges[edge - 1], right = edges[edge];
+        int64_t left = edges[edge - 1], right = edges[edge];
         if (left == right) continue;
-        int covered_to = window->y;
+        int64_t covered_to = window->y;
         for (int i = 0; i < clip_count; ++i) {
-            int clip_right = clips[i].x + clips[i].w;
+            int64_t clip_right = (int64_t)clips[i].x + clips[i].w;
             if (clips[i].x > left || clip_right < right) continue;
             if (clips[i].y > covered_to) break;
-            covered_to = SDL_max(covered_to, clips[i].y + clips[i].h);
+            covered_to = SDL_max(covered_to, (int64_t)clips[i].y + clips[i].h);
             if (covered_to >= window_bottom) break;
         }
         if (covered_to < window_bottom) return false;
@@ -153,8 +163,82 @@ static bool fit_to_display(BongoCatApp *app, SDL_DisplayID display,
     return true;
 }
 
+static SDL_Point constrained_position(const SDL_Rect *window,
+    const SDL_Rect *bounds, int count) {
+    SDL_Point next = {window->x, window->y};
+    if (!bounds || count < 1 || count > DISPLAY_RECT_CAP) return next;
+    if (bounds_cover_window(window, bounds, count)) return next;
+    double best_distance = -1.0;
+    bool best_fits = false;
+    for (int i = 0; i < count; ++i) {
+        bool fits = window->w <= bounds[i].w && window->h <= bounds[i].h;
+        if (best_fits && !fits) continue;
+        SDL_Point fitted = fitted_position(window, &bounds[i]);
+        double dx = (double)fitted.x - window->x;
+        double dy = (double)fitted.y - window->y;
+        double distance = dx * dx + dy * dy;
+        if (best_distance < 0.0 || (fits && !best_fits) || distance < best_distance) {
+            best_distance = distance;
+            best_fits = fits;
+            next = fitted;
+        }
+    }
+    if (count < 2) return next;
+    /* A pet can fit the union even when it is wider than any one screen.
+       Valid placements change at display edges. Prune candidates farther
+       away than the single-screen fit before running the coverage sweep. */
+    int xs[DISPLAY_RECT_CAP * 2 + 1], ys[DISPLAY_RECT_CAP * 2 + 1];
+    int edge_count = 1;
+    xs[0] = window->x; ys[0] = window->y;
+    for (int i = 0; i < count; ++i) {
+        xs[edge_count] = bounds[i].x; ys[edge_count++] = bounds[i].y;
+        xs[edge_count] = bounds[i].x + bounds[i].w - window->w;
+        ys[edge_count++] = bounds[i].y + bounds[i].h - window->h;
+    }
+    for (int x = 0; x < edge_count; ++x) {
+        double dx = (double)xs[x] - window->x;
+        if (best_fits && dx * dx >= best_distance) continue;
+        for (int y = 0; y < edge_count; ++y) {
+            double dy = (double)ys[y] - window->y;
+            double distance = dx * dx + dy * dy;
+            if (best_fits && distance >= best_distance) continue;
+            SDL_Rect candidate = {xs[x], ys[y], window->w, window->h};
+            if (!bounds_cover_window(&candidate, bounds, count)) continue;
+            best_fits = true; best_distance = distance;
+            next = (SDL_Point){candidate.x, candidate.y};
+        }
+    }
+    return next;
+}
+
+void bongo_cat_window_constrain_position(BongoCatApp *app, SDL_Point *next,
+    int width, int height) {
+    if (!app || !next || !app->settings.window.keep_in_screen ||
+        width <= 0 || height <= 0) return;
+    SDL_Rect local_bounds[DISPLAY_RECT_CAP];
+    const SDL_Rect *bounds = app->drag_display_bounds;
+    int count = app->drag_display_count;
+    if (!app->window_drag_active || !bounds || count < 1) {
+        count = available_bounds(local_bounds);
+        bounds = local_bounds;
+    }
+    SDL_Rect requested = {next->x, next->y, width, height};
+    *next = constrained_position(&requested, bounds, count);
+}
+
 void bongo_cat_window_clamp_to_display(BongoCatApp *app) {
-    (void)app;
+    SDL_Rect rect;
+    if (!app || !app->settings.window.keep_in_screen || !window_rect(app, &rect)) return;
+    SDL_Point next = {rect.x, rect.y};
+    bongo_cat_window_constrain_position(app, &next, rect.w, rect.h);
+    if ((next.x == rect.x && next.y == rect.y) ||
+        !SDL_SetWindowPosition(app->window, next.x, next.y)) return;
+    app->session.window.x = next.x;
+    app->session.window.y = next.y;
+    app->session.window.position_known = true;
+    bongo_cat_window_mark_hit_dirty(app);
+    if (app->window_snapshot) bongo_cat_window_snapshot_geometry(app, NULL);
+    app->dirty = true;
 }
 
 /* Magnet distance: while dragging, a window edge within this many pixels of
@@ -170,13 +254,21 @@ static void snap_to_screen_edges(BongoCatApp *app, SDL_Point *next,
     bool found_x = false, found_y = false;
     if (!app->settings.window.edge_snap || !rects) return;
     for (int i = 0; i < count; ++i) {
+        bool overlap_y = next->y < rects[i].y + rects[i].h &&
+            (double)next->y + height > rects[i].y;
+        bool overlap_x = next->x < rects[i].x + rects[i].w &&
+            (double)next->x + width > rects[i].x;
         const int xs[2] = { rects[i].x, rects[i].x + rects[i].w - width };
         const int ys[2] = { rects[i].y, rects[i].y + rects[i].h - height };
         for (int c = 0; c < 2; ++c) {
-            int dx = xs[c] - next->x; if (dx < 0) dx = -dx;
-            int dy = ys[c] - next->y; if (dy < 0) dy = -dy;
-            if (dx < best_x) { best_x = dx; snap_x = xs[c]; found_x = true; }
-            if (dy < best_y) { best_y = dy; snap_y = ys[c]; found_y = true; }
+            double dx = SDL_fabs((double)xs[c] - next->x);
+            double dy = SDL_fabs((double)ys[c] - next->y);
+            if (overlap_y && dx < best_x) {
+                best_x = (int)dx; snap_x = xs[c]; found_x = true;
+            }
+            if (overlap_x && dy < best_y) {
+                best_y = (int)dy; snap_y = ys[c]; found_y = true;
+            }
         }
     }
     if (found_x) next->x = snap_x;
@@ -189,6 +281,7 @@ void bongo_cat_window_drag_to(BongoCatApp *app, int x, int y) {
         width <= 0 || height <= 0) return;
     SDL_Point next = {x, y};
     snap_to_screen_edges(app, &next, width, height);
+    bongo_cat_window_constrain_position(app, &next, width, height);
     if (SDL_GetWindowPosition(app->window, &current_x, &current_y) &&
         current_x == next.x && current_y == next.y) return;
     if (!SDL_SetWindowPosition(app->window, next.x, next.y)) return;
@@ -244,6 +337,8 @@ void bongo_cat_window_update_display_recovery(BongoCatApp *app, uint64_t now) {
     if (!app || !app->display_recovery_due_ns ||
         now < app->display_recovery_due_ns) return;
     app->display_recovery_due_ns = 0;
+    if (app->settings.window.keep_in_screen) bongo_cat_window_clamp_to_display(app);
+    else bongo_cat_window_recover_to_display(app);
 }
 
 bool bongo_cat_window_display_self_test(BongoCatApp *app) {

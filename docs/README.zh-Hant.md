@@ -89,7 +89,7 @@ BongoCat 使用 CMake，需要 C11 編譯器、C++17 編譯器、CMake 3.24 或�
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 配置與建置
@@ -292,7 +292,7 @@ flowchart TB
 
 ### 🖼️ Vulkan / Metal 支援進度如何？
 
-設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 效果 / 指標覆蓋層目前需要 OpenGL；Live2D 的 OpenGL / Vulkan / Metal 均支援動態紋理解析度，原生後端在背景解碼和縮放、主執行緒同步上傳。關閉後按畫質比例重新載入紋理。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。
+設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 特效 / 指標覆蓋層已支援所有後端；Live2D 的 OpenGL / Vulkan / Metal 均支援動態紋理解析度，原生後端在背景解碼和縮放、主執行緒同步上傳。關閉後按畫質比例重新載入紋理。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。 覆蓋層複用 SDL 軟體繪製並按輸入變化快取，在原生幀完成後合成並傳回 GPU；效能仍待實測。
 
 「大型算繪最佳化」在 Vulkan / Metal 後端顯示，預設關閉；Vulkan 提供三個獨立子項，Metal 僅提供大塊記憶體配置。Inox2D Metal 啟用後合併整幀頂點，Live2D Metal 顯示不可用。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
 
@@ -348,3 +348,16 @@ Live2D 自動重用幾何緩衝與連續重複的渲染狀態；OpenGL 動態上
 設定 → 桌寵 → 自訂滑鼠跟隨範圍提供水平/垂直 25–400%，預設關閉，100% 保持原範圍。Mver 繪製貓爪與滑鼠可擴大移動範圍，Live2D 保留作者參數邊界。視線與視窗位置不變。低記憶體模式關閉 OpenGL MSAA 並減少未使用的著色器與 Vulkan 混合管線。
 
 Windows 低記憶體設定視窗對 OpenGL/Vulkan 均使用分塊 SDL 軟體繪製及不透明背景。字型保留實際字號、螢幕 DPI 和抗鋸齒取樣，軟體字型圖集保存單通道遮罩，僅轉換當前字形。其他平台的 OpenGL 繼續重用桌寵上下文。
+### 多按鍵顯示與字元裁剪
+
+Mver (OpenGL/Vulkan/Metal) 可分別裁剪手部、氣泡外框和字元，將按住的按鍵以加號連接在同一個氣泡中。外框和尾巴隨模型鏡像，字元保持可讀，單鍵模式也生效。在手部圖片資料夾的 `hand-layout.json` 中設定三個裁剪區域、加號兩側間距和每側顯示數量，修改後重新啟動應用程式。詳見[設定說明與範例](hand-layout.md)。
+
+動作彈窗會檢查動作的 `Sound` 引用及音訊檔案是否存在，僅在帶音訊的動作旁顯示獨立音量控制項。範圍為 0–100%，可拖曳、輸入數值或按兩下恢復 100%；0% 靜音。設定按模型與動作儲存，套用至彈窗播放、快捷鍵、隨機動作及右鍵選單，播放中也可調整；共用同一音訊檔案的其他動作保留各自的音量。
+
+### 偏好選項選單樣式
+
+「偏好」頁頂部可切換「全部展開」與「摺疊分組」樣式。點擊視窗、模型、應用或外觀分組標題即可展開或收起選項；樣式選擇會儲存，既有設定值保持不變。
+
+### 輸入統計外掛
+
+Rust 統計外掛預設隨程式建置，可在「外掛」頁啟停或匯入。「統計」頁提供鍵鼠總量、每日與每小時趨勢、本機儲存及 CSV 匯出。詳見[統計外掛說明](statistics-plugin.md)。 前景應用使用時間提供排行、每小時分布及獨立開關；取樣、儲存與匯出由獨立執行緒處理。 統計入口由外掛在啟用時註冊，停用或解除安裝後自動移除。

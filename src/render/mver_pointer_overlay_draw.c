@@ -18,6 +18,16 @@ static PointerVertex vertex(const BongoCatMverPointerOverlay *value,
 static void draw(BongoCatMverPointerOverlay *value, unsigned int primitive,
     const PointerVertex *vertices, size_t count, unsigned int texture) {
     if (!value || !vertices || !count) return;
+    if (value->native) {
+        BongoCatPointerTexture *textures[] = {&value->arm, &value->device,
+            &value->left, &value->right, &value->side};
+        SDL_Surface *surface = texture > 0 && texture <= 5
+            ? textures[texture - 1]->image.surface : NULL;
+        if (value->native_draw)
+            value->native_draw(value->native_userdata, primitive,
+                (const float *)vertices, count, surface);
+        return;
+    }
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glDisable(GL_STENCIL_TEST);

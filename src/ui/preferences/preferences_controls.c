@@ -215,16 +215,29 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
     bounds = nk_rect(bounds.x + bounds.w - 220.0f,
         bounds.y + 2.0f, 220.0f, bounds.h - 4.0f);
+    return bongo_cat_pref_control_slider_rect(context, id, minimum, value,
+        maximum, step, default_value, suffix, edit_maximum, bounds, true, 1.0f);
+}
+
+bool bongo_cat_pref_control_slider_rect(struct nk_context *context, const char *id,
+    float minimum, float *value, float maximum, float step,
+    float default_value, const char *suffix, float edit_maximum,
+    struct nk_rect bounds, bool available, float opacity) {
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    p.field.a = (nk_byte)(p.field.a * opacity);
+    p.accent.a = (nk_byte)(p.accent.a * opacity);
+    p.text.a = (nk_byte)(p.text.a * opacity);
+    p.border_subtle.a = (nk_byte)(p.border_subtle.a * opacity);
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     struct nk_rect value_box = nk_rect(bounds.x + bounds.w - 49,
         bounds.y, 49, bounds.h);
     struct nk_rect track = nk_rect(bounds.x + 2,
-        bounds.y + bounds.h * .5f - 3, 154, 6);
+        bounds.y + bounds.h * .5f - 3, bounds.w - 66, 6);
     struct nk_rect hit = nk_rect(track.x - 3, bounds.y,
         track.w + 6, bounds.h);
-    bool hover = nk_input_is_mouse_hovering_rect(&context->input, hit);
-    bool dragging = slider_drag_begin(context, id, hit);
+    bool hover = available && nk_input_is_mouse_hovering_rect(&context->input, hit);
+    if (!available && slider_drag_active(context, id)) slider_drag_stop(context);
+    bool dragging = available && slider_drag_begin(context, id, hit);
     bool mouse_down = nk_input_is_mouse_down(&context->input, NK_BUTTON_LEFT);
     char hover_id[80];
     snprintf(hover_id, sizeof(hover_id), "slider-hover-%s", id);
@@ -242,7 +255,7 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
         *value = NK_CLAMP(minimum, *value, maximum);
     }
     if (dragging && !mouse_down) slider_drag_stop(context);
-    if (nk_input_is_mouse_click_in_rect(&context->input,
+    if (available && nk_input_is_mouse_click_in_rect(&context->input,
         NK_BUTTON_DOUBLE, value_box)) {
         *value = NK_CLAMP(minimum, default_value, maximum);
         bongo_cat_pref_number_edit_reset(context);
@@ -263,18 +276,19 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
         track.y - 9, thumb_width, 24);
     if (p.effects) bongo_cat_ui_paint_shadow(context, thumb, thumb_rounding,
         0, 1, 4.0f + 3.0f * hover_amount, 0,
-        nk_rgba(p.accent.r, p.accent.g, p.accent.b, 89));
+        nk_rgba(p.accent.r, p.accent.g, p.accent.b, (nk_byte)(89 * opacity)));
     nk_fill_rect(canvas, thumb, thumb_rounding, p.accent);
     nk_fill_rect(canvas, value_box, 8, p.field);
     nk_stroke_rect(canvas, value_box, 8, 1, p.border_subtle);
     char number[24];
-    if (*value < 1.0f || fmodf(*value, 1.0f) != 0.0f)
+    if (step < 0.1f) snprintf(number, sizeof(number), "%.2f", *value);
+    else if (*value < 1.0f || fmodf(*value, 1.0f) != 0.0f)
         snprintf(number, sizeof(number), "%.1f", *value);
     else snprintf(number, sizeof(number), "%.0f", *value);
     /* Editable value box: the number editor overlays the box and draws its
        own text cursor while active. */
     double edited = *value;
-    bool editing = bongo_cat_pref_number_edit(context, id, value_box,
+    bool editing = available && bongo_cat_pref_number_edit(context, id, value_box,
         number, minimum >= 1.0f, minimum, edit_maximum > maximum ?
         edit_maximum : maximum, &edited);
     *value = (float)NK_CLAMP((float)minimum, edited,
@@ -288,7 +302,7 @@ bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     }
     float wheel = context->input.mouse.scroll_delta.y;
     float wheel_cap = edit_maximum > maximum ? edit_maximum : maximum;
-    if (!editing && (hover || nk_input_is_mouse_hovering_rect(&context->input,
+    if (available && !editing && (hover || nk_input_is_mouse_hovering_rect(&context->input,
             value_box)) && wheel != 0.0f) {
         *value = NK_CLAMP(minimum, *value + (wheel > 0 ? step : -step),
             wheel_cap);

@@ -71,7 +71,7 @@ Ejecuta los siguientes comandos en la raíz del proyecto (el directorio que cont
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Configuración y compilación
@@ -282,7 +282,7 @@ No. BongoCat procesa las entradas de teclado y ratón localmente para impulsar a
 
 ### 🖼️ ¿Cuál es el estado del soporte de Vulkan / Metal?
 
-Ajustes → Aplicación → Backend de renderizado permite cambiar al instante: OpenGL ↔ Vulkan en Windows / Linux x64 y OpenGL ↔ Metal en macOS. Sistema usa OpenGL por defecto. Se conectaron la carga de texturas nativas, el dibujo de Cubism, la lectura de GPU y la recarga del modelo; se conservan el modelo y los movimientos/expresiones seleccionados. Los errores de inicialización o recarga restauran OpenGL. Vulkan/Metal son experimentales: las capas de teclas/efectos/puntero requieren OpenGL. Live2D admite resolución dinámica en OpenGL, Vulkan y Metal, con decodificación y escalado en segundo plano y carga nativa a la GPU síncrona. Desactivarla recarga las texturas según la calidad elegida. Los backends nativos almacenan el fondo de mesa en caché, lo incluyen en los límites del marco ajustado y redondean las cuatro esquinas en la GPU sin otra textura de pantalla completa.
+Ajustes → Aplicación → Backend de renderizado permite cambiar al instante: OpenGL ↔ Vulkan en Windows / Linux x64 y OpenGL ↔ Metal en macOS. Sistema usa OpenGL por defecto. Se conectaron la carga de texturas nativas, el dibujo de Cubism, la lectura de GPU y la recarga del modelo; se conservan el modelo y los movimientos/expresiones seleccionados. Los errores de inicialización o recarga restauran OpenGL. Vulkan/Metal son experimentales: las capas de teclas/efectos/puntero ya admiten todos los motores. Live2D admite resolución dinámica en OpenGL, Vulkan y Metal, con decodificación y escalado en segundo plano y carga nativa a la GPU síncrona. Desactivarla recarga las texturas según la calidad elegida. Los backends nativos almacenan el fondo de mesa en caché, lo incluyen en los límites del marco ajustado y redondean las cuatro esquinas en la GPU sin otra textura de pantalla completa. Las capas usan el renderizado por software de SDL, se almacenan hasta que cambie la entrada y se combinan con el cuadro nativo terminado antes de enviarlo a la GPU; el rendimiento sigue sin medir.
 
 La optimización de renderizado aparece en Vulkan / Metal y está desactivada por defecto. Vulkan ofrece tres opciones; Metal solo grandes asignaciones. Inox2D Metal agrupa los vértices de cada fotograma; Live2D Metal muestra esta opción como no disponible. Sus tres subopciones se guardan por separado; los cambios recargan el modelo. Inox2D Vulkan admite grabación paralela y bloques grandes. Live2D Vulkan admite VMA y grabación paralela con mezcla normal, sin nodos fuera de pantalla ni máscaras de alta precisión. Live2D requiere 128 Drawables para búferes secundarios y 128 instantáneas dibujables para usar hasta cuatro hilos; los demás modelos conservan la ruta serial del SDK. Live2D Vulkan Bindless usa una tabla de hasta 64 texturas de atlas con mezcla normal y sin nodos fuera de pantalla; vuelve a la ruta anterior si faltan capacidades del dispositivo. Inox2D Bindless no está implementado. Los pools grandes pueden usar más memoria; las mejoras de rendimiento aún no se han medido.
 
@@ -306,6 +306,14 @@ Derechos de autor © 2026 - **BongoCat**<br>
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### Diseño de las opciones
+
+Los botones superiores cambian entre todas las opciones y grupos plegables. Pulsa Ventana, Modelo, Aplicación o Apariencia para abrir o cerrar el grupo. El estilo se guarda y los valores existentes se conservan.
+
+### Complemento de estadísticas de entrada
+
+El complemento Rust se compila con la aplicación por defecto. Actívalo, desactívalo o impórtalo en la página de complementos. La página de estadísticas muestra totales de teclado y ratón, gráficos diarios y por hora, almacenamiento local y exportación CSV. Consulta [Estadísticas](statistics-plugin.md). El tiempo de la aplicación activa incluye clasificación, totales por hora y un control independiente. La captura, el almacenamiento y la exportación usan un hilo independiente. El complemento registra la entrada de estadísticas al activarse y la elimina al desactivarse o desinstalarse.
 
 ### Plugins de renderizado dinámicos
 
@@ -332,3 +340,8 @@ Ajustes → Aplicación → Modo de memoria reducida está desactivado por defec
 Ajustes → Mascota → Rango de seguimiento: horizontal/vertical 25–400%, desactivado por defecto; 100% conserva el rango. Las patas Mver dibujadas pueden moverse más; Live2D mantiene sus límites. Mirada y ventana no cambian. El modo de memoria reducida desactiva MSAA y reduce shaders y pipelines sin uso.
 
 En Windows, los ajustes de memoria reducida usan renderizado SDL por software en bloques y fondo opaco con OpenGL/Vulkan. Se conservan el tamaño real, DPI y antialiasing de las fuentes. El atlas almacena máscaras A8 y convierte solo el glifo dibujado. OpenGL en otras plataformas sigue reutilizando el contexto de la mascota.
+### Varias teclas y caracteres legibles en modo espejo
+
+Mver (OpenGL/Vulkan/Metal) recorta por separado la mano, el marco y los caracteres, uniendo las teclas pulsadas con + en un solo bocadillo. El marco y la cola se reflejan con el modelo; los caracteres siguen siendo legibles, también en modo de una tecla. Configura las tres áreas, el espacio alrededor de + y el límite por lado en `hand-layout.json` junto a las imágenes de las manos; reinicia tras editar. Consulta la [guía y el ejemplo](hand-layout.md).
+
+El diálogo de acciones comprueba la referencia `Sound` y si existe el archivo, y muestra un control de volumen junto a los movimientos con audio. Ajusta entre 0 y 100% arrastrando o escribiendo; el doble clic restaura el 100% y el 0% silencia. Los valores se guardan por modelo y movimiento y se aplican al diálogo, atajos, movimientos aleatorios y menú contextual, también durante la reproducción. Otros movimientos que usan el mismo archivo conservan su propio volumen.

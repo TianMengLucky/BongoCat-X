@@ -99,7 +99,7 @@ contenant `CMakeLists.txt`).
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Configuration et compilation
@@ -412,7 +412,7 @@ de configuration ou d'utilisation.
 
 ### 🖼️ Où en est la prise en charge de Vulkan / Metal ?
 
-Paramètres → Application → Moteur de rendu permet de basculer immédiatement : OpenGL ↔ Vulkan sur Windows / Linux x64, OpenGL ↔ Metal sur macOS. Système utilise OpenGL par défaut. L’envoi des textures natives, le dessin Cubism, la lecture GPU et le rechargement sont raccordés ; le modèle et les mouvements/expressions sélectionnés sont conservés. Un échec d’initialisation ou de rechargement rétablit OpenGL. Vulkan/Metal restent expérimentaux : les calques des touches/effets/pointeur nécessitent OpenGL. Live2D prend en charge la résolution dynamique sur OpenGL, Vulkan et Metal : décodage/redimensionnement en arrière-plan et envoi GPU natif synchrone. La désactivation recharge les textures selon la qualité choisie. Les moteurs natifs mettent en cache le fond de table, l’incluent dans le cadre ajusté et arrondissent les quatre coins sur le GPU sans texture plein écran supplémentaire.
+Paramètres → Application → Moteur de rendu permet de basculer immédiatement : OpenGL ↔ Vulkan sur Windows / Linux x64, OpenGL ↔ Metal sur macOS. Système utilise OpenGL par défaut. L’envoi des textures natives, le dessin Cubism, la lecture GPU et le rechargement sont raccordés ; le modèle et les mouvements/expressions sélectionnés sont conservés. Un échec d’initialisation ou de rechargement rétablit OpenGL. Vulkan/Metal restent expérimentaux : les calques des touches/effets/pointeur prennent désormais en charge tous les moteurs. Live2D prend en charge la résolution dynamique sur OpenGL, Vulkan et Metal : décodage/redimensionnement en arrière-plan et envoi GPU natif synchrone. La désactivation recharge les textures selon la qualité choisie. Les moteurs natifs mettent en cache le fond de table, l’incluent dans le cadre ajusté et arrondissent les quatre coins sur le GPU sans texture plein écran supplémentaire. Les calques utilisent le rendu logiciel SDL, sont mis en cache jusqu’à un changement d’entrée, puis composés dans l’image native terminée et renvoyés au GPU ; les performances restent à mesurer.
 
 L’optimisation des rendus volumineux apparaît avec Vulkan / Metal et est désactivée par défaut. Vulkan propose trois options ; Metal uniquement les grandes allocations. Inox2D Metal regroupe les sommets de chaque image ; Live2D Metal indique cette option comme indisponible. Les trois sous-options sont enregistrées séparément ; les changements rechargent le modèle. Inox2D Vulkan propose l’enregistrement parallèle et les grands blocs mémoire. Live2D Vulkan propose VMA et l’enregistrement parallèle avec mélange classique, sans nœuds hors écran ni masques haute précision. Live2D exige 128 Drawables pour les buffers secondaires et 128 instantanés dessinables pour utiliser jusqu’à quatre threads ; les autres modèles conservent le chemin séquentiel du SDK. Live2D Vulkan Bindless utilise une table de 64 textures d’atlas au maximum avec mélange classique et sans nœuds hors écran ; le chemin précédent est conservé si les capacités du périphérique sont insuffisantes. Inox2D Bindless n’est pas implémenté. Les grands pools peuvent utiliser plus de mémoire ; les gains de performance restent à mesurer.
 
@@ -443,6 +443,14 @@ Fait avec ❤️ & ⌨️
 
 </div>
 
+### Présentation des options
+
+Les boutons en haut des préférences basculent entre toutes les options et des groupes repliables. Cliquez sur Fenêtre, Modèle, Application ou Apparence pour ouvrir ou fermer le groupe. La présentation est enregistrée et les valeurs sont conservées.
+
+### Plugin de statistiques des entrées
+
+Le plugin Rust est compilé par défaut avec l’application. Activez, désactivez ou importez-le depuis la page des plugins. La page de statistiques affiche les totaux du clavier et de la souris, les graphiques par jour et par heure, le stockage local et l’export CSV. Voir [Statistiques](statistics-plugin.md). Le temps des applications actives inclut classement, totaux horaires et commande séparée. Relevés, stockage et export fonctionnent dans un thread indépendant. Le plugin ajoute l’entrée des statistiques à son activation et la retire à sa désactivation ou désinstallation.
+
 ### Plugins de rendu dynamiques
 
 Préférences → Plugins permet d’installer, d’activer et de supprimer des moteurs de rendu locaux. Passez à un autre moteur avant de modifier un plugin actif. Live2D utilise un plugin C++ ; Inochi2D utilise le plugin Rust Inox2D avec OpenGL, Vulkan (Windows/Linux) et Metal (macOS), sans wgpu. L’importation identifie d’abord le contenu du modèle (`.model3.json`, `.inp`, `.inx`). Toutes les données JSON sont lues et écrites en Rust.
@@ -468,3 +476,8 @@ Paramètres → Application → Mode mémoire réduite est désactivé par défa
 Paramètres → Animal → Plage de suivi : horizontal/vertical 25–400%, désactivée par défaut, 100% inchangé. Les pattes Mver dessinées vont plus loin ; Live2D garde les limites du modèle. Regard et fenêtre inchangés. Le mode mémoire réduite désactive MSAA et réduit les shaders et pipelines inutilisés.
 
 Sous Windows, les paramètres en basse mémoire utilisent un rendu logiciel SDL par blocs et un fond opaque avec OpenGL/Vulkan. Taille réelle, DPI et anticrénelage des polices sont conservés. L’atlas stocke des masques A8 et convertit uniquement le glyphe dessiné. Sur les autres plateformes, OpenGL réutilise le contexte du compagnon.
+### Plusieurs touches et caractères lisibles en mode miroir
+
+Mver (OpenGL/Vulkan/Metal) découpe séparément la main, le cadre et les caractères, puis relie les touches maintenues avec + dans une seule bulle. Le cadre et la queue se reflètent avec le modèle ; les caractères restent lisibles, aussi en mode touche unique. Configurez les trois zones, l’espacement autour de + et la limite par côté dans `hand-layout.json` à côté des images des mains, puis redémarrez. Consultez le [guide et l’exemple](hand-layout.md).
+
+La boîte de dialogue vérifie la référence `Sound` et la présence du fichier, puis affiche un réglage de volume à côté des mouvements avec audio. Réglez de 0 à 100% par glissement ou saisie ; un double-clic rétablit 100% et 0% coupe le son. Les valeurs sont conservées par modèle et mouvement et s’appliquent au dialogue, aux raccourcis, aux mouvements aléatoires et au menu contextuel, aussi pendant la lecture. Les autres mouvements utilisant le même fichier gardent leur propre volume.

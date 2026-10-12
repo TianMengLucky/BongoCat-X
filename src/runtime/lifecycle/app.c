@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "bongo_cat/audio.h"
+#include "bongo_cat/statistics.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/image.h"
@@ -133,6 +134,7 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_window_apply(app);
     cache_startup_display_fps(app);
     bongo_cat_startup_stage(app, "platform-ready");
+    bongo_cat_statistics_start(app);
     app->model_runtime = bongo_cat_model_runtime_create(app->asset_root, error);
     if (!app->model_runtime) return false;
     attach_rhi_info(app);

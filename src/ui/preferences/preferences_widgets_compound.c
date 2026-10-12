@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 /* Measure and draw with the same UTF-8 wrapping, omitting highlight markers. */
-int bongo_cat_pref_detail_text(struct nk_context *context, const char *text,
+int bongo_cat_pref_detail_text(const struct nk_context *context, const char *text,
     struct nk_rect bounds, bool draw) {
     if (!text || !text[0]) return 0;
     const struct nk_user_font *font = bongo_cat_ui_caption_font(context);
@@ -22,6 +22,13 @@ int bongo_cat_pref_detail_text(struct nk_context *context, const char *text,
             --remaining;
             continue;
         }
+        if (*text == '\n') {
+            x = 0;
+            ++line;
+            ++text;
+            --remaining;
+            continue;
+        }
         nk_rune rune;
         int length = nk_utf_decode(text, &rune, remaining);
         if (length <= 0) length = 1;
@@ -31,7 +38,7 @@ int bongo_cat_pref_detail_text(struct nk_context *context, const char *text,
             ++line;
         }
         if (draw)
-            nk_draw_text(nk_window_get_canvas(context),
+            nk_draw_text(nk_window_get_canvas((struct nk_context *)context),
                 nk_rect(bounds.x + x, bounds.y + line * 19.0f,
                     width + 1.0f, font->height), text, length, font,
                 nk_rgba(0, 0, 0, 0),
@@ -133,9 +140,9 @@ bool bongo_cat_pref_toggle_float_detail(struct nk_context *context, const char *
 
 bool bongo_cat_pref_toggle_float_config(struct nk_context *context, const char *id,
     const char *title, const char *unit, bool *enabled, float minimum, float *value,
-    float maximum, float step, float default_value) {
+    float maximum, float step, float default_value, const char *detail) {
     bool config_clicked = false;
     toggle_float_row(context, id, title, unit, enabled, minimum, value,
-        maximum, step, default_value, NULL, true, true, &config_clicked);
+        maximum, step, default_value, detail, true, true, &config_clicked);
     return config_clicked;
 }

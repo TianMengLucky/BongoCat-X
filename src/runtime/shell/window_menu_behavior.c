@@ -175,7 +175,8 @@ bool bongo_cat_window_behavior_commit_preview(BongoCatApp *app,
         entry->group, entry->index)) return false;
     if (entry->sound[0]) {
         BongoCatError error = {0};
-        bongo_cat_audio_play(app->audio, entry->sound, &error);
+        bongo_cat_audio_play_motion(app->audio, entry->sound, entry->id,
+            bongo_cat_settings_motion_volume(&app->settings, entry->id) / 100.0f, &error);
     }
     const char *shortcut = behavior_shortcut(app, entry->id);
     if (shortcut && shortcut[0]) for (size_t i = 0; i < app->behaviors.count; ++i) {

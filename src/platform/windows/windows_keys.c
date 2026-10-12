@@ -91,6 +91,14 @@ const char *bongo_cat_windows_key_name(const RAWKEYBOARD *key, char output[16]) 
     }
 }
 
+bool bongo_cat_windows_key_down(unsigned virtual_key) {
+    if (virtual_key == VK_LWIN || virtual_key == VK_RWIN)
+        return (GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 ||
+            (GetAsyncKeyState(VK_RWIN) & 0x8000) != 0;
+    return virtual_key > 0 && virtual_key < 255 &&
+        (GetAsyncKeyState((int)virtual_key) & 0x8000) != 0;
+}
+
 bool bongo_cat_windows_right_button_down(void) {
     /* Native window drag/capture state, not global model input. */
     return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;

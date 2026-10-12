@@ -42,7 +42,10 @@ void test_config(void) {
     CHECK(!settings.window.pass_through);
     CHECK(!settings.app.run_as_admin);
     settings.app.run_as_admin = true;
+    CHECK(!settings.app.github_download_acceleration);
+    settings.app.github_download_acceleration = true;
     settings.model.max_fps = 30;
+    bongo_cat_settings_set_mouse_sensitivity(&settings, 1.23f);
     settings.model.multiple_pets = true;
     CHECK(!settings.model.vertical_flip);
     CHECK(!settings.model.mouse_vertical_flip);
@@ -54,6 +57,7 @@ void test_config(void) {
     settings.model.gamepad_four_hands = true;
     settings.model.dynamic_texture_resolution = false;
     settings.window.pass_through = true;
+    settings.window.keep_in_screen = true;
     settings.window.obs_background = true;
     settings.window.random_expression = true;
     settings.window.random_expression_interval_seconds = 12.0f;
@@ -122,11 +126,13 @@ void test_config(void) {
     CHECK(contains_text(settings_path, "\"format\": \"bongocat/settings\""));
     CHECK(contains_text(settings_path, "\"captureBackground\": true"));
     CHECK(contains_text(settings_path, "\"runAsAdmin\": true"));
+    CHECK(contains_text(settings_path, "\"githubDownloadAcceleration\": true"));
     CHECK(contains_text(settings_path, "\"randomExpression\": true"));
     CHECK(contains_text(settings_path,
         "\"randomExpressionIntervalSeconds\": 12.0"));
     CHECK(contains_text(settings_path, "\"multiplePets\": true") && !contains_text(settings_path, "inputReleaseDelaySeconds"));
     CHECK(contains_text(settings_path, "\"forceMouseInput\": true"));
+    CHECK(contains_text(settings_path, "\"mouseSensitivity\": 1.23"));
     CHECK(contains_text(settings_path, "\"removedModels\"") &&
         contains_text(settings_path, "\"model~2\""));
     CHECK(contains_text(settings_path, "\"hiddenModels\"") &&
@@ -161,6 +167,8 @@ void test_config(void) {
     CHECK(loaded_settings.model.vertical_flip);
     CHECK(loaded_settings.model.mouse_vertical_flip);
     CHECK(loaded_settings.model.force_mouse_input);
+    CHECK(loaded_settings.window.mouse_sensitivity_hundredths == 123);
+    CHECK(loaded_settings.window.keep_in_screen);
     CHECK(loaded_settings.window.pass_through &&
         loaded_settings.window.obs_background &&
         loaded_settings.window.random_expression &&
@@ -169,6 +177,7 @@ void test_config(void) {
         loaded_settings.window.random_motion_interval_seconds == 17.0f);
     CHECK(loaded_settings.app.language == BONGO_CAT_LANG_ZH_CN);
     CHECK(loaded_settings.app.run_as_admin);
+    CHECK(loaded_settings.app.github_download_acceleration);
     CHECK(loaded_settings.model.gamepad_four_hands);
     CHECK(!loaded_settings.model.dynamic_texture_resolution);
     CHECK(strstr(loaded_settings.extensions_json,

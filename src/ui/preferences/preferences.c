@@ -3,6 +3,7 @@
 #include "bongo_cat/app.h"
 #include "bongo_cat/memory.h"
 #include "bongo_cat/platform.h"
+#include "bongo_cat/safe_ffi.h"
 #include "preferences_controls.h"
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
@@ -44,6 +45,8 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
             value->live2d_rescan_event_type = 0; }
     if (value && app->smoke_preference_page >= 0)
         value->page = app->smoke_preference_page;
+    if (value) value->collapsible_options = bongo_safe_preferences_collapsible_get(
+        app->settings.extensions_json, sizeof(app->settings.extensions_json));
     return value;
 }
 

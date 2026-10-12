@@ -8,6 +8,12 @@ name: Release and Nightly BongoCat
 # the Live2D Proprietary Software License Agreement (see README).
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing version tag to resume (for example v2.1.3)'
+        required: true
+        type: string
   push:
     branches:
       - dev
@@ -23,7 +29,7 @@ on:
 env:
   CUBISM_SDK_VERSION: "5-r.5"
   GLEW_VERSION: "2.2.0"
-  SOURCE_REF: ${{ github.sha }}
+  SOURCE_REF: ${{ inputs.release_tag || github.sha }}
 
 permissions:
   contents: read
@@ -51,21 +57,26 @@ jobs:
           ref: ${{ env.SOURCE_REF }}
 
       - name: Validate tag matches project version
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' || inputs.release_tag != ''
         shell: pwsh
-        run: ./.github/scripts/check-tag-version.ps1 -Tag $env:GITHUB_REF_NAME
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: ./.github/scripts/check-tag-version.ps1 -Tag $env:REQUESTED_TAG
 
       - name: Resolve immutable build source and release tag
         id: source
         shell: pwsh
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
         run: |
           $version = (& ./packaging/get-project-version.ps1).AppVersion
           $sha = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source commit' }
-          $nightly = $env:GITHUB_REF_TYPE -ne 'tag'
+          $nightly = $env:GITHUB_REF_TYPE -ne 'tag' -and -not $env:REQUESTED_TAG
           $tag = if ($nightly) {
             "nightly"
-          } else { $env:GITHUB_REF_NAME }
+          } elseif ($env:REQUESTED_TAG) { $env:REQUESTED_TAG }
+          else { $env:GITHUB_REF_NAME }
           @("version=$version", "sha=$sha", "tag=$tag",
             "prerelease=$($nightly.ToString().ToLowerInvariant())") |
             Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8
@@ -138,6 +149,7 @@ jobs:
     env:
       # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
       RUSTC_WRAPPER: sccache
+      MACOSX_DEPLOYMENT_TARGET: ${{ startsWith(matrix.platform, 'macos-') && '15.0' || '' }}
       RELEASE_TAG: ${{ needs.version-check.outputs.tag }}
     steps:
       - name: Checkout resolved release source
@@ -213,7 +225,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build libgl1-mesa-dev libegl1-mesa-dev \
-            libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev \
+            libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libcurl4-openssl-dev \
             libfontconfig1-dev glslang-tools curl file desktop-file-utils
 
       # sccache is not packaged for Ubuntu 22.04 (jammy); use the official
@@ -323,6 +335,7 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} \
+            -DCMAKE_EXE_LINKER_FLAGS="${{ startsWith(matrix.platform, 'macos-') && '-framework Security -framework SystemConfiguration' || '' }}" \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
@@ -359,6 +372,14 @@ jobs:
       - name: Build Unix release
         if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
         run: bash .github/scripts/build-unix.sh cmake --build build-release --parallel 2
+
+      - name: Report compiler cache statistics
+        if: always() && steps.skip-check.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          if (Get-Command sccache -ErrorAction SilentlyContinue) {
+            sccache --show-stats
+          }
 
       - name: Check native shader resources before packaging
         if: steps.skip-check.outputs.skip != 'true'
@@ -457,6 +478,7 @@ jobs:
             SkipSmoke = '${{ matrix.platform }}'.StartsWith('macos-')
             ExpectLive2D = $true
             ExpectInox2D = $true
+            ExpectStatistics = $true
           }
           & ./.github/scripts/check-unix-package.ps1 @packageCheckArgs
           $checksum = "$($archive.FullName).sha256"

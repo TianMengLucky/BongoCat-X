@@ -25,6 +25,7 @@ typedef struct AudioVoice {
     ma_audio_buffer buffer;
     AudioClip *clip;
     char path[BONGO_CAT_PATH_CAP];
+    char motion_id[BONGO_CAT_BEHAVIOR_ID_CAP];
     uint64_t used;
     uint64_t order;
     bool ready;

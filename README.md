@@ -75,7 +75,7 @@ BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或�
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libfontconfig1-dev fonts-noto-cjk
   ```
 
 ### 🔧 配置与构建
@@ -290,7 +290,7 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 ### 🖼️ Vulkan / Metal 支持到哪一步了？
 
-设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 效果 / 指针覆盖层目前仅在 OpenGL 路径实现；Live2D 的 OpenGL / Vulkan / Metal 均支持动态纹理分辨率，原生后端后台解码和缩放、主线程同步上传。关闭动态分辨率后按画质比例重载纹理。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围；圆角遮罩在 GPU 上仅绘制四角，无额外整帧纹理。
+设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 特效 / 指针覆盖层已支持所有后端；Live2D 的 OpenGL / Vulkan / Metal 均支持动态纹理分辨率，原生后端后台解码和缩放、主线程同步上传。关闭动态分辨率后按画质比例重载纹理。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围；圆角遮罩在 GPU 上仅绘制四角，无额外整帧纹理。 覆盖层复用 SDL 软件绘制并按输入变化缓存，在原生帧完成后合成并回传 GPU；性能仍待实测。
 
 「大型渲染优化」在 Vulkan / Metal 后端显示，默认关闭；Vulkan 提供三个独立子项，Metal 仅提供大块内存分配，切换时重载模型。Inox2D Metal 启用后将整帧顶点合并到共享缓冲，关闭后逐节点分配；Live2D Metal 显示不可用。Inox2D Vulkan 支持多线程命令录制与大块内存分配；Live2D Vulkan 支持 VMA 大块分配，以及普通混合、无离屏节点、非高精度遮罩模型的多线程录制。Live2D 至少 128 个 Drawable 才进入次级缓冲路径，至少 128 条可绘制快照才使用最多 4 个工作线程；其余模型保留 SDK 串行路径。Live2D Vulkan 的 Bindless 使用最多 64 张图集的纹理表，适用于普通混合且无离屏节点的模型；设备特性或容量不满足时回退。Inox2D Bindless 尚未实现。更大的内存池可能增加内存占用，性能收益待实测。
 
@@ -313,6 +313,14 @@ Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
 Made with ❤️ & ⌨️
 </div>
 
+### 偏好选项菜单样式
+
+「偏好」页顶部可切换「全部展开」和「折叠分组」样式。折叠样式下，点击窗口、模型、应用或外观分组标题即可展开或收起选项；样式选择会保存，原有设置值保持不变。
+
+### 输入统计插件
+
+Rust 动态统计插件默认随程序构建，可在「插件」页启停或导入。新增「统计」页展示键鼠总量、每日和每小时趋势，支持本地保存及 CSV 导出。详见[统计插件说明](docs/statistics-plugin.md)。 应用使用时长按前台应用汇总，支持排行、小时分布和独立开关；统计采样、保存与导出在独立线程执行。 统计入口由插件在启用时注册，停用或卸载后自动移除。
+
 ### 动态渲染插件
 
 在「设置 → 插件」中安装本地插件、启用或停用渲染引擎、移除用户安装的插件。使用中的插件需先切换到其他渲染器后再修改。Live2D 使用独立 C++ 插件；Inochi2D 使用 Rust Inox2D 插件，支持 OpenGL、Vulkan（Windows/Linux）和 Metal（macOS），不使用 wgpu。导入会先识别内容，支持 `.model3.json` 和 `.inp`／`.inx`。全部 JSON 解析和序列化由 Rust 完成。
@@ -332,3 +340,8 @@ Live2D 自动复用几何缓冲与连续重复的渲染状态；OpenGL 动态上
 设置 → 桌宠 →「自定义鼠标跟随范围」支持水平/垂直 25–400%，100% 为原范围，默认关闭。Mver 绘制猫爪和鼠标可扩大实际活动范围，普通 Live2D 仍保留作者的参数边界；视线和窗口位置不变。低内存模式现关闭 OpenGL MSAA，并减少未使用的 OpenGL 着色器与 Vulkan 混合管线。
 
 Windows 低内存设置窗口对 OpenGL/Vulkan 均使用分块 SDL 软件绘制及不透明背景。字体保留实际字号、屏幕 DPI 和抗锯齿采样，软件字体图集保存单通道遮罩，仅转换当前字形，避免整张图集扩展为四通道。其他平台的 OpenGL 继续复用桌宠上下文。
+### 多按键显示与字符裁剪
+
+Mver (OpenGL/Vulkan/Metal) 可分别裁剪手部、气泡外框和字符，将按住的按键用加号连接在同一个气泡中。外框和尾巴随模型镜像，字符保持可读，单键模式也生效。在手部图片文件夹的 `hand-layout.json` 中设置三个裁剪区域、加号两侧间距和每侧显示数量，修改后重新启动应用。详见[配置说明与示例](docs/hand-layout.md)。
+
+动作弹窗会检查动作的 `Sound` 引用和音频文件是否存在，仅在带音频的动作旁显示独立音量控件。音量范围为 0–100%，支持拖动、输入数值和双击恢复 100%；0% 静音。设置按模型和动作保存，弹窗播放、快捷键、随机动作及右键菜单使用同一音量，正在播放时也可调整；共享同一音频文件的其他动作不受影响。

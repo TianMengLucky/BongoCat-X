@@ -219,8 +219,8 @@ static int choice_row(struct nk_context *context, const char *id,
 }
 
 int bongo_cat_pref_theme(struct nk_context *context, const char *id,
-    const char *title, const char *const *labels, int selected) {
-    return choice_row(context, id, title, labels, 3, true, selected, NULL, NULL);
+    const char *title, const char *detail, const char *const *labels, int selected) {
+    return choice_row(context, id, title, labels, 3, true, selected, NULL, detail);
 }
 
 /* Shared form for slider-based rows: label on the left, slider with an
@@ -248,7 +248,7 @@ static void slider_row(struct nk_context *context, const char *id,
 }
 
 int bongo_cat_pref_fps(struct nk_context *context, const char *id,
-    const char *title, int fps, int display_fps) {
+    const char *title, const char *detail, int fps, int display_fps) {
     /* The legacy "match display" choice (-1) shows the display maximum;
        it stays saved untouched until the slider or value box is used.
        Dragging spans 1..display maximum; typed values may exceed the
@@ -258,7 +258,7 @@ int bongo_cat_pref_fps(struct nk_context *context, const char *id,
     float value = fps <= 0 ? maximum : (float)fps;
     float result = value;
     bool changed = false;
-    slider_row(context, id, title, NULL, 1.0f, value, maximum, 1.0f,
+    slider_row(context, id, title, detail, 1.0f, value, maximum, 1.0f,
         (float)BONGO_CAT_DEFAULT_MAX_FPS, &result, &changed, 360.0f);
     /* Returning the original keeps saved values (including the legacy -1)
        untouched while the user only looks at the page. */
@@ -285,4 +285,10 @@ bool bongo_cat_pref_capsule_button(struct nk_context *context,
     bool clicked = false;
     capsule(context, id, labels, 1, false, 0, &clicked);
     return clicked;
+}
+
+int bongo_cat_pref_segments(struct nk_context *context, const char *id,
+    const char *const *labels, int count, int selected) {
+    bool clicked = false;
+    return capsule(context, id, labels, count, false, selected, &clicked);
 }

@@ -22,6 +22,11 @@ bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
 bool bongo_cat_pref_control_slider(struct nk_context *context, const char *id,
     float minimum, float *value, float maximum, float step,
     float default_value, const char *suffix, float edit_maximum);
+/* Same slider in an explicit rectangle, for overlay rows. */
+bool bongo_cat_pref_control_slider_rect(struct nk_context *context, const char *id,
+    float minimum, float *value, float maximum, float step,
+    float default_value, const char *suffix, float edit_maximum,
+    struct nk_rect bounds, bool available, float opacity);
 bool bongo_cat_pref_control_toggle(struct nk_context *context,
     const char *id, bool *value);
 bool bongo_cat_pref_control_toggle_available(struct nk_context *context,

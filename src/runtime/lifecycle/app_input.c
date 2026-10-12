@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "bongo_cat/preferences.h"
+#include "bongo_cat/statistics.h"
 #include "bongo_cat/shortcut.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/overlay.h"
@@ -112,6 +113,7 @@ static void suppress_shortcut(BongoCatApp *app, const BongoCatInputEvent *event)
 }
 
 void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts) {
+    bongo_cat_statistics_tick(app);
     BongoCatInputEvent event;
     while (bongo_cat_input_pop(&app->input, &event)) {
         bool keyboard = event.kind == BONGO_CAT_INPUT_KEY_DOWN ||

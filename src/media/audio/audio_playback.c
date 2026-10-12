@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #ifdef _WIN32
 #include <windows.h>
 
@@ -77,8 +78,8 @@ static ma_result load_voice(BongoCatAudio *audio, AudioVoice *voice, const char 
     return result;
 }
 
-BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path,
-    bool overlap, BongoCatError *error) {
+static BongoCatResult play_clip(BongoCatAudio *audio, const char *path,
+    bool overlap, const char *motion_id, float volume, BongoCatError *error) {
     if (!audio || !path || !path[0] || strlen(path) >= BONGO_CAT_PATH_CAP) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_ARGUMENT, "Invalid audio path or player");
         return BONGO_CAT_ERROR_ARGUMENT;
@@ -97,7 +98,8 @@ BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path
         AudioVoice *voice = &audio->voices[i];
         bool playing = voice->ready && ma_sound_is_playing(&voice->sound) &&
             !ma_sound_at_end(&voice->sound);
-        if (voice->ready && strcmp(voice->path, path) == 0 && (!overlap || !playing)) {
+        if (voice->ready && strcmp(voice->path, path) == 0 &&
+            strcmp(voice->motion_id, motion_id) == 0 && (!overlap || !playing)) {
             selected = voice;
             break;
         }
@@ -115,6 +117,7 @@ BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path
         }
         selected->ready = true;
         memcpy(selected->path, path, strlen(path) + 1);
+        memcpy(selected->motion_id, motion_id, strlen(motion_id) + 1);
     } else {
         ma_sound_stop(&selected->sound);
         ma_result result = ma_sound_seek_to_pcm_frame(&selected->sound, 0);
@@ -124,6 +127,7 @@ BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path
             return BONGO_CAT_ERROR_IO;
         }
     }
+    ma_sound_set_volume(&selected->sound, volume);
     selected->used = audio->last_play = SDL_GetTicks();
     selected->order = ++audio->sequence;
 #ifdef _WIN32
@@ -135,6 +139,33 @@ BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path
         return BONGO_CAT_ERROR_PLATFORM;
     }
     return BONGO_CAT_OK;
+}
+
+BongoCatResult bongo_cat_audio_play_sound(BongoCatAudio *audio, const char *path,
+    bool overlap, BongoCatError *error) {
+    return play_clip(audio, path, overlap, "", 1.0f, error);
+}
+
+BongoCatResult bongo_cat_audio_play_motion(BongoCatAudio *audio, const char *path,
+    const char *motion_id, float volume, BongoCatError *error) {
+    if (!motion_id || !motion_id[0] || strlen(motion_id) >= BONGO_CAT_BEHAVIOR_ID_CAP ||
+        !isfinite(volume)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_ARGUMENT, "Invalid motion audio volume or id");
+        return BONGO_CAT_ERROR_ARGUMENT;
+    }
+    return play_clip(audio, path, false, motion_id,
+        fmaxf(0.0f, fminf(1.0f, volume)), error);
+}
+
+void bongo_cat_audio_set_motion_volume(BongoCatAudio *audio,
+    const char *motion_id, float volume) {
+    if (!audio || !motion_id || !motion_id[0] || !isfinite(volume)) return;
+    volume = fmaxf(0.0f, fminf(1.0f, volume));
+    for (size_t i = 0; i < AUDIO_VOICES; ++i) {
+        AudioVoice *voice = &audio->voices[i];
+        if (voice->ready && !strcmp(voice->motion_id, motion_id))
+            ma_sound_set_volume(&voice->sound, volume);
+    }
 }
 
 BongoCatResult bongo_cat_audio_play(BongoCatAudio *audio, const char *path, BongoCatError *error) {

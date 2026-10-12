@@ -57,6 +57,8 @@ void bongo_cat_window_apply(BongoCatApp *app) {
     if (state->position_known)
         SDL_SetWindowPosition(app->window, state->x, state->y);
     SDL_SyncWindow(app->window);
+    if (preferences->keep_in_screen) bongo_cat_window_clamp_to_display(app);
+    else bongo_cat_window_recover_to_display(app);
     SDL_SyncWindow(app->window);
     /* A visible session is revealed by the first successful frame. Keeping
        the native window hidden while loading avoids exposing an uninitialised
@@ -139,6 +141,7 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
             bongo_cat_window_content_size(app, width,
                 height, &app->session.window.content_width,
                 &app->session.window.content_height);
+            bongo_cat_window_clamp_to_display(app);
             app->dirty = true;
         }
     }
@@ -190,6 +193,7 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
             app->session.window.y = y;
             app->session.window.position_known = true;
             app->pointer_known = false;
+            if (!app->window_drag_active) bongo_cat_window_clamp_to_display(app);
             bongo_cat_window_mark_hit_dirty(app);
         }
     } else if (event->type == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||

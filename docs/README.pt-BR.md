@@ -71,7 +71,7 @@ Execute os comandos abaixo na raiz do projeto (o diretório que contém `CMakeLi
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Configuração e compilação
@@ -274,7 +274,7 @@ Não. O BongoCat processa entradas de teclado e mouse localmente para impulsiona
 
 ### 🖼️ Qual é o progresso do suporte a Vulkan / Metal?
 
-Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro exigem OpenGL. Live2D suporta resolução dinâmica em OpenGL, Vulkan e Metal, com decodificação/redimensionamento em segundo plano e envio nativo à GPU síncrono. Desativar recarrega as texturas conforme a qualidade escolhida. Os backends nativos armazenam o fundo de mesa em cache, o incluem no quadro ajustado e arredondam os quatro cantos na GPU sem outra textura de tela inteira.
+Configurações → Aplicativo → Backend de renderização permite trocar imediatamente: OpenGL ↔ Vulkan no Windows / Linux x64 e OpenGL ↔ Metal no macOS. Sistema usa OpenGL por padrão. O envio de texturas nativas, desenho Cubism, leitura da GPU e recarga estão conectados; o modelo e movimentos/expressões selecionados são preservados. Falhas de inicialização ou recarga restauram OpenGL. Vulkan/Metal são experimentais: sobreposições de teclas/efeitos/ponteiro agora suportam todos os motores. Live2D suporta resolução dinâmica em OpenGL, Vulkan e Metal, com decodificação/redimensionamento em segundo plano e envio nativo à GPU síncrono. Desativar recarrega as texturas conforme a qualidade escolhida. Os backends nativos armazenam o fundo de mesa em cache, o incluem no quadro ajustado e arredondam os quatro cantos na GPU sem outra textura de tela inteira. As camadas usam renderização por software do SDL, ficam em cache até a entrada mudar e são compostas no quadro nativo concluído antes do envio à GPU; o desempenho ainda não foi medido.
 
 A otimização de renderização aparece em Vulkan / Metal e fica desativada por padrão. Vulkan oferece três opções; Metal apenas grandes alocações. Inox2D Metal agrupa os vértices de cada quadro; Live2D Metal mostra a opção como indisponível. As três subopções são salvas separadamente; alterações recarregam o modelo. Inox2D Vulkan oferece gravação paralela e blocos grandes. Live2D Vulkan oferece VMA e gravação paralela com mistura comum, sem nós fora da tela ou máscaras de alta precisão. Live2D exige 128 Drawables para buffers secundários e 128 snapshots desenháveis para usar até quatro threads; outros modelos mantêm a rota serial do SDK. Live2D Vulkan Bindless usa uma tabela de até 64 texturas de atlas com mistura comum e sem nós fora da tela; retorna à rota anterior se os recursos ou a capacidade do dispositivo forem insuficientes. Inox2D Bindless não está implementado. Pools maiores podem usar mais memória; os ganhos de desempenho ainda não foram medidos.
 
@@ -298,6 +298,14 @@ Copyright © 2026 - **BongoCat**<br>
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### Layout das opções
+
+Os botões no topo alternam entre todas as opções e grupos recolhíveis. Clique em Janela, Modelo, Aplicativo ou Aparência para abrir ou fechar o grupo. O layout é salvo e os valores existentes são preservados.
+
+### Plugin de estatísticas de entrada
+
+O plugin Rust é compilado com o aplicativo por padrão. Ative, desative ou importe na página de plugins. A página de estatísticas mostra totais de teclado e mouse, gráficos diários e por hora, armazenamento local e exportação CSV. Veja [Estatísticas](statistics-plugin.md). O tempo dos aplicativos ativos inclui ranking, totais por hora e controle separado. Coleta, armazenamento e exportação usam uma thread independente. O plugin adiciona a entrada de estatísticas ao ser ativado e a remove ao ser desativado ou desinstalado.
 
 ### Plugins de renderização dinâmicos
 
@@ -324,3 +332,8 @@ Configurações → Aplicativo → Modo de pouca memória vem desativado. Limita
 Configurações → Pet → Faixa do mouse: horizontal/vertical 25–400%, desativada por padrão; 100% mantém o original. As patas Mver desenhadas vão mais longe; Live2D mantém seus limites. Olhar e janela não mudam. O modo de pouca memória desativa MSAA e reduz shaders e pipelines não usados.
 
 No Windows, as configurações de pouca memória usam renderização SDL por software em blocos e fundo opaco para OpenGL/Vulkan. Tamanho real, DPI e suavização das fontes são preservados. O atlas armazena máscaras A8 e converte apenas o glifo desenhado. Em outras plataformas, OpenGL continua reutilizando o contexto do mascote.
+### Várias teclas e caracteres legíveis no modo espelho
+
+Mver (OpenGL/Vulkan/Metal) recorta separadamente a mão, a borda e os caracteres, unindo as teclas pressionadas com + em um único balão. A borda e a ponta espelham com o modelo; os caracteres continuam legíveis, também no modo de uma tecla. Configure as três áreas, o espaçamento ao redor de + e o limite por lado em `hand-layout.json` junto às imagens das mãos e reinicie após editar. Veja o [guia e o exemplo](hand-layout.md).
+
+A janela de ações verifica a referência `Sound` e se o arquivo existe, mostrando um controle individual junto aos movimentos com áudio. Ajuste de 0 a 100% arrastando ou digitando; um clique duplo restaura 100% e 0% silencia. Os valores são salvos por modelo e movimento e valem para a janela, atalhos, movimentos aleatórios e menu de contexto, inclusive durante a reprodução. Outros movimentos que usam o mesmo arquivo mantêm seu próprio volume.

@@ -71,7 +71,7 @@ Führe die folgenden Befehle im Projektstammverzeichnis aus (dem Verzeichnis, da
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libcurl4-openssl-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Konfiguration und Build
@@ -281,7 +281,7 @@ Nein. BongoCat verarbeitet Tastatur- und Mauseingaben lokal, um Animationen und 
 
 ### 🖼️ Wie weit ist die Vulkan-/Metal-Unterstützung?
 
-Einstellungen → Anwendung → Render-Backend wechselt sofort: OpenGL ↔ Vulkan unter Windows / Linux x64, OpenGL ↔ Metal unter macOS. System verwendet standardmäßig OpenGL. Native Texturübertragung, Cubism-Zeichnen, GPU-Auslesen und Modellwechsel sind verbunden; Modell und ausgewählte Bewegungen/Ausdrücke bleiben erhalten. Bei Initialisierungs- oder Ladefehlern wird OpenGL wiederhergestellt. Vulkan/Metal sind experimentell: Tasten-/Effekt-/Zeiger-Overlays benötigen derzeit OpenGL. Live2D unterstützt dynamische Texturauflösung mit OpenGL, Vulkan und Metal; Dekodierung und Skalierung erfolgen im Hintergrund, native GPU-Uploads synchron. Deaktivieren lädt die Texturen gemäß der Qualitätsstufe neu. Native Backends speichern statische Tischhintergründe im Cache und unterstützen GPU-Rundungen an allen vier Ecken ohne zusätzliche Vollbildtextur.
+Einstellungen → Anwendung → Render-Backend wechselt sofort: OpenGL ↔ Vulkan unter Windows / Linux x64, OpenGL ↔ Metal unter macOS. System verwendet standardmäßig OpenGL. Native Texturübertragung, Cubism-Zeichnen, GPU-Auslesen und Modellwechsel sind verbunden; Modell und ausgewählte Bewegungen/Ausdrücke bleiben erhalten. Bei Initialisierungs- oder Ladefehlern wird OpenGL wiederhergestellt. Vulkan/Metal sind experimentell: Tasten-/Effekt-/Zeiger-Overlays unterstützen jetzt alle Backends. Live2D unterstützt dynamische Texturauflösung mit OpenGL, Vulkan und Metal; Dekodierung und Skalierung erfolgen im Hintergrund, native GPU-Uploads synchron. Deaktivieren lädt die Texturen gemäß der Qualitätsstufe neu. Native Backends speichern statische Tischhintergründe im Cache und unterstützen GPU-Rundungen an allen vier Ecken ohne zusätzliche Vollbildtextur. Overlays nutzen SDL-Softwarerendering, werden bis zur Eingabeänderung zwischengespeichert und in den fertigen nativen Frame gemischt und zur GPU übertragen; die Leistung ist noch nicht gemessen.
 
 Große Rendering-Optimierung erscheint für Vulkan / Metal und ist standardmäßig aus. Vulkan bietet drei Optionen; Metal nur große Speicherzuweisungen. Inox2D Metal nutzt damit einen gemeinsamen Vertexpuffer pro Frame; Live2D Metal meldet die Option als nicht verfügbar. Die drei Unteroptionen werden einzeln gespeichert; Änderungen laden das Modell neu. Inox2D Vulkan unterstützt parallele Befehlsaufzeichnung und große Speicherblöcke. Live2D Vulkan unterstützt VMA und parallele Aufzeichnung bei normalem Blending ohne Offscreen-Knoten oder hochpräzise Masken. Ab 128 Drawables nutzt Live2D sekundäre Puffer, ab 128 Zeichen-Snapshots bis zu vier Threads; andere Modelle behalten den seriellen SDK-Pfad. Live2D Vulkan Bindless nutzt eine Tabelle mit bis zu 64 Atlastexturen bei normalem Blending ohne Offscreen-Knoten; fehlende Gerätefunktionen oder Kapazität führen zum bisherigen Pfad zurück. Inox2D Bindless ist nicht implementiert. Größere Pools können mehr Speicher benötigen; Leistungsgewinne sind noch nicht gemessen.
 
@@ -305,6 +305,14 @@ Copyright © 2026 - **BongoCat**<br>
 By vladelaina<br>
 Made with ❤️ & ⌨️
 </div>
+
+### Darstellung der Einstellungen
+
+Die Schaltflächen oben wechseln zwischen allen Optionen und klappbaren Gruppen. Ein Klick auf Fenster, Modell, Anwendung oder Darstellung öffnet oder schließt die Gruppe. Die Ansicht wird gespeichert; bestehende Werte bleiben erhalten.
+
+### Eingabestatistik-Plugin
+
+Das Rust-Statistik-Plugin wird standardmäßig mitgebaut. Auf der Plugin-Seite lässt es sich aktivieren, deaktivieren oder importieren. Die Statistik-Seite bietet Tastatur- und Mauswerte, Tages- und Stundenverläufe, lokale Speicherung und CSV-Export. Siehe [Statistik-Plugin](statistics-plugin.md). Die aktive App-Zeit bietet Ranglisten, Stundenwerte und einen eigenen Schalter. Erfassung, Speicherung und Export laufen in einem separaten Thread. Das Plugin registriert den Statistikeintrag beim Aktivieren und entfernt ihn beim Deaktivieren oder Deinstallieren.
 
 ### Dynamische Renderer-Plugins
 
@@ -331,3 +339,8 @@ Einstellungen → Anwendung → Speichersparmodus ist standardmäßig aus. Er be
 Einstellungen → Haustier → Maus-Folgebereich: horizontal/vertikal 25–400%, standardmäßig aus, 100% unverändert. Gezeichnete Mver-Pfoten bewegen sich weiter; Live2D behält Modellgrenzen. Blick und Fenster bleiben gleich. Der Speichersparmodus deaktiviert OpenGL-MSAA und reduziert ungenutzte Shader und Vulkan-Pipelines.
 
 Unter Windows nutzen speichersparende Einstellungen für OpenGL/Vulkan abschnittsweise SDL-Softwaredarstellung mit undurchsichtigem Hintergrund. Schriftgröße, Bildschirm-DPI und Kantenglättung bleiben erhalten. Der Schriftatlas speichert A8-Masken und konvertiert nur das gezeichnete Zeichen. Auf anderen Plattformen nutzt OpenGL weiterhin den Kontext des Begleiters.
+### Mehrere Tasten und lesbare Spiegelzeichen
+
+Mver (OpenGL/Vulkan/Metal) schneidet Hand, Blasenrahmen und Zeichen getrennt zu und verbindet gedrückte Tasten mit + in einer Blase. Rahmen und Zipfel werden mit dem Modell gespiegelt; die Zeichen bleiben auch im Einzeltastenmodus lesbar. Konfigurieren Sie die drei Bereiche, den Abstand um + und das Limit je Seite in `hand-layout.json` neben den Handbildern; starten Sie nach Änderungen neu. Siehe [Anleitung und Beispiel](hand-layout.md).
+
+Der Aktionsdialog prüft den `Sound`-Verweis und das Vorhandensein der Audiodatei und zeigt nur bei Bewegungen mit Ton einen eigenen Lautstärkeregler. 0–100% sind per Ziehen oder Eingabe einstellbar; Doppelklick stellt 100% wieder her, 0% schaltet stumm. Die Werte werden je Modell und Bewegung gespeichert und gelten für Dialog, Tastenkürzel, Zufallsbewegungen und Kontextmenü, auch während der Wiedergabe. Andere Bewegungen mit derselben Datei behalten ihre eigene Lautstärke.

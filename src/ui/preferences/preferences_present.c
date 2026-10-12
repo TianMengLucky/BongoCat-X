@@ -33,7 +33,7 @@ static void finish_frame(BongoCatPreferences *value, bool rendered, uint64_t now
             "Preferences frame presentation failed: %s", SDL_GetError());
     } else if (!loading_model) bongo_cat_memory_policy_ui_frame_presented();
     /* Commands have been consumed; page-only textures can now be released. */
-    if (value->page != 4 && (value->about.contributors ||
+    if (value->page != 5 && (value->about.contributors ||
             value->about.contributors_attempted || value->qq_texture)) {
         bongo_cat_about_clear(value, true);
         if (value->qq_texture) bongo_cat_ui_texture_delete(&value->ui, 1, &value->qq_texture);

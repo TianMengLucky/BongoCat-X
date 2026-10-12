@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "hand": {
+    "x": 450,
+    "y": 629,
+    "width": 317,
+    "height": 257
+  },
+  "bubble": {
+    "x": 47,
+    "y": 123,
+    "width": 204,
+    "height": 174
+  },
+  "characters": {
+    "x": 71,
+    "y": 161,
+    "width": 168,
+    "height": 101
+  },
+  "gap": 12,
+  "maxKeys": 5
+}

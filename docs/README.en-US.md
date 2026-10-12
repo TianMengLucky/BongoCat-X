@@ -99,7 +99,7 @@ Run the commands below from the project root (the directory containing
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libfontconfig1-dev fonts-noto-cjk
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libfontconfig1-dev fonts-noto-cjk
   ```
 
 ### 🔧 Configure and Build
@@ -411,7 +411,7 @@ always-on-top support still depend on the compositor.
 
 ### 🖼️ What is the Vulkan / Metal support status?
 
-Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays currently require OpenGL. Live2D supports dynamic texture resolution on OpenGL, Vulkan and Metal, with background decoding/resizing and synchronous native GPU uploads. Disabling it reloads textures at the quality-selected resolution. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture.
+Settings → Application → Render Backend switches immediately: OpenGL ↔ Vulkan on Windows / Linux x64, OpenGL ↔ Metal on macOS. System defaults to OpenGL. Native texture uploads, Cubism drawing, GPU readback and model reload are connected; switching preserves the model and selected motions/expressions, with OpenGL recovery on initialization or reload failure. Vulkan/Metal remain experimental: key/effect/pointer overlays now support all backends. Live2D supports dynamic texture resolution on OpenGL, Vulkan and Metal, with background decoding/resizing and synchronous native GPU uploads. Disabling it reloads textures at the quality-selected resolution. Native backends cache static desk backgrounds and include them in the tight-frame bounds; GPU corner masks draw only four corners without an extra full-frame texture. Overlays reuse SDL software rendering, cached until input changes, then composite into the completed native frame and upload to the GPU; performance remains unmeasured.
 
 Large Rendering Optimization appears with Vulkan / Metal and is off by default. Vulkan offers three independent options; Metal offers only large allocations. Changes reload the model. Inox2D Metal packs frame vertices into a shared buffer when enabled and allocates per node when disabled; Live2D Metal reports this option as unavailable. Inox2D Vulkan supports parallel command recording and large memory blocks. Live2D Vulkan supports VMA allocations and parallel recording for ordinary blending without offscreen nodes or high-precision masks. Live2D needs at least 128 Drawables for secondary buffers and 128 drawable snapshots for up to four workers; other models retain the SDK serial path. Live2D Vulkan Bindless uses a table of up to 64 atlas textures for ordinary blending without offscreen nodes, with fallback when device features or capacity are insufficient. Inox2D Bindless is not implemented. Larger pools may use more memory; performance gains remain unmeasured.
 
@@ -436,6 +436,14 @@ Made with ❤️ & ⌨️
 
 </div>
 
+### Preferences options layout
+
+Use the buttons at the top of Preferences to switch between expanded options and collapsible groups. Click Window, Model, Application or Appearance to show or hide the group. The layout choice is saved and existing option values are preserved.
+
+### Input statistics plugin
+
+The Rust statistics plugin builds with the application by default. Enable, disable or import it on the Plugins page. The Statistics page shows keyboard and mouse totals, daily and hourly charts, local persistence and CSV export. See [Statistics plugin](statistics-plugin.md). Foreground application time includes rankings, hourly totals and a separate collection switch. Sampling, storage and export run on an independent worker. The plugin registers the Statistics entry when enabled and removes it when disabled or uninstalled.
+
 ### Dynamic renderer plugins
 
 Preferences → Plugins manages local renderer installation, activation and removal. Switch to another renderer before changing an active plugin. Live2D uses a C++ plugin; Inochi2D uses the Rust Inox2D plugin with OpenGL, Vulkan (Windows/Linux) and Metal (macOS), without wgpu. Import identifies model contents first (`.model3.json`, `.inp`, `.inx`). All JSON parsing and serialization is performed in Rust.
@@ -455,3 +463,8 @@ Settings → Application → Low Memory Mode is off by default. It caps texture 
 Settings → Pet → Custom Mouse Follow Range provides horizontal/vertical 25–400%, default off; 100% keeps the original range. Drawn Mver hands and mice can move farther; Live2D retains authored parameter limits. Gaze and window position are unchanged. Low Memory Mode disables OpenGL MSAA and reduces unused OpenGL shaders and Vulkan blend pipelines.
 
 On Windows, low-memory settings use chunked SDL software drawing and an opaque background for OpenGL/Vulkan. Fonts retain their actual sizes, display DPI and antialiasing. The software atlas stores A8 coverage and converts only the glyph being drawn. OpenGL on other platforms continues to reuse the pet context.
+### Multiple keys and readable mirrored characters
+
+Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).
+
+The action dialog checks each motion’s `Sound` reference and whether the audio file exists, then shows an individual volume control beside motions with audio. Set 0–100% by dragging or typing; double-click restores 100%, and 0% mutes. Settings persist per model and motion and apply to dialog playback, shortcuts, random motions and the context menu, including live adjustment. Other motions sharing the same clip keep their own volume.

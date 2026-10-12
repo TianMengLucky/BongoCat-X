@@ -87,6 +87,9 @@ bool bongo_cat_window_apply_geometry(BongoCatApp *app, int x, int y,
     if (!app || !app->window || width < WINDOW_MIN_DIMENSION ||
         height < WINDOW_MIN_DIMENSION || width > WINDOW_MAX_DIMENSION ||
         height > WINDOW_MAX_DIMENSION) return false;
+    SDL_Point next = {x, y};
+    bongo_cat_window_constrain_position(app, &next, width, height);
+    x = next.x; y = next.y;
     bongo_cat_resource_trace_resize_request(app->session.window.width,
         app->session.window.height, width, height);
     if (!bongo_cat_platform_set_geometry(&app->platform, x, y, width, height))
@@ -199,6 +202,7 @@ bool bongo_cat_window_geometry_self_test(BongoCatApp *app) {
     SDL_DisplayID display = SDL_GetDisplayForWindow(app->window);
     SDL_Rect bounds;
     if (!display || !SDL_GetDisplayUsableBounds(display, &bounds)) return false;
+    app->settings.window.keep_in_screen = false;
     app->model_pointer_anchor_ready = true;
     bongo_cat_window_apply_geometry(app, bounds.x - 2000, bounds.y - 2000,
         100.0f, 320, 240);

@@ -54,6 +54,23 @@ static bool copy_standard_pointer_assets(const BongoCatImportCandidate *candidat
     return true;
 }
 
+/* Optional per-side hand/bubble placement overrides shipped beside the hand
+   sprites. A missing source file keeps the renderer defaults. */
+static bool copy_layout_file(const BongoCatImportCandidate *candidate,
+    const char *hand_name, const char *key_group, const char *target) {
+    char source[BONGO_CAT_PATH_CAP];
+    if (!asset_file(candidate, hand_name, "hand-layout.json", source, sizeof(source)))
+        return true;
+    char resources[BONGO_CAT_PATH_CAP], output_dir[BONGO_CAT_PATH_CAP];
+    char destination[BONGO_CAT_PATH_CAP];
+    if (!bongo_cat_path_join(resources, sizeof(resources), target, "resources") ||
+        !bongo_cat_path_join(output_dir, sizeof(output_dir), resources, key_group) ||
+        !bongo_cat_path_create_directory(output_dir) ||
+        !bongo_cat_path_join(destination, sizeof(destination), output_dir,
+            "hand-layout.json")) return false;
+    return bongo_cat_path_copy_file(source, destination);
+}
+
 static void count_modifiers(BongoJsonValue *matrix, size_t counts[3]) {
     size_t row_index, row_count; BongoJsonValue *row;
     bongo_json_arr_foreach(matrix, row_index, row_count, row) {
@@ -168,6 +185,7 @@ bool bongo_cat_import_mver_assets(const BongoCatImportCandidate *candidate,
         BongoJsonValue *hand = bongo_json_obj_get(mode, "hand");
         ok = process_matrix(candidate, hand, NULL, NULL,
             keyboard, "hand", "left-keys", target, error);
+        if (ok) ok = copy_layout_file(candidate, "hand", "left-keys", target);
         if (ok) ok = copy_standard_pointer_assets(candidate, target);
     } else {
         BongoJsonValue *left_keys = bongo_json_obj_get(mode, "lefthand");
@@ -175,7 +193,9 @@ bool bongo_cat_import_mver_assets(const BongoCatImportCandidate *candidate,
         ok = process_matrix(candidate, left_keys, NULL, right_keys, keyboard,
             "lefthand", "left-keys", target, error) &&
             process_matrix(candidate, right_keys, left_keys, NULL, keyboard,
-                "righthand", "right-keys", target, error);
+                "righthand", "right-keys", target, error) &&
+            copy_layout_file(candidate, "lefthand", "left-keys", target) &&
+            copy_layout_file(candidate, "righthand", "right-keys", target);
     }
     bongo_json_doc_free(document);
     if (!ok && error && !error->message[0]) bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT,

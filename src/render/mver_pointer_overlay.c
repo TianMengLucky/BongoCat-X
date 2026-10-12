@@ -3,6 +3,7 @@
 #include "bongo_cat/json.h"
 #include "bongo_cat/model.h"
 #include "bongo_cat/path.h"
+#include "bongo_cat/rhi.h"
 
 #include <SDL3/SDL_opengl.h>
 #include <math.h>
@@ -27,7 +28,9 @@ static void clear_textures(BongoCatMverPointerOverlay *value) {
     BongoCatPointerTexture *textures[] = {&value->arm, &value->device,
         &value->left, &value->right, &value->side};
     for (size_t index = 0; index < sizeof(textures) / sizeof(textures[0]); ++index) {
-        if (textures[index]->id) glDeleteTextures(1, &textures[index]->id);
+        if (!value->native && textures[index]->id)
+            glDeleteTextures(1, &textures[index]->id);
+        bongo_cat_image_free(&textures[index]->image);
         *textures[index] = (BongoCatPointerTexture){0};
     }
     value->enabled = false;
@@ -37,7 +40,10 @@ static void clear_textures(BongoCatMverPointerOverlay *value) {
 BongoCatMverPointerOverlay *bongo_cat_mver_pointer_overlay_create(
     BongoCatError *error) {
     BongoCatMverPointerOverlay *value = calloc(1, sizeof(*value));
-    if (!value || !bongo_cat_gl_load(&value->gl, error)) {
+    if (!value) return NULL;
+    value->native = !bongo_cat_rhi_active_is_gl();
+    if (value->native) return value;
+    if (!bongo_cat_gl_load(&value->gl, error)) {
         free(value);
         return NULL;
     }
@@ -63,6 +69,14 @@ BongoCatMverPointerOverlay *bongo_cat_mver_pointer_overlay_create(
         (const void *)(sizeof(float) * 4));
     value->gl.bind_vertex_array(0);
     return value;
+}
+
+void bongo_cat_mver_pointer_overlay_set_native_draw(
+    BongoCatMverPointerOverlay *value, BongoCatMverPointerNativeDraw draw,
+    void *userdata) {
+    if (!value) return;
+    value->native_draw = draw;
+    value->native_userdata = userdata;
 }
 
 void bongo_cat_mver_pointer_overlay_set_vertical_flip(
@@ -96,8 +110,10 @@ static bool safe_relative(const char *path) {
     return true;
 }
 
-static bool load_texture(const char *directory, const char *relative,
-    bool required, BongoCatPointerTexture *texture, BongoCatError *error) {
+static bool load_texture(BongoCatMverPointerOverlay *value,
+    const char *directory, const char *relative, bool required,
+    unsigned int native_id, BongoCatPointerTexture *texture,
+    BongoCatError *error) {
     char path[BONGO_CAT_PATH_CAP];
     if (!relative || !relative[0]) return !required;
     if (!safe_relative(relative) ||
@@ -106,6 +122,13 @@ static bool load_texture(const char *directory, const char *relative,
         if (required) bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
             "Missing Mver pointer asset: %s", relative);
         return !required;
+    }
+    if (value->native) {
+        if (bongo_cat_image_load(path, &texture->image, error) != BONGO_CAT_OK) return false;
+        texture->width = texture->image.surface->w;
+        texture->height = texture->image.surface->h;
+        texture->id = native_id;
+        return true;
     }
     texture->id = bongo_cat_image_texture(path, &texture->width,
         &texture->height, error);
@@ -164,11 +187,11 @@ bool bongo_cat_mver_pointer_overlay_load(BongoCatMverPointerOverlay *value,
     const char *right = bongo_json_get_str(bongo_json_obj_get(pointer, "right"));
     const char *side = bongo_json_get_str(bongo_json_obj_get(pointer, "side"));
     bool valid = value->reference_width > 0 && value->reference_height > 0 &&
-        isfinite(value->scale) && load_texture(directory, arm, true,
-            &value->arm, error) && load_texture(directory, device, true,
-            &value->device, error) && load_texture(directory, left, false,
-            &value->left, error) && load_texture(directory, right, false,
-            &value->right, error) && load_texture(directory, side, false,
+        isfinite(value->scale) && load_texture(value, directory, arm, true, 1,
+            &value->arm, error) && load_texture(value, directory, device, true, 2,
+            &value->device, error) && load_texture(value, directory, left, false, 3,
+            &value->left, error) && load_texture(value, directory, right, false, 4,
+            &value->right, error) && load_texture(value, directory, side, false, 5,
             &value->side, error);
     value->enabled = valid;
     bongo_json_doc_free(document);

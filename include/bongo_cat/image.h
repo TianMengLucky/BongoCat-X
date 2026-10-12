@@ -35,6 +35,9 @@ bool bongo_cat_image_resize_rgba_take(BongoCatImage *source, int max_width,
    origin at the top-left. False when the file is missing or fully transparent. */
 bool bongo_cat_image_opaque_bounds(const char *path,
     float *min_u, float *min_v, float *max_u, float *max_v);
+/* Same bounds from an already decoded image, without loading a second copy. */
+bool bongo_cat_image_opaque_bounds_pixels(const BongoCatImage *image,
+    float *min_u, float *min_v, float *max_u, float *max_v);
 unsigned int bongo_cat_image_texture(const char *path, int *width, int *height,
     BongoCatError *error);
 unsigned int bongo_cat_image_texture_thumbnail(const char *path, int max_width,

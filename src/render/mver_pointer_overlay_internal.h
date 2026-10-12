@@ -4,15 +4,20 @@
 #include "mver_pointer_overlay.h"
 #include "bongo_cat/gl_api.h"
 #include "bongo_cat/mver_pointer.h"
+#include "bongo_cat/image.h"
 
 typedef struct BongoCatPointerTexture {
     unsigned int id;
     int width;
     int height;
+    BongoCatImage image;
 } BongoCatPointerTexture;
 
 struct BongoCatMverPointerOverlay {
     BongoCatGL gl;
+    bool native;
+    BongoCatMverPointerNativeDraw native_draw;
+    void *native_userdata;
     unsigned int program;
     int textured_location;
     int image_location;

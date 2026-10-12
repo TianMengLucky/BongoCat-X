@@ -1,0 +1,14 @@
+[package]
+name = "bongo-stats"
+version = "2.1.3"
+edition = "2021"
+publish = false
+description = "Local aggregate input statistics plugin for BongoCat"
+
+[lib]
+name = "bongo_stats"
+crate-type = ["cdylib"]
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+rusqlite = { version = "0.40", features = ["bundled"] }

@@ -1,4 +1,5 @@
 #include "preferences_state.h"
+#include "bongo_cat/statistics.h"
 #include "preferences_widgets.h"
 #include "preferences_controls.h"
 #include "preferences_notice.h"
@@ -24,7 +25,9 @@ static void result_notice(BongoCatApp *app, bool ok, BongoCatError *error) {
 void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path) {
     BongoCatError error = {0};
     BongoCatModelEngine engine = 0;
-    bool ok = bongo_cat_model_plugin_install(path, &engine, &error);
+    bool matched = false;
+    bool ok = bongo_cat_statistics_import(app, path, &matched, &error);
+    if (!matched) ok = bongo_cat_model_plugin_install(path, &engine, &error);
     if (ok && app->session.active_model_id[0] && app->model_runtime && bongo_cat_model_runtime_engine(app->model_runtime) == engine &&
         !bongo_cat_model_runtime_rendering(app->model_runtime))
         ok = bongo_cat_app_reload_model_with_error(app, &error);
@@ -127,6 +130,8 @@ void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_co
     nk_layout_row_dynamic(context, bongo_cat_platform_live2d_core_available() ? 220.0f : 260.0f, columns);
     plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_LIVE2D);
     plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_INOX2D);
+    nk_layout_row_dynamic(context, 280, 1);
+    bongo_cat_preferences_statistics_plugin_card(value, context);
     nk_layout_row_dynamic(context, 54, 1);
     nk_label_wrap(context, tr(value->app, "pages.preference.plugins.activeHint",
         "Click a selected model to deselect it before changing its active plugin."));

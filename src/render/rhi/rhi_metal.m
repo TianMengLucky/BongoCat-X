@@ -176,6 +176,21 @@ bool bongo_cat_rhi_metal_render_frame(BongoCatRhi *rhi) {
                 buffer.error.localizedDescription.UTF8String ?: "unknown error");
             return false;
         }
+        SDL_Rect changed;
+        if (bongo_cat_rhi_compose_foreground(rhi, metal->readback.contents,
+            (int)width, (int)height, stride, true, &changed)) {
+            id<MTLCommandBuffer> composite = [metal->queue commandBuffer];
+            id<MTLBlitCommandEncoder> upload = [composite blitCommandEncoder];
+            if (!composite || !upload) return false;
+            /* Whole changed rows preserve Metal's aligned buffer offsets. */
+            [upload copyFromBuffer:metal->readback sourceOffset:(NSUInteger)changed.y * stride
+                sourceBytesPerRow:stride sourceBytesPerImage:stride * (NSUInteger)changed.h
+                sourceSize:MTLSizeMake(width, (NSUInteger)changed.h, 1)
+                toTexture:drawable.texture destinationSlice:0 destinationLevel:0
+                destinationOrigin:MTLOriginMake(0, (NSUInteger)changed.y, 0)];
+            [upload endEncoding]; [composite commit]; [composite waitUntilCompleted];
+            if (composite.status != MTLCommandBufferStatusCompleted) return false;
+        }
         metal->stride = stride;
         metal->frame_width = (int)width;
         metal->frame_height = (int)height;

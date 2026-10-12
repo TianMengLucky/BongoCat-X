@@ -100,7 +100,7 @@ Jalankan perintah berikut dari root proyek (direktori yang berisi
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
   ```
 
 ### 🔧 Konfigurasi dan Build
@@ -390,7 +390,7 @@ penggunaan.
 
 ### 🖼️ Bagaimana progres dukungan Vulkan / Metal?
 
-Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk memerlukan OpenGL. Live2D mendukung resolusi tekstur dinamis pada OpenGL, Vulkan dan Metal, dengan dekode/penskalaan di latar belakang dan unggahan GPU native sinkron. Menonaktifkannya memuat ulang tekstur sesuai kualitas yang dipilih. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan.
+Pengaturan → Aplikasi → Backend Render berganti langsung tanpa memulai ulang: OpenGL ↔ Vulkan pada Windows / Linux x64, OpenGL ↔ Metal pada macOS. Sistem memakai OpenGL secara bawaan. Unggahan tekstur native, gambar Cubism, pembacaan GPU dan pemuatan ulang model telah terhubung; model serta gerakan/ekspresi pilihan dipertahankan. Kegagalan inisialisasi atau pemuatan memulihkan OpenGL. Vulkan/Metal masih eksperimental: overlay tombol/efek/penunjuk kini mendukung semua backend. Live2D mendukung resolusi tekstur dinamis pada OpenGL, Vulkan dan Metal, dengan dekode/penskalaan di latar belakang dan unggahan GPU native sinkron. Menonaktifkannya memuat ulang tekstur sesuai kualitas yang dipilih. Backend native menyimpan latar meja dalam cache, memasukkannya dalam batas bingkai rapat dan membulatkan empat sudut di GPU tanpa tekstur layar penuh tambahan. Overlay memakai render perangkat lunak SDL, disimpan sampai input berubah, lalu digabung ke frame native yang selesai dan diunggah kembali ke GPU; performa belum diukur.
 
 Optimasi Rendering Besar tersedia pada Vulkan / Metal dan nonaktif secara default. Vulkan menyediakan tiga opsi; Metal hanya alokasi besar. Inox2D Metal menggabungkan vertex setiap frame; opsi ini tidak tersedia pada Live2D Metal. Tiga subopsi disimpan terpisah; perubahan memuat ulang model. Inox2D Vulkan mendukung perekaman paralel dan blok memori besar. Live2D Vulkan mendukung VMA serta perekaman paralel untuk pencampuran biasa tanpa node offscreen atau mask presisi tinggi. Live2D memerlukan 128 Drawable untuk buffer sekunder dan 128 snapshot yang dapat digambar untuk memakai hingga empat thread; model lain tetap memakai jalur serial SDK. Live2D Vulkan Bindless memakai tabel hingga 64 tekstur atlas untuk pencampuran biasa tanpa node offscreen, dengan jalur cadangan jika fitur perangkat atau kapasitas tidak mencukupi. Inox2D Bindless belum diimplementasikan. Pool besar dapat memakai lebih banyak memori; peningkatan kinerja belum diukur.
 
@@ -421,6 +421,14 @@ Dibuat dengan ❤️ & ⌨️
 
 </div>
 
+### Tampilan opsi preferensi
+
+Tombol di bagian atas beralih antara semua opsi dan grup yang dapat dilipat. Klik judul Jendela, Model, Aplikasi atau Tampilan untuk membuka atau menutup grup. Pilihan tampilan disimpan dan nilai opsi tetap terjaga.
+
+### Plugin statistik input
+
+Plugin statistik Rust dibangun bersama aplikasi secara bawaan. Aktifkan, nonaktifkan, atau impor dari halaman plugin. Halaman statistik menampilkan total keyboard dan mouse, grafik harian dan per jam, penyimpanan lokal, serta ekspor CSV. Lihat [Plugin statistik](statistics-plugin.md). Waktu aplikasi aktif mencakup peringkat, total per jam dan sakelar terpisah. Pengambilan sampel, penyimpanan dan ekspor berjalan di thread tersendiri. Plugin mendaftarkan menu statistik saat diaktifkan dan menghapusnya saat dinonaktifkan atau dihapus.
+
 ### Plugin perender dinamis
 
 Preferensi → Plugin mengelola pemasangan, pengaktifan, dan penghapusan perender lokal. Beralihlah ke perender lain sebelum mengubah plugin yang aktif. Live2D memakai plugin C++; Inochi2D memakai plugin Rust Inox2D dengan OpenGL, Vulkan (Windows/Linux), dan Metal (macOS), tanpa wgpu. Impor mengenali isi model terlebih dahulu (`.model3.json`, `.inp`, `.inx`). Seluruh pembacaan dan penulisan JSON dilakukan di Rust.
@@ -446,3 +454,8 @@ Pengaturan → Aplikasi → Mode Memori Rendah nonaktif secara default. Mode ini
 Pengaturan → Pet → Rentang mouse: horizontal/vertikal 25–400%, default nonaktif; 100% mempertahankan semula. Kaki Mver yang digambar bergerak lebih jauh; Live2D mempertahankan batas model. Pandangan dan posisi jendela tetap. Mode memori rendah menonaktifkan MSAA dan mengurangi shader dan pipeline yang tidak digunakan.
 
 Di Windows, pengaturan hemat memori menggunakan perenderan perangkat lunak SDL bertahap dengan latar buram untuk OpenGL/Vulkan. Ukuran font, DPI layar dan antialiasing dipertahankan. Atlas menyimpan masker A8 dan hanya mengonversi glif yang digambar. OpenGL di platform lain tetap memakai konteks pet.
+### Beberapa tombol dan karakter yang terbaca dalam mode cermin
+
+Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).
+
+Dialog aksi memeriksa referensi `Sound` dan keberadaan file audio, lalu menampilkan kontrol volume tersendiri di samping gerakan dengan audio. Atur 0–100% dengan menyeret atau mengetik; klik ganda mengembalikan 100% dan 0% membisukan. Nilai disimpan per model dan gerakan serta berlaku pada dialog, pintasan, gerakan acak, dan menu konteks, termasuk saat audio diputar. Gerakan lain yang memakai file sama mempertahankan volumenya sendiri.

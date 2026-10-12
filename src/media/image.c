@@ -46,10 +46,21 @@ bool bongo_cat_image_opaque_bounds(const char *path,
     if (!min_u || !min_v || !max_u || !max_v ||
         bongo_cat_image_load(path, &image, &ignored) != BONGO_CAT_OK)
         return false;
-    int min_x = image.width, min_y = image.height, max_x = -1, max_y = -1;
-    for (int y = 0; y < image.height; ++y) {
-        const unsigned char *row = image.pixels + (size_t)y * image.width * 4;
-        for (int x = 0; x < image.width; ++x) {
+    bool found = bongo_cat_image_opaque_bounds_pixels(&image,
+        min_u, min_v, max_u, max_v);
+    bongo_cat_image_free(&image);
+    return found;
+}
+
+bool bongo_cat_image_opaque_bounds_pixels(const BongoCatImage *image,
+    float *min_u, float *min_v, float *max_u, float *max_v) {
+    if (!image || !image->pixels || !min_u || !min_v || !max_u || !max_v ||
+        image->width <= 0 || image->height <= 0 ||
+        (uint64_t)image->width * image->height > SIZE_MAX / 4) return false;
+    int min_x = image->width, min_y = image->height, max_x = -1, max_y = -1;
+    for (int y = 0; y < image->height; ++y) {
+        const unsigned char *row = image->pixels + (size_t)y * image->width * 4;
+        for (int x = 0; x < image->width; ++x) {
             if (row[(size_t)x * 4 + 3] <= 8) continue;
             if (x < min_x) min_x = x;
             if (x > max_x) max_x = x;
@@ -59,13 +70,12 @@ bool bongo_cat_image_opaque_bounds(const char *path,
     }
     bool found = max_x >= 0;
     if (found) {
-        float width = (float)image.width, height = (float)image.height;
+        float width = (float)image->width, height = (float)image->height;
         *min_u = (float)min_x / width;
         *min_v = (float)min_y / height;
         *max_u = (float)(max_x + 1) / width;
         *max_v = (float)(max_y + 1) / height;
     }
-    bongo_cat_image_free(&image);
     return found;
 }
 

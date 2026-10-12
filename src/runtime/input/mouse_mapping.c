@@ -13,6 +13,10 @@ bool bongo_cat_app_map_pointer(BongoCatApp *app,
     bool use_relative = relative_requested &&
         bongo_cat_platform_relative_pointer(&app->platform,
             &relative_x, &relative_y);
+    /* Device counts already reflect DPI; apply the user multiplier once. */
+    float sensitivity = bongo_cat_settings_mouse_sensitivity(&app->settings);
+    relative_x *= sensitivity;
+    relative_y *= sensitivity;
     bool initialized = app->mver_pointer.initialized;
     double previous_x = app->mver_pointer.x, previous_y = app->mver_pointer.y;
     /* Preserve the virtual position while relative samples are unavailable. */
@@ -52,6 +56,11 @@ void bongo_cat_app_apply_mouse_coordinates(BongoCatApp *app,
             bounds->left, bounds->left + bounds->width);
         gaze_y_ratio = bongo_cat_mouse_centered_ratio(gaze_y, projection->center_y,
             bounds->top, bounds->top + bounds->height);
+    }
+    if (!projection->relative) {
+        float sensitivity = bongo_cat_settings_mouse_sensitivity(&app->settings);
+        hand_x_ratio = bongo_cat_mouse_sensitivity_ratio(hand_x_ratio, sensitivity);
+        hand_y_ratio = bongo_cat_mouse_sensitivity_ratio(hand_y_ratio, sensitivity);
     }
     if (app->settings.model.vertical_flip) {
         hand_y_ratio = 1.0f - hand_y_ratio;

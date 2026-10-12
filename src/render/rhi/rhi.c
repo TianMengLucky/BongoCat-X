@@ -99,6 +99,7 @@ void bongo_cat_rhi_destroy(BongoCatRhi *rhi) {
     case BONGO_CAT_RHI_METAL: bongo_cat_rhi_metal_shutdown(rhi); break;
     default: bongo_cat_rhi_gl_shutdown(rhi); break;
     }
+    SDL_free(rhi->foreground_pixels);
     memset(rhi, 0, sizeof(*rhi));
 }
 

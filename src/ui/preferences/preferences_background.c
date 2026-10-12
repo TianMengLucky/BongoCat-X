@@ -21,7 +21,7 @@ void bongo_cat_preferences_background_row(BongoCatPreferences *value,
     if (bongo_cat_pref_toggle(context, "custom-background", tr(app,
         "pages.preference.cat.background.title", "Custom Image Background"), tr(app,
         "pages.preference.cat.background.help",
-        "Fill the window with an image. Mutually exclusive with Solid Background."),
+        "Fill the window with a centered image, preserving its proportions. Mutually exclusive with Solid Background; works on all backends."),
         &window->custom_background)) {
         if (window->custom_background && !window->custom_background_path[0]) {
             window->custom_background = false;
@@ -85,5 +85,5 @@ failed:
     SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE, "Background image import failed: %s", error.message);
     bongo_cat_preferences_notice_show(app, tr(app,
         "pages.preference.cat.background.failed",
-        "Cannot load this image. Choose a supported image up to 64 MB and 16 megapixels."), true);
+        "Cannot load this image. Choose PNG, JPEG, WebP, BMP or GIF up to 64 MB and 16 megapixels."), true);
 }

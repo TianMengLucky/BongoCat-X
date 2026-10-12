@@ -9,7 +9,8 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
     bool mirror, bool flip, bool opaque, uint32_t rgb) {
     if (!value || (!value->native_background.surface && !value->custom_background.surface)) {
         if (value) { SDL_DestroySurface(value->native_canvas); value->native_canvas = NULL; value->native_canvas_uploaded = false; }
-        return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0);
+        return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0) &&
+            bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height, x, y, cw, ch, mirror, flip);
     }
     const int geometry[6] = {width, height, x, y, cw, ch};
     bool uploaded = value->native_canvas_uploaded &&
@@ -71,7 +72,8 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
         value->native_canvas_uploaded = false;
     }
     SDL_Surface *canvas = value->native_canvas;
-    if (!canvas) return uploaded;
+    if (!canvas) return uploaded && bongo_cat_overlay_prepare_native_foreground(
+        value, rhi, width, height, x, y, cw, ch, mirror, flip);
     bool ok = bongo_cat_rhi_set_background(rhi, canvas->pixels, canvas->w,
         canvas->h, canvas->pitch, value->native_revision);
     if (ok && SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) &&
@@ -82,7 +84,8 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
         value->native_canvas_uploaded = true;
         bongo_cat_memory_policy_temporary_released();
     }
-    return ok;
+    return ok && bongo_cat_overlay_prepare_native_foreground(
+        value, rhi, width, height, x, y, cw, ch, mirror, flip);
 }
 
 void bongo_cat_overlay_set_mouse_range(BongoCatOverlay *value, float x_scale, float y_scale) {

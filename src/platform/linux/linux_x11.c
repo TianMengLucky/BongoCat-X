@@ -122,6 +122,10 @@ static void raw_event(LinuxX11State *state, Display *display, XIRawEvent *raw) {
         if (raw->detail == 1) name = "Left";
         else if (raw->detail == 2) name = "Middle";
         else if (raw->detail == 3) name = "Right";
+        else if (raw->detail == 8) name = "Back";
+        else if (raw->detail == 9) name = "Forward";
+        else if (raw->evtype == XI_RawButtonPress && raw->detail >= 4 && raw->detail <= 7)
+            bongo_cat_input_metrics_scroll(state->platform->input, raw->detail >= 6 ? 1 : 0, raw->detail <= 5 ? 1 : 0);
         if (name) {
             bool down = raw->evtype == XI_RawButtonPress;
             push(state, down ? BONGO_CAT_INPUT_MOUSE_DOWN : BONGO_CAT_INPUT_MOUSE_UP,

@@ -24,6 +24,12 @@ image = { version = "0.25", default-features = false, features = [
     "hdr",
 ] }
 roxmltree = "0.20"
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls-native-roots", "system-proxy"] }
+tokio = { version = "1", features = ["rt", "time", "macros"] }
+tempfile = "3"
+zip = { version = "2.4", default-features = false, features = ["deflate"] }
+tar = "0.4"
+flate2 = "1"
 serde = "1"
 json5 = "0.4"
 jsonc-parser = { version = "0.34", features = ["cst", "serde"] }

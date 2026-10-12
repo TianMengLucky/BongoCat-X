@@ -194,6 +194,7 @@ bool bongo_cat_rhi_vk_queue_checkpoint(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_submit_frame(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed);
 /* Chooses and records a depth format for the Cubism render passes. */
 bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk);
 /* Destroys views, framebuffers and the swapchain (device idle required). */

@@ -58,6 +58,7 @@ void bongo_cat_evdev_event(LinuxEvdevState *state, EvdevDevice *device,
     if (event->type == EV_SYN && event->code == SYN_DROPPED) {
         bongo_cat_evdev_release(state, device);
         bongo_cat_evdev_motion_reset(state);
+        device->statistics_x = device->statistics_y = 0.0;
         device->desynchronized = true;
         return;
     }
@@ -68,10 +69,21 @@ void bongo_cat_evdev_event(LinuxEvdevState *state, EvdevDevice *device,
             device->desynchronized = false;
         return;
     }
+    if (event->type == EV_SYN && event->code == SYN_REPORT) {
+        bongo_cat_input_metrics_motion(state->platform->input, device->statistics_x, device->statistics_y);
+        device->statistics_x = device->statistics_y = 0.0;
+    }
+    if (event->type == EV_REL && device->pointer &&
+        (event->code == REL_WHEEL || event->code == REL_HWHEEL))
+        bongo_cat_input_metrics_scroll(state->platform->input,
+            event->code == REL_HWHEEL ? event->value : 0,
+            event->code == REL_WHEEL ? event->value : 0);
     if (event->type == EV_KEY && (event->value == 0 || event->value == 1)) {
         key_event(state, device, event->code, event->value == 1);
     } else if (event->type == EV_REL && device->relative &&
         (event->code == REL_X || event->code == REL_Y) && event->value) {
+        if (event->code == REL_X) device->statistics_x += event->value;
+        else device->statistics_y += event->value;
         SDL_LockMutex(state->motion_lock);
         bool wake = state->relative_x == 0 && state->relative_y == 0;
         double *axis = event->code == REL_X ? &state->relative_x : &state->relative_y;

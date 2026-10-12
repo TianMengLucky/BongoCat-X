@@ -11,6 +11,7 @@
 #include "bongo_cat/shortcut.h"
 #include "bongo_cat/sound_shortcut.h"
 
+typedef struct BongoCatStatistics BongoCatStatistics;
 typedef struct BongoCatAudio BongoCatAudio;
 typedef struct BongoCatTray BongoCatTray;
 typedef struct BongoCatOverlay BongoCatOverlay;
@@ -70,6 +71,8 @@ typedef struct BongoCatApp {
     BongoCatI18n *i18n;
     BongoCatPlatform platform;
     BongoCatModelRuntime *model_runtime;
+    BongoCatStatistics *statistics;
+    BongoCatStatistics *statistics_retiring;
     BongoCatAudio *audio;
     BongoCatTray *tray;
     BongoCatOverlay *overlay;

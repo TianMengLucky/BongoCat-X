@@ -37,13 +37,20 @@ set(BONGO_CAT_MEDIA_SOURCES
 
 set(BONGO_CAT_RENDER_SOURCES
   src/render/rhi/rhi.c
+  src/render/rhi/rhi_foreground.c
   src/render/rhi/rhi_gl.c
   src/render/gl_api.c
   src/render/overlay.c
   src/render/overlay_assets.c
   src/render/overlay_input.c
+  src/render/overlay_layout.c
+  src/render/overlay_keys.c
+  src/render/overlay_keys_bubble.c
+  src/render/overlay_keys_draw.c
   src/render/overlay_draw.c
   src/render/overlay_native.c
+  src/render/overlay_native_draw.c
+  src/render/overlay_native_foreground.c
   src/render/overlay_background.c
   src/render/mver_pointer_overlay.c
   src/render/mver_pointer_overlay_draw.c
@@ -63,7 +70,16 @@ else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
 endif()
 
+list(APPEND BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/statistics")
+
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
+  src/runtime/statistics/statistics.c
+  src/runtime/statistics/statistics_page.c
+  src/ui/preferences/preferences_options.c
+  src/runtime/statistics/statistics_install.c
+  src/runtime/statistics/statistics_usage.c
+  src/runtime/statistics/statistics_retirement.c
   src/runtime/lifecycle/app.c
   src/runtime/lifecycle/app_entry.c
   src/runtime/lifecycle/app_input.c
@@ -87,7 +103,7 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
 set(BONGO_CAT_RUNTIME_UPDATE_SOURCES
   src/runtime/update/update_channel.c
   src/runtime/update/update_http.c
-  src/runtime/update/update_http_unix.c
+  src/runtime/update/update_download.c
   src/runtime/update/update_service.c)
 
 set(BONGO_CAT_RUNTIME_DIAGNOSTIC_SOURCES
@@ -316,8 +332,12 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_overlay.c
   src/ui/preferences/preferences_page_dispatch.c
   src/ui/preferences/preferences_pages.c
+  src/ui/preferences/preferences_general.c
+  src/ui/preferences/preferences_renderer.c
   src/ui/preferences/preferences_background.c
   src/ui/preferences/preferences_plugins.c
+  src/ui/preferences/preferences_statistics.c
+  src/ui/preferences/preferences_statistics_usage.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c
   src/ui/preferences/preferences_render.c

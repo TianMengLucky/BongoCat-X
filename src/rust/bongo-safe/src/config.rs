@@ -45,6 +45,9 @@ struct ModelPreferences {
     force_mouse_input: bool,
     gamepad_four_hands: bool,
     dynamic_texture_resolution: bool,
+    custom_mouse_range: bool,
+    mouse_range_x_percent: f32,
+    mouse_range_y_percent: f32,
     multi_key_display: bool,
     render_quality_percent: f32,
     max_fps: c_int,
@@ -82,6 +85,7 @@ struct ApplicationPreferences {
     autostart: bool,
     run_as_admin: bool,
     tray_visible: bool,
+    low_memory_mode: bool,
     large_render_optimization: bool,
     render_parallel_recording: bool,
     render_bindless: bool,
@@ -497,6 +501,9 @@ fn read_model(object: &Map<String, Value>, value: &mut ModelPreferences) -> Outc
         "renderQualityPercent",
         &mut value.render_quality_percent,
     )?;
+    boolean(object, DESCRIPTION, "customMouseRange", &mut value.custom_mouse_range)?;
+    real(object, DESCRIPTION, "mouseRangeXPercent", &mut value.mouse_range_x_percent)?;
+    real(object, DESCRIPTION, "mouseRangeYPercent", &mut value.mouse_range_y_percent)?;
     integer(object, DESCRIPTION, "maximumFps", &mut value.max_fps)?;
     Ok(())
 }
@@ -631,6 +638,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     meaning under the old key; the new key wins when both are present. */
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
     boolean(object, DESCRIPTION, "showTrayIcon", &mut value.tray_visible)?;
+    boolean(object, DESCRIPTION, "lowMemoryMode", &mut value.low_memory_mode)?;
     boolean(object, DESCRIPTION, "largeRenderOptimization", &mut value.large_render_optimization)?;
     // Older settings requested all features through the master switch.
     value.render_parallel_recording = true;
@@ -1064,6 +1072,9 @@ fn write_model(value: &ModelPreferences, mouse_sensitivity_hundredths: u16) -> V
         "mouseSensitivity": mouse_sensitivity_hundredths as f64 / 100.0,
         "gamepadFourHands": value.gamepad_four_hands,
         "dynamicTextureResolution": value.dynamic_texture_resolution,
+        "customMouseRange": value.custom_mouse_range,
+        "mouseRangeXPercent": value.mouse_range_x_percent,
+        "mouseRangeYPercent": value.mouse_range_y_percent,
         "multiKeyDisplay": value.multi_key_display,
         "renderQualityPercent": value.render_quality_percent,
         "maximumFps": value.max_fps,
@@ -1107,6 +1118,7 @@ fn write_app(value: &ApplicationPreferences) -> Value {
         "runAsAdmin": value.run_as_admin,
         "githubDownloadAcceleration": value.github_download_acceleration,
         "showTrayIcon": value.tray_visible,
+        "lowMemoryMode": value.low_memory_mode,
         "largeRenderOptimization": value.large_render_optimization,
         "largeRenderParallelRecording": value.render_parallel_recording,
         "largeRenderBindless": value.render_bindless,
@@ -1638,6 +1650,7 @@ mod tests {
     fn metal_backend_survives_settings_serialization() {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
+            low_memory_mode: false,
             large_render_optimization: false,
             render_parallel_recording: true,
             render_bindless: true,
@@ -1648,6 +1661,35 @@ mod tests {
         let json = write_app(&app);
         assert_eq!(json["renderBackend"], "metal");
         assert_eq!(render_backend_from_name(json["renderBackend"].as_str().unwrap()), Some(3));
+    }
+
+    #[test]
+    fn mouse_range_preserves_legacy_defaults_and_round_trips() {
+        let mut model: ModelPreferences = unsafe { std::mem::zeroed() };
+        model.mouse_range_x_percent = 100.0;
+        model.mouse_range_y_percent = 100.0;
+        read_model(serde_json::json!({}).as_object().unwrap(), &mut model).unwrap();
+        assert!(!model.custom_mouse_range);
+        assert_eq!(model.mouse_range_x_percent, 100.0);
+        read_model(serde_json::json!({"customMouseRange": true,
+            "mouseRangeXPercent": 200.0, "mouseRangeYPercent": 150.0}).as_object().unwrap(), &mut model).unwrap();
+        let saved = write_model(&model);
+        assert_eq!(saved["customMouseRange"], true);
+        assert_eq!(saved["mouseRangeXPercent"], 200.0);
+        assert_eq!(saved["mouseRangeYPercent"], 150.0);
+        assert!(read_model(serde_json::json!({"mouseRangeXPercent": "200"}).as_object().unwrap(), &mut model).is_err());
+    }
+
+    #[test]
+    fn low_memory_mode_round_trips_and_rejects_invalid_types() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        read_app(serde_json::json!({}).as_object().unwrap(), &mut app).unwrap();
+        assert!(!app.low_memory_mode);
+        for enabled in [true, false] {
+            read_app(serde_json::json!({"lowMemoryMode": enabled}).as_object().unwrap(), &mut app).unwrap();
+            assert_eq!(write_app(&app)["lowMemoryMode"], enabled);
+        }
+        assert!(read_app(serde_json::json!({"lowMemoryMode": "true"}).as_object().unwrap(), &mut app).is_err());
     }
 
     #[test]

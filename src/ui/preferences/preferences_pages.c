@@ -16,7 +16,6 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
-
 static const char *tr(BongoCatApp *app, const char *key, const char *fallback) {
     return bongo_cat_i18n_get(app->i18n, key, fallback);
 }
@@ -226,6 +225,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
             "Reverse vertical mouse tracking without flipping the model."),
         &model->mouse_vertical_flip))
         bongo_cat_app_reset_pointer_tracking(app);
+    bongo_cat_preferences_mouse_range_row(app, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MOUSE_CENTERED);
     bool disable_mouse_centered = !model->mouse_centered;
     if (bongo_cat_pref_toggle(context, "mouse-centered", tr(app,
@@ -298,7 +298,7 @@ static void settle_quality(BongoCatPreferences *value) {
     BongoCatError error = {0};
     bool reloaded = !app->loaded_model[0] ||
         bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
-            model->render_quality_percent) || bongo_cat_app_reload_model_with_error(app, &error);
+            app->settings.app.low_memory_mode ? SDL_min(model->render_quality_percent, 10.0f) : model->render_quality_percent) || bongo_cat_app_reload_model_with_error(app, &error);
     if (!reloaded) {
         model->render_quality_percent = value->quality_reload_from;
         char message[1024];

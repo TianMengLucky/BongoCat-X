@@ -2,7 +2,7 @@ if(APPLE)
   set(BONGO_CAT_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/icon.icns")
   set_target_properties(bongo_cat PROPERTIES
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_BUNDLE_NAME "BongoCat"
+    MACOSX_BUNDLE_BUNDLE_NAME "BongoCat-X"
     MACOSX_BUNDLE_GUI_IDENTIFIER com.bongocat.desktop
     MACOSX_BUNDLE_ICON_FILE "icon.icns"
     MACOSX_BUNDLE_INFO_PLIST

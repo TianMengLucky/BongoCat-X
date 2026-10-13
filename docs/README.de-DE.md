@@ -42,11 +42,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  In den allgemeinen Einstellungen kann **GitHub-Downloadbeschleunigung** aktiviert werden (standardmäßig aus), um Updateprüfungen, Pakete und Mitwirkendenbilder über [gh-proxy.com](https://gh-proxy.com/) abzurufen. Rust übernimmt alle Netzwerkdownloads der Anwendung. Die Update-Schaltfläche auf der Info-Seite lädt das Paket herunter, prüft SHA-256 und fragt nach einem Neustart. **Neu starten und aktualisieren** installiert nach dem Beenden und startet die App erneut; **Später** lässt die aktuelle Version weiterlaufen und hält das Update während dieser Sitzung über dieselbe Schaltfläche bereit. Store-Versionen verwenden weiterhin den Store.
-
-  **Neu in 2.1.3:** Ein Rust-Plugin erfasst Tastatur-/Mausaktivität und Anwendungszeiten in unabhängigen Hintergrundthreads; beim Deaktivieren verschwindet der Statistikeintrag. Einstellungsgruppen lassen sich vollständig oder einzeln aufklappen. Hinzu kommen Mausempfindlichkeit, optionale GitHub-Downloadbeschleunigung, Neustartbestätigung für Updates und geringerer Overlay-/Audioaufwand. Siehe [Änderungsprotokoll](../CHANGELOG.md) und [Statistikdokumentation](statistics-plugin.md).
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -338,6 +334,11 @@ Unter Einstellungen → Einstellungen → Fenster bietet Eigenes Hintergrundbild
 
 Live2D verwendet Geometriepuffer und wiederholte Renderzustände automatisch wieder. OpenGL-Streaming, Vulkan-Upload-Batches und Pipeline-Caches, gemeinsame Metal-Puffer sowie adaptive native Masken benötigen keinen zusätzlichen Schalter. Leistung und Plattformverhalten sind noch zu prüfen.
 
+Einstellungen → Anwendung → Speichersparmodus ist standardmäßig aus. Er begrenzt Texturqualität auf 10%, Kanten auf 512 Pixel und Live2D-Masken auf 256 Pixel, pausiert große Renderoptimierungen und lädt neu. Ausschalten stellt die gespeicherte Qualität wieder her. 50MB sind ein Ziel; der Bedarf hängt von Modell und Treiber ab.
+
+Einstellungen → Haustier → Maus-Folgebereich: horizontal/vertikal 25–400%, standardmäßig aus, 100% unverändert. Gezeichnete Mver-Pfoten bewegen sich weiter; Live2D behält Modellgrenzen. Blick und Fenster bleiben gleich. Der Speichersparmodus deaktiviert OpenGL-MSAA und reduziert ungenutzte Shader und Vulkan-Pipelines.
+
+Unter Windows nutzen speichersparende Einstellungen für OpenGL/Vulkan abschnittsweise SDL-Softwaredarstellung mit undurchsichtigem Hintergrund. Schriftgröße, Bildschirm-DPI und Kantenglättung bleiben erhalten. Der Schriftatlas speichert A8-Masken und konvertiert nur das gezeichnete Zeichen. Auf anderen Plattformen nutzt OpenGL weiterhin den Kontext des Begleiters.
 ### Mehrere Tasten und lesbare Spiegelzeichen
 
 Mver (OpenGL/Vulkan/Metal) schneidet Hand, Blasenrahmen und Zeichen getrennt zu und verbindet gedrückte Tasten mit + in einer Blase. Rahmen und Zipfel werden mit dem Modell gespiegelt; die Zeichen bleiben auch im Einzeltastenmodus lesbar. Konfigurieren Sie die drei Bereiche, den Abstand um + und das Limit je Seite in `hand-layout.json` neben den Handbildern; starten Sie nach Änderungen neu. Siehe [Anleitung und Beispiel](hand-layout.md).

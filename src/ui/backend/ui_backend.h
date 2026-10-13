@@ -28,6 +28,9 @@ typedef struct BongoCatUIBackend {
     GLuint vao;
     GLuint vbo;
     GLuint ebo;
+    SDL_Renderer *software_renderer;
+    bool software_frame_valid;
+    bool software_pending;
     GLuint font_texture;
     GLuint resize_cache_texture;
     int resize_cache_width;
@@ -36,6 +39,7 @@ typedef struct BongoCatUIBackend {
     unsigned resize_cache_failures;
     int font_atlas_width;
     int font_atlas_height;
+    struct nk_user_font font_handles[5];
     const struct nk_user_font *caption_font;
     const struct nk_user_font *body_font;
     const struct nk_user_font *label_font;
@@ -44,10 +48,12 @@ typedef struct BongoCatUIBackend {
     nk_rune *latin_glyph_ranges;
     nk_rune *cjk_glyph_ranges;
     nk_rune *korean_glyph_ranges;
+    nk_rune *heading_primary_ranges, *heading_cjk_ranges, *heading_korean_ranges;
     void *vertices;
     void *elements;
     size_t vertex_capacity;
     size_t element_capacity;
+    size_t gpu_vertex_capacity, gpu_element_capacity;
     size_t last_vertex_bytes;
     size_t last_element_bytes;
     uint64_t paint_frame_marker;
@@ -80,7 +86,7 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
     const char *body_korean_fallback_path, const char *heading_font_path,
     const char *heading_fallback_path,
     const char *heading_korean_fallback_path,
-    const nk_rune *glyph_ranges, float layout_scale, float raster_scale,
+    const nk_rune *glyph_ranges, const nk_rune *heading_ranges, float layout_scale, float raster_scale,
     BongoCatError *error);
 void bongo_cat_ui_destroy(BongoCatUIBackend *ui);
 void bongo_cat_ui_abandon(BongoCatUIBackend *ui);

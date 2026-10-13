@@ -53,9 +53,15 @@ int main(int argc, char **argv) {
     CHECK(engine == inox);
     bongo_cat_model_plugin_info(inox, &info);
     CHECK(info.installed && info.enabled && info.managed && !info.active);
+    char removed[BONGO_CAT_PATH_CAP];
+    snprintf(removed, sizeof(removed), "%s", info.path);
     CHECK(bongo_cat_file_remove(info.path));
     bongo_cat_model_plugin_info(inox, &info);
-    CHECK(!info.installed && !info.enabled && !info.active);
+    /* A staged application plugin can remain available after the managed copy
+       is deleted. Validate fallback without assuming the build has no bundle. */
+    CHECK(!bongo_cat_path_is_file(removed));
+    CHECK(!info.managed && !info.active && info.enabled == info.installed);
+    if (info.installed) CHECK(strcmp(info.path, removed) != 0);
     CHECK(bongo_cat_model_plugin_install(argv[1], &engine, &error));
     bongo_cat_model_plugin_info(inox, &info);
     CHECK(info.installed && info.enabled);

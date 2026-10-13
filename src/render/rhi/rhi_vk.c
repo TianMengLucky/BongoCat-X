@@ -6,6 +6,7 @@
 #if defined(BONGO_CAT_HAS_VULKAN_RHI) && \
     (defined(_WIN32) || (defined(__linux__) && defined(__x86_64__)))
 
+#include "bongo_cat/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -63,9 +64,9 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
     }
     VkApplicationInfo app = {0};
     app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app.pApplicationName = "BongoCat";
+    app.pApplicationName = "BongoCat-X";
     app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app.pEngineName = "BongoCat";
+    app.pEngineName = "BongoCat-X";
     app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     app.apiVersion = VK_API_VERSION_1_3;
@@ -210,17 +211,6 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
             "vkCreateCommandPool failed");
         goto failed;
     }
-    VkCommandBufferAllocateInfo command_info = {0};
-    command_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    command_info.commandPool = vk->pool;
-    command_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_info.commandBufferCount = 1;
-    if (vk->vkAllocateCommandBuffers(vk->device, &command_info,
-            &vk->command) != VK_SUCCESS) {
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
-            "vkAllocateCommandBuffers failed");
-        goto failed;
-    }
     VkFenceCreateInfo fence_info = {0};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
@@ -230,7 +220,12 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
             "vkCreateFence failed");
         goto failed;
     }
-    SDL_LogInfo(SDL_LOG_CATEGORY_VIDEO, "[render] %s ready", vk->describe);
+    if (!bongo_cat_rhi_vk_create_frames(vk)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
+            "Cannot allocate Vulkan frame slots");
+        goto failed;
+    }
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[render] %s ready (layered_target=%d)", vk->describe, vk->layered_target);
     rhi->backend = BONGO_CAT_RHI_VULKAN;
     rhi->window = *window;
     rhi->impl = vk;

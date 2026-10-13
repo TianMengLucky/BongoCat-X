@@ -16,14 +16,17 @@ static bool about_cancelled(void *userdata) {
 BongoCatAboutFeed *bongo_cat_about_feed_parse(char *svg, SDL_AtomicInt *cancel) {
     if (!svg || !cancel) return NULL;
     bongo_safe_about_person *persons = NULL;
+    int size = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) ?
+        32 : BONGO_ABOUT_AVATAR_SIZE;
     int count = bongo_safe_about_feed_parse(svg, strlen(svg), about_cancelled,
-        cancel, BONGO_ABOUT_AVATAR_SIZE, BONGO_ABOUT_CONTRIBUTOR_CAP, &persons);
+        cancel, size, BONGO_ABOUT_CONTRIBUTOR_CAP, &persons);
     if (count < 0) return NULL;
     BongoCatAboutFeed *feed = calloc(1, sizeof(*feed));
     if (!feed) {
         bongo_safe_free_persons(persons, count);
         return NULL;
     }
+    feed->avatar_size = size;
     for (int i = 0; i < count; ++i) {
         BongoCatAboutContributor *person = &feed->people[feed->count++];
         snprintf(person->name, sizeof(person->name), "%s",
@@ -40,6 +43,6 @@ void bongo_cat_about_feed_free(BongoCatAboutFeed *feed) {
     if (!feed) return;
     for (int i = 0; i < feed->count; i++)
         bongo_safe_free_pixels(feed->people[i].pixels,
-            (size_t)BONGO_ABOUT_AVATAR_SIZE * BONGO_ABOUT_AVATAR_SIZE * 4);
+            (size_t)feed->avatar_size * feed->avatar_size * 4);
     free(feed);
 }

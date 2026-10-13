@@ -11,13 +11,19 @@
 #define AUDIO_VOICES 50
 #define AUDIO_IDLE_MS 5000
 
-typedef struct AudioVoice {
-    ma_sound sound;
-    /* Zero-copy buffer over the bongo-safe decoded PCM, freed with the
-       voice; files are fully decoded (bounded by the Rust-side caps). */
-    ma_audio_buffer buffer;
+/* App-thread reference counts; the audio callback only reads immutable PCM. */
+typedef struct AudioClip {
     float *samples;
     size_t sample_count;
+    ma_uint64 frames;
+    unsigned int rate, channels, references;
+} AudioClip;
+
+typedef struct AudioVoice {
+    ma_sound sound;
+    /* Each voice has an independent cursor over shared Rust-decoded PCM. */
+    ma_audio_buffer buffer;
+    AudioClip *clip;
     char path[BONGO_CAT_PATH_CAP];
     char motion_id[BONGO_CAT_BEHAVIOR_ID_CAP];
     uint64_t used;
@@ -30,7 +36,8 @@ struct BongoCatAudio {
 #ifdef _WIN32
     SDL_AtomicInt mixing;
 #endif
-    AudioVoice voices[AUDIO_VOICES];
+    /* Stable addresses while playing; allocate only with the engine. */
+    AudioVoice *voices;
     uint64_t sequence;
     uint64_t last_play;
     uint64_t next_collect;
@@ -38,6 +45,7 @@ struct BongoCatAudio {
     bool enabled;
 };
 
+void bongo_cat_audio_clip_release(AudioClip *clip);
 void bongo_cat_audio_voice_release(AudioVoice *voice);
 ma_result bongo_cat_audio_initialize(BongoCatAudio *audio);
 

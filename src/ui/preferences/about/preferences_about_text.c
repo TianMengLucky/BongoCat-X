@@ -5,7 +5,8 @@
 const struct nk_user_font *bongo_cat_about_font(BongoCatPreferences *value, float size) {
     int index = NK_CLAMP(0, (int)(size * 2.0f), 63);
     struct nk_user_font *font = &value->about.css_fonts[index];
-    *font = *(size >= 18.0f ? value->ui.heading_font : value->ui.caption_font);
+    *font = *(size >= 22.0f ? value->ui.heading_font :
+        size >= 19.0f ? value->ui.body_font : value->ui.caption_font);
     font->height = size;
     return font;
 }

@@ -3,6 +3,7 @@
    the backend-neutral RHI entry points. Rendering behavior is unchanged. */
 #include "rhi_internal.h"
 #include "bongo_cat/gl_api.h"
+#include "bongo_cat/log.h"
 #include "../../platform/common/gl_readback.h"
 
 #include <SDL3/SDL.h>
@@ -72,8 +73,10 @@ BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int 
     /* Keep a lower-cost MSAA path for drivers that cannot provide 4 samples. */
     const int options[][2] = {{true, 4}, {true, 2}, {true, 0}, {false, 0}};
     char failure[256] = {0};
+    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
     bool force_fallback = SDL_getenv("BONGO_CAT_TEST_GL_FALLBACK") != NULL;
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i) {
+        if (low_memory && options[i][1] > 0) continue;
         if (force_fallback && options[i][1] > 0) {
             SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Test requested OpenGL fallback");
             continue;
@@ -86,7 +89,7 @@ BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int 
             const GLubyte *vendor = glGetString(GL_VENDOR);
             const GLubyte *renderer = glGetString(GL_RENDERER);
             const GLubyte *version = glGetString(GL_VERSION);
-            SDL_Log("[runtime] OpenGL window ready (transparent=%d, MSAA=%d, "
+            SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[runtime] OpenGL window ready (transparent=%d, MSAA=%d, "
                 "sample_buffers=%d, sample_count=%d)", options[i][0],
                 options[i][1], sample_buffers, sample_count);
             SDL_Log("[runtime] OpenGL context: vendor=%s renderer=%s version=%s",

@@ -40,6 +40,7 @@ static void check_defaults_and_validation(void) {
     CHECK(!settings.model.gamepad_four_hands);
     CHECK(settings.model.dynamic_texture_resolution);
     CHECK(settings.model.render_quality_percent == 100.0f);
+    CHECK(!settings.app.low_memory_mode);
     const float quality_levels[] = {0.1f, 1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     for (size_t i = 0; i < sizeof(quality_levels) / sizeof(quality_levels[0]); ++i) {
         settings.model.render_quality_percent = quality_levels[i];

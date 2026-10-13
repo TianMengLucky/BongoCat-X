@@ -176,8 +176,8 @@ void bongo_cat_mver_pointer_overlay_draw_before_keys(
     if (value->mouse) {
         /* Mouse has no second phase; retain its original computation path. */
         float x = value->left_handed ? 1.0f - value->x_ratio : value->x_ratio;
-        if (!bongo_cat_mver_pointer_geometry(x, value->y_ratio,
-            &value->geometry, &current)) return;
+        if (!bongo_cat_mver_pointer_geometry_scaled(x, value->y_ratio,
+            value->range_x, value->range_y, &value->geometry, &current)) return;
         draw_device(value, &current);
     } else if (!bongo_cat_mver_pointer_overlay_geometry(value, &current)) return;
     draw_arm(value, &current);

@@ -1,4 +1,5 @@
 #include "overlay_internal.h"
+#include "bongo_cat/memory_policy.h"
 #include <SDL3/SDL.h>
 #include <string.h>
 #include <limits.h>
@@ -6,28 +7,24 @@
 bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
     BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
     bool mirror, bool flip, bool opaque, uint32_t rgb) {
-    if (!value || (!value->native_background.surface && !value->custom_background.surface))
+    if (!value || (!value->native_background.surface && !value->custom_background.surface)) {
+        if (value) { SDL_DestroySurface(value->native_canvas); value->native_canvas = NULL; value->native_canvas_uploaded = false; }
         return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0) &&
-            bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height,
-                x, y, cw, ch, mirror, flip);
+            bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height, x, y, cw, ch, mirror, flip);
+    }
     const int geometry[6] = {width, height, x, y, cw, ch};
-    if (!value->native_canvas || memcmp(geometry, value->native_geometry,
+    bool uploaded = value->native_canvas_uploaded &&
+        bongo_cat_rhi_background_matches(rhi,width,height,value->native_revision);
+    if ((!value->native_canvas && !uploaded) || memcmp(geometry, value->native_geometry,
         sizeof(geometry)) || value->native_mirror != mirror ||
         value->native_flip != flip || value->native_opaque != opaque ||
         value->native_color != rgb) {
         SDL_Surface *canvas = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_RGBA32);
-        /* Scaling can read the cached source directly. Only flips need a
-           writable copy of the full decoded image. */
-        SDL_Surface *image = value->native_background.surface;
-        SDL_Surface *transformed = image && (mirror || flip)
-            ? SDL_DuplicateSurface(image) : NULL;
-        if (image && (mirror || flip)) image = transformed;
-        if (!canvas || (value->native_background.surface && !image)) {
-            SDL_DestroySurface(transformed);
-            SDL_DestroySurface(canvas);
-            return false;
-        }
-        bool ok = SDL_FillSurfaceRect(canvas, NULL, SDL_MapSurfaceRGBA(canvas,
+        bool copied = value->native_background.surface && (mirror || flip);
+        SDL_Surface *image = copied ? SDL_DuplicateSurface(value->native_background.surface) :
+            value->native_background.surface;
+        bool ok = canvas && (!value->native_background.surface || image);
+        if (ok) ok = SDL_FillSurfaceRect(canvas, NULL, SDL_MapSurfaceRGBA(canvas,
             opaque ? (Uint8)(rgb >> 16) : 0, opaque ? (Uint8)(rgb >> 8) : 0,
             opaque ? (Uint8)rgb : 0, opaque ? 255 : 0));
         if (ok && value->custom_background.surface) {
@@ -62,7 +59,7 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
                     SDL_BlitSurfaceScaled(image, NULL, canvas, &rect, SDL_SCALEMODE_LINEAR);
             }
         }
-        SDL_DestroySurface(transformed);
+        if (copied) SDL_DestroySurface(image);
         if (!ok) { SDL_DestroySurface(canvas); return false; }
         SDL_DestroySurface(value->native_canvas);
         value->native_canvas = canvas;
@@ -72,10 +69,26 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
         value->native_flip = flip;
         value->native_opaque = opaque;
         ++value->native_revision;
+        value->native_canvas_uploaded = false;
     }
     SDL_Surface *canvas = value->native_canvas;
-    return canvas && bongo_cat_rhi_set_background(rhi, canvas->pixels, canvas->w,
-        canvas->h, canvas->pitch, value->native_revision) &&
-        bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height,
-            x, y, cw, ch, mirror, flip);
+    if (!canvas) return uploaded && bongo_cat_overlay_prepare_native_foreground(
+        value, rhi, width, height, x, y, cw, ch, mirror, flip);
+    bool ok = bongo_cat_rhi_set_background(rhi, canvas->pixels, canvas->w,
+        canvas->h, canvas->pitch, value->native_revision);
+    if (ok && SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) &&
+        bongo_cat_rhi_background_matches(rhi,width,height,value->native_revision)) {
+        // Upload owns its staging copy before returning. Rebuild this temporary
+        // composition only when geometry, art, or the renderer changes.
+        SDL_DestroySurface(canvas); value->native_canvas = NULL;
+        value->native_canvas_uploaded = true;
+        bongo_cat_memory_policy_temporary_released();
+    }
+    return ok && bongo_cat_overlay_prepare_native_foreground(
+        value, rhi, width, height, x, y, cw, ch, mirror, flip);
+}
+
+void bongo_cat_overlay_set_mouse_range(BongoCatOverlay *value, float x_scale, float y_scale) {
+    if (!value || !value->mver_pointer) return;
+    bongo_cat_mver_pointer_overlay_set_range(value->mver_pointer, x_scale, y_scale);
 }

@@ -13,6 +13,7 @@ namespace {
 VmaAllocator allocator;
 VkDevice allocator_device;
 bool use_pool;
+bool allocator_low_memory;
 struct BufferAllocation {
     VmaAllocation allocation;
     unsigned maps = 0;
@@ -25,10 +26,10 @@ void check(VkResult result) {
 }
 }
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
-    VkDevice device, bool enabled) {
+    VkDevice device, bool enabled, bool low_memory) {
     // Policy changes occur before loading, after the previous model is released.
     if (!buffers.empty() || !images.empty()) return false;
-    if (allocator && (allocator_device != device || !enabled)) vulkan_memory_release();
+    if (allocator && (allocator_device != device || !enabled || allocator_low_memory != low_memory)) vulkan_memory_release();
     use_pool = false;
     if (!enabled) return true;
     if (!instance || !physical || !device) return false;
@@ -43,10 +44,11 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         info.vulkanApiVersion = VK_API_VERSION_1_3;
         // Keep small models from reserving large mostly empty blocks per memory type.
         // VMA still grows the pool and dedicates oversized resources as needed.
-        info.preferredLargeHeapBlockSize = 16ull * 1024 * 1024;
+        info.preferredLargeHeapBlockSize = low_memory ? 256ull * 1024 : 16ull * 1024 * 1024;
         info.pVulkanFunctions = &functions;
         if (vmaCreateAllocator(&info, &allocator) != VK_SUCCESS) return false;
         allocator_device = device;
+        allocator_low_memory = low_memory;
     }
     use_pool = true;
     return true;

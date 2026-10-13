@@ -58,7 +58,7 @@ impl Recorder {
         }
         Ok(result)
     }
-    /// Host submission waits for completion before this recorder is reused.
+    /// The renderer waits its own submission fences before reusing this recorder.
     pub unsafe fn record(
         &mut self,
         plan: &[Command],

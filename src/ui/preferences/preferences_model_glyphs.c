@@ -46,6 +46,7 @@ static void add_text(uint32_t *ranges, size_t capacity,
     }
 }
 
+
 static bool text_covered(const uint32_t *ranges, size_t capacity,
     const char *text) {
     if (!ranges || !capacity || !text || !text[0]) return false;

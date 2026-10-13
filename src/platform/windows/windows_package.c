@@ -55,7 +55,7 @@ bool bongo_cat_windows_package_storage_root_for(const wchar_t *profile,
     wchar_t path[BONGO_CAT_PATH_CAP];
     int length = swprintf(path, BONGO_CAT_PATH_CAP,
         L"%ls\\AppData\\Local\\Packages\\%ls\\LocalCache\\Local\\%ls",
-        profile, family, BONGO_CAT_NAME_W);
+        profile, family, BONGO_CAT_STORAGE_NAME_W);
     return length > 0 && length < BONGO_CAT_PATH_CAP &&
         bongo_cat_windows_utf8(path, output, capacity);
 }

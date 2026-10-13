@@ -42,12 +42,17 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     if (!vk || !vk->device) return false;
-    if (!pixels) { bongo_cat_rhi_vk_release_background(vk); return true; }
+    if (!pixels) {
+        if (!vk->background) return true;
+        if (!bongo_cat_rhi_vk_queue_checkpoint(vk)) return false;
+        bongo_cat_rhi_vk_release_background(vk);
+        return true;
+    }
     if (width <= 0 || height <= 0 || width > INT_MAX / 4 || pitch < width * 4 ||
         width != (int)vk->extent.width || height != (int)vk->extent.height ||
         (uint64_t)width * height > SIZE_MAX / 4) return false;
     if (vk->background_ready && vk->background_revision == revision) return true;
-    if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS) return false;
+    if (!bongo_cat_rhi_vk_queue_checkpoint(vk)) return false;
     if (!vk->background) {
         VkImageCreateInfo image = {0};
         image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -94,8 +99,9 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
                 }
         }
         vk->vkUnmapMemory(vk->device, memory);
-        VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(rhi);
-        ok = command != VK_NULL_HANDLE;
+        BongoCatRhiVkUpload *slot = bongo_cat_rhi_vk_begin_upload(vk);
+        VkCommandBuffer command = slot ? slot->command : VK_NULL_HANDLE;
+        ok = slot != NULL;
         if (ok) {
             transition(vk, command, vk->background, vk->background_ready
                 ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
@@ -110,7 +116,8 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
             transition(vk, command, vk->background, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_ACCESS_TRANSFER_READ_BIT);
-            ok = bongo_cat_rhi_vk_submit_commands(rhi, command);
+            ok = bongo_cat_rhi_vk_submit_upload(vk, slot, buffer, memory);
+            if (ok) { buffer = VK_NULL_HANDLE; memory = VK_NULL_HANDLE; }
         }
     }
     if (buffer) vk->vkDestroyBuffer(vk->device, buffer, NULL);

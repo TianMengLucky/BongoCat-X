@@ -46,7 +46,7 @@ static void release_window(BongoCatPreferences *value) {
     uint64_t release_started = SDL_GetTicksNS();
     bongo_cat_preferences_live_resize_uninstall(value);
     bool context_ready = !value->gl_context ||
-        SDL_GL_MakeCurrent(value->window, value->gl_context);
+        bongo_cat_preferences_gl_make_current(value);
     if (!context_ready) SDL_LogError(SDL_LOG_CATEGORY_VIDEO,
         "Preferences GL cleanup skipped because its context could not be "
         "activated: %s", SDL_GetError());
@@ -251,7 +251,7 @@ static void bongo_cat_preferences_close_finish(BongoCatPreferences *value) {
     value->chrome_dragging = false;
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool about_gl_ready = SDL_GL_MakeCurrent(value->window, value->gl_context);
+    bool about_gl_ready = bongo_cat_preferences_gl_make_current(value);
     bongo_cat_about_clear(value, about_gl_ready);
     SDL_GL_MakeCurrent(previous_context ? previous_window : NULL, previous_context);
     bongo_cat_preferences_release_idle_window(value);

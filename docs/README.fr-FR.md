@@ -58,11 +58,7 @@ Scannez le QR code avec QQ ou recherchez le groupe **211957388** pour rejoindre 
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  Activez **Accélération des téléchargements GitHub** dans les réglages généraux (désactivée par défaut) pour obtenir les vérifications, paquets et images des contributeurs via [gh-proxy.com](https://gh-proxy.com/). Rust gère tous les téléchargements réseau de l’application. Le bouton de mise à jour de la page À propos télécharge le paquet, vérifie SHA-256 puis demande confirmation. **Redémarrer et mettre à jour** installe après la fermeture et relance l’application ; **Plus tard** conserve la version actuelle et permet l’installation depuis le même bouton pendant cette session. Les versions du magasin utilisent toujours le magasin.
-
-  **Nouveautés de 2.1.3 :** un plugin Rust mesure l’activité clavier/souris et le temps d’utilisation des applications dans des threads indépendants ; sa désactivation retire l’entrée des statistiques. Les groupes de préférences peuvent être dépliés ou repliés. Ajout de la sensibilité de la souris, de l’accélération facultative des téléchargements GitHub et de la confirmation du redémarrage pour les mises à jour, avec moins de charge pour les couches et l’audio. Voir le [journal des modifications](../CHANGELOG.md) et le [guide des statistiques](statistics-plugin.md).
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Téléchargez la dernière version depuis [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -475,6 +471,11 @@ Préférences → Préférences → Fenêtre permet de choisir une image de fond
 
 Live2D réutilise automatiquement les tampons de géométrie et les états de rendu répétés. Les transferts OpenGL, les lots et le cache Vulkan, les tampons partagés Metal et les masques natifs adaptatifs ne nécessitent aucun interrupteur supplémentaire. Les performances et le comportement par plateforme restent à mesurer.
 
+Paramètres → Application → Mode mémoire réduite est désactivé par défaut. Il limite la qualité à 10%, les textures à 512 pixels par côté et les masques Live2D à 256, suspend les grandes optimisations et recharge le moteur. La désactivation restaure la qualité enregistrée. 50MB est un objectif dépendant du modèle et du pilote.
+
+Paramètres → Animal → Plage de suivi : horizontal/vertical 25–400%, désactivée par défaut, 100% inchangé. Les pattes Mver dessinées vont plus loin ; Live2D garde les limites du modèle. Regard et fenêtre inchangés. Le mode mémoire réduite désactive MSAA et réduit les shaders et pipelines inutilisés.
+
+Sous Windows, les paramètres en basse mémoire utilisent un rendu logiciel SDL par blocs et un fond opaque avec OpenGL/Vulkan. Taille réelle, DPI et anticrénelage des polices sont conservés. L’atlas stocke des masques A8 et convertit uniquement le glyphe dessiné. Sur les autres plateformes, OpenGL réutilise le contexte du compagnon.
 ### Plusieurs touches et caractères lisibles en mode miroir
 
 Mver (OpenGL/Vulkan/Metal) découpe séparément la main, le cadre et les caractères, puis relie les touches maintenues avec + dans une seule bulle. Le cadre et la queue se reflètent avec le modèle ; les caractères restent lisibles, aussi en mode touche unique. Configurez les trois zones, l’espacement autour de + et la limite par côté dans `hand-layout.json` à côté des images des mains, puis redémarrez. Consultez le [guide et l’exemple](hand-layout.md).

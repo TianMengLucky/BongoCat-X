@@ -42,12 +42,13 @@ pub unsafe extern "C" fn bongo_cat_model_plugin_optimize_v1(
         let native_backend = (cfg!(any(target_os = "windows", target_os = "linux"))
             && backend == 1)
             || (cfg!(target_os = "macos") && backend == 2);
-        r.large_allocation = native_backend && requested & 8 != 0;
-        r.parallel_recording = cfg!(any(target_os = "windows", target_os = "linux"))
+        r.low_memory = requested & 16 != 0;
+        r.large_allocation = !r.low_memory && native_backend && requested & 8 != 0;
+        r.parallel_recording = !r.low_memory && cfg!(any(target_os = "windows", target_os = "linux"))
             && backend == 1
             && requested & 1 != 0
             && std::thread::available_parallelism().is_ok_and(|n| n.get() > 1);
-        u32::from(r.large_allocation) * 8 | u32::from(r.parallel_recording)
+        u32::from(r.large_allocation) * 8 | u32::from(r.parallel_recording) | u32::from(r.low_memory) * 16
     })
 }
 
@@ -383,7 +384,11 @@ mod optimization_tests {
             assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 0, 2), 0);
             assert!(!r.large_allocation);
             assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 6, 1), 0);
-            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 16, 1), 0);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 31, 1), 16);
+            assert!(r.low_memory);
+            assert!(!r.large_allocation && !r.parallel_recording);
+            assert_eq!(bongo_cat_model_plugin_optimize_v1(pointer, 0, 1), 0);
+            assert!(!r.low_memory);
             assert_eq!(
                 bongo_cat_model_plugin_optimize_v1(std::ptr::null_mut(), 15, 1),
                 0

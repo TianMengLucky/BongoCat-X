@@ -42,11 +42,7 @@ Escanea el código QR con QQ o busca el grupo **211957388** para unirte a la com
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  Activa **Acelerar descargas de GitHub** en los ajustes generales (desactivado por defecto) para obtener comprobaciones, paquetes e imágenes de colaboradores mediante [gh-proxy.com](https://gh-proxy.com/). Rust gestiona todas las descargas de red de la aplicación. El botón de actualización de Acerca de descarga el paquete, verifica SHA-256 y pide confirmación. **Reiniciar y actualizar** instala después de cerrar y vuelve a abrir la aplicación; **Más tarde** mantiene la versión actual y permite instalar desde el mismo botón durante esta sesión. Las versiones de la tienda siguen usando la tienda.
-
-  **Novedades de 2.1.3:** un complemento Rust registra la actividad del teclado y ratón y el tiempo de uso de aplicaciones en hilos independientes; al desactivarlo desaparece su entrada de estadísticas. Los grupos de preferencias pueden expandirse o plegarse. Incluye sensibilidad del ratón, aceleración opcional de descargas de GitHub, confirmación de reinicio para actualizar y menor carga de capas y audio. Consulta el [registro de cambios](../CHANGELOG.md) y la [guía de estadísticas](statistics-plugin.md).
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Descarga la última versión desde [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -339,6 +335,11 @@ Preferencias → Preferencias → Ventana permite elegir una imagen de fondo per
 
 Live2D reutiliza automáticamente los búferes de geometría y estados de renderizado repetidos. Las cargas dinámicas de OpenGL, los lotes y la caché de Vulkan, los búferes compartidos de Metal y las máscaras nativas adaptativas no requieren otro interruptor. El rendimiento y el comportamiento por plataforma están pendientes de medición.
 
+Ajustes → Aplicación → Modo de memoria reducida está desactivado por defecto. Limita la calidad al 10%, los lados de texturas a 512 píxeles y las máscaras Live2D a 256, suspende grandes optimizaciones y recarga el renderizador. Desactivar restaura la calidad guardada. 50MB es un objetivo; depende del modelo y controlador.
+
+Ajustes → Mascota → Rango de seguimiento: horizontal/vertical 25–400%, desactivado por defecto; 100% conserva el rango. Las patas Mver dibujadas pueden moverse más; Live2D mantiene sus límites. Mirada y ventana no cambian. El modo de memoria reducida desactiva MSAA y reduce shaders y pipelines sin uso.
+
+En Windows, los ajustes de memoria reducida usan renderizado SDL por software en bloques y fondo opaco con OpenGL/Vulkan. Se conservan el tamaño real, DPI y antialiasing de las fuentes. El atlas almacena máscaras A8 y convierte solo el glifo dibujado. OpenGL en otras plataformas sigue reutilizando el contexto de la mascota.
 ### Varias teclas y caracteres legibles en modo espejo
 
 Mver (OpenGL/Vulkan/Metal) recorta por separado la mano, el marco y los caracteres, uniendo las teclas pulsadas con + en un solo bocadillo. El marco y la cola se reflejan con el modelo; los caracteres siguen siendo legibles, también en modo de una tecla. Configura las tres áreas, el espacio alrededor de + y el límite por lado en `hand-layout.json` junto a las imágenes de las manos; reinicia tras editar. Consulta la [guía y el ejemplo](hand-layout.md).

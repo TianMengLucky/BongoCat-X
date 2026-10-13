@@ -105,7 +105,7 @@ jobs:
           fi
           if ! gh release view nightly --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create nightly --repo "$GITHUB_REPOSITORY" \
-              --title 'BongoCat dev Nightly' --prerelease --latest=false \
+              --title 'BongoCat-X dev Nightly' --prerelease --latest=false \
               --notes 'Rolling development build. Assets are replaced as platforms finish.'
           fi
 
@@ -559,7 +559,7 @@ jobs:
           steps.skip-check.outputs.skip != 'true'
         uses: softprops/action-gh-release@v3
         with:
-          name: ${{ needs.version-check.outputs.prerelease == 'true' && 'BongoCat dev Nightly' || format('BongoCat v{0}', steps.version.outputs.version) }}
+          name: ${{ needs.version-check.outputs.prerelease == 'true' && 'BongoCat-X dev Nightly' || format('BongoCat-X v{0}', steps.version.outputs.version) }}
           tag_name: ${{ needs.version-check.outputs.tag }}
           target_commitish: ${{ needs.version-check.outputs.sha }}
           prerelease: ${{ needs.version-check.outputs.prerelease == 'true' }}

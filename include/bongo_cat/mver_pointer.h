@@ -43,6 +43,9 @@ extern "C" {
 bool bongo_cat_mver_pointer_geometry(float x_ratio, float y_ratio,
     const BongoCatMverPointerConfig *config,
     BongoCatMverPointerGeometry *geometry);
+bool bongo_cat_mver_pointer_geometry_scaled(float x_ratio, float y_ratio,
+    float x_scale, float y_scale, const BongoCatMverPointerConfig *config,
+    BongoCatMverPointerGeometry *geometry);
 bool bongo_cat_mver_pointer_ratios(double x, double y,
     const BongoCatMverPointerBounds *bounds,
     float *x_ratio, float *y_ratio);

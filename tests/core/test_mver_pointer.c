@@ -47,6 +47,24 @@ void test_mver_pointer(void) {
     CHECK(bottom_right.device_x < top_left.device_x);
     CHECK(bottom_right.device_y < top_left.device_y);
 
+    BongoCatMverPointerGeometry neutral, expanded, unchanged;
+    CHECK(bongo_cat_mver_pointer_geometry_scaled(0, 0, 1, 1, &config, &unchanged));
+    CHECK(close_to(unchanged.device_x, top_left.device_x));
+    CHECK(close_to(unchanged.device_y, top_left.device_y));
+    CHECK(bongo_cat_mver_pointer_geometry(.5f, .5f, &config, &neutral));
+    CHECK(bongo_cat_mver_pointer_geometry_scaled(0, 0, 2, 2, &config, &expanded));
+    CHECK(hypotf(expanded.device_x - neutral.device_x, expanded.device_y - neutral.device_y) >
+        hypotf(top_left.device_x - neutral.device_x, top_left.device_y - neutral.device_y));
+    CHECK(close_to(expanded.arm[0].x, top_left.arm[0].x));
+    CHECK(close_to(expanded.arm[25].y, top_left.arm[25].y));
+    CHECK(!bongo_cat_mver_pointer_geometry_scaled(0, 0, NAN, 1, &config, &expanded));
+    CHECK(!bongo_cat_mver_pointer_geometry_scaled(0, 0, 5, 1, &config, &expanded));
+    for (int x = 0; x <= 20; ++x) for (int y = 0; y <= 20; ++y) {
+        CHECK(bongo_cat_mver_pointer_geometry_scaled(x / 20.0f, y / 20.0f, 4, 4, &config, &expanded));
+        for (int i = 0; i < BONGO_CAT_MVER_ARM_POINT_COUNT; ++i)
+            CHECK(isfinite(expanded.arm[i].x) && isfinite(expanded.arm[i].y));
+    }
+
     BongoCatMverPointerGeometry clamped;
     CHECK(bongo_cat_mver_pointer_geometry(-2.0f, 3.0f, &config, &clamped));
     BongoCatMverPointerGeometry corner;

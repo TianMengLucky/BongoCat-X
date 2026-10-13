@@ -2,6 +2,7 @@
 #include "ui_paint_border.h"
 
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 
 static int region_alpha(const unsigned char *pixels, int width,
@@ -45,6 +46,19 @@ int main(void) {
     int width, height;
     if (!nk_font_atlas_bake(&atlas, &width, &height, NK_FONT_ATLAS_RGBA32)) return 3;
     nk_font_atlas_end(&atlas, nk_handle_id(1), &null_texture);
+    /* Independent sizes can share one atlas and keep identical glyph UVs. */
+    struct nk_user_font small = font->handle, large = font->handle;
+    small.height = 18.0f; large.height = 36.0f;
+    float small_width = small.width(small.userdata, small.height, "Test", 4);
+    float large_width = large.width(large.userdata, large.height, "Test", 4);
+    if (small_width <= 0 || fabsf(large_width - small_width * 2) > .01f) return 11;
+    struct nk_user_font_glyph small_glyph, large_glyph;
+    small.query(small.userdata, small.height, &small_glyph, 'A', 0);
+    large.query(large.userdata, large.height, &large_glyph, 'A', 0);
+    if (fabsf(large_glyph.width - small_glyph.width * 2) > .01f ||
+        small_glyph.uv[0].x != large_glyph.uv[0].x ||
+        small_glyph.uv[1].y != large_glyph.uv[1].y ||
+        font->handle.height != 16.0f) return 12;
     nk_style_set_font(&context, &font->handle);
     if (!nk_begin(&context, "test", nk_rect(0, 0, 320, 240), 0)) return 4;
     nk_layout_row_dynamic(&context, 24, 1);

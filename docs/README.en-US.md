@@ -56,11 +56,7 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  Enable **GitHub Download Acceleration** in General settings (off by default) to use [gh-proxy.com](https://gh-proxy.com/) for update checks, packages and contributor images. Rust handles all in-app network downloads. The About-page update button downloads and verifies the package with SHA-256, then asks whether to update now or later. **Restart and Update** applies the package after shutdown and relaunches the app; **Later** keeps the current version running, with the downloaded update available from the same button during this session. Store builds still update through the store.
-
-  **What’s new in 2.1.3:** a Rust plugin tracks keyboard/mouse activity and application usage on independent background workers; disabling it removes its statistics entry. Preference groups support expanded or collapsible layouts. Mouse sensitivity, optional GitHub download acceleration, restart confirmation for downloaded updates, and lower overlay/audio overhead are included. See the [changelog](../CHANGELOG.md) and [statistics guide](statistics-plugin.md).
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -462,6 +458,11 @@ Preferences → Preferences → Window includes Custom Image Background. Choose 
 
 Live2D automatically reuses geometry buffers and repeated render state. OpenGL streaming, Vulkan upload batching and pipeline caching, Metal shared buffer slots, and native adaptive masks require no additional switch. Performance and platform behavior of these new paths remain to be measured.
 
+Settings → Application → Low Memory Mode is off by default. It caps texture quality at 10%, edges at 512 pixels and Live2D masks at 256 pixels, suspends large rendering optimizations and reloads the renderer. Disabling restores saved quality; memory depends on the model and driver. 50MB is a target, not a guarantee.
+
+Settings → Pet → Custom Mouse Follow Range provides horizontal/vertical 25–400%, default off; 100% keeps the original range. Drawn Mver hands and mice can move farther; Live2D retains authored parameter limits. Gaze and window position are unchanged. Low Memory Mode disables OpenGL MSAA and reduces unused OpenGL shaders and Vulkan blend pipelines.
+
+On Windows, low-memory settings use chunked SDL software drawing and an opaque background for OpenGL/Vulkan. Fonts retain their actual sizes, display DPI and antialiasing. The software atlas stores A8 coverage and converts only the glyph being drawn. OpenGL on other platforms continues to reuse the pet context.
 ### Multiple keys and readable mirrored characters
 
 Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).

@@ -184,8 +184,10 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
         render_options.projection_scale, render_options.mouse_force_move,
         render_options.pointer_left_handed, render_options.custom_pointer_bounds);
     BongoCatModelRuntimeTextureOptions texture_options = {
-        .dynamic_resolution = app->settings.model.dynamic_texture_resolution,
-        .render_quality_percent = app->settings.model.render_quality_percent,
+        .dynamic_resolution = app->settings.app.low_memory_mode || app->settings.model.dynamic_texture_resolution,
+        .render_quality_percent = app->settings.app.low_memory_mode ?
+            SDL_min(app->settings.model.render_quality_percent, 10.0f) :
+            app->settings.model.render_quality_percent,
         .display_size = bongo_cat_model_texture_display_size,
         .display_size_userdata = app};
     BongoCatModelContentAnchor content_anchor =

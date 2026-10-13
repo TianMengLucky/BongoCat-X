@@ -179,6 +179,7 @@ bool bongo_cat_mver_pointer_overlay_load(BongoCatMverPointerOverlay *value,
     value->line_red = color(pointer, "lineRed");
     value->line_green = color(pointer, "lineGreen");
     value->line_blue = color(pointer, "lineBlue");
+    value->range_x = value->range_y = 1.0f;
     value->x_ratio = value->y_ratio = 0.5f;
     const char *arm = bongo_json_get_str(bongo_json_obj_get(pointer, "arm"));
     const char *device = bongo_json_get_str(bongo_json_obj_get(pointer, "device"));
@@ -216,4 +217,9 @@ void bongo_cat_mver_pointer_overlay_set(BongoCatMverPointerOverlay *value,
     value->left_down = left;
     value->right_down = right;
     value->side_down = side;
+}
+
+void bongo_cat_mver_pointer_overlay_set_range(BongoCatMverPointerOverlay *value, float x_scale, float y_scale) {
+    if (!value) return;
+    value->range_x = x_scale; value->range_y = y_scale;
 }

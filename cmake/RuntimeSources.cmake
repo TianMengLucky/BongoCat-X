@@ -63,7 +63,9 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
     src/render/rhi/rhi_vk.c src/render/rhi/rhi_vk_swapchain.c
     src/render/rhi/rhi_vk_readback.c src/render/rhi/rhi_vk_background.c
     src/render/rhi/rhi_vk_corners.c
-    src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c)
+    src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c
+    src/render/rhi/rhi_vk_layered.c
+  src/render/rhi/rhi_vk_sync.c src/render/rhi/rhi_vk_upload.c)
 else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
 endif()
@@ -238,6 +240,9 @@ set(BONGO_CAT_RUNTIME_SHELL_SOURCES
 
 set(BONGO_CAT_UI_BACKEND_SOURCES
   src/ui/backend/nuklear_impl.c
+  src/ui/backend/ui_software.c
+  src/ui/backend/ui_software_font.c
+  src/ui/backend/ui_texture.c
   src/ui/backend/ui_backend.c
   src/ui/backend/ui_backend_fonts.c
   src/ui/backend/ui_cursor.c
@@ -312,6 +317,8 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_lifecycle.c
   src/ui/preferences/preferences_resources.c
   src/ui/preferences/preferences_live_resize.c
+  src/ui/preferences/preferences_mouse_range.c
+  src/ui/preferences/preferences_low_memory.c
   src/ui/preferences/preferences_model.c
   src/ui/preferences/preferences_model_card.c
   src/ui/preferences/preferences_model_card_paint.c

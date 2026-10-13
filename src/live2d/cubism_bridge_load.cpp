@@ -102,6 +102,7 @@ extern "C" BongoCatResult bongo_cat_model_runtime_load_ex(BongoCatModelRuntime *
                 "stage=previous-released-before-load dynamic=%d",
                 dynamic_texture_resolution ? 1 : 0);
         }
+        model->set_low_memory_mode(runtime->low_memory_mode);
         if (!model->load(directory, setting, preset,
                 dynamic_texture_resolution, progress, userdata, error)) {
             delete model;

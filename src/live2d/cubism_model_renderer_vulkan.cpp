@@ -17,10 +17,11 @@ uint32_t configure_vulkan_optimization(BongoCatModelRuntime *runtime,
     const auto &info = runtime->rhi_info;
     const bool vulkan = backend == BONGO_CAT_RHI_VULKAN && info.backend == BONGO_CAT_RHI_VULKAN;
     const bool allocation = vulkan && (requested & BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION) != 0;
+    const bool low_memory = vulkan && (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY) != 0;
     uint32_t active = 0;
     if (bongo_cat::vulkan_memory_configure((VkInstance)info.vulkan_instance,
             (VkPhysicalDevice)info.vulkan_physical_device,
-            (VkDevice)info.vulkan_device, allocation) && allocation)
+            (VkDevice)info.vulkan_device, allocation || low_memory, low_memory) && allocation)
         active |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
     if (vulkan_recording_configure((VkDevice)info.vulkan_device, info.queue_family,
             vulkan && (requested & BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING) != 0))
@@ -34,6 +35,7 @@ uint32_t configure_vulkan_optimization(BongoCatModelRuntime *runtime,
 }
 
 void release_vulkan_device() {
+    vulkan_submit_wait();
     class RendererAccess : public Csm::Rendering::CubismRenderer_Vulkan {
     public:
         using CubismRenderer_Vulkan::DoStaticRelease;
@@ -61,7 +63,7 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
         return false;
     }
     vulkan_submit_initialize((VkDevice)info.vulkan_device, (VkQueue)info.vulkan_queue,
-        (VkCommandPool)info.vulkan_command_pool);
+        (VkCommandPool)info.vulkan_command_pool, !low_memory_mode_);
     Csm::Rendering::CubismRenderer_Vulkan::SetConstantSettings(
         (VkDevice)info.vulkan_device, (VkPhysicalDevice)info.vulkan_physical_device,
         (VkCommandPool)info.vulkan_command_pool, (VkQueue)info.vulkan_queue,
@@ -106,6 +108,8 @@ bool NativeModel::upload_texture_vulkan(int index,
         bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM, "Live2D texture exceeds Vulkan size limit");
         return false;
     }
+    if (vulkan_textures_[(size_t)index].GetImage()) vulkan_submit_wait();
+    else vulkan_draw_wait(); // No pending draw/upload may reference a replaced atlas.
     struct Staging {
         Csm::CubismBufferVulkan buffer;
         VkDevice device;
@@ -126,7 +130,7 @@ bool NativeModel::upload_texture_vulkan(int index,
         const VkDeviceSize size = (VkDeviceSize)width * (VkDeviceSize)height * 4;
         const VkMemoryPropertyFlags memory_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        // This synchronous upload is the only transient buffer opted out of pooling.
+        // Dedicated staging is retained by its upload slot until Fence completion.
         vulkan_upload_budget(size);
         if (vulkan_buffer_create(device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 memory_flags, &staging.pooled, &staging.pooled_memory, true)) {
@@ -163,8 +167,7 @@ bool NativeModel::upload_texture_vulkan(int index,
         vulkan_submit(command, VK_NULL_HANDLE, VK_NULL_HANDLE);
         auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
         if (renderer) {
-            if (!bongo_cat_rhi_wait_idle(rhi))
-                throw std::runtime_error("Cannot retire previous Live2D texture");
+            (void)rhi; // Previous draw fence was waited before replacement; upload is queued.
             std::vector<VkDescriptorImageInfo> atlases;
             for (size_t i = 0; i < vulkan_textures_.size(); ++i) {
                 const auto &atlas = i == (size_t)index ? image : vulkan_textures_[i];
@@ -181,6 +184,7 @@ bool NativeModel::upload_texture_vulkan(int index,
         std::swap(vulkan_textures_[(size_t)index], image);
         return true;
     } catch (const std::exception &exception) {
+        vulkan_submit_cancel();
         bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM, "%s", exception.what());
         return false;
     }
@@ -188,6 +192,7 @@ bool NativeModel::upload_texture_vulkan(int index,
 
 void NativeModel::release_textures_vulkan() {
     if (vulkan_textures_.empty()) return;
+    vulkan_submit_wait();
     VkDevice device = (VkDevice)rhi_info_.vulkan_device;
     for (auto &texture : vulkan_textures_) texture.Destroy(device);
     vulkan_textures_.clear();
@@ -196,6 +201,7 @@ void NativeModel::release_textures_vulkan() {
 void NativeModel::draw_vulkan() {
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
+    vulkan_draw_wait(); // Retire before mutating shared geometry, masks or descriptors.
     BongoCatRhiVulkanFrameInfo frame{};
     if (!bongo_cat_rhi_get_vulkan_frame_info(
         static_cast<const BongoCatRhi *>(rhi_info_.rhi_handle), &frame)) return;

@@ -23,6 +23,8 @@ static bool create_stack(BongoCatApp *app, const char *model, BongoCatError *err
     app->window_minimized = false;
     app->click_through_valid = false;
     app->render_retry_ns = 0;
+    app->native_next_submit_ns = 0;
+    app->native_async_pending = false;
     app->dirty = true;
     bongo_cat_window_apply(app);
     app->model_runtime = bongo_cat_model_runtime_create(app->asset_root, error);

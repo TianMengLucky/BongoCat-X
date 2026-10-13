@@ -129,7 +129,7 @@ static bool create_native_tray(BongoCatTray *tray, BongoCatError *error) {
             SDL_TRAYENTRY_BUTTON, on_preferences, tray);
         separator1 = add(menu, NULL, 0, NULL, tray);
         tray->visible = add(menu, bongo_cat_i18n_get(tray->app->i18n,
-            "composables.useAppMenu.labels.showCat", "Show BongoCat"),
+            "composables.useAppMenu.labels.showCat", "Show BongoCat-X"),
             SDL_TRAYENTRY_CHECKBOX, on_visible, tray);
         tray->pass_through = add(menu, bongo_cat_i18n_get(tray->app->i18n,
             "composables.useAppMenu.labels.passThrough", "Mouse pass-through"),
@@ -215,7 +215,7 @@ void bongo_cat_tray_sync(BongoCatTray *tray) {
     // The checkbox already communicates visibility; keep the action name
     // stable so users do not have to reinterpret the menu after each click.
     SDL_SetTrayEntryLabel(tray->visible, bongo_cat_i18n_get(tray->app->i18n,
-        "composables.useAppMenu.labels.showCat", "Show BongoCat"));
+        "composables.useAppMenu.labels.showCat", "Show BongoCat-X"));
     SDL_SetTrayEntryLabel(tray->pass_through, bongo_cat_i18n_get(tray->app->i18n,
         "composables.useAppMenu.labels.passThrough", "Mouse pass-through"));
     SDL_SetTrayEntryLabel(tray->always_on_top, bongo_cat_i18n_get(tray->app->i18n,

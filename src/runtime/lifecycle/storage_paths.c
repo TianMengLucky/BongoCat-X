@@ -57,7 +57,7 @@ static bool platform_roots(BongoCatApp *app) {
         return bongo_cat_windows_package_storage_root(local_app,
             sizeof(local_app)) && roots_under(app, local_app);
     const char *local = SDL_getenv("LOCALAPPDATA");
-    return child_path(local_app, sizeof(local_app), local, BONGO_CAT_NAME) &&
+    return child_path(local_app, sizeof(local_app), local, BONGO_CAT_STORAGE_NAME) &&
         roots_under(app, local_app);
 }
 #elif defined(__APPLE__)
@@ -67,7 +67,7 @@ static bool platform_roots(BongoCatApp *app) {
     char app_support[BONGO_CAT_PATH_CAP];
     return child_path(library, sizeof(library), home, "Library") &&
         child_path(support, sizeof(support), library, "Application Support") &&
-        child_path(app_support, sizeof(app_support), support, BONGO_CAT_NAME) &&
+        child_path(app_support, sizeof(app_support), support, BONGO_CAT_STORAGE_NAME) &&
         child_path(app->config_root, sizeof(app->config_root),
             app_support, "config") &&
         child_path(app->data_root, sizeof(app->data_root), app_support, "data") &&

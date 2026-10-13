@@ -72,6 +72,9 @@ static bool texture_dimensions(struct nk_context *context,
         BONGO_CAT_UI_PAINT_SCALE_MAX);
     *width = NK_MAX(1, (int)ceilf(bounds.w * *scale_x));
     *height = NK_MAX(1, (int)ceilf(bounds.h * *scale_y));
+    // Reject large decoration before rasterizing, allocating or retrying every frame.
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) &&
+        (size_t)*width * (size_t)*height > 128u * 1024u) return false;
     return true;
 }
 

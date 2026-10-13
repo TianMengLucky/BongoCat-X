@@ -1,3 +1,5 @@
+#include "preferences_state.h"
+#include "ui_software.h"
 #include "preferences_model_cover.h"
 #include "preferences_internal.h"
 #include "bongo_cat/image.h"
@@ -7,6 +9,10 @@
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
 #include <string.h>
+
+static BongoCatUIBackend *ui_for(BongoCatApp *app) {
+    return app && app->preferences ? &app->preferences->ui : NULL;
+}
 
 typedef struct ModelCoverSlot {
     BongoCatModelCover image;
@@ -39,7 +45,7 @@ void bongo_cat_preferences_model_cover_cache_clear(BongoCatApp *app) {
     for (size_t i = 0; i < BONGO_CAT_MODEL_CAP; ++i) {
         ModelCoverSlot *slot = &cover_cache[i];
         if ((!app || slot->app == app) && slot->image.texture)
-            glDeleteTextures(1, &slot->image.texture);
+            bongo_cat_ui_texture_delete(ui_for(slot->app), 1, &slot->image.texture);
         if (!app || slot->app == app) memset(slot, 0, sizeof(*slot));
     }
 }
@@ -86,6 +92,9 @@ void bongo_cat_preferences_model_covers_begin(BongoCatApp *app) {
 const BongoCatModelCover *bongo_cat_preferences_model_cover(
     BongoCatApp *app, const BongoCatModelEntry *entry,
     int pixel_width, int pixel_height) {
+    if (app && app->settings.app.low_memory_mode) {
+        pixel_width = SDL_min(pixel_width, 96); pixel_height = SDL_min(pixel_height, 96);
+    }
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), entry->adapter_directory,
         "resources/cover.png")) return NULL;
@@ -106,7 +115,7 @@ const BongoCatModelCover *bongo_cat_preferences_model_cover(
                 slot->requested_height == pixel_height && !slot->reload_pending) {
                 slot->generation = cover_generation; return &slot->image;
             }
-            glDeleteTextures(1, &slot->image.texture);
+            bongo_cat_ui_texture_delete(ui_for(slot->app), 1, &slot->image.texture);
             memset(slot, 0, sizeof(*slot));
             empty = slot;
             break;
@@ -120,7 +129,7 @@ const BongoCatModelCover *bongo_cat_preferences_model_cover(
     }
     cover_load_budget--;
     BongoCatError ignored = {0};
-    empty->image.texture = bongo_cat_image_texture_thumbnail(path,
+    empty->image.texture = bongo_cat_ui_texture_thumbnail(ui_for(app), path,
         pixel_width, pixel_height, &empty->image.width,
         &empty->image.height, &ignored);
     if (!empty->image.texture) return NULL;
@@ -136,7 +145,7 @@ void bongo_cat_preferences_model_covers_prune(BongoCatApp *app) {
         ModelCoverSlot *slot = &cover_cache[i];
         if (slot->app != app || !slot->image.texture ||
             slot->generation == cover_generation) continue;
-        glDeleteTextures(1, &slot->image.texture);
+        bongo_cat_ui_texture_delete(ui_for(slot->app), 1, &slot->image.texture);
         memset(slot, 0, sizeof(*slot));
     }
     if (cover_load_deferred && app)

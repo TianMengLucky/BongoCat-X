@@ -13,7 +13,7 @@ static bool cacheable(const BongoCatModelEntry *entry) {
 
 bool bongo_cat_model_behavior_cache_matches(const BongoCatApp *app,
     const BongoCatModelEntry *entry) {
-    return app && app->behavior_cache && app->behavior_cache_valid &&
+    return app && !app->settings.app.low_memory_mode && app->behavior_cache && app->behavior_cache_valid &&
         cacheable(entry) &&
         strcmp(app->behavior_cache_model_id, entry->id) == 0 &&
         (entry->preset || strcmp(app->behavior_cache_digest,
@@ -22,8 +22,15 @@ bool bongo_cat_model_behavior_cache_matches(const BongoCatApp *app,
 
 void bongo_cat_model_behavior_cache_store(BongoCatApp *app,
     const BongoCatModelEntry *entry) {
-    if (!app || !cacheable(entry)) {
-        if (app) app->behavior_cache_valid = false;
+    if (!app || app->settings.app.low_memory_mode || !cacheable(entry)) {
+        if (app) {
+            if (app->behavior_cache) {
+                bongo_cat_behaviors_clear(app->behavior_cache);
+                free(app->behavior_cache);
+                app->behavior_cache = NULL;
+            }
+            app->behavior_cache_valid = false;
+        }
         return;
     }
     if (!app->behavior_cache)

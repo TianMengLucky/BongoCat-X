@@ -1,3 +1,4 @@
+#include "ui_software.h"
 #include "preferences_state.h"
 #include "ui_icons.h"
 #include "bongo_cat/image.h"
@@ -7,18 +8,18 @@
 #include <SDL3/SDL_opengl.h>
 #include <math.h>
 
-static unsigned int load(BongoCatPreferences *value, const char *name,
-    int size, int *width, int *height) {
+static unsigned int load_sized(BongoCatPreferences *value, const char *name,
+    int max_width, int max_height, int *width, int *height) {
     char path[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(path, sizeof(path), value->app->asset_root,
         name)) return 0;
     BongoCatError error = {0};
-    bongo_cat_gl_clear_errors();
-    unsigned int texture = bongo_cat_image_texture_thumbnail(path, size,
-        size, width, height, &error);
-    GLenum upload_error = glGetError();
+    if (!value->ui.software_renderer) bongo_cat_gl_clear_errors();
+    unsigned int texture = bongo_cat_ui_texture_thumbnail(&value->ui, path, max_width,
+        max_height, width, height, &error);
+    GLenum upload_error = value->ui.software_renderer ? GL_NO_ERROR : glGetError();
     if (texture && upload_error != GL_NO_ERROR) {
-        glDeleteTextures(1, &texture);
+        bongo_cat_ui_texture_delete(&value->ui, 1, &texture);
         texture = 0;
     }
     if (upload_error != GL_NO_ERROR)
@@ -28,6 +29,11 @@ static unsigned int load(BongoCatPreferences *value, const char *name,
     if (!texture && error.message[0])
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "%s", error.message);
     return texture;
+}
+
+static unsigned int load(BongoCatPreferences *value, const char *name,
+    int size, int *width, int *height) {
+    return load_sized(value,name,size,size,width,height);
 }
 
 static int raster_size(const BongoCatPreferences *value, int logical) {
@@ -62,11 +68,14 @@ void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     if (needs_hidpi && !value->icon_hidpi_attempted) {
         int width = 0, height = 0;
         value->icon_hidpi_attempted = true;
-        value->icon_texture_hidpi = load(value, "ui-symbols@4x.png", 0,
-            &width, &height);
+        int cell = value->app->settings.app.low_memory_mode ?
+            SDL_clamp((int)ceilf(48*value->ui.raster_scale),48,96) : 96;
+        value->icon_texture_hidpi = load_sized(value,"ui-symbols@4x.png",
+            cell*BONGO_CAT_UI_ICON_COUNT,cell,&width,&height);
+        value->icon_hidpi_cell = cell;
     }
     bool hidpi = value->icon_texture_hidpi && needs_hidpi;
-    int cell = hidpi ? 96 : 24;
+    int cell = hidpi ? value->icon_hidpi_cell : 24;
     int atlas_width = cell * BONGO_CAT_UI_ICON_COUNT;
     unsigned int texture = hidpi ? value->icon_texture_hidpi : value->icon_texture;
     struct nk_image image = nk_subimage_id((int)texture, (nk_ushort)atlas_width,
@@ -74,8 +83,8 @@ void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     nk_draw_image(canvas, bounds, &image, color);
 }
 
-static void clear(unsigned int *texture) {
-    if (*texture) glDeleteTextures(1, texture);
+static void clear(BongoCatUIBackend *ui, unsigned int *texture) {
+    if (*texture) bongo_cat_ui_texture_delete(ui, 1, texture);
     *texture = 0;
 }
 
@@ -84,11 +93,11 @@ void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
     value->asset_retry_count = 0;
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, true);
-    clear(&value->logo_texture);
-    clear(&value->qq_texture);
+    clear(&value->ui, &value->logo_texture);
+    clear(&value->ui, &value->qq_texture);
     value->qq_attempted = false;
-    clear(&value->icon_texture);
-    clear(&value->icon_texture_hidpi);
+    clear(&value->ui, &value->icon_texture);
+    clear(&value->ui, &value->icon_texture_hidpi);
     value->icon_hidpi_attempted = false;
 }
 

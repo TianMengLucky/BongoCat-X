@@ -19,6 +19,35 @@
 #include <vulkan/vulkan.h>
 #endif
 
+struct BongoCatRhiVk;
+bool bongo_cat_rhi_vk_create_layered_target(struct BongoCatRhiVk *vk, int width, int height);
+
+enum { BONGO_CAT_VK_FRAMES = 2 };
+
+/* A slot is reused only after its completion fence, never by frame age. */
+typedef struct BongoCatRhiVkFrame {
+    VkCommandPool pool;
+    VkCommandBuffer initialize, finish;
+    VkFence fence;
+    bool pending;
+} BongoCatRhiVkFrame;
+
+typedef struct BongoCatRhiVkReadback {
+    VkBuffer readback_buffer;
+    VkDeviceMemory readback_memory;
+    VkDeviceSize readback_size;
+    uint8_t *pixels;
+} BongoCatRhiVkReadback;
+
+typedef struct BongoCatRhiVkUpload {
+    VkCommandPool pool;
+    VkCommandBuffer command;
+    VkFence fence;
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    bool pending;
+} BongoCatRhiVkUpload;
+
 typedef struct BongoCatRhiVk {
     char describe[160];
     VkInstance instance;
@@ -28,6 +57,9 @@ typedef struct BongoCatRhiVk {
     uint32_t queue_family;
     VkQueue queue;
     VkSwapchainKHR swapchain;
+    bool layered_target;
+    VkImage layered_image;
+    VkDeviceMemory layered_memory;
     VkFormat format;
     VkFormat depth_format;
     VkExtent2D extent;
@@ -41,14 +73,17 @@ typedef struct BongoCatRhiVk {
     VkPipelineLayout corner_layout;
     VkFramebuffer *corner_framebuffers;
     VkCommandPool pool;
-    VkCommandBuffer command, idle_command;
+    VkCommandBuffer idle_command;
+    BongoCatRhiVkFrame frames[BONGO_CAT_VK_FRAMES];
+    BongoCatRhiVkReadback readbacks[BONGO_CAT_VK_FRAMES];
+    uint32_t frame_slot, readback_slot, readback_frame;
+    BongoCatRhiVkUpload uploads[BONGO_CAT_VK_FRAMES];
+    unsigned upload_slot;
+    VkSemaphore *present_semaphores;
+    bool failed;
     VkFence fence, submit_fence;
     bool frame_ready;
     VkImageLayout frame_layout;
-    VkBuffer readback_buffer;
-    VkDeviceMemory readback_memory;
-    VkDeviceSize readback_size;
-    uint8_t *pixels;
     bool pixels_valid;
     const BongoCatRhi *owner;
     uint32_t acquired_index;
@@ -111,6 +146,9 @@ typedef struct BongoCatRhiVk {
     BONGO_CAT_VK_FN(vkQueueWaitIdle)
     BONGO_CAT_VK_FN(vkFreeCommandBuffers)
     BONGO_CAT_VK_FN(vkResetCommandBuffer)
+    BONGO_CAT_VK_FN(vkResetCommandPool)
+    BONGO_CAT_VK_FN(vkCreateSemaphore)
+    BONGO_CAT_VK_FN(vkDestroySemaphore)
     BONGO_CAT_VK_FN(vkCreateBuffer)
     BONGO_CAT_VK_FN(vkDestroyBuffer)
     BONGO_CAT_VK_FN(vkGetBufferMemoryRequirements)
@@ -144,6 +182,16 @@ void bongo_cat_rhi_vk_release_corners(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_draw_corners(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_background(BongoCatRhiVk *vk);
 void bongo_cat_rhi_vk_record_background(BongoCatRhiVk *vk, VkCommandBuffer command);
+BongoCatRhiVkUpload *bongo_cat_rhi_vk_begin_upload(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_submit_upload(BongoCatRhiVk *vk, BongoCatRhiVkUpload *slot,
+    VkBuffer buffer, VkDeviceMemory memory);
+bool bongo_cat_rhi_vk_collect_uploads(BongoCatRhiVk *vk);
+void bongo_cat_rhi_vk_destroy_uploads(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_create_frames(BongoCatRhiVk *vk);
+void bongo_cat_rhi_vk_destroy_frames(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_wait_frame(BongoCatRhiVk *vk, BongoCatRhiVkFrame *frame);
+bool bongo_cat_rhi_vk_queue_checkpoint(BongoCatRhiVk *vk);
+bool bongo_cat_rhi_vk_submit_frame(BongoCatRhiVk *vk, VkCommandBuffer command);
 void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_capture_frame(BongoCatRhiVk *vk);
 bool bongo_cat_rhi_vk_upload_composed_frame(BongoCatRhiVk *vk, SDL_Rect changed);

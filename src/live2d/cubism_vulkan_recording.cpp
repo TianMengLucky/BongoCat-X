@@ -38,8 +38,8 @@ public:
             worker.ready.notify_one();
         }
         for (auto &worker : workers_) if (worker.thread.joinable()) worker.thread.join();
-        // The SDK normally waits after each draw submission. Also cover an
-        // interrupted draw before releasing buffers still owned by the GPU.
+        // Async submissions retain these buffers until their fence. Shutdown
+        // also covers an interrupted draw before releasing GPU-owned resources.
         vkDeviceWaitIdle(device_);
         for (const auto &worker : workers_)
             if (worker.pool) vkDestroyCommandPool(device_, worker.pool, nullptr);

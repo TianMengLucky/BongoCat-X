@@ -57,13 +57,22 @@ void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *value,
         }
     }
     fonts->ranges = value->glyph_ranges;
+    // Large text has a small, known vocabulary; bake it at its real size.
+    value->heading_glyph_ranges[0] = 0x20; value->heading_glyph_ranges[1] = 0x7e;
+    value->heading_glyph_ranges[2] = 0;
+    const char *keys[] = {"native.about.contributorsTitle", "native.about.joinTitle"};
+    for (size_t i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i)
+        bongo_cat_preferences_text_glyphs(value->heading_glyph_ranges,
+            sizeof(value->heading_glyph_ranges)/sizeof(value->heading_glyph_ranges[0]),
+            bongo_cat_i18n_get(value->app->i18n, keys[i], ""));
+    fonts->heading_ranges = value->heading_glyph_ranges;
 }
 
 static bool reload(BongoCatPreferences *value,
     const BongoCatPreferenceFonts *fonts, float raster_scale) {
     bool reloaded = bongo_cat_ui_font_atlas_reload(&value->ui, fonts->body,
         fonts->body_fallback, fonts->body_korean_fallback, fonts->heading,
-        fonts->heading_fallback, fonts->heading_korean_fallback, fonts->ranges,
+        fonts->heading_fallback, fonts->heading_korean_fallback, fonts->ranges, fonts->heading_ranges,
         raster_scale);
     if (reloaded) bongo_cat_memory_policy_ui_loaded();
     return reloaded;

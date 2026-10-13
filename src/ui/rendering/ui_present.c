@@ -5,6 +5,8 @@
 
 bool bongo_cat_ui_present(SDL_Window *window) {
     if (!window) return false;
+    SDL_Renderer *software = SDL_GetPointerProperty(SDL_GetWindowProperties(window), "BongoCat.SoftwareUIRenderer", NULL);
+    if (software) return SDL_RenderPresent(software);
 #ifdef _WIN32
     int width, height;
     if (!SDL_GetWindowSizeInPixels(window, &width, &height)) return false;

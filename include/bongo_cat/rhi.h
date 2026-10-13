@@ -14,6 +14,11 @@ typedef struct SDL_Window SDL_Window;
    "auto" value (see BongoCatRenderBackend in config.h) that resolves to
    OpenGL before a device is created. Vulkan is offered on Windows and
    64-bit Linux, Metal on macOS; the availability helper decides. */
+typedef enum BongoCatRhiAsyncState {
+    BONGO_CAT_RHI_ASYNC_DISABLED, BONGO_CAT_RHI_ASYNC_IDLE,
+    BONGO_CAT_RHI_ASYNC_PENDING, BONGO_CAT_RHI_ASYNC_READY, BONGO_CAT_RHI_ASYNC_FAILED
+} BongoCatRhiAsyncState;
+
 typedef enum BongoCatRhiBackend {
     BONGO_CAT_RHI_OPENGL = 0,
     BONGO_CAT_RHI_VULKAN = 1,
@@ -71,6 +76,8 @@ bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi);
 /* Cached premultiplied RGBA canvas, top-down. NULL removes the background. */
 bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision);
+/* Backend retains its own upload copy; no caller pixel storage is required. */
+bool bongo_cat_rhi_background_matches(const BongoCatRhi *, int width, int height, uint64_t revision);
 /* Foreground is composited after the model and before readback/presentation. */
 bool bongo_cat_rhi_set_foreground(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision);
@@ -144,6 +151,8 @@ const char *bongo_cat_rhi_describe(const BongoCatRhi *rhi);
    direct-OpenGL paths stay untouched when OpenGL is selected. */
 const BongoCatRhiPresentOps *bongo_cat_rhi_active_present_ops(void);
 bool bongo_cat_rhi_active_is_gl(void);
+/* Nonblocking completion query; only the Windows layered Vulkan path is enabled. */
+BongoCatRhiAsyncState bongo_cat_rhi_async_frame_state(const BongoCatRhi *rhi);
 
 /* Frame boundaries. make_current binds the device to the main window
    (OpenGL) or validates the device (Vulkan); detach releases it so other

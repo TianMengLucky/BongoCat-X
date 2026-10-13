@@ -26,7 +26,7 @@ BEGIN
       VALUE "FileVersion", "@PROJECT_VERSION@\0"
       VALUE "InternalName", "BongoCat\0"
       VALUE "OriginalFilename", "BongoCat.exe\0"
-      VALUE "ProductName", "BongoCat\0"
+      VALUE "ProductName", "BongoCat-X\0"
       VALUE "ProductVersion", "@PROJECT_VERSION@\0"
     END
   END

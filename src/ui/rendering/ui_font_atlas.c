@@ -1,3 +1,4 @@
+#include "ui_software.h"
 #include "ui_font_atlas_internal.h"
 
 #include <SDL3/SDL_opengl.h>
@@ -21,7 +22,8 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
     const char *body_korean_fallback_path, const char *heading_path,
     const char *heading_fallback_path,
     const char *heading_korean_fallback_path,
-    const nk_rune *glyph_ranges, float raster_scale) {
+    const nk_rune *glyph_ranges, const nk_rune *heading_ranges, float raster_scale) {
+    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
     UIFontSource sources[6] = {0};
     const char *paths[] = {body_path, body_fallback_path,
         body_korean_fallback_path, heading_path, heading_fallback_path,
@@ -58,19 +60,19 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
             bongo_cat_ui_font_source_release(&sources[i]);
         return false;
     }
+    bool sparse_heading = heading_ranges && SDL_GetBooleanProperty(
+        SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
+    if (sparse_heading && !bongo_cat_ui_font_split_ranges(heading_ranges,
+            &ui->heading_primary_ranges, &ui->heading_cjk_ranges, &ui->heading_korean_ranges)) {
+        free(korean_ranges); free(cjk_ranges); free(primary_ranges);
+        for (int i = 0; i < 6; ++i) bongo_cat_ui_font_source_release(&sources[i]);
+        return false;
+    }
     nk_font_atlas_init_default(&ui->atlas);
     nk_font_atlas_begin(&ui->atlas);
-    GLint maximum_texture = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maximum_texture);
-    /* Keep the atlas bounded on high-DPI displays. The UI is laid out in
-       logical pixels, so a 1.5x raster is enough for crisp text while a 2x
-       atlas can quadruple both the texture and bake working memory. */
-    float scale_limit = maximum_texture >= 8192 ? 1.5f : 1.0f;
-    float font_scale = NK_CLAMP(1.0f, raster_scale, scale_limit);
-    if (font_scale + .01f < raster_scale) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-        "Preferences font raster scale limited to %.2fx by the UI memory "
-        "budget (GPU texture limit %d)",
-        font_scale, maximum_texture);
+    /* Bake at the display's physical pixel scale. The upload checks the
+       renderer's texture limit; never silently stretch undersized glyphs. */
+    float font_scale = NK_CLAMP(0.5f, raster_scale, 8.0f);
     const UIFontSource *body_source = body;
     const UIFontSource *fallback_source = body_fallback;
     const UIFontSource *body_korean_fallback_source =
@@ -84,9 +86,9 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
         20.0f * font_scale, glyph_ranges, primary_ranges, cjk_ranges,
         korean_ranges);
     /* Identical families at 20 px can share glyphs and the font handle. */
-    bool shared_label = body_source == heading_source &&
+    bool shared_label = low_memory || (body_source == heading_source &&
         fallback_source == heading_fallback_source &&
-        body_korean_fallback_source == heading_korean_fallback_source;
+        body_korean_fallback_source == heading_korean_fallback_source);
     struct nk_font *label_font = shared_label ? body_font :
         bongo_cat_ui_font_add_family(&ui->atlas,
         heading_source, heading_fallback_source,
@@ -94,25 +96,36 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
         primary_ranges, cjk_ranges, korean_ranges);
     struct nk_font *heading_font = bongo_cat_ui_font_add_family(&ui->atlas,
         heading_source, heading_fallback_source,
-        heading_korean_fallback_source, 28.0f * font_scale, glyph_ranges,
-        primary_ranges, cjk_ranges, korean_ranges);
+        heading_korean_fallback_source, 28.0f * font_scale,
+        sparse_heading ? heading_ranges : glyph_ranges,
+        sparse_heading ? ui->heading_primary_ranges : primary_ranges,
+        sparse_heading ? ui->heading_cjk_ranges : cjk_ranges,
+        sparse_heading ? ui->heading_korean_ranges : korean_ranges);
+    // The only hero label is the literal BongoCat product name. Bake its exact
+    // glyphs at 36 px, rather than scaling body text or duplicating all CJK glyphs.
+    static const nk_rune hero_ranges[] = {'B','B','C','C','a','a','g','g','n','o','t','t',0};
     struct nk_font *hero_font = bongo_cat_ui_font_add_family(&ui->atlas,
         heading_source, heading_fallback_source,
-        heading_korean_fallback_source, 36.0f * font_scale, glyph_ranges,
-        primary_ranges, cjk_ranges, korean_ranges);
+        heading_korean_fallback_source, 36.0f * font_scale,
+        low_memory ? hero_ranges : glyph_ranges,
+        low_memory ? hero_ranges : primary_ranges,
+        low_memory ? NULL : cjk_ranges, low_memory ? NULL : korean_ranges);
     bool uploaded = caption_font && body_font && label_font && heading_font &&
         hero_font && bongo_cat_ui_font_upload_atlas(ui);
     if (uploaded) {
-        ui->caption_font = &caption_font->handle;
-        ui->body_font = &body_font->handle;
-        ui->label_font = &label_font->handle;
-        ui->heading_font = &heading_font->handle;
-        ui->hero_font = &hero_font->handle;
-        caption_font->handle.height = 18.0f;
-        body_font->handle.height = 20.0f;
-        label_font->handle.height = 20.0f;
-        heading_font->handle.height = 28.0f;
-        hero_font->handle.height = 36.0f;
+        /* Each size owns its user handle; callbacks scale a shared baked
+           font through height/info.height. Glyph storage stays atlas-owned. */
+        const struct nk_font *fonts[] = {caption_font, body_font, label_font, heading_font, hero_font};
+        const float heights[] = {18.0f, 20.0f, 20.0f, 28.0f, 36.0f};
+        for (size_t i = 0; i < 5; ++i) {
+            ui->font_handles[i] = fonts[i]->handle;
+            ui->font_handles[i].height = heights[i];
+        }
+        ui->caption_font = &ui->font_handles[0];
+        ui->body_font = &ui->font_handles[1];
+        ui->label_font = &ui->font_handles[2];
+        ui->heading_font = &ui->font_handles[3];
+        ui->hero_font = &ui->font_handles[4];
         ui->latin_glyph_ranges = primary_ranges;
         ui->cjk_glyph_ranges = cjk_ranges;
         ui->korean_glyph_ranges = korean_ranges;
@@ -142,6 +155,8 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
 void bongo_cat_ui_font_atlas_destroy(BongoCatUIBackend *ui) {
     if (!ui) return;
     nk_font_atlas_clear(&ui->atlas);
+    free(ui->heading_primary_ranges); free(ui->heading_cjk_ranges); free(ui->heading_korean_ranges);
+    ui->heading_primary_ranges = ui->heading_cjk_ranges = ui->heading_korean_ranges = NULL;
     free(ui->korean_glyph_ranges); free(ui->cjk_glyph_ranges);
     free(ui->latin_glyph_ranges);
     ui->korean_glyph_ranges = NULL; ui->cjk_glyph_ranges = NULL;

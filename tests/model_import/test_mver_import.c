@@ -2,6 +2,8 @@
 #include "model_storage.h"
 #include "preferences_model_glyphs.h"
 #include "preferences_state.h"
+#include "preferences_render_internal.h"
+#include <math.h>
 #include "ui_font_atlas.h"
 #include "runtime.h"
 #include "test_mver_support.h"
@@ -205,7 +207,7 @@ static void font_reload_defers_during_frame(void) {
     BongoCatUIBackend backend = {0};
     backend.frame_building = true;
     CHECK(!bongo_cat_ui_font_atlas_reload(&backend, NULL, NULL,
-        NULL, NULL, NULL, NULL, NULL, 1.0f));
+        NULL, NULL, NULL, NULL, NULL, NULL, 1.0f));
 }
 
 static void model_change_reloads_glyphs_before_drawing(void) {
@@ -251,6 +253,26 @@ static void model_visual_curve(void) {
     CHECK(complete == 1.0f && !value.model_load_visual_active);
 }
 
+static void settings_frame_timing(void) {
+    BongoCatApp *app=calloc(1,sizeof(*app)); BongoCatPreferences preferences={0};
+    CHECK(app != NULL); if (!app) return;
+    app->preferences=&preferences; app->settings.model.max_fps=60;
+    app->last_frame_ns=1000000000ull; app->session.window.visible=true;
+    int idle=bongo_cat_window_wait_timeout(app,app->last_frame_ns);
+    preferences.window=(SDL_Window *)(uintptr_t)1; preferences.visible=true;
+    preferences.ui.software_pending=true;
+    CHECK(bongo_cat_preferences_frame_pending(&preferences));
+    CHECK(bongo_cat_window_wait_timeout(app,app->last_frame_ns)==1);
+    preferences.ui.software_pending=false;
+    CHECK(bongo_cat_window_wait_timeout(app,app->last_frame_ns)==idle);
+    preferences.visible=false; preferences.ui.software_pending=true;
+    CHECK(!bongo_cat_preferences_frame_pending(&preferences));
+    CHECK(bongo_cat_window_wait_timeout(app,app->last_frame_ns)==idle);
+    CHECK(fabsf(bongo_cat_preferences_animation_delta(1000000000ull,1035000000ull)-.035f)<.00001f);
+    CHECK(bongo_cat_preferences_animation_delta(1,1000000001ull)==.05f);
+    CHECK(fabsf(bongo_cat_preferences_animation_delta(0,1000000000ull)-1.0f/60)<.00001f);
+    free(app);
+}
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "--import-notice"))
         return test_preferences_import() ? 1 : 0;
@@ -285,6 +307,7 @@ int main(int argc, char **argv) {
     model_change_reloads_glyphs_before_drawing();
     model_visual_expires_without_window();
     model_visual_curve();
+    settings_frame_timing();
     failures += test_mver_nearby_identity();
     failures += test_mver_nearby_refresh();
     failures += test_mver_policy();

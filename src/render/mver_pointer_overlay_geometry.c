@@ -8,7 +8,7 @@ bool bongo_cat_mver_pointer_overlay_geometry(
     if (!value || !output) return false;
     const float key[] = {value->x_ratio, value->y_ratio,
         value->geometry.offset_x, value->geometry.offset_y,
-        value->geometry.hand_offset_x, value->geometry.hand_offset_y};
+        value->geometry.hand_offset_x, value->geometry.hand_offset_y, value->range_x, value->range_y};
     /* Preserve signed-zero changes and reject NaN cache hits. Recheck on
        both draw phases: the pointer anchor can change between them. */
     bool key_matches = true;
@@ -28,8 +28,8 @@ bool bongo_cat_mver_pointer_overlay_geometry(
     }
     value->geometry_cache_valid = false;
     float x = value->left_handed ? 1.0f - value->x_ratio : value->x_ratio;
-    if (!bongo_cat_mver_pointer_geometry(x, value->y_ratio,
-        &value->geometry, output)) return false;
+    if (!bongo_cat_mver_pointer_geometry_scaled(x, value->y_ratio,
+        value->range_x, value->range_y, &value->geometry, output)) return false;
     value->cached_geometry = *output;
     memcpy(value->geometry_cache_key, key, sizeof(key));
     value->geometry_cache_left_handed = value->left_handed;

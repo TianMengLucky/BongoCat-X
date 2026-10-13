@@ -82,10 +82,22 @@ bool bongo_cat_mver_pointer_update(BongoCatMverPointerState *state,
 bool bongo_cat_mver_pointer_geometry(float x_ratio, float y_ratio,
     const BongoCatMverPointerConfig *config,
     BongoCatMverPointerGeometry *geometry) {
-    if (!config || !geometry) return false;
+    return bongo_cat_mver_pointer_geometry_scaled(x_ratio, y_ratio, 1.0f, 1.0f, config, geometry);
+}
+
+bool bongo_cat_mver_pointer_geometry_scaled(float x_ratio, float y_ratio,
+    float x_scale, float y_scale, const BongoCatMverPointerConfig *config,
+    BongoCatMverPointerGeometry *geometry) {
+    if (!config || !geometry || !isfinite(x_ratio) || !isfinite(y_ratio) ||
+        !isfinite(x_scale) || !isfinite(y_scale) || x_scale < .25f || x_scale > 4.0f ||
+        y_scale < .25f || y_scale > 4.0f) return false;
     double fx = clamp_ratio(x_ratio), fy = clamp_ratio(y_ratio);
     double x = -97.0 * fx + 44.0 * fy + 184.0;
     double y = -76.0 * fx - 40.0 * fy + 324.0;
+    /* Scale the physical hand endpoint about its neutral position; shoulder
+       anchors stay fixed and the arm curves are rebuilt from that endpoint. */
+    x = 157.5 + (x - 157.5) * x_scale;
+    y = 266.0 + (y - 266.0) * y_scale;
     const double dx = -38.0, dy = -50.0;
     const int samples = 6;
     DoublePoint path[19];
@@ -105,7 +117,7 @@ bool bongo_cat_mver_pointer_geometry(float x_ratio, float y_ratio,
     double normal_x = y - centre_left_y;
     double normal_y = centre_left_x - x;
     double normal_length = hypot(normal_x, normal_y);
-    if (normal_length <= 0.0) return false;
+    if (normal_length <= 0.0) { normal_x = 0.0; normal_y = 1.0; normal_length = 1.0; }
     double a = x + normal_x / normal_length * 60.0;
     double b = y + normal_y / normal_length * 60.0;
     const double anchor_x = 258.0, anchor_y = 228.0;
@@ -116,13 +128,13 @@ bool bongo_cat_mver_pointer_geometry(float x_ratio, float y_ratio,
     double tangent_x = x - centre_left_x;
     double tangent_y = y - centre_left_y;
     double tangent_length = hypot(tangent_x, tangent_y);
-    if (tangent_length <= 0.0) return false;
+    if (tangent_length <= 0.0) { tangent_x = 0.0; tangent_y = 1.0; tangent_length = 1.0; }
     tangent_x *= push / tangent_length;
     tangent_y *= push / tangent_length;
     double tangent2_x = a - centre_right_x;
     double tangent2_y = b - centre_right_y;
     tangent_length = hypot(tangent2_x, tangent2_y);
-    if (tangent_length <= 0.0) return false;
+    if (tangent_length <= 0.0) { tangent2_x = 0.0; tangent2_y = 1.0; tangent_length = 1.0; }
     tangent2_x *= push / tangent_length;
     tangent2_y *= push / tangent_length;
     DoublePoint middle_curve[] = {

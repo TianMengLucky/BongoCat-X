@@ -42,11 +42,7 @@
 
 ## 📥 下载
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  在设置的「常规」页可开启「GitHub 下载加速」（默认关闭），通过 [gh-proxy.com](https://gh-proxy.com/) 加速更新检查、更新包和贡献者头像。应用内网络下载统一由 Rust 处理。点击关于页的更新按钮后，应用下载并校验 SHA-256，再弹出「稍后／重启并更新」确认窗口；选择「稍后」可继续使用当前版本，并在本次运行中再次点击更新按钮安装。商店版仍通过商店更新。
-
-  **2.1.3 更新**：新增 Rust 统计插件，独立后台统计键鼠活动和应用使用时长；停用插件即隐藏统计入口。偏好选项可切换全部展开／折叠分组，新增鼠标灵敏度、GitHub 下载加速和下载后确认重启更新，并减少覆盖层传输与空闲音频开销。详见[更新日志](CHANGELOG.md)和[统计插件说明](docs/statistics-plugin.md)。
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
@@ -339,6 +335,11 @@ Windows 便携版为 ZIP 包，解压后请保留程序旁的 `plugins` 目录�
 
 Live2D 自动复用几何缓冲与连续重复的渲染状态；OpenGL 动态上传、Vulkan 上传批处理与管线缓存、Metal 共享缓冲槽及原生动态遮罩无需额外开关。新增路径的性能与平台行为待实测。
 
+设置 → 应用 →「低内存模式」默认关闭。开启后纹理画质最高 10%、边长最高 512 像素，Live2D 遮罩最高 256 像素，暂停大型渲染优化并重载渲染器。关闭后恢复原画质设置；实际占用取决于模型和驱动，50MB 是优化目标而非保证。
+
+设置 → 桌宠 →「自定义鼠标跟随范围」支持水平/垂直 25–400%，100% 为原范围，默认关闭。Mver 绘制猫爪和鼠标可扩大实际活动范围，普通 Live2D 仍保留作者的参数边界；视线和窗口位置不变。低内存模式现关闭 OpenGL MSAA，并减少未使用的 OpenGL 着色器与 Vulkan 混合管线。
+
+Windows 低内存设置窗口对 OpenGL/Vulkan 均使用分块 SDL 软件绘制及不透明背景。字体保留实际字号、屏幕 DPI 和抗锯齿采样，软件字体图集保存单通道遮罩，仅转换当前字形，避免整张图集扩展为四通道。其他平台的 OpenGL 继续复用桌宠上下文。
 ### 多按键显示与字符裁剪
 
 Mver (OpenGL/Vulkan/Metal) 可分别裁剪手部、气泡外框和字符，将按住的按键用加号连接在同一个气泡中。外框和尾巴随模型镜像，字符保持可读，单键模式也生效。在手部图片文件夹的 `hand-layout.json` 中设置三个裁剪区域、加号两侧间距和每侧显示数量，修改后重新启动应用。详见[配置说明与示例](docs/hand-layout.md)。

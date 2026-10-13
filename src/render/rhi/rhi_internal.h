@@ -37,9 +37,11 @@ bool bongo_cat_rhi_vk_get_device_info(const BongoCatRhi *rhi,
 void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi);
 bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command);
 bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi);
+BongoCatRhiAsyncState bongo_cat_rhi_vk_async_frame_state(const BongoCatRhi *rhi);
 bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision);
 bool bongo_cat_rhi_vk_get_frame_info(const BongoCatRhi *rhi, BongoCatRhiVulkanFrameInfo *info);
+bool bongo_cat_rhi_vk_background_matches(const BongoCatRhi *, int width, int height, uint64_t revision);
 bool bongo_cat_rhi_vk_wait_idle(const BongoCatRhi *rhi);
 
 BongoCatResult bongo_cat_rhi_metal_create_window(const char *title, int width,

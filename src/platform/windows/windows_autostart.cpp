@@ -80,13 +80,13 @@ HRESULT set_run_value(bool enabled) {
         else {
             std::wstring command =
                 L"\"" + std::wstring(executable) + L"\" --autostart";
-            code = RegSetValueExW(key, BONGO_CAT_NAME_W, 0, REG_SZ,
+            code = RegSetValueExW(key, BONGO_CAT_STORAGE_NAME_W, 0, REG_SZ,
                 reinterpret_cast<const BYTE *>(command.c_str()),
                 static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
             if (code != ERROR_SUCCESS) result = HRESULT_FROM_WIN32(code);
         }
     } else {
-        code = RegDeleteValueW(key, BONGO_CAT_NAME_W);
+        code = RegDeleteValueW(key, BONGO_CAT_STORAGE_NAME_W);
         if (code != ERROR_SUCCESS && code != ERROR_FILE_NOT_FOUND)
             result = HRESULT_FROM_WIN32(code);
     }
@@ -101,7 +101,7 @@ void clear_run_approval(void) {
     HKEY key = nullptr;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, run_approval_path, 0,
             KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
-    RegDeleteValueW(key, BONGO_CAT_NAME_W);
+    RegDeleteValueW(key, BONGO_CAT_STORAGE_NAME_W);
     RegCloseKey(key);
 }
 
@@ -109,13 +109,13 @@ void delete_legacy_shortcut(void) {
     PWSTR directory = nullptr;
     if (FAILED(SHGetKnownFolderPath(FOLDERID_Startup, KF_FLAG_DONT_VERIFY,
             nullptr, &directory))) return;
-    std::wstring path = std::wstring(directory) + L"\\" BONGO_CAT_NAME_W L".lnk";
+    std::wstring path = std::wstring(directory) + L"\\" BONGO_CAT_STORAGE_NAME_W L".lnk";
     CoTaskMemFree(directory);
     DeleteFileW(path.c_str());
     HKEY key = nullptr;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, shortcut_approval_path, 0,
             KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
-    RegDeleteValueW(key, BONGO_CAT_NAME_W L".lnk");
+    RegDeleteValueW(key, BONGO_CAT_STORAGE_NAME_W L".lnk");
     RegCloseKey(key);
 }
 

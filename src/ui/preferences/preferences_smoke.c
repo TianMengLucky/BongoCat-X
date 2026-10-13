@@ -67,6 +67,7 @@ void bongo_cat_preferences_smoke_frame(BongoCatPreferences *value) {
     if (!value) return;
     write_window_handle(value);
     if (!value->app->smoke) return;
+    bool first_frame = !value->frame_checked;
     bool valid = bongo_cat_ui_frame_valid(&value->ui);
     bool assets_valid = value->logo_texture && value->icon_texture;
     if (!value->frame_checked) {
@@ -83,12 +84,27 @@ void bongo_cat_preferences_smoke_frame(BongoCatPreferences *value) {
     if (pixel_width > 0 && pixel_height > 0) {
         const int points[4][2] = {{0, 0}, {pixel_width - 1, 0},
             {0, pixel_height - 1}, {pixel_width - 1, pixel_height - 1}};
-        for (int i = 0; i < 4; ++i) glReadPixels(points[i][0], points[i][1],
-            1, 1, GL_RGBA, GL_UNSIGNED_BYTE, corners[i]);
+        for (int i = 0; i < 4; ++i) {
+            if (value->ui.software_renderer) {
+                SDL_Rect rect = {points[i][0], points[i][1], 1, 1};
+                SDL_Surface *pixel = SDL_RenderReadPixels(value->ui.software_renderer, &rect);
+                if (pixel) SDL_ReadSurfacePixel(pixel, 0, 0,
+                    &corners[i][0], &corners[i][1], &corners[i][2], &corners[i][3]);
+                SDL_DestroySurface(pixel);
+            } else glReadPixels(points[i][0], points[i][1], 1, 1,
+                GL_RGBA, GL_UNSIGNED_BYTE, corners[i]);
+        }
     }
     unsigned corner_alpha = 0;
     for (int i = 0; i < 4; ++i)
         if (corners[i][3] > corner_alpha) corner_alpha = corners[i][3];
+    if (first_frame && value->ui.software_renderer) {
+        char screenshot[BONGO_CAT_PATH_CAP];
+        SDL_Surface *frame = SDL_RenderReadPixels(value->ui.software_renderer, NULL);
+        if (frame && bongo_cat_path_join(screenshot, sizeof(screenshot), value->app->state_root, "ui-frame.bmp"))
+            SDL_SaveBMP(frame, screenshot);
+        SDL_DestroySurface(frame);
+    }
     char path[BONGO_CAT_PATH_CAP];
     bongo_cat_path_join(path, sizeof(path), value->app->state_root,
         "ui-frame.txt");

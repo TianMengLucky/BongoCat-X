@@ -47,6 +47,7 @@ struct BongoCatPreferences {
     unsigned int icon_texture;
     unsigned int icon_texture_hidpi;
     bool icon_hidpi_attempted;
+    int icon_hidpi_cell;
     int logo_width;
     int logo_height;
     BongoCatAboutState about;
@@ -61,6 +62,7 @@ struct BongoCatPreferences {
     int style_theme;
     BongoCatLanguage font_language;
     nk_rune glyph_ranges[16384];
+    nk_rune heading_glyph_ranges[512];
     uint64_t behavior_font_serial;
     bool input_active;
     bool import_requested;
@@ -212,6 +214,9 @@ void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
 void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
 /* Render backend row of the general page (hot-switched via the app loop). */
+void bongo_cat_preferences_mouse_range_row(BongoCatApp *app, struct nk_context *context);
+void bongo_cat_preferences_low_memory_row(BongoCatApp *app,
+    BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_render_backend_row(BongoCatApp *app,

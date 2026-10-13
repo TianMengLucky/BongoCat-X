@@ -281,6 +281,7 @@ bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
         now - texture_resize_ns_ < kEnlargeSettleNs) return false;
     GLint limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limit);
+    if (low_memory_mode_) limit = std::min(limit, 512);
     if (limit < 1) { texture_refresh_pending_ = false; return false; }
     for (; texture_refresh_index_ < textures_.size(); ++texture_refresh_index_) {
         const auto &current = textures_[texture_refresh_index_];

@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int bongo_cat_test_failures;
@@ -33,12 +34,15 @@ static bool offline(BongoCatAudio *audio) {
     config.noAutoStart = MA_TRUE;
     config.channels = 2;
     config.sampleRate = 48000;
+    if (!audio->voices) audio->voices = calloc(AUDIO_VOICES,sizeof(*audio->voices));
+    if (!audio->voices) return false;
     audio->initialized = ma_engine_init(&config, &audio->engine) == MA_SUCCESS;
     return audio->initialized;
 }
 
 static size_t count(const BongoCatAudio *audio) {
     size_t total = 0;
+    if (!audio->voices) return 0;
     for (size_t i = 0; i < AUDIO_VOICES; ++i) total += audio->voices[i].ready;
     return total;
 }
@@ -66,6 +70,8 @@ int main(void) {
     CHECK(audio != NULL);
     if (!audio) return 1;
     CHECK(!audio->initialized);
+    bongo_cat_audio_update(audio);
+    CHECK(!audio->initialized);
     CHECK(!bongo_cat_audio_any_playing(audio));
     CHECK(offline(audio));
     if (!audio->initialized) { bongo_cat_audio_destroy(audio); return 1; }
@@ -74,6 +80,22 @@ int main(void) {
     CHECK(bongo_cat_audio_play_sound(audio, second, false, &error) == BONGO_CAT_OK);
     CHECK(count(audio) == 2);
     CHECK(bongo_cat_audio_is_playing(audio, first));
+    CHECK(bongo_cat_audio_play_sound(audio, first, true, &error) == BONGO_CAT_OK);
+    CHECK(count(audio) == 3);
+    AudioVoice *original = NULL, *overlap = NULL;
+    for (size_t i = 0; i < AUDIO_VOICES; ++i) {
+        AudioVoice *voice = &audio->voices[i];
+        if (!voice->ready || strcmp(voice->path, first)) continue;
+        if (!original) original = voice;
+        else overlap = voice;
+    }
+    CHECK(original && overlap);
+    if (original && overlap) {
+        CHECK(original->clip == overlap->clip && overlap->clip->references == 2);
+        bongo_cat_audio_voice_release(original);
+        CHECK(overlap->clip->references == 1 && overlap->clip->samples[100] != 0.0f);
+        CHECK(audible(audio));
+    }
     bongo_cat_audio_stop_path(audio, first);
     CHECK(!bongo_cat_audio_is_playing(audio, first));
     CHECK(bongo_cat_audio_is_playing(audio, second));
@@ -84,6 +106,9 @@ int main(void) {
     for (size_t i = 0; i < AUDIO_VOICES + 10; ++i)
         CHECK(bongo_cat_audio_play_sound(audio, first, true, &error) == BONGO_CAT_OK);
     CHECK(count(audio) == AUDIO_VOICES);
+    AudioClip *shared = audio->voices[0].clip;
+    CHECK(shared && shared->references == AUDIO_VOICES);
+    for (size_t i = 0; i < AUDIO_VOICES; ++i) CHECK(audio->voices[i].clip == shared);
     /* Stop/reset while asynchronous file loads are still pending. */
     bongo_cat_audio_stop(audio); CHECK(count(audio) == 0);
     CHECK(!bongo_cat_audio_any_playing(audio));
@@ -92,7 +117,7 @@ int main(void) {
         &error) == BONGO_CAT_OK);
     CHECK(audible(audio));
     bongo_cat_audio_set_enabled(audio, false);
-    CHECK(!audio->initialized && count(audio) == 0);
+    CHECK(!audio->initialized && !audio->voices && count(audio) == 0);
     CHECK(!bongo_cat_audio_is_playing(audio, first));
     CHECK(bongo_cat_audio_play(audio, first, &error) == BONGO_CAT_OK);
     CHECK(!audio->initialized);
@@ -126,7 +151,7 @@ int main(void) {
         if (audio->voices[i].ready) ma_sound_stop(&audio->voices[i].sound);
     audio->next_collect = 0;
     bongo_cat_audio_collect(audio, audio->last_play + AUDIO_IDLE_MS + 1);
-    CHECK(!audio->initialized && count(audio) == 0);
+    CHECK(!audio->initialized && !audio->voices && count(audio) == 0);
     CHECK(!bongo_cat_audio_is_playing(audio, first));
     CHECK(offline(audio));
     BongoCatResult invalid = bongo_cat_audio_play(audio, "missing-audio-test-file.wav", &error);

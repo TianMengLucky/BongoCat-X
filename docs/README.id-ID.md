@@ -61,11 +61,7 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  Aktifkan **Akselerasi Unduhan GitHub** pada pengaturan umum (nonaktif secara bawaan) untuk pemeriksaan pembaruan, paket, dan gambar kontributor melalui [gh-proxy.com](https://gh-proxy.com/). Rust menangani semua unduhan jaringan di aplikasi. Tombol pembaruan pada halaman Tentang mengunduh paket, memverifikasi SHA-256, lalu meminta konfirmasi. **Mulai Ulang dan Perbarui** memasang setelah aplikasi ditutup dan membuka aplikasi kembali; **Nanti** tetap menjalankan versi saat ini dan menyediakan pembaruan melalui tombol yang sama selama sesi ini. Versi toko tetap diperbarui melalui toko.
-
-  **Baru di 2.1.3:** plugin Rust mencatat aktivitas keyboard/mouse dan durasi penggunaan aplikasi melalui thread latar terpisah; menonaktifkannya menghapus menu statistik. Kelompok preferensi dapat dibuka seluruhnya atau dilipat. Tersedia sensitivitas mouse, percepatan unduhan GitHub opsional, konfirmasi mulai ulang untuk pembaruan, serta pengurangan beban lapisan dan audio. Lihat [catatan perubahan](../CHANGELOG.md) dan [panduan statistik](statistics-plugin.md).
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -453,6 +449,11 @@ Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG
 
 Live2D otomatis menggunakan kembali buffer geometri dan status render berulang. Streaming OpenGL, unggahan berkelompok dan cache pipeline Vulkan, slot buffer bersama Metal, serta mask native adaptif tidak memerlukan sakelar tambahan. Kinerja dan perilaku platform masih perlu diukur.
 
+Pengaturan → Aplikasi → Mode Memori Rendah nonaktif secara default. Mode ini membatasi kualitas tekstur ke 10%, sisi ke 512 piksel dan masker Live2D ke 256 piksel, menunda optimasi render besar dan memuat ulang renderer. Menonaktifkan memulihkan kualitas tersimpan. 50MB adalah target, bergantung pada model dan driver.
+
+Pengaturan → Pet → Rentang mouse: horizontal/vertikal 25–400%, default nonaktif; 100% mempertahankan semula. Kaki Mver yang digambar bergerak lebih jauh; Live2D mempertahankan batas model. Pandangan dan posisi jendela tetap. Mode memori rendah menonaktifkan MSAA dan mengurangi shader dan pipeline yang tidak digunakan.
+
+Di Windows, pengaturan hemat memori menggunakan perenderan perangkat lunak SDL bertahap dengan latar buram untuk OpenGL/Vulkan. Ukuran font, DPI layar dan antialiasing dipertahankan. Atlas menyimpan masker A8 dan hanya mengonversi glif yang digambar. OpenGL di platform lain tetap memakai konteks pet.
 ### Beberapa tombol dan karakter yang terbaca dalam mode cermin
 
 Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).

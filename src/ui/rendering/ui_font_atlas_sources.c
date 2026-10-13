@@ -48,12 +48,10 @@ void bongo_cat_ui_font_source_release(UIFontSource *source) {
 static struct nk_font_config font_config(float size, const nk_rune *ranges) {
     struct nk_font_config config = nk_font_config(size);
     config.range = ranges;
-    /* CJK glyphs dominate the atlas and gain little from subpixel
-       oversampling. Keep the sharper 2x bake for Latin and symbols while
-       using the native raster for the large fallback ranges. */
-    bool fallback_range = ranges && ranges[0] >= 0x1100;
-    config.oversample_h = fallback_range ? 1 : 2;
-    config.oversample_v = fallback_range ? 1 : 2;
+    /* Preserve antialiased strokes in every script. Sparse glyph ranges,
+       rather than reduced font sampling, bound low-memory atlas storage. */
+    config.oversample_h = 2;
+    config.oversample_v = 2;
     return config;
 }
 

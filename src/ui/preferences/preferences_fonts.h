@@ -17,6 +17,7 @@ typedef struct BongoCatPreferenceFonts {
     const char *heading_fallback;
     const char *heading_korean_fallback;
     const nk_rune *ranges;
+    const nk_rune *heading_ranges;
 } BongoCatPreferenceFonts;
 
 void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *preferences,

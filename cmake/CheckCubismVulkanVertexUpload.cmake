@@ -12,7 +12,9 @@ endif()
 file(SHA256 "${renderer}" original_hash)
 file(READ "${renderer}" source)
 string(REPLACE "\r\n" "\n" source "${source}")
-if(MUTATION STREQUAL "missing_binding")
+if(MUTATION STREQUAL "missing_pipeline")
+  string(REPLACE "_pipelineResource[shaderName]->CreateGraphicsPipeline" "changed_pipeline_creation" source "${source}")
+elseif(MUTATION STREQUAL "missing_binding")
   string(REPLACE "_textures.PushBack(image);" "changed_texture_binding();" source "${source}")
 elseif(MUTATION STREQUAL "missing_wait")
   string(REPLACE "vkQueueWaitIdle(s_queue);" "changed_async_submit();" source "${source}")
@@ -27,7 +29,7 @@ elseif(MUTATION STREQUAL "ambiguous")
   string(APPEND source "\n        vertices.PushBack(vertex);\n")
 endif()
 bongo_cat_vulkan_vertex_upload_patch(source)
-foreach(required IN ITEMS "_textures[slot] = image;"
+foreach(required IN ITEMS "if (!descriptor.uniformBuffer.GetBuffer())" "if (!descriptor.uniformBufferMask.GetBuffer())" "descriptor.uniformBuffer = CubismBufferVulkan();" "descriptor.uniformBufferMask = CubismBufferVulkan();" "_textures[slot] = image;"
     "isDescriptorSetUpdated = false;" "isDescriptorSetMaskedUpdated = false;"
     "isDescriptorSetForMaskUpdated = false;" "s_bufferSetNum = 1;" "vulkan_buffer_mapped_data(" "if (!mapped) vertices.PrepareCapacity(vcount);"
     "if (vcount <= 0) return;" "if (mapped) std::memcpy(mapped +"
@@ -42,11 +44,21 @@ endforeach()
 # Verify that the independent secondary-recording adaptation still composes.
 include("${CMAKE_CURRENT_LIST_DIR}/CubismVulkanRecording.cmake")
 bongo_cat_vulkan_recording_patch(source)
-foreach(mutation IN ITEMS missing ambiguous missing_pass missing_wait missing_slots missing_binding)
+include("${CMAKE_CURRENT_LIST_DIR}/CubismVulkanLazyPipelines.cmake")
+bongo_cat_vulkan_lazy_pipelines(source)
+foreach(required IN ITEMS "bongoPipelineDescriptions.emplace" "variant.committed = true;" "if (bongoPipelineBlend == CompatibleBlend::Blend_Mask)" "if (description.ready & bit) return;"
+    "if (!description.ready) description.resource->Release();" "std::lock_guard<std::mutex> lock(bongoPipelineMutex);"
+    "BongoEnsurePipeline(_deviceInfo->GetPipeline(), ShaderNames_Copy, 0);")
+  string(FIND "${source}" "${required}" found)
+  if(found EQUAL -1)
+    message(FATAL_ERROR "Lazy pipeline ownership behavior missing: ${required}")
+  endif()
+endforeach()
+foreach(mutation IN ITEMS missing ambiguous missing_pass missing_wait missing_slots missing_binding missing_pipeline)
   execute_process(COMMAND "${CMAKE_COMMAND}" "-DSDK=${SDK}" "-DMUTATION=${mutation}"
     -P "${CMAKE_CURRENT_LIST_FILE}"
     RESULT_VARIABLE result OUTPUT_QUIET ERROR_VARIABLE error)
-  if(result EQUAL 0 OR NOT error MATCHES "Cubism Vulkan vertex upload patch")
+  if(result EQUAL 0 OR NOT error MATCHES "Cubism Vulkan (vertex upload|recording) patch")
     message(FATAL_ERROR "Vertex upload SDK mismatch check failed: ${mutation}: ${error}")
   endif()
 endforeach()

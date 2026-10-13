@@ -18,6 +18,8 @@ pub struct Vulkan {
     depth_format: vk::Format,
     surface: RefCell<Option<Surface>>,
     recorder: RefCell<Option<crate::vulkan_recording::Recorder>>,
+    staging: RefCell<[Option<Buffer>; crate::vulkan_commands::SLOTS]>,
+    inflight: RefCell<Option<Frame>>,
 }
 struct Surface {
     width: u32,
@@ -80,8 +82,14 @@ impl Vulkan {
             depth_format,
             surface: RefCell::new(None),
             recorder: RefCell::new(recorder),
+            staging: RefCell::new(Default::default()),
+            inflight: RefCell::new(None),
         };
         for source in &model.textures {
+            let commands = result.gpu.commands()?;
+            let slot = commands.slot;
+            // acquire waited this slot before its staging is dropped or replaced.
+            result.staging.borrow_mut()[slot] = None;
             let mut reader = image::ImageReader::with_format(
                 std::io::Cursor::new(source.data.as_ref()),
                 source.format,
@@ -107,7 +115,6 @@ impl Vulkan {
             let buffer = result
                 .gpu
                 .buffer(image.as_raw(), vk::BufferUsageFlags::TRANSFER_SRC)?;
-            let commands = result.gpu.commands()?;
             barrier(
                 &result.gpu,
                 commands.raw,
@@ -144,8 +151,9 @@ impl Vulkan {
                 vk::ImageLayout::TRANSFER_DST_OPTIMAL,
                 vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
             );
-            commands.submit()?;
+            result.staging.borrow_mut()[slot] = Some(buffer);
             result.textures.push(texture);
+            commands.submit()?;
         }
         Ok(result)
     }
@@ -220,6 +228,11 @@ impl Vulkan {
         {
             return Err("No acquired Vulkan frame".into());
         }
+        // Shared stencil/intermediate targets and secondary recorder use one
+        // backing set for minimum memory. Wait before mutating it, not at return.
+        self.gpu.wait_commands()?;
+        *self.inflight.borrow_mut() = None;
+        *self.staging.borrow_mut() = Default::default();
         let mut surface = self.surface.borrow_mut();
         if surface
             .as_ref()
@@ -474,12 +487,15 @@ impl Vulkan {
                 );
             }
         }
-        commands.submit()
+        commands.submit()?;
+        *self.inflight.borrow_mut() = Some(frame);
+        Ok(())
     }
 }
 impl Drop for Vulkan {
     fn drop(&mut self) {
         unsafe {
+            let _ = self.gpu.wait_commands();
             if let Some(wait) = crate::host().wait_idle {
                 wait(self.gpu.info.rhi_handle);
             }

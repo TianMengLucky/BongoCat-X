@@ -8,14 +8,17 @@
 
 /* Failure recovery always clears; normal frames may copy a complete background. */
 static bool initialize_frame(BongoCatRhiVk *vk, uint32_t index, bool background) {
-    if (vk->vkResetCommandBuffer(vk->command, 0) != VK_SUCCESS) return false;
+    VkCommandBuffer command = vk->frames[vk->frame_slot].initialize;
+    /* A new slot was pool-reset after its fence. Error recovery first places
+       a queue checkpoint, then can reset this initialization buffer safely. */
+    if (vk->vkResetCommandBuffer(command, 0) != VK_SUCCESS) return false;
     VkCommandBufferBeginInfo begin = {0};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    if (vk->vkBeginCommandBuffer(vk->command, &begin) != VK_SUCCESS)
+    if (vk->vkBeginCommandBuffer(command, &begin) != VK_SUCCESS)
         return false;
     if (background) {
-        bongo_cat_rhi_vk_record_background(vk, vk->command);
+        bongo_cat_rhi_vk_record_background(vk, command);
     } else {
         VkClearValue clear;
         clear.color = (VkClearColorValue){{
@@ -28,62 +31,100 @@ static bool initialize_frame(BongoCatRhiVk *vk, uint32_t index, bool background)
         pass.renderArea.extent = vk->extent;
         pass.clearValueCount = 1;
         pass.pClearValues = &clear;
-        vk->vkCmdBeginRenderPass(vk->command, &pass, VK_SUBPASS_CONTENTS_INLINE);
-        vk->vkCmdEndRenderPass(vk->command);
+        vk->vkCmdBeginRenderPass(command, &pass, VK_SUBPASS_CONTENTS_INLINE);
+        vk->vkCmdEndRenderPass(command);
     }
-    if (vk->vkEndCommandBuffer(vk->command) != VK_SUCCESS) return false;
+    /* Initialization and plugin drawing use separate submissions on the same
+       queue. Make the initialized color visible without a CPU completion wait. */
+    VkMemoryBarrier ready = {0};
+    ready.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    ready.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    ready.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &ready, 0, NULL, 0, NULL);
+    if (vk->vkEndCommandBuffer(command) != VK_SUCCESS) return false;
     VkSubmitInfo submit = {0};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &vk->command;
-    if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS ||
-        vk->vkQueueSubmit(vk->queue, 1, &submit, vk->fence) != VK_SUCCESS) return false;
-    return vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+    submit.pCommandBuffers = &command;
+    if (vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE) != VK_SUCCESS) {
+        vk->failed = true;
+        return false;
+    }
+    return true;
 }
 
 bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
-    if (!vk || !vk->device || !vk->swapchain) return false;
+    if (!vk || !vk->device || (!vk->swapchain && !vk->layered_target) || vk->failed) return false;
     if (vk->frame_ready && !bongo_cat_rhi_vk_frame_present(rhi->window, vk))
         return false;
+    if (!bongo_cat_rhi_vk_collect_uploads(vk)) return false;
     vk->pixels_valid = false;
-    /* Single frame in flight for this milestone. The acquire fence is waited
-       on the CPU before any draw, and all rendering completes before present.
-       No binary present semaphore is reused while the presentation engine
-       might still own it. A future asynchronous path needs per-image signals. */
-    if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS) return false;
+    BongoCatRhiVkFrame *frame = &vk->frames[vk->frame_slot];
+    if (!bongo_cat_rhi_vk_wait_frame(vk, frame) ||
+        vk->vkResetCommandPool(vk->device, frame->pool,
+            VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) return false;
+    /* CPU acquisition remains explicit for existing plugins. Final submission
+       is asynchronous; only reuse/readback waits for the slot's fence. */
     uint32_t index = 0;
-    VkResult acquired = vk->vkAcquireNextImageKHR(vk->device, vk->swapchain,
-        UINT64_MAX, VK_NULL_HANDLE, vk->fence, &index);
-    if (acquired == VK_ERROR_OUT_OF_DATE_KHR) {
-        bongo_cat_rhi_vk_recreate_swapchain(vk, (int)vk->extent.width,
-            (int)vk->extent.height);
-        return false;
+    if (vk->layered_target) {
+        // One color target is shared. Wait its previous writer, not merely this slot.
+        unsigned previous = (vk->frame_slot + BONGO_CAT_VK_FRAMES - 1) % BONGO_CAT_VK_FRAMES;
+        if (!bongo_cat_rhi_vk_wait_frame(vk, &vk->frames[previous])) return false;
+    } else {
+        if (vk->vkResetFences(vk->device, 1, &vk->fence) != VK_SUCCESS) return false;
+        VkResult acquired = vk->vkAcquireNextImageKHR(vk->device, vk->swapchain,
+            UINT64_MAX, VK_NULL_HANDLE, vk->fence, &index);
+        if (acquired == VK_ERROR_OUT_OF_DATE_KHR) {
+            bongo_cat_rhi_vk_recreate_swapchain(vk, (int)vk->extent.width,
+                (int)vk->extent.height);
+            return false;
+        }
+        if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR) {
+            vk->failed = true;
+            return false;
+        }
+        if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+            vk->failed = true; // Acquisition completion is unknown; never reset this fence again.
+            return false;
+        }
     }
-    if (acquired != VK_SUCCESS && acquired != VK_SUBOPTIMAL_KHR) return false;
-    if (vk->vkWaitForFences(vk->device, 1, &vk->fence, VK_TRUE, UINT64_MAX) !=
-        VK_SUCCESS) return false;
     vk->acquired_index = index;
     vk->current_image = vk->images[index];
     vk->current_view = vk->views[index];
     const BongoCatRhiPresentOps *ops = &vk->owner->present;
-    /* Background copy and frame initialization share one submission/wait. */
-    if (!initialize_frame(vk, index, vk->background_ready)) return false;
+    /* Background copy and initialization share one asynchronous submission. */
+    if (!initialize_frame(vk, index, vk->background_ready)) {
+        vk->failed = true; // The acquired image cannot be abandoned and acquired again forever.
+        return false;
+    }
     bool drawn = !ops->draw_frame || ops->draw_frame(ops->hook_user);
     if (!drawn) {
         /* A failed callback may already have submitted work. Retire it before
            resetting our command buffer and clearing the acquired image. */
-        if (vk->vkQueueWaitIdle(vk->queue) != VK_SUCCESS ||
-            !initialize_frame(vk, index, false)) return false;
+        if (!bongo_cat_rhi_vk_queue_checkpoint(vk) || !initialize_frame(vk, index, false)) {
+            vk->failed = true;
+            return false;
+        }
     }
     vk->frame_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     vk->frame_ready = true;
-    if (!bongo_cat_rhi_vk_capture_frame(vk) || !drawn) {
+    if (!bongo_cat_rhi_vk_capture_frame(vk)) {
+        /* Initialization may already be queued. Stop reusing this slot until
+           teardown instead of waiting on a fence never submitted. */
+        vk->failed = true;
+        return false;
+    }
+    if (!drawn) {
         (void)bongo_cat_rhi_vk_frame_present(rhi->window, vk);
         return false;
     }
+    if (!rhi->foreground_pixels) return true;
+    /* CPU composition must wait for the transfer into this mapped slot. */
+    if (!bongo_cat_rhi_vk_wait_frame(vk, &vk->frames[vk->readback_frame])) return false;
     SDL_Rect changed;
-    if (bongo_cat_rhi_compose_foreground(rhi, vk->pixels, (int)vk->extent.width,
+    if (bongo_cat_rhi_compose_foreground(rhi, vk->readbacks[vk->readback_slot].pixels, (int)vk->extent.width,
         (int)vk->extent.height, (size_t)vk->extent.width * 4,
         vk->format == VK_FORMAT_B8G8R8A8_UNORM, &changed) &&
         !bongo_cat_rhi_vk_upload_composed_frame(vk, changed)) return false;
@@ -95,26 +136,20 @@ bool bongo_cat_rhi_vk_frame_present(SDL_Window *window, void *user) {
     if (!vk || !vk->owner) return false;
     if (!vk->frame_ready &&
         !bongo_cat_rhi_vk_render_frame((BongoCatRhi *)vk->owner)) return false;
-    if (vk->frame_layout != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-        VkCommandBuffer command = bongo_cat_rhi_vk_begin_commands(vk->owner);
-        if (!command) return false;
-        VkImageMemoryBarrier barrier = {0};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.oldLayout = vk->frame_layout;
-        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = vk->current_image;
-        barrier.subresourceRange = (VkImageSubresourceRange){VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        vk->vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
-        if (!bongo_cat_rhi_vk_submit_commands(vk->owner, command)) return false;
-        vk->frame_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    if (vk->failed) return false;
+    if (vk->layered_target) {
+        if (vk->frame_layout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) return false;
+        vk->current_image = VK_NULL_HANDLE; vk->current_view = VK_NULL_HANDLE;
+        vk->frame_ready = false;
+        vk->frame_slot = (vk->frame_slot + 1) % BONGO_CAT_VK_FRAMES;
+        return true;
     }
+    if (vk->frame_layout != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) return false;
     uint32_t index = vk->acquired_index;
     VkPresentInfoKHR present = {0};
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present.waitSemaphoreCount = 1;
+    present.pWaitSemaphores = &vk->present_semaphores[index];
     present.swapchainCount = 1;
     present.pSwapchains = &vk->swapchain;
     present.pImageIndices = &index;
@@ -122,18 +157,20 @@ bool bongo_cat_rhi_vk_frame_present(SDL_Window *window, void *user) {
     vk->current_image = VK_NULL_HANDLE;
     vk->current_view = VK_NULL_HANDLE;
     vk->frame_ready = false;
+    vk->frame_slot = (vk->frame_slot + 1) % BONGO_CAT_VK_FRAMES;
     if (presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR) {
         bongo_cat_rhi_vk_recreate_swapchain(vk, (int)vk->extent.width,
             (int)vk->extent.height);
         return false;
     }
     (void)window;
+    if (presented != VK_SUCCESS) vk->failed = true;
     return presented == VK_SUCCESS;
 }
 
 void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
-    if (!vk || !vk->device) return NULL;
+    if (!vk || !vk->device || vk->failed) return NULL;
     VkCommandBufferAllocateInfo info = {0};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     info.commandPool = vk->pool;
@@ -162,7 +199,7 @@ void *bongo_cat_rhi_vk_begin_commands(const BongoCatRhi *rhi) {
 bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     VkCommandBuffer buffer = (VkCommandBuffer)command;
-    if (!vk || !buffer) return false;
+    if (!vk || !buffer || vk->failed) return false;
     if (vk->vkEndCommandBuffer(buffer) != VK_SUCCESS) {
         vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
         SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Cannot end Vulkan upload commands");
@@ -183,9 +220,11 @@ bool bongo_cat_rhi_vk_submit_commands(const BongoCatRhi *rhi, void *command) {
     VkResult submitted = vk->vkQueueSubmit(vk->queue, 1, &submit, vk->submit_fence);
     VkResult waited = submitted == VK_SUCCESS ? vk->vkWaitForFences(vk->device,
         1, &vk->submit_fence, VK_TRUE, UINT64_MAX) : submitted;
-    if (waited != VK_SUCCESS)
+    if (waited != VK_SUCCESS) {
+        vk->failed = true;
         SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Vulkan upload failed: %d", (int)waited);
-    if (waited == VK_SUCCESS && !vk->idle_command) vk->idle_command = buffer;
+        /* The pool owns the buffer until device teardown if completion is unknown. */
+    } else if (!vk->idle_command) vk->idle_command = buffer;
     else vk->vkFreeCommandBuffers(vk->device, vk->pool, 1, &buffer);
     return waited == VK_SUCCESS;
 }
@@ -205,13 +244,15 @@ bool bongo_cat_rhi_vk_pick_depth_format(BongoCatRhiVk *vk) {
        require separateDepthStencilLayouts for depth-only transitions. */
     static const VkFormat candidates[] = {
         VK_FORMAT_D32_SFLOAT, VK_FORMAT_D16_UNORM};
+    bool compact = vk->layered_target;
     VkFormatProperties properties;
     for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
-        vk->vkGetPhysicalDeviceFormatProperties(vk->physical, candidates[i],
+        VkFormat candidate = candidates[compact ? 1 - i : i];
+        vk->vkGetPhysicalDeviceFormatProperties(vk->physical, candidate,
             &properties);
         if (properties.optimalTilingFeatures &
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            vk->depth_format = candidates[i];
+            vk->depth_format = candidate;
             return true;
         }
     }
@@ -263,7 +304,7 @@ void bongo_cat_rhi_vk_detach(const BongoCatRhi *rhi) { (void)rhi; }
 void bongo_cat_rhi_vk_prepare_frame(BongoCatRhi *rhi, int width, int height) {
     BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
     if (!vk || !vk->device) return;
-    if (!vk->swapchain || vk->extent.width != (uint32_t)width ||
+    if ((!vk->swapchain && !vk->layered_target) || vk->extent.width != (uint32_t)width ||
         vk->extent.height != (uint32_t)height)
         bongo_cat_rhi_vk_recreate_swapchain(vk, width, height);
 }
@@ -295,6 +336,8 @@ void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi) {
     if (vk->device && vk->vkDeviceWaitIdle) vk->vkDeviceWaitIdle(vk->device);
     bongo_cat_rhi_vk_release_corners(vk);
     bongo_cat_rhi_vk_destroy_swapchain_objects(vk);
+    bongo_cat_rhi_vk_destroy_frames(vk);
+    bongo_cat_rhi_vk_destroy_uploads(vk);
     if (vk->submit_fence && vk->vkDestroyFence)
         vk->vkDestroyFence(vk->device, vk->submit_fence, NULL);
     if (vk->fence && vk->vkDestroyFence)

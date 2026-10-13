@@ -82,9 +82,14 @@ void bongo_cat_app_apply_mouse_coordinates(BongoCatApp *app,
     bool overlay_mirror = horizontal_mirror != overlay_left_handed;
     float overlay_x_ratio = overlay_mirror
         ? 1.0f - hand_x_ratio : hand_x_ratio;
+    float x_scale = app->settings.model.custom_mouse_range ? app->settings.model.mouse_range_x_percent / 100.0f : 1.0f;
+    float y_scale = app->settings.model.custom_mouse_range ? app->settings.model.mouse_range_y_percent / 100.0f : 1.0f;
+    bongo_cat_overlay_set_mouse_range(app->overlay, x_scale, y_scale);
     bongo_cat_overlay_set_mver_pointer(app->overlay, overlay_x_ratio, hand_y_ratio,
         app->left_mouse_down, app->right_mouse_down, app->side_mouse_down);
     if (!exact_pointer) {
+        hand_x_ratio = .5f + (hand_x_ratio - .5f) * x_scale;
+        hand_y_ratio = .5f + (hand_y_ratio - .5f) * y_scale;
         set_parameter(app, "ParamMouseX", hand_x_ratio, hand_y_ratio,
             horizontal_mirror);
         set_parameter(app, "ParamMouseY", hand_x_ratio, hand_y_ratio,

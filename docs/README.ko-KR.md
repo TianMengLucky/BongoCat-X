@@ -42,11 +42,7 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.3))
-
-  일반 설정에서 **GitHub 다운로드 가속**을 켜면(기본값은 꺼짐) [gh-proxy.com](https://gh-proxy.com/)을 통해 업데이트 확인, 패키지 및 기여자 이미지를 가져옵니다. 앱 내 모든 네트워크 다운로드는 Rust가 처리합니다. 정보 페이지의 업데이트 버튼을 누르면 패키지를 다운로드하고 SHA-256을 검증한 뒤 확인 창을 표시합니다. **다시 시작 및 업데이트**는 종료 후 설치하고 앱을 다시 실행하며, **나중에**는 현재 버전을 계속 사용하고 이번 실행 중 같은 버튼으로 설치할 수 있게 합니다. 스토어 버전은 계속 스토어에서 업데이트합니다.
-
-  **2.1.3 업데이트:** Rust 플러그인이 독립된 백그라운드 스레드에서 키보드·마우스 활동과 앱 사용 시간을 기록하며, 비활성화하면 통계 메뉴가 사라집니다. 환경설정 그룹을 모두 펼치거나 접을 수 있습니다. 마우스 감도, 선택적 GitHub 다운로드 가속, 업데이트 재시작 확인을 추가하고 오버레이 전송과 유휴 오디오 부담을 줄였습니다. [변경 기록](../CHANGELOG.md)과 [통계 안내](statistics-plugin.md)를 참고하세요.
+- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -320,6 +316,11 @@ Linux Wayland의 실험적 evdev 입력은 `BONGOCAT_ENABLE_EVDEV=1`로 활성�
 
 Live2D는 지오메트리 버퍼와 반복되는 렌더링 상태를 자동으로 재사용합니다. OpenGL 동적 업로드, Vulkan 일괄 업로드와 파이프라인 캐시, Metal 공유 버퍼 슬롯 및 네이티브 적응형 마스크에는 추가 스위치가 필요 없습니다. 새 경로의 성능과 플랫폼 동작은 실측이 필요합니다.
 
+설정 → 앱 → 저메모리 모드는 기본적으로 꺼져 있습니다. 텍스처 품질 10%, 변 512픽셀, Live2D 마스크 256픽셀로 제한하고 대규모 최적화를 중지하여 렌더러를 다시 로드합니다. 끄면 기존 품질로 복원됩니다. 50MB는 목표이며 모델과 드라이버에 따라 달라집니다.
+
+설정 → 펫 → 마우스 추적 범위: 수평/수직 25–400%, 기본 꺼짐, 100%는 기존 범위입니다. Mver 발의 실제 이동 범위가 넓어지며 Live2D는 모델 한계를 유지합니다. 시선과 창 위치는 동일합니다. 저메모리 모드는 MSAA를 끄고 미사용 셰이더와 파이프라인을 줄입니다.
+
+Windows의 저메모리 설정 창은 OpenGL/Vulkan 모두 SDL 소프트웨어 렌더링을 나누어 처리하며 불투명 배경을 사용합니다. 실제 글꼴 크기, 화면 DPI와 안티앨리어싱을 유지하고 A8 마스크에서 현재 글자만 변환합니다. 다른 플랫폼의 OpenGL은 펫 컨텍스트를 계속 재사용합니다.
 ### 여러 키 표시와 미러 모드 문자
 
 Mver (OpenGL/Vulkan/Metal)은 손, 말풍선 테두리, 글자를 따로 잘라 누른 키를 +로 연결해 하나의 말풍선에 표시합니다. 테두리와 꼬리는 모델과 함께 뒤집히며, 단일 키 모드에서도 글자는 읽는 방향을 유지합니다. 손 이미지 옆의 `hand-layout.json`에서 세 자르기 영역, + 양쪽 간격, 각 손의 표시 개수를 설정하고 변경 후 앱을 다시 시작하세요. [설명과 예제](hand-layout.md)를 참고하세요.

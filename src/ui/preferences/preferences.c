@@ -167,6 +167,9 @@ static void live2d_rescan_result(BongoCatPreferences *value, bool found) {
 bool bongo_cat_preferences_visible(const BongoCatPreferences *value) {
     return value && value->window && value->visible;
 }
+bool bongo_cat_preferences_frame_pending(const BongoCatPreferences *value) {
+    return value && value->window && value->visible && value->ui.software_pending;
+}
 bool bongo_cat_preferences_needs_frame(BongoCatPreferences *value) {
     if (!value) return false;
     uint64_t now = SDL_GetTicksNS();
@@ -197,13 +200,13 @@ bool bongo_cat_preferences_needs_frame(BongoCatPreferences *value) {
     if (value->render_retry_ns > now) return false;
     bool raster_due = value->pending_raster_scale > 0.0f &&
         value->raster_retry_ns <= now;
-    return value->render_dirty || raster_due || value->chrome_dragging; }
+    return value->ui.software_pending || value->render_dirty || raster_due || value->chrome_dragging; }
 void bongo_cat_preferences_input_begin(BongoCatPreferences *value) {
     if (!value || !value->window || !value->visible || value->input_active) return;
     bongo_cat_ui_input_begin(&value->ui);
     value->input_active = true; }
 void bongo_cat_preferences_input_end(BongoCatPreferences *value) {
-    if (!value || !value->window || !value->input_active) return;
+    if (!value || !value->window || !value->input_active || value->ui.software_pending) return;
     bongo_cat_ui_input_end(&value->ui);
     value->input_active = false;
 }

@@ -19,4 +19,5 @@ bool bongo_cat_preferences_behavior_glyphs_ready(
     const BongoCatPreferences *preferences);
 
 void bongo_cat_preferences_text_glyphs(uint32_t *ranges, size_t capacity, const char *text);
+
 #endif

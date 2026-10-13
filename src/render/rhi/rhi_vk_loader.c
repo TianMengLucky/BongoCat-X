@@ -94,6 +94,9 @@ bool bongo_cat_rhi_vk_load_instance_fns(BongoCatRhiVk *vk) {
     BONGO_CAT_VK_LOAD(vkQueueWaitIdle);
     BONGO_CAT_VK_LOAD(vkFreeCommandBuffers);
     BONGO_CAT_VK_LOAD(vkResetCommandBuffer);
+    BONGO_CAT_VK_LOAD(vkResetCommandPool);
+    BONGO_CAT_VK_LOAD(vkCreateSemaphore);
+    BONGO_CAT_VK_LOAD(vkDestroySemaphore);
     BONGO_CAT_VK_LOAD(vkCreateBuffer);
     BONGO_CAT_VK_LOAD(vkDestroyBuffer);
     BONGO_CAT_VK_LOAD(vkGetBufferMemoryRequirements);

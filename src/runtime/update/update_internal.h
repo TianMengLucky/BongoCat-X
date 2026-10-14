@@ -24,6 +24,7 @@ struct BongoCatUpdateService {
     BongoCatUpdateRelease release;
     char error[256];
     bool manual;
+    bool automatic_started;
     bool open_after_check;
     bool installed;
     bool shutting_down;

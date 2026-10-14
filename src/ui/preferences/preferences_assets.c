@@ -93,6 +93,7 @@ void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
     value->asset_retry_count = 0;
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, true);
+    bongo_cat_preferences_items_preview_clear(value, true);
     clear(&value->ui, &value->logo_texture);
     clear(&value->ui, &value->qq_texture);
     value->qq_attempted = false;
@@ -106,6 +107,7 @@ void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value) {
     value->asset_retry_count = 0;
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, false);
+    bongo_cat_preferences_items_preview_clear(value, false);
     value->logo_texture = 0;
     value->qq_texture = 0;
     value->qq_attempted = false;

@@ -1,3 +1,4 @@
+#include "preferences_live2d_setup.h"
 #include "preferences_fonts.h"
 
 #include "preferences_model_cover.h"
@@ -7,6 +8,8 @@
 #include "ui_paint.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/sounds.h"
 #include "bongo_cat/memory_policy.h"
 
 #include <SDL3/SDL.h>
@@ -46,6 +49,9 @@ void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *value,
     /* Include label glyphs in the initial atlas so page switches need no bake. */
     bongo_cat_preferences_model_glyphs(value->app, value->glyph_ranges,
         sizeof(value->glyph_ranges) / sizeof(value->glyph_ranges[0]));
+    const char *terms = bongo_cat_preferences_live2d_setup_terms(value);
+    if (terms) bongo_cat_preferences_text_glyphs(value->glyph_ranges,
+        sizeof(value->glyph_ranges) / sizeof(value->glyph_ranges[0]), terms);
     BongoCatApplicationSnapshot applications;
     for (unsigned period = 0; period < 4; ++period) {
         if (bongo_cat_statistics_usage_snapshot(value->app, period, &applications)) {
@@ -56,6 +62,14 @@ void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *value,
             }
         }
     }
+    BongoCatItemScene scene;
+    if (bongo_cat_items_snapshot(value->app, &scene))
+        for (unsigned i = 0; i < scene.count; ++i)
+            bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, scene.items[i].name);
+    BongoCatSoundScene sounds;
+    if (bongo_cat_sounds_snapshot(value->app, &sounds))
+        for (unsigned i = 0; i < sounds.count; ++i)
+            bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, sounds.bindings[i].name);
     fonts->ranges = value->glyph_ranges;
     // Large text has a small, known vocabulary; bake it at its real size.
     value->heading_glyph_ranges[0] = 0x20; value->heading_glyph_ranges[1] = 0x7e;

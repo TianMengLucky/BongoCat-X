@@ -14,6 +14,10 @@ void bongo_cat_preferences_notice_show_anchored(BongoCatApp *app,
 /* Dismiss every active toast immediately (used when a state change makes
    them obsolete, e.g. the missing-Core notice after the Core is loaded). */
 void bongo_cat_preferences_notice_clear(BongoCatApp *app);
+/* Persistent update toast, retained while Settings is closed. */
+void bongo_cat_preferences_notice_show_update(BongoCatApp *app, const char *message);
+/* Consume toast clicks before they reach controls or window dragging. */
+bool bongo_cat_preferences_notice_event(BongoCatPreferences *value, const SDL_Event *event);
 void bongo_cat_preferences_notice_draw(BongoCatPreferences *preferences,
     struct nk_context *context, float width, float height);
 

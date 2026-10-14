@@ -8,6 +8,7 @@
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
 #include "preferences_state.h"
+#include "preferences_live2d_setup.h"
 #include "ui_animation.h"
 #include "ui_catime.h"
 #include "ui_native_theme.h"
@@ -26,6 +27,8 @@ void bongo_cat_preferences_apply_theme(BongoCatPreferences *value) {
     if (dark == value->style_theme) return;
     value->style_theme = dark;
     bongo_cat_ui_apply_theme(&value->ui.context, dark != 0);
+    SDL_SetBooleanProperty(SDL_GetWindowProperties(value->window),
+        "BongoCat.SquareCorners", !value->rounded_window);
     bongo_cat_ui_native_theme_apply(value->window, dark != 0);
 }
 
@@ -40,13 +43,18 @@ BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app) {
         value->sdk_import_event_type = SDL_RegisterEvents(1);
         if (value->sdk_import_event_type == -1)
             value->sdk_import_event_type = 0;
+        value->live2d_setup_event_type = SDL_RegisterEvents(1);
+        if (value->live2d_setup_event_type == -1) value->live2d_setup_event_type = 0;
         value->live2d_rescan_event_type = SDL_RegisterEvents(1);
         if (value->live2d_rescan_event_type == -1)
             value->live2d_rescan_event_type = 0; }
     if (value && app->smoke_preference_page >= 0)
         value->page = app->smoke_preference_page;
-    if (value) value->collapsible_options = bongo_safe_preferences_collapsible_get(
+    if (value) value->rounded_window = bongo_safe_preferences_rounded_get(
         app->settings.extensions_json, sizeof(app->settings.extensions_json));
+    if (value)
+        for (size_t i = 0; i < sizeof(value->options_sections) / sizeof(value->options_sections[0]); ++i)
+            value->options_sections[i] = NK_MAXIMIZED;
     return value;
 }
 
@@ -228,7 +236,7 @@ static Uint32 event_window(const SDL_Event *event) {
 }
 
 static void enter_model_drop(BongoCatPreferences *value) {
-    if (value->page == 3) {
+    if (value->page == 3 || value->page == 6) {
         value->import_drop_active = true;
         value->render_dirty = true;
         return;
@@ -247,7 +255,8 @@ bool bongo_cat_preferences_chrome_drag_allowed(
     return value && value->app && !value->native_drag &&
         !bongo_cat_preferences_behavior_dialog_active(value) &&
         !bongo_cat_preferences_random_dialog_active(value) &&
-        !bongo_cat_preferences_remove_dialog_active(value->app);
+        !bongo_cat_preferences_remove_dialog_active(value->app) &&
+        !bongo_cat_preferences_live2d_setup_active(value);
 }
 
 void bongo_cat_preferences_drag_tick(BongoCatPreferences *value) {
@@ -273,6 +282,9 @@ void bongo_cat_preferences_drag_tick(BongoCatPreferences *value) {
 
 static bool chrome_event(BongoCatPreferences *value, const SDL_Event *event) {
     if (event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_ESCAPE) {
+        if (bongo_cat_preferences_live2d_setup_active(value)) {
+            bongo_cat_preferences_live2d_setup_cancel(value); return true;
+        }
         if (bongo_cat_preferences_behavior_dialog_active(value)) {
             bongo_cat_preferences_behavior_dialog_close(value);
             value->render_dirty = true;
@@ -331,6 +343,9 @@ static bool chrome_event(BongoCatPreferences *value, const SDL_Event *event) {
 
 bool bongo_cat_preferences_event(BongoCatPreferences *value, const SDL_Event *event) {
     if (!value || !event) return false;
+    if (value->live2d_setup_event_type && event->type == (Uint32)value->live2d_setup_event_type) {
+        bongo_cat_preferences_live2d_setup_poll(value); value->render_dirty = true; return true;
+    }
     if (value->sdk_import_event_type &&
         event->type == (Uint32)value->sdk_import_event_type) {
         char *path = (char *)event->user.data1;
@@ -385,9 +400,11 @@ bool bongo_cat_preferences_event(BongoCatPreferences *value, const SDL_Event *ev
         bongo_cat_ui_input_reset(&value->ui);
         if (value->chrome_dragging) SDL_CaptureMouse(false);
         value->chrome_dragging = false;
+        value->notice_pointer_captured = false;
         value->import_drop_active = false;
         bongo_cat_pref_controls_reset(&value->ui.context);
     }
+    if (bongo_cat_preferences_notice_event(value, event)) return true;
     if (bongo_cat_preferences_model_rename_event(value, event)) return true;
     if (bongo_cat_preferences_behavior_rename_event(value, event)) return true;
     if (bongo_cat_preferences_shortcut_event(value, event)) return true;
@@ -400,6 +417,7 @@ bool bongo_cat_preferences_event(BongoCatPreferences *value, const SDL_Event *ev
         value->import_drop_active = false;
         if (value->page == 3)
             bongo_cat_preferences_plugin_import(value->app, event->drop.data);
+        else if (value->page == 6) bongo_cat_preferences_items_import(value->app, event->drop.data);
         else bongo_cat_preferences_import_path(value->app, value->window, event->drop.data);
         return true;
     }

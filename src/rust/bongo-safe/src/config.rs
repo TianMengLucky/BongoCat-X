@@ -77,6 +77,7 @@ struct WindowPreferences {
     custom_background: bool,
     custom_background_path: [c_char; PATH_CAP],
     // Trailing padding in the existing C ABI; belongs to rendering in JSON.
+    screen_edge_bounce: bool,
     mouse_sensitivity_hundredths: u16,
 }
 
@@ -522,6 +523,7 @@ fn read_window(object: &Map<String, Value>, value: &mut WindowPreferences) -> Ou
         &mut value.hide_on_hover,
     )?;
     boolean(object, DESCRIPTION, "keepOnScreen", &mut value.keep_in_screen)?;
+    boolean(object, DESCRIPTION, "screenEdgeBounce", &mut value.screen_edge_bounce)?;
     boolean(object, DESCRIPTION, "edgeSnap", &mut value.edge_snap)?;
     boolean(object, DESCRIPTION, "captureOnly", &mut value.capture_only)?;
     boolean(
@@ -1087,6 +1089,7 @@ fn write_window(value: &WindowPreferences) -> Value {
         "alwaysOnTop": value.always_on_top,
         "hideOnPointerOver": value.hide_on_hover,
         "keepOnScreen": value.keep_in_screen,
+        "screenEdgeBounce": value.screen_edge_bounce,
         "edgeSnap": value.edge_snap,
         "captureOnly": value.capture_only,
         "captureBackground": value.obs_background,
@@ -1673,7 +1676,7 @@ mod tests {
         assert_eq!(model.mouse_range_x_percent, 100.0);
         read_model(serde_json::json!({"customMouseRange": true,
             "mouseRangeXPercent": 200.0, "mouseRangeYPercent": 150.0}).as_object().unwrap(), &mut model).unwrap();
-        let saved = write_model(&model);
+        let saved = write_model(&model, 100);
         assert_eq!(saved["customMouseRange"], true);
         assert_eq!(saved["mouseRangeXPercent"], 200.0);
         assert_eq!(saved["mouseRangeYPercent"], 150.0);
@@ -1783,6 +1786,27 @@ mod tests {
             let input = serde_json::json!({"keepOnScreen": invalid});
             assert!(read_window(input.as_object().unwrap(), &mut window).is_err());
         }
+    }
+
+    #[test]
+    fn screen_edge_bounce_round_trip_and_legacy_default() {
+        let mut window: WindowPreferences = unsafe { std::mem::zeroed() };
+        read_window(serde_json::json!({}).as_object().unwrap(), &mut window).unwrap();
+        assert!(!window.screen_edge_bounce);
+        for enabled in [false, true] {
+            let input = serde_json::json!({"screenEdgeBounce": enabled});
+            read_window(input.as_object().unwrap(), &mut window).unwrap();
+            let saved = write_window(&window);
+            assert_eq!(saved["screenEdgeBounce"], enabled);
+            let mut restored: WindowPreferences = unsafe { std::mem::zeroed() };
+            read_window(saved.as_object().unwrap(), &mut restored).unwrap();
+            assert_eq!(restored.screen_edge_bounce, enabled);
+        }
+        for invalid in [serde_json::json!("true"), serde_json::json!(1)] {
+            let input = serde_json::json!({"screenEdgeBounce": invalid});
+            assert!(read_window(input.as_object().unwrap(), &mut window).is_err());
+        }
+        assert_eq!(std::mem::offset_of!(WindowPreferences, screen_edge_bounce), 1065);
     }
 
     #[test]

@@ -1,6 +1,14 @@
 #include "preferences_import_internal.h"
 
 #include <SDL3/SDL.h>
+#include "bongo_cat/log.h"
+
+static bool import_active(BongoCatImportDialog *dialog) {
+    SDL_LockMutex(dialog->mutex);
+    bool active = dialog->active;
+    SDL_UnlockMutex(dialog->mutex);
+    return active;
+}
 
 int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
     BongoCatImportJob *job = userdata;
@@ -10,10 +18,10 @@ int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
         SDL_ClearError();
     }
     job->result = BONGO_CAT_ERROR_FORMAT;
-    SDL_Log("[runtime] Model import started: sources=%llu",
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[runtime] Model import started: sources=%llu",
         (unsigned long long)job->count);
-    BongoCatImportSession *session = bongo_cat_import_session_create(
-        job->models_root, &job->error);
+    BongoCatImportSession *session = import_active(job->dialog) ?
+        bongo_cat_import_session_create(job->models_root, &job->error) : NULL;
     if (!session) {
         job->result = job->error.code ? job->error.code : BONGO_CAT_ERROR_IO;
         if (job->error.code == BONGO_CAT_OK) job->error.code = job->result;
@@ -23,16 +31,19 @@ int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
     }
     BongoCatImportProgressContext progress = {job, 0};
     for (size_t i = 0; session && i < job->count; ++i) {
+        /* Finish an in-flight package atomically, but do not start more work
+           after shutdown. The owner joins us before freeing the dialog. */
+        if (!import_active(job->dialog)) break;
         size_t before = progress.completed;
         BongoCatImportBatchStats stats = {0};
         BongoCatError error = {0};
-        SDL_Log("[runtime] Model import source started: index=%llu/%llu path=%s",
+        SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[runtime] Model import source started: index=%llu/%llu path=%s",
             (unsigned long long)i + 1ULL, (unsigned long long)job->count,
             job->paths[i]);
         BongoCatResult result = bongo_cat_import_session_install_progressive(
             session, job->paths[i], bongo_cat_preferences_import_receive,
             &progress, &stats, &error);
-        SDL_Log("[runtime] Model import source completed: index=%llu/%llu "
+        SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[runtime] Model import source completed: index=%llu/%llu "
             "result=%d succeeded=%llu failed=%llu",
             (unsigned long long)i + 1ULL, (unsigned long long)job->count,
             (int)result, (unsigned long long)stats.succeeded_count,
@@ -59,7 +70,7 @@ int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
     if (!job->succeeded_count && job->error.code == BONGO_CAT_OK)
         bongo_cat_error_set(&job->error, BONGO_CAT_ERROR_FORMAT,
             "No model could be imported");
-    SDL_Log("[runtime] Model import finished: resolved=%llu installed=%llu "
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[runtime] Model import finished: resolved=%llu installed=%llu "
         "succeeded=%llu failed=%llu result=%d",
         (unsigned long long)job->resolved_count,
         (unsigned long long)job->installed_count,
@@ -67,7 +78,8 @@ int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
         (unsigned long long)job->failed_count, (int)job->result);
     SDL_Event event = {0};
     SDL_LockMutex(job->dialog->mutex);
-    bool notify = job->dialog->active;
+    bool active = job->dialog->active;
+    bool notify = active;
     if (notify) {
         event.type = job->dialog->event_type;
         event.user.windowID = job->window_id;
@@ -76,14 +88,17 @@ int SDLCALL bongo_cat_preferences_import_worker(void *userdata) {
         event.user.data2 = job->dialog;
         notify = SDL_PushEvent(&event);
     }
-    if (!notify) {
+    if (active && !notify) job->dialog->completion_pending = true;
+    if (!active) {
         job->dialog->worker_job = NULL;
         job->dialog->busy = false;
         job->dialog->started_ns = 0;
         job->dialog->completed = job->dialog->total = 0;
     }
     SDL_UnlockMutex(job->dialog->mutex);
-    if (!notify) {
+    if (active && !notify) SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+        "Model import completion event was rejected; the main loop will reclaim the worker");
+    if (!active) {
         BongoCatImportDialog *dialog = job->dialog;
         bongo_cat_preferences_import_job_free(job);
         bongo_cat_preferences_import_dialog_release(dialog);

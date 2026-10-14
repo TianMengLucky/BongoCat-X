@@ -52,6 +52,7 @@ set(BONGO_CAT_RENDER_SOURCES
   src/render/overlay_native_draw.c
   src/render/overlay_native_foreground.c
   src/render/overlay_background.c
+  src/render/overlay_items.c
   src/render/mver_pointer_overlay.c
   src/render/mver_pointer_overlay_draw.c
   src/render/mver_pointer_overlay_geometry.c)
@@ -71,10 +72,28 @@ else()
 endif()
 
 list(APPEND BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/statistics")
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/statistics"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/items"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/sounds")
 
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
+  src/runtime/statistics/statistics_overlay.c
   src/runtime/statistics/statistics.c
+  src/runtime/plugin_worker.c
+  src/runtime/store/store.c
+  src/runtime/store/store_assets.c
+  src/runtime/store/store_models.c
+  src/runtime/store/store_install.c
+  src/runtime/sounds/sounds_worker.c
+  src/runtime/sounds/sounds.c
+  src/runtime/sounds/sounds_scene.c
+  src/runtime/sounds/sounds_playback.c
+  src/runtime/sounds/sounds_install.c
+  src/runtime/items/items_worker.c
+  src/runtime/items/items.c
+  src/runtime/items/items_scene.c
+  src/runtime/items/items_render.c
+  src/runtime/items/items_install.c
   src/runtime/statistics/statistics_page.c
   src/ui/preferences/preferences_options.c
   src/runtime/statistics/statistics_install.c
@@ -321,6 +340,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_low_memory.c
   src/ui/preferences/preferences_model.c
   src/ui/preferences/preferences_model_card.c
+  src/ui/preferences/preferences_model_modes.c
   src/ui/preferences/preferences_model_card_paint.c
   src/ui/preferences/preferences_model_cover.c
   src/ui/preferences/preferences_model_section.c
@@ -336,7 +356,15 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_renderer.c
   src/ui/preferences/preferences_background.c
   src/ui/preferences/preferences_plugins.c
+  src/ui/preferences/preferences_live2d_setup.c
+  src/ui/preferences/preferences_live2d_setup_dialog.c
   src/ui/preferences/preferences_statistics.c
+  src/ui/preferences/preferences_store.c
+  src/ui/preferences/preferences_store_cards.c
+  src/ui/preferences/preferences_sounds.c
+  src/ui/preferences/preferences_sounds_picker.c
+  src/ui/preferences/preferences_items.c
+  src/ui/preferences/preferences_items_preview.c
   src/ui/preferences/preferences_statistics_usage.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c

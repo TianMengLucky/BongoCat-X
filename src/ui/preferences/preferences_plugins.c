@@ -1,5 +1,9 @@
+#include "preferences_live2d_setup.h"
 #include "preferences_state.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/sounds.h"
+#include "bongo_cat/store.h"
 #include "preferences_widgets.h"
 #include "preferences_controls.h"
 #include "preferences_notice.h"
@@ -26,12 +30,18 @@ void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path) {
     BongoCatError error = {0};
     BongoCatModelEngine engine = 0;
     bool matched = false;
-    bool ok = bongo_cat_statistics_import(app, path, &matched, &error);
+    bool ok = bongo_cat_store_import(app, path, &matched, &error);
+    if (!matched) ok = bongo_cat_sounds_import_plugin(app, path, &matched, &error);
+    if (!matched) ok = bongo_cat_items_import_plugin(app, path, &matched, &error);
+    if (!matched) ok = bongo_cat_statistics_import(app, path, &matched, &error);
     if (!matched) ok = bongo_cat_model_plugin_install(path, &engine, &error);
     if (ok && app->session.active_model_id[0] && app->model_runtime && bongo_cat_model_runtime_engine(app->model_runtime) == engine &&
         !bongo_cat_model_runtime_rendering(app->model_runtime))
         ok = bongo_cat_app_reload_model_with_error(app, &error);
     result_notice(app, ok, &error);
+    if (ok && !matched && engine == BONGO_CAT_MODEL_ENGINE_LIVE2D &&
+        !bongo_cat_platform_live2d_core_available())
+        bongo_cat_preferences_live2d_setup_request(app->preferences);
 }
 static void plugin_card(BongoCatPreferences *value, struct nk_context *context,
     BongoCatModelEngine engine) {
@@ -40,26 +50,16 @@ static void plugin_card(BongoCatPreferences *value, struct nk_context *context,
     bongo_cat_model_plugin_info(engine, &info);
     bool live = engine == BONGO_CAT_MODEL_ENGINE_LIVE2D;
     BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
-    struct nk_style_window saved = context->style.window;
-    context->style.window.fixed_background = nk_style_item_color(palette.surface);
-    context->style.window.background = palette.surface;
-    context->style.window.group_border = 1;
-    context->style.window.group_border_color = palette.border_subtle;
-    context->style.window.group_padding = nk_vec2(18, 14);
-    context->style.window.spacing = nk_vec2(8, 8);
-    if (!nk_group_begin(context, live ? "live2d-plugin" : "inox-plugin",
-        NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
-        context->style.window = saved;
-        return;
-    }
+    struct nk_style_window saved;
+    if (!bongo_cat_pref_card_begin(context, live ? "live2d-plugin" : "inox-plugin", &saved)) return;
     nk_layout_row_dynamic(context, 30, 1);
     nk_label(context, live ? "Live2D Cubism" : "Inochi2D / Inox2D", NK_TEXT_LEFT);
     nk_layout_row_dynamic(context, 25, 1);
-    nk_label(context, tr(app, info.active ? "pages.preference.plugins.active" :
+    nk_label_colored(context, tr(app, info.active ? "pages.preference.plugins.active" :
         !info.installed ? "pages.preference.plugins.missing" :
         !info.enabled ? "pages.preference.plugins.disabled" : "pages.preference.plugins.installed",
         info.active ? "In use" : !info.installed ? "Not installed" :
-        !info.enabled ? "Disabled" : "Installed"), NK_TEXT_LEFT);
+        !info.enabled ? "Disabled" : "Installed"), NK_TEXT_LEFT, info.active ? palette.accent : palette.muted);
     nk_layout_row_dynamic(context, 38, 1);
     nk_label_wrap(context, tr(app, live ? "pages.preference.plugins.liveDescription" :
         "pages.preference.plugins.inoxDescription", live ?
@@ -70,21 +70,29 @@ static void plugin_card(BongoCatPreferences *value, struct nk_context *context,
     if (bongo_cat_pref_control_toggle_available(context, live ? "enable-live2d-plugin" : "enable-inox-plugin",
         &enabled, info.installed && !info.active)) {
         BongoCatError error = {0};
-        result_notice(app, bongo_cat_model_plugin_set_enabled(engine, enabled, &error), &error);
+        bool ok = bongo_cat_model_plugin_set_enabled(engine, enabled, &error);
+        result_notice(app, ok, &error);
+        if (ok && live && enabled && !bongo_cat_platform_live2d_core_available())
+            bongo_cat_preferences_live2d_setup_request(value);
     }
-    nk_layout_row_dynamic(context, 30, 1);
-    if (info.managed && !info.active && nk_button_label(context, tr(app,
-        "pages.preference.plugins.remove", "Remove plugin"))) {
-        BongoCatError error = {0};
-        result_notice(app, bongo_cat_model_plugin_remove(engine, &error), &error);
+    if (info.managed && !info.active) {
+        nk_layout_row_dynamic(context, 30, 1);
+        if (nk_button_label(context, tr(app, "pages.preference.plugins.remove", "Remove plugin"))) {
+            BongoCatError error = {0};
+            result_notice(app, bongo_cat_model_plugin_remove(engine, &error), &error);
+        }
     }
     if (live && !bongo_cat_platform_live2d_core_available()) {
         nk_layout_row_dynamic(context, 30, 1);
         if (nk_button_label(context, tr(app, "native.live2dCoreImport", "Import Cubism Core")))
             bongo_cat_preferences_request_sdk_import(value);
+        if (info.enabled) {
+            nk_layout_row_dynamic(context, 36, 1);
+            if (nk_button_label(context, tr(app, "pages.preference.live2dSetup.getSdk", "Download Live2D SDK")))
+                bongo_cat_preferences_live2d_setup_request(value);
+        }
     }
-    nk_group_end(context);
-    context->style.window = saved;
+    bongo_cat_pref_card_end(context, &saved);
 }
 static void import_card(BongoCatPreferences *value, struct nk_context *context) {
     struct nk_rect bounds;
@@ -106,12 +114,12 @@ static void import_card(BongoCatPreferences *value, struct nk_context *context) 
         (void)bongo_cat_preferences_import_plugin_open(value->import_dialog, value->window);
 }
 void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_context *context) {
-    float width = nk_window_get_content_region(context).w;
-    nk_layout_row_begin(context, NK_STATIC, 42, 2);
-    nk_layout_row_push(context, NK_MAX(120.0f, width - 134));
-    nk_label_wrap(context, tr(value->app, "pages.preference.plugins.description",
+    bongo_cat_pref_intro(context, tr(value->app, "pages.preference.plugins.description",
         "Install renderer plugins. The model type selects its renderer automatically."));
-    nk_layout_row_push(context, 124);
+    const char *folder = tr(value->app, "pages.preference.plugins.openFolder", "Open folder");
+    const struct nk_user_font *font = context->style.font;
+    float width = NK_MAX(124.0f, font->width(font->userdata, font->height, folder, nk_strlen(folder)) + 28.0f);
+    nk_layout_row_static(context, 36, (int)width, 1);
     if (nk_button_label(context, tr(value->app,
         "pages.preference.plugins.openFolder", "Open folder"))) {
         char directory[BONGO_CAT_PATH_CAP];
@@ -123,15 +131,18 @@ void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_co
             result_notice(value->app, false, &error);
         }
     }
-    nk_layout_row_end(context);
     import_card(value, context);
     nk_layout_row_dynamic(context, 16, 1); nk_spacing(context, 1);
     int columns = nk_window_get_content_region(context).w >= 620 ? 2 : 1;
-    nk_layout_row_dynamic(context, bongo_cat_platform_live2d_core_available() ? 220.0f : 260.0f, columns);
+    nk_layout_row_dynamic(context, bongo_cat_platform_live2d_core_available() ? 220.0f : 310.0f, columns);
     plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_LIVE2D);
     plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_INOX2D);
-    nk_layout_row_dynamic(context, 280, 1);
+    nk_layout_row_dynamic(context, 280, columns);
     bongo_cat_preferences_statistics_plugin_card(value, context);
+    bongo_cat_preferences_items_plugin_card(value, context);
+    nk_layout_row_dynamic(context, 280, columns);
+    bongo_cat_preferences_sounds_plugin_card(value, context);
+    bongo_cat_preferences_store_plugin_card(value, context);
     nk_layout_row_dynamic(context, 54, 1);
     nk_label_wrap(context, tr(value->app, "pages.preference.plugins.activeHint",
         "Click a selected model to deselect it before changing its active plugin."));

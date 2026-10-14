@@ -1,4 +1,6 @@
 <div align="center">
+
+2.2.0 añade plugins de objetos, sonidos del teclado y tienda de modelos, y mejora la importación en segundo plano y las actualizaciones automáticas. El rebote requiere mantener la mascota en pantalla. La transparencia real de OpenGL en Windows usa alfa por píxel y puede aumentar el coste de lectura de píxeles.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -42,7 +44,7 @@ Escanea el código QR con QQ o busca el grupo **211957388** para unirte a la com
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Descarga la última versión desde [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -309,7 +311,7 @@ Made with ❤️ & ⌨️
 
 ### Diseño de las opciones
 
-Los botones superiores cambian entre todas las opciones y grupos plegables. Pulsa Ventana, Modelo, Aplicación o Apariencia para abrir o cerrar el grupo. El estilo se guarda y los valores existentes se conservan.
+Las preferencias usan un único diseño de tarjetas agrupadas. Ventana, Modelo, Aplicación y Apariencia se muestran expandidos por defecto. Pulsa el título para plegar o desplegar sus opciones. No hay selector de estilo y los valores existentes se conservan.
 
 ### Complemento de estadísticas de entrada
 
@@ -345,3 +347,23 @@ En Windows, los ajustes de memoria reducida usan renderizado SDL por software en
 Mver (OpenGL/Vulkan/Metal) recorta por separado la mano, el marco y los caracteres, uniendo las teclas pulsadas con + en un solo bocadillo. El marco y la cola se reflejan con el modelo; los caracteres siguen siendo legibles, también en modo de una tecla. Configura las tres áreas, el espacio alrededor de + y el límite por lado en `hand-layout.json` junto a las imágenes de las manos; reinicia tras editar. Consulta la [guía y el ejemplo](hand-layout.md).
 
 El diálogo de acciones comprueba la referencia `Sound` y si existe el archivo, y muestra un control de volumen junto a los movimientos con audio. Ajusta entre 0 y 100% arrastrando o escribiendo; el doble clic restaura el 100% y el 0% silencia. Los valores se guardan por modelo y movimiento y se aplican al diálogo, atajos, movimientos aleatorios y menú contextual, también durante la reproducción. Otros movimientos que usan el mismo archivo conservan su propio volumen.
+
+### Plugin de objetos
+
+El plugin independiente de objetos se incluye por defecto. Actívalo en Preferencias → Plugins para mostrar Objetos. Admite importación de varias imágenes y arrastrar y soltar, posición, tamaño, rotación, opacidad, capas delanteras/traseras, bloqueo, duplicados y guardado de escenas con OpenGL, Vulkan y Metal. Seguir el área del modelo no fija el objeto a la malla. GIF muestra el primer fotograma; hasta 16 objetos en la mascota principal. Consulta [Plugin de objetos](items-plugin.md). `BONGO_CAT_BUILD_ITEMS=OFF` omite la biblioteca.
+
+Preferencia de memoria de renderizado: Priorizar memoria de vídeo / Priorizar memoria del sistema. Solo Live2D Vulkan. Recarga el renderizado. La memoria de vídeo favorece la velocidad; la del sistema reduce la presión sobre la VRAM, pero puede ser más lenta. Los recursos no compatibles usan una alternativa automática. Otros motores asignan automáticamente; las GPU integradas comparten memoria.
+
+### Sonidos del teclado
+
+Activa Efectos de sonido en Plugins. Haz clic en una tecla para elegir audio, pasa el cursor para ver el nombre y pulsa la tecla física para reproducirlo. Las asignaciones se guardan automáticamente. Sonidos y objetos tienen hilos separados. WAV/MP3/Ogg Vorbis/FLAC en la mascota principal. Consulta [Efectos de sonido](sounds-plugin.md); `BONGO_CAT_BUILD_SOUNDS=OFF` omite la biblioteca.
+
+La tienda Rust ofrece vistas previas, enlaces de autor y botones de descarga/desinstalación. SHA-256 se verifica antes de instalar; se muestra un estado pendiente si el catálogo no está publicado. [Complemento de tienda](store-plugin.md).
+
+La búsqueda automática de actualizaciones está activada por defecto en Preferencias → Aplicación y se ejecuta una vez en segundo plano en cada inicio. El aviso de una nueva versión se conserva hasta abrir Ajustes y ofrece «Actualizar ahora» arriba a la derecha. Todos los avisos de Ajustes se pueden cerrar manualmente.
+
+La página de modelos agrupa los modos del mismo paquete en una tarjeta con selector, incluidos los modos estándar, teclado y mando predeterminados. Puede arrastrar varios ZIP para importarlos en segundo plano. Cerrar Ajustes no interrumpe la importación. Al salir se detienen las importaciones pendientes y se espera a que termine la fuente actual antes de liberar los hilos y recursos temporales.
+
+Los atajos están dentro de Preferencias, con el selector Ajustes / Atajos. La tienda está dentro de Modelo, con Modelos locales / Tienda. Se eliminan sus dos entradas independientes de la barra lateral; cada subpágina conserva su posición de desplazamiento.
+
+Al activar Live2D sin Cubism Core se muestran ambos acuerdos oficiales. En Windows, Aceptar y descargar obtiene el SDK Native R5 por HTTPS oficial, extrae solo el Core dinámico compatible y activa el renderizado local. Cancelar y continuar mantiene el complemento activado sin renderizado. Se puede reintentar o importar manualmente. La aplicación y los paquetes no incluyen SDK ni Core.

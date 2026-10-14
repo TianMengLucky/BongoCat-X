@@ -4,10 +4,18 @@
 #include <string.h>
 #include <limits.h>
 
+static bool draw_items_background(BongoCatOverlay *value, SDL_Surface *canvas,
+    int width, int height, int x, int y, int cw, int ch) {
+    SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(canvas);
+    bool ok = renderer && value->items_draw(value->items_userdata, renderer, false,
+        width, height, x, y, cw, ch) && SDL_RenderPresent(renderer);
+    SDL_DestroyRenderer(renderer);
+    return ok;
+}
 bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
     BongoCatRhi *rhi, int width, int height, int x, int y, int cw, int ch,
     bool mirror, bool flip, bool opaque, uint32_t rgb) {
-    if (!value || (!value->native_background.surface && !value->custom_background.surface)) {
+    if (!value || (!value->native_background.surface && !value->custom_background.surface && !value->items_draw)) {
         if (value) { SDL_DestroySurface(value->native_canvas); value->native_canvas = NULL; value->native_canvas_uploaded = false; }
         return bongo_cat_rhi_set_background(rhi, NULL, 0, 0, 0, 0) &&
             bongo_cat_overlay_prepare_native_foreground(value, rhi, width, height, x, y, cw, ch, mirror, flip);
@@ -41,6 +49,8 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
                     SDL_BlitSurfaceScaled(background, NULL, canvas, &rect, SDL_SCALEMODE_LINEAR);
             }
         }
+        if (ok && value->items_draw && value->composed_cover)
+            ok = draw_items_background(value, canvas, width, height, x, y, cw, ch);
         if (image) {
             if (ok && mirror) ok = SDL_FlipSurface(image, SDL_FLIP_HORIZONTAL);
             if (ok && flip) ok = SDL_FlipSurface(image, SDL_FLIP_VERTICAL);
@@ -59,6 +69,8 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
                     SDL_BlitSurfaceScaled(image, NULL, canvas, &rect, SDL_SCALEMODE_LINEAR);
             }
         }
+        if (ok && value->items_draw && !value->composed_cover)
+            ok = draw_items_background(value, canvas, width, height, x, y, cw, ch);
         if (copied) SDL_DestroySurface(image);
         if (!ok) { SDL_DestroySurface(canvas); return false; }
         SDL_DestroySurface(value->native_canvas);

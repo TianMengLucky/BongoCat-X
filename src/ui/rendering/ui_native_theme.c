@@ -99,7 +99,9 @@ void bongo_cat_ui_native_theme_apply(SDL_Window *window, bool dark) {
         sizeof(enabled));
     bool transparent = (SDL_GetWindowFlags(window) &
         SDL_WINDOW_TRANSPARENT) != 0;
-    int corner = transparent ? 1 : 2;
+    bool square = SDL_GetBooleanProperty(SDL_GetWindowProperties(window),
+        "BongoCat.SquareCorners", false);
+    int corner = transparent || square ? 1 : 2;
     DwmSetWindowAttribute(handle, 33, &corner, sizeof(corner));
     if (transparent) {
         DWORD border = 0xfffffffeu;

@@ -96,7 +96,7 @@ fn streaming_transport_handles_binary_and_rejects_chunked_overflow_and_truncatio
         if success {
             assert_eq!(output, b"a\0b");
         } else if response.starts_with(b"HTTP/1.1 403") {
-            assert_eq!(result.unwrap_err().1, "GitHub returned HTTP status 403");
+            assert_eq!(result.unwrap_err().1, "Server returned HTTP status 403");
             assert!(output.is_empty());
         }
     }

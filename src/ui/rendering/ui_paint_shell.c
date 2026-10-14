@@ -20,7 +20,7 @@ static float rounded_distance(float x, float y, float width, float height,
 void bongo_cat_ui_paint_rounded_surface(struct nk_context *context,
     struct nk_rect bounds, float rounding, struct nk_color color) {
     BongoCatUIBackend *backend = bongo_cat_ui_backend_for_context(context);
-    if (!backend || !backend->window || SDL_GetBooleanProperty(
+    if (!backend || !backend->window || backend->live_resize_fast || SDL_GetBooleanProperty(
             SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false)) {
         nk_fill_rect(nk_window_get_canvas(context), bounds, rounding, color);
         return;
@@ -42,10 +42,16 @@ void bongo_cat_ui_paint_rounded_surface(struct nk_context *context,
         width, height, radius, 0, 0, 0, 0};
     BongoCatUIPaintTexture *item =
         bongo_cat_ui_paint_cache_get(backend, &key);
-    if (!item) return;
+    if (!item) {
+        nk_fill_rect(nk_window_get_canvas(context), bounds, rounding, color);
+        return;
+    }
     if (!bongo_cat_ui_paint_cache_ready(item)) {
         unsigned char *pixels = malloc((size_t)width * height);
-        if (!pixels) return;
+        if (!pixels) {
+            nk_fill_rect(nk_window_get_canvas(context), bounds, rounding, color);
+            return;
+        }
         for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
             float distance = rounded_distance(x + .5f, y + .5f,
                 (float)width, (float)height, (float)radius);
@@ -54,7 +60,9 @@ void bongo_cat_ui_paint_rounded_surface(struct nk_context *context,
                 (unsigned char)(coverage * 255.0f + .5f);
         }
         if (!bongo_cat_ui_paint_cache_upload(item, pixels, true)) {
-            free(pixels); return;
+            free(pixels);
+            nk_fill_rect(nk_window_get_canvas(context), bounds, rounding, color);
+            return;
         }
         free(pixels);
     }

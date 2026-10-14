@@ -1,6 +1,9 @@
 #include "runtime.h"
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/sounds.h"
+#include "bongo_cat/store.h"
+#include "bongo_cat/items.h"
 #include "bongo_cat/shortcut.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/overlay.h"
@@ -114,6 +117,9 @@ static void suppress_shortcut(BongoCatApp *app, const BongoCatInputEvent *event)
 
 void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts) {
     bongo_cat_statistics_tick(app);
+    bongo_cat_sounds_tick(app);
+    bongo_cat_store_tick(app);
+    bongo_cat_items_tick(app);
     BongoCatInputEvent event;
     while (bongo_cat_input_pop(&app->input, &event)) {
         bool keyboard = event.kind == BONGO_CAT_INPUT_KEY_DOWN ||
@@ -123,6 +129,9 @@ void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts) {
             if (keyboard) app->input_diagnostics.ignored_keys++;
             continue;
         }
+        bongo_cat_sounds_input(app, &event, allow_shortcuts &&
+            !bongo_cat_preferences_shortcuts_blocked(app->preferences) &&
+            !bongo_cat_preferences_sounds_blocked(app->preferences));
         if (strcmp(event.name, "CapsLock") == 0)
             bongo_cat_input_schedule_release(&app->input, &event, 100);
         if (keyboard || event.kind == BONGO_CAT_INPUT_GAMEPAD_BUTTON ||
@@ -142,6 +151,7 @@ void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts) {
     }
     uint64_t now = SDL_GetTicks();
     while (bongo_cat_input_take_scheduled_release(&app->input, now, &event)) {
+        bongo_cat_sounds_input(app, &event, false);
         if (allow_shortcuts &&
             !bongo_cat_preferences_shortcuts_blocked(app->preferences))
             bongo_cat_app_shortcuts(app, &event);

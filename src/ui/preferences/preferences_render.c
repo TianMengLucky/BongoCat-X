@@ -1,3 +1,4 @@
+#include "preferences_live2d_setup.h"
 #include "preferences_state.h"
 #include "preferences_render_internal.h"
 #include "preferences_page_dispatch.h"
@@ -9,6 +10,9 @@
 #include "ui_paint.h"
 #include "bongo_cat/memory_policy.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/sounds.h"
+#include "bongo_cat/store.h"
 #include "bongo_cat/tray.h"
 #include "update_service.h"
 #include <SDL3/SDL_opengl.h>
@@ -56,34 +60,52 @@ static void root_style_restore(struct nk_context *context,
 static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     float width, float height, bool dark) {
     static const char *page_ids[] = {
-        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-statistics", "page-about"};
-    int menu_icons[6] = {
-        BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
-        BONGO_CAT_UI_ICON_KEYBOARD, BONGO_CAT_UI_ICON_WAND, BONGO_CAT_UI_ICON_HEART};
-    const char *menus[6] = {
+        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-statistics", "page-about", "page-items", "page-sounds", "page-store"};
+    int menu_icons[7] = {BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
+        BONGO_CAT_UI_ICON_SETTINGS, BONGO_CAT_UI_ICON_HEART};
+    const char *menus[7] = {
         tr(value, "pages.preference.cat.title", "Preferences"),
         tr(value, "pages.preference.model.title", "Model"),
-        tr(value, "pages.preference.shortcut.title", "Shortcuts"),
         tr(value, "pages.preference.plugins.title", "Plugins"),
         tr(value, "native.support.title", "Support the Developer")};
-    int page_numbers[6] = {0, 1, 2, 3, 5};
-    int menu_count = 5;
+    int page_numbers[7] = {0, 1, 3, 5};
+    int menu_count = 4;
     const BongoCatStatisticsPage *contribution = bongo_cat_statistics_page(value->app);
     if (contribution) {
-        menus[5] = menus[4]; menu_icons[5] = menu_icons[4]; page_numbers[5] = 5;
-        menus[4] = tr(value, contribution->title_key, contribution->title);
-        menu_icons[4] = BONGO_CAT_UI_ICON_SYNC;
-        page_numbers[4] = 4; menu_count = 6;
+        menus[4] = menus[3]; menu_icons[4] = menu_icons[3]; page_numbers[4] = 5;
+        menus[3] = tr(value, contribution->title_key, contribution->title);
+        menu_icons[3] = BONGO_CAT_UI_ICON_SYNC;
+        page_numbers[3] = 4; menu_count = 5;
     } else if (value->page == 4) value->page = 3;
+    const BongoCatItemsPage *items = bongo_cat_items_page(value->app);
+    if (items) {
+        int last = menu_count - 1;
+        menus[menu_count] = menus[last]; menu_icons[menu_count] = menu_icons[last];
+        page_numbers[menu_count] = page_numbers[last];
+        menus[last] = tr(value, items->title_key, items->title);
+        menu_icons[last] = BONGO_CAT_UI_ICON_SMILE; page_numbers[last] = 6;
+        ++menu_count;
+    } else if (value->page == 6) value->page = 3;
+    const BongoCatSoundsPage *sounds = bongo_cat_sounds_page(value->app);
+    if (sounds) {
+        int last = menu_count - 1;
+        menus[menu_count] = menus[last]; menu_icons[menu_count] = menu_icons[last];
+        page_numbers[menu_count] = page_numbers[last];
+        menus[last] = tr(value, sounds->title_key, sounds->title);
+        menu_icons[last] = BONGO_CAT_UI_ICON_PLAY; page_numbers[last] = 7;
+        ++menu_count;
+    } else if (value->page == 7) value->page = 3;
     int selected_menu = 0;
+    int parent_page = value->page == 2 ? 0 : value->page == 8 ? 1 : value->page;
     for (int i = 0; i < menu_count; ++i)
-        if (page_numbers[i] == value->page) selected_menu = i;
+        if (page_numbers[i] == parent_page) selected_menu = i;
+    int previous_menu = selected_menu;
     bool modal = bongo_cat_preferences_remove_dialog_active(value->app) ||
         bongo_cat_preferences_behavior_dialog_active(value) ||
-        bongo_cat_preferences_random_dialog_active(value);
+        bongo_cat_preferences_random_dialog_active(value) || bongo_cat_preferences_live2d_setup_active(value);
     const bool native_chrome = bongo_cat_ui_native_chrome(); BongoCatUIPalette p = bongo_cat_ui_palette(dark);
     bongo_cat_ui_shell_draw(context, width, height, dark,
-        !value->transparent_window);
+        !value->transparent_window || !value->rounded_window);
     float sidebar = bongo_cat_ui_sidebar_width(width);
     float interior_height = height - BONGO_CAT_UI_MARGIN * 2.0f;
     nk_layout_row_begin(context, NK_STATIC, interior_height, 2);
@@ -93,7 +115,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.background = clear;
     context->style.window.group_padding = nk_vec2(0, 0);
     bool title_clicked = false;
-    if (nk_group_begin(context, "preferences-sidebar", NK_WINDOW_NO_SCROLLBAR)) {
+    if (nk_group_begin(context, "preferences-sidebar", 0)) {
     bongo_cat_ui_header(context, "BongoCat-X",
         value->ui.heading_font, value->logo_texture, &title_clicked, !modal, dark, native_chrome);
     if (title_clicked &&
@@ -109,11 +131,15 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bongo_cat_ui_tabs(context, menus, menu_icons, menu_count, &selected_menu,
         !modal, dark, interior_height, about_badge,
         draw_icon, value);
-    value->page = page_numbers[selected_menu];
+    if (selected_menu != previous_menu) {
+        if (value->shortcut_recording) bongo_cat_preferences_shortcut_cancel(value);
+        value->page = page_numbers[selected_menu];
+    }
     if (!value->page_seen) {
         value->page_seen = true; value->last_page = value->page;
     } else if (value->last_page != value->page) {
         value->last_page = value->page;
+        value->statistics_reset_confirm = false;
         value->page_transition_ns = SDL_GetTicksNS();
         value->render_dirty = true;
     }
@@ -131,7 +157,10 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
         nk_layout_row_end(context);
         return true;
     }
-    float body_height = interior_height - BONGO_CAT_UI_HEADER_HEIGHT;
+    if (modal) nk_widget_disable_begin(context);
+    bool subnavigation = bongo_cat_preferences_subnavigation(value, context);
+    if (modal) nk_widget_disable_end(context);
+    float body_height = interior_height - BONGO_CAT_UI_HEADER_HEIGHT - (subnavigation ? 50.0f : 0.0f);
     nk_layout_row_dynamic(context, NK_MAX(120.0f, body_height), 1);
     struct nk_rect body_bounds = nk_widget_bounds(context);
     float page_progress = 1.0f;
@@ -148,7 +177,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.group_padding = nk_vec2(24,
         16 + 6.0f * (1.0f - page_progress));
     context->style.window.spacing = nk_vec2(10, 10);
-    int scroll_page = NK_CLAMP(0, value->page, 5);
+    int scroll_page = NK_CLAMP(0, value->page, 8);
     bool scroll_animating = fabsf(value->scroll_current[scroll_page] - value->scroll_target[scroll_page]) > .5f;
     struct nk_style_scrollbar saved_scrollv = context->style.scrollv;
     struct nk_rect scrollbar_hit = nk_rect(body_bounds.x + body_bounds.w - 14, body_bounds.y, 14, body_bounds.h);
@@ -224,6 +253,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bongo_cat_preferences_remove_dialog_draw(value->app, context);
     bongo_cat_preferences_behavior_dialog_draw(value, context);
     bongo_cat_preferences_random_dialog_draw(value, context);
+    bongo_cat_preferences_live2d_setup_draw(value, context);
     return close_requested;
 }
 bool bongo_cat_preferences_draw_frame(BongoCatPreferences *value,

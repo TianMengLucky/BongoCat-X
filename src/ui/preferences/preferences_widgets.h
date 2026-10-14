@@ -6,6 +6,10 @@
 #include "nuklear_config.h"
 #include "preferences_icons.h"
 
+bool bongo_cat_pref_card_begin(struct nk_context *context, const char *id,
+    struct nk_style_window *saved);
+void bongo_cat_pref_card_end(struct nk_context *context, const struct nk_style_window *saved);
+void bongo_cat_pref_intro(struct nk_context *context, const char *text);
 void bongo_cat_pref_section(struct nk_context *context, const char *title);
 void bongo_cat_pref_section_rows_begin(struct nk_context *context);
 void bongo_cat_pref_section_icon(struct nk_context *context,

@@ -19,6 +19,16 @@ extern "C" {
 /* Optional preferences layout in Settings.extensions_json. Set preserves all
    other keys and leaves the buffer unchanged on invalid JSON or insufficient
    capacity. Get defaults to expanded; neither changes the settings ABI. */
+bool bongo_safe_gl_true_transparency_get(const char *extensions, size_t capacity);
+bool bongo_safe_gl_true_transparency_set(char *extensions, size_t capacity, bool enabled);
+bool bongo_safe_render_system_memory_get(const char *extensions, size_t capacity);
+bool bongo_safe_render_system_memory_set(char *extensions, size_t capacity, bool enabled);
+bool bongo_safe_statistics_overlay_get(const char *extensions, size_t capacity);
+bool bongo_safe_statistics_overlay_set(char *extensions, size_t capacity, bool enabled);
+bool bongo_safe_auto_update_get(const char *extensions, size_t capacity);
+bool bongo_safe_auto_update_set(char *extensions, size_t capacity, bool enabled);
+bool bongo_safe_preferences_rounded_get(const char *extensions, size_t capacity);
+bool bongo_safe_preferences_rounded_set(char *extensions, size_t capacity, bool enabled);
 bool bongo_safe_preferences_collapsible_get(const char *extensions, size_t capacity);
 bool bongo_safe_preferences_collapsible_set(char *extensions, size_t capacity, bool enabled);
 

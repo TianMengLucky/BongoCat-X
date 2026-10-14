@@ -10,6 +10,9 @@ typedef struct BongoCatPreferences BongoCatPreferences;
 
 BongoCatPreferences *bongo_cat_preferences_create(BongoCatApp *app);
 void bongo_cat_preferences_destroy(BongoCatPreferences *preferences);
+void bongo_cat_preferences_stop_imports(BongoCatPreferences *preferences);
+void bongo_cat_preferences_poll_imports(BongoCatPreferences *preferences);
+bool bongo_cat_preferences_imports_busy(const BongoCatPreferences *preferences);
 void bongo_cat_preferences_show(BongoCatPreferences *preferences);
 void bongo_cat_preferences_release_render_context(BongoCatPreferences *preferences);
 void bongo_cat_preferences_close(BongoCatPreferences *preferences);
@@ -22,6 +25,8 @@ void bongo_cat_preferences_model_watch(BongoCatPreferences *preferences,
 void bongo_cat_preferences_input_begin(BongoCatPreferences *preferences);
 void bongo_cat_preferences_input_end(BongoCatPreferences *preferences);
 bool bongo_cat_preferences_event(BongoCatPreferences *preferences, const SDL_Event *event);
+bool bongo_cat_preferences_sounds_blocked(const BongoCatPreferences *preferences);
+bool bongo_cat_preferences_sound_picker_open(const BongoCatPreferences *preferences);
 bool bongo_cat_preferences_shortcuts_blocked(
     const BongoCatPreferences *preferences);
 void bongo_cat_preferences_render(BongoCatPreferences *preferences);

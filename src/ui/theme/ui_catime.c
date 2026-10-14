@@ -62,9 +62,9 @@ void bongo_cat_ui_shell_draw(struct nk_context *context, float width,
         nk_fill_rect(canvas, nk_rect(0, 0, sidebar_right, height), 0,
             p.surface);
     } else {
-        nk_fill_rect(canvas, surface, rounding, p.surface_glass);
+        bongo_cat_ui_paint_rounded_surface(context, surface, rounding, p.surface_glass);
         nk_push_scissor(canvas, nk_rect(0, 0, sidebar_right, height));
-        nk_fill_rect(canvas, surface, rounding, p.surface);
+        bongo_cat_ui_paint_rounded_surface(context, surface, rounding, p.surface);
         nk_push_scissor(canvas, surface);
     }
     if (p.effects && !fast && !dark)

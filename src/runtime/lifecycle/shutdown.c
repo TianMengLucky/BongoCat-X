@@ -3,6 +3,9 @@
 #include "model_import_lock.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/sounds.h"
+#include "bongo_cat/store.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/preferences.h"
@@ -21,12 +24,17 @@ void bongo_cat_app_shutdown(BongoCatApp *app, const char *stage,
     bongo_cat_app_capture_behavior_state(app);
     bongo_cat_app_log_input(app, true);
     bongo_cat_window_snapshot_discard(app);
+    bongo_cat_preferences_stop_imports(app->preferences);
+    bongo_cat_store_stop(app);
     bongo_cat_config_store_flush(app);
     bongo_cat_multi_pet_shutdown(app);
     bongo_cat_model_refresh_shutdown(app);
     bongo_cat_update_destroy(app->update);
     app->update = NULL;
+    bongo_cat_statistics_overlay_destroy(app);
     bongo_cat_statistics_stop(app);
+    bongo_cat_items_stop(app);
+    bongo_cat_sounds_stop(app);
     bongo_cat_preferences_destroy(app->preferences);
     bongo_cat_import_storage_lock_shutdown();
     bongo_cat_i18n_destroy(app->i18n);

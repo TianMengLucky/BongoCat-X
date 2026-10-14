@@ -1,4 +1,6 @@
 
+
+2.2.0 menambahkan plugin objek, suara keyboard, dan toko model, serta meningkatkan impor latar belakang dan pembaruan otomatis. Pantulan tepi memerlukan opsi tetap di layar. Transparansi nyata OpenGL Windows memakai alfa per piksel dan dapat menambah biaya pembacaan piksel.
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
@@ -61,7 +63,7 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -423,7 +425,7 @@ Dibuat dengan ❤️ & ⌨️
 
 ### Tampilan opsi preferensi
 
-Tombol di bagian atas beralih antara semua opsi dan grup yang dapat dilipat. Klik judul Jendela, Model, Aplikasi atau Tampilan untuk membuka atau menutup grup. Pilihan tampilan disimpan dan nilai opsi tetap terjaga.
+Preferensi menggunakan satu tata letak kartu grup. Opsi Jendela, Model, Aplikasi dan Tampilan terbuka secara bawaan. Klik judul grup untuk melipat atau membuka opsi. Tidak ada tombol pengalih tampilan dan nilai opsi tetap terjaga.
 
 ### Plugin statistik input
 
@@ -459,3 +461,23 @@ Di Windows, pengaturan hemat memori menggunakan perenderan perangkat lunak SDL b
 Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).
 
 Dialog aksi memeriksa referensi `Sound` dan keberadaan file audio, lalu menampilkan kontrol volume tersendiri di samping gerakan dengan audio. Atur 0–100% dengan menyeret atau mengetik; klik ganda mengembalikan 100% dan 0% membisukan. Nilai disimpan per model dan gerakan serta berlaku pada dialog, pintasan, gerakan acak, dan menu konteks, termasuk saat audio diputar. Gerakan lain yang memakai file sama mempertahankan volumenya sendiri.
+
+### Plugin item
+
+Plugin item mandiri disertakan secara default. Aktifkan di Preferensi → Plugin untuk menampilkan halaman Item. Mendukung impor banyak gambar dan seret-lepas, posisi, ukuran, rotasi, opasitas, lapisan depan/belakang, penguncian, duplikasi, dan penyimpanan adegan di OpenGL, Vulkan, dan Metal. Mengikuti area model tidak berarti menempel ke mesh. GIF memakai bingkai pertama; hingga 16 item pada pet utama. Lihat [Plugin item](items-plugin.md). `BONGO_CAT_BUILD_ITEMS=OFF` tidak menyertakan pustaka.
+
+Preferensi memori render: Prioritaskan memori video / Prioritaskan memori sistem. Hanya Live2D Vulkan. Perubahan memuat ulang render. Memori video mengutamakan kecepatan; memori sistem mengurangi tekanan VRAM tetapi bisa lebih lambat. Sumber daya yang tidak didukung memakai alternatif otomatis. Backend lain mengalokasikan otomatis; GPU terintegrasi berbagi memori.
+
+### Efek suara keyboard
+
+Aktifkan Efek suara di Plugin. Klik tombol untuk memilih audio, arahkan mouse untuk melihat nama, lalu tekan tombol fisik untuk memutar suara. Penetapan tersimpan otomatis. Suara dan item memiliki thread terpisah. WAV/MP3/Ogg Vorbis/FLAC pada pet utama. Lihat [Efek suara](sounds-plugin.md); `BONGO_CAT_BUILD_SOUNDS=OFF` tidak menyertakan pustaka.
+
+Plugin toko model Rust menampilkan pratinjau, tautan penulis, serta tombol unduh/hapus. SHA-256 diverifikasi sebelum pemasangan; status persiapan ditampilkan jika katalog belum diterbitkan. [Plugin toko](store-plugin.md).
+
+Pemeriksaan pembaruan otomatis aktif secara default di Preferensi → Aplikasi dan berjalan sekali di latar belakang setiap kali aplikasi dimulai. Pemberitahuan versi baru disimpan hingga Pengaturan dibuka, dengan tombol Perbarui sekarang di sudut kanan atas. Semua pemberitahuan Pengaturan dapat ditutup secara manual.
+
+Halaman model menggabungkan mode dari paket yang sama dalam satu kartu dengan pemilih mode, termasuk mode Standar, Keyboard dan Gamepad bawaan. Seret beberapa ZIP untuk diimpor berurutan di latar belakang. Menutup Pengaturan tidak menghentikan impor. Saat aplikasi ditutup, impor berikutnya dihentikan dan sumber saat ini diselesaikan sebelum thread serta sumber daya sementara dilepas.
+
+Pintasan kini berada di Preferensi melalui Pengaturan / Pintasan. Toko berada di Model melalui Model lokal / Toko. Kedua entri sidebar terpisah dihapus; setiap subhalaman mempertahankan posisi gulirnya.
+
+Mengaktifkan Live2D tanpa Cubism Core menampilkan kedua perjanjian resmi. Di Windows, Setuju dan unduh mengambil SDK Native R5 melalui HTTPS resmi, mengekstrak hanya Core dinamis yang sesuai dan mengaktifkan rendering lokal. Batal dan lanjutkan mempertahankan plugin aktif tanpa rendering. Unduhan dapat dicoba kembali dan impor manual tetap tersedia. Aplikasi dan paket tidak menyertakan SDK atau Core.

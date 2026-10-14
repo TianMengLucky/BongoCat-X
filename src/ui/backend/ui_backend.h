@@ -14,6 +14,7 @@ typedef enum BongoCatUICursor {
 } BongoCatUICursor;
 
 typedef struct BongoCatUIBackend {
+    struct BongoCatUIBackend *next_backend;
     SDL_Window *window;
     float layout_scale;
     float raster_scale;

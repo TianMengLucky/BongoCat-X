@@ -1,3 +1,4 @@
+#include "preferences_live2d_setup.h"
 #include "preferences_controls.h"
 #include "preferences_gl.h"
 #include "preferences_model_cover.h"
@@ -244,6 +245,7 @@ static void bongo_cat_preferences_close_finish(BongoCatPreferences *value) {
     value->import_requested = false;
     value->import_drop_active = false;
     value->sdk_import_requested = false;
+    bongo_cat_preferences_live2d_setup_cancel(value);
     if (value->input_active) bongo_cat_preferences_input_end(value);
     if (value->ui_initialized) bongo_cat_ui_input_reset(&value->ui);
     SDL_StopTextInput(value->window);
@@ -278,6 +280,7 @@ void bongo_cat_preferences_release_idle_window(BongoCatPreferences *value) {
 
 void bongo_cat_preferences_destroy(BongoCatPreferences *value) {
     if (!value) return;
+    bongo_cat_preferences_live2d_setup_stop(value);
     if (value->live2d_rescan_worker) {
         SDL_WaitThread(value->live2d_rescan_worker, NULL);
         value->live2d_rescan_worker = NULL;

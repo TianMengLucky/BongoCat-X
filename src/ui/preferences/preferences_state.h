@@ -7,6 +7,8 @@
 #include "about/preferences_about.h"
 #include "ui_backend.h"
 
+typedef struct BongoCatLive2DSetup BongoCatLive2DSetup;
+
 #define BONGO_CAT_MODEL_LOAD_VISUAL_DURATION_NS 5000000000ull
 #define BONGO_CAT_MODEL_LOAD_VISUAL_RAMP_NS 3000000000ull
 #define BONGO_CAT_MODEL_LOAD_VISUAL_COMPLETE_NS 160000000ull
@@ -25,6 +27,10 @@ typedef struct BongoCatPreferenceNotice {
     bool hovered;
     bool error;
     bool bottom_right;
+    bool top_right;
+    bool update_action;
+    struct nk_rect close_bounds;
+    struct nk_rect action_bounds;
 } BongoCatPreferenceNotice;
 
 struct BongoCatPreferences {
@@ -33,6 +39,7 @@ struct BongoCatPreferences {
     SDL_GLContext gl_context;
     bool owns_gl_context;
     bool transparent_window;
+    bool rounded_window;
     bool visible;
     bool sdk_notice_shown;
     unsigned release_wait_flags;
@@ -53,11 +60,19 @@ struct BongoCatPreferences {
     BongoCatAboutState about;
     struct nk_user_font support_logs_font;
     int page;
-    bool collapsible_options;
     enum nk_collapse_states options_sections[5];
     float quality_reload_from;
     uint64_t quality_settle_deadline_ns;
+    int selected_sound;
+    uint64_t sound_glyph_hash;
+    int selected_item;
+    uint64_t item_glyph_hash;
+    unsigned int item_preview_texture;
+    int item_preview_width, item_preview_height;
+    char item_preview_asset[80];
+    uint64_t store_glyph_revision;
     int statistics_period;
+    bool statistics_reset_confirm;
     uint64_t statistics_glyph_hash;
     int style_theme;
     BongoCatLanguage font_language;
@@ -72,6 +87,8 @@ struct BongoCatPreferences {
     /* Runtime Live2D Core import: file picker plus its completion event. */
     bool sdk_import_requested;
     int sdk_import_event_type;
+    int live2d_setup_event_type;
+    BongoCatLive2DSetup *live2d_setup;
     /* Background Live2D Core drop-in rescan (zip extraction can take a
        while): worker thread plus its completion event. */
     SDL_Thread *live2d_rescan_worker;
@@ -117,6 +134,7 @@ struct BongoCatPreferences {
     uint64_t model_load_visual_started_ns;
     uint64_t model_load_visual_completion_ns;
     char pending_model_id[BONGO_CAT_ID_CAP];
+    char pending_model_replace_id[BONGO_CAT_ID_CAP];
     char loading_model_id[BONGO_CAT_ID_CAP];
     char model_load_visual_id[BONGO_CAT_ID_CAP];
     uint64_t last_render_ns;
@@ -126,13 +144,14 @@ struct BongoCatPreferences {
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;
-    float scroll_current[6];
-    float scroll_target[6];
-    bool scroll_ready[6];
+    float scroll_current[9];
+    float scroll_target[9];
+    bool scroll_ready[9];
     bool page_seen;
     int last_page;
     uint64_t page_transition_ns;
     BongoCatPreferenceNotice notices[4];
+    bool notice_pointer_captured;
     BongoCatBehaviorCatalog *behavior_catalog;
     char behavior_model_id[BONGO_CAT_ID_CAP];
     bool behavior_dialog;

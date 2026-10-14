@@ -115,7 +115,7 @@ void bongo_cat_update_show_completion(BongoCatUpdateService *service) {
         snprintf(message, sizeof(message), "%s v%s", tr(service,
             "native.support.updateAvailable", "New version available:"),
             snapshot.release.version);
-        bongo_cat_preferences_notice_show(service->app, message, false);
+        bongo_cat_preferences_notice_show_update(service->app, message);
     } else if (snapshot.status == BONGO_CAT_UPDATE_ERROR) {
         char detail[384], status_text[16];
         static const char prefix[] = "GitHub returned HTTP status ";

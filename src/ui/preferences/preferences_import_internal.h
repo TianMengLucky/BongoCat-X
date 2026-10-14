@@ -18,9 +18,12 @@ typedef struct BongoCatImportJob {
     struct BongoCatImportJob *next;
     SDL_WindowID window_id;
     size_t count;
+    uint64_t generation;
     char **paths;
     bool plugin_import;
     bool background_import;
+    bool items_import;
+    char sounds_key[32];
     char models_root[BONGO_CAT_PATH_CAP];
     char package_ids[BONGO_CAT_MODEL_CAP][BONGO_CAT_ID_CAP];
     bool package_refresh_requested[BONGO_CAT_MODEL_CAP];
@@ -45,6 +48,7 @@ typedef struct BongoCatImportProgressContext {
 
 typedef struct BongoCatImportProgress {
     BongoCatImportJob *job;
+    uint64_t generation;
     char package_id[BONGO_CAT_ID_CAP];
     size_t package_index;
     size_t installed_count;
@@ -62,6 +66,8 @@ struct BongoCatImportDialog {
     SDL_WindowID window_id;
     SDL_Thread *worker;
     BongoCatImportJob *worker_job;
+    uint64_t worker_generation;
+    bool completion_pending;
     BongoCatImportJob *pending_head;
     BongoCatImportJob *pending_tail;
     BongoCatImportSummary summary;
@@ -71,6 +77,8 @@ struct BongoCatImportDialog {
     int references;
     bool plugin_import;
     bool background_import;
+    bool items_import;
+    char sounds_key[32];
     bool active;
     bool open;
     bool busy;

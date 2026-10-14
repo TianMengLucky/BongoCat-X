@@ -17,6 +17,8 @@ const char *bongo_cat_statistics_filename(void);
 void bongo_cat_statistics_start(BongoCatApp *app);
 void bongo_cat_statistics_stop(BongoCatApp *app);
 void bongo_cat_statistics_tick(BongoCatApp *app);
+void bongo_cat_statistics_overlay_update(BongoCatApp *app);
+void bongo_cat_statistics_overlay_destroy(BongoCatApp *app);
 void bongo_cat_statistics_info(BongoCatApp *app, BongoCatStatisticsInfo *info);
 /* Borrowed host copy; NULL when the plugin has no active registration. */
 const BongoCatStatisticsPage *bongo_cat_statistics_page(const BongoCatApp *app);
@@ -28,6 +30,9 @@ bool bongo_cat_statistics_install(BongoCatApp *app, const char *source, BongoCat
 bool bongo_cat_statistics_remove(BongoCatApp *app, BongoCatError *error);
 bool bongo_cat_statistics_snapshot(BongoCatApp *app, BongoCatStatisticsSnapshot *snapshot);
 bool bongo_cat_statistics_export(BongoCatApp *app, BongoCatError *error);
+bool bongo_cat_statistics_reset_available(const BongoCatApp *app);
+bool bongo_cat_statistics_reset_busy(const BongoCatApp *app);
+bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error);
 
 bool bongo_cat_statistics_usage_snapshot(BongoCatApp *app, unsigned period, BongoCatApplicationSnapshot *snapshot);
 bool bongo_cat_statistics_usage_enable(BongoCatApp *app, bool enabled);

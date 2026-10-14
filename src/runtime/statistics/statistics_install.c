@@ -1,6 +1,9 @@
 #include "statistics_internal.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/model_plugins.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/store.h"
+#include "bongo_cat/sounds.h"
 #include "bongo_cat/path.h"
 #include "model_import_archive.h"
 #include <stdio.h>
@@ -76,6 +79,8 @@ static SDL_EnumerationResult SDLCALL scan(void *userdata, const char *directory,
         ++value->count; ++value->statistics;
         SDL_strlcpy(value->path, path, sizeof(value->path));
     }
+    if (!SDL_strcmp(name, bongo_cat_items_filename()) || !SDL_strcmp(name, bongo_cat_sounds_filename())) ++value->count;
+    if (!SDL_strcmp(name, bongo_cat_store_filename())) ++value->count;
     for (BongoCatModelEngine engine = BONGO_CAT_MODEL_ENGINE_LIVE2D; engine <= BONGO_CAT_MODEL_ENGINE_INOX2D; ++engine)
         if (!SDL_strcmp(name, bongo_cat_model_plugin_filename(engine))) ++value->count;
     return SDL_ENUM_CONTINUE;

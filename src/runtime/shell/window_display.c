@@ -302,6 +302,7 @@ void bongo_cat_window_reset_position(BongoCatApp *app) {
         !SDL_GetDisplayBounds(display, &bounds))) return;
     int x = bounds.x + SDL_max(0, bounds.w - rect.w) / 2;
     int y = bounds.y + SDL_max(0, bounds.h - rect.h) / 2;
+    app->edge_bounce_end_ns = 0;
     bongo_cat_window_cancel_wheel_animation(app);
     bongo_cat_window_snapshot_end(app);
     if (!SDL_SetWindowPosition(app->window, x, y)) return;

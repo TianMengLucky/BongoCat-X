@@ -60,7 +60,7 @@ void bongo_cat_overlay_draw_background(BongoCatOverlay *value, bool mirror) {
     }
     bool active = value->left || value->right;
     draw(value, active && value->composite ? value->composite :
-        value->background, mirror, value->custom_texture != 0);
+        value->background, mirror, value->custom_texture != 0 || value->items_draw != NULL);
 }
 
 void bongo_cat_overlay_draw_keys(BongoCatOverlay *value, bool mirror) {

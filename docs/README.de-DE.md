@@ -1,4 +1,6 @@
 <div align="center">
+
+2.2.0 ergänzt Plugins für Objekte, Tastaturklänge und den Modell-Shop und verbessert Hintergrundimporte und automatische Updates. Der Rückprall am Bildschirmrand erfordert „Auf dem Bildschirm halten“. Echte Transparenz unter Windows OpenGL verwendet Alpha pro Pixel und kann den Aufwand für das Auslesen von Pixeln erhöhen.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -42,7 +44,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -308,7 +310,7 @@ Made with ❤️ & ⌨️
 
 ### Darstellung der Einstellungen
 
-Die Schaltflächen oben wechseln zwischen allen Optionen und klappbaren Gruppen. Ein Klick auf Fenster, Modell, Anwendung oder Darstellung öffnet oder schließt die Gruppe. Die Ansicht wird gespeichert; bestehende Werte bleiben erhalten.
+Die Einstellungen verwenden ein einheitliches Kartenlayout. Fenster, Modell, Anwendung und Darstellung sind standardmäßig geöffnet. Ein Klick auf einen Gruppentitel klappt die Optionen ein oder aus. Es gibt keinen Layout-Umschalter; bestehende Werte bleiben erhalten.
 
 ### Eingabestatistik-Plugin
 
@@ -344,3 +346,23 @@ Unter Windows nutzen speichersparende Einstellungen für OpenGL/Vulkan abschnitt
 Mver (OpenGL/Vulkan/Metal) schneidet Hand, Blasenrahmen und Zeichen getrennt zu und verbindet gedrückte Tasten mit + in einer Blase. Rahmen und Zipfel werden mit dem Modell gespiegelt; die Zeichen bleiben auch im Einzeltastenmodus lesbar. Konfigurieren Sie die drei Bereiche, den Abstand um + und das Limit je Seite in `hand-layout.json` neben den Handbildern; starten Sie nach Änderungen neu. Siehe [Anleitung und Beispiel](hand-layout.md).
 
 Der Aktionsdialog prüft den `Sound`-Verweis und das Vorhandensein der Audiodatei und zeigt nur bei Bewegungen mit Ton einen eigenen Lautstärkeregler. 0–100% sind per Ziehen oder Eingabe einstellbar; Doppelklick stellt 100% wieder her, 0% schaltet stumm. Die Werte werden je Modell und Bewegung gespeichert und gelten für Dialog, Tastenkürzel, Zufallsbewegungen und Kontextmenü, auch während der Wiedergabe. Andere Bewegungen mit derselben Datei behalten ihre eigene Lautstärke.
+
+### Objekt-Plugin
+
+Das unabhängige Objekt-Plugin ist standardmäßig enthalten. Unter Einstellungen → Plugins aktivieren, um die Objektseite einzublenden. Unterstützt Bildimport und Drag-and-drop, mehrere Objekte, Position, Größe, Drehung, Deckkraft, Vorder-/Hintergrundebenen, Sperren, Duplikate und Szenenspeicherung mit OpenGL, Vulkan und Metal. Folgen der Modellansicht ist keine Mesh-Bindung. GIF zeigt nur das erste Bild; bis zu 16 Objekte am primären Haustier. Siehe [Objekt-Plugin](items-plugin.md). `BONGO_CAT_BUILD_ITEMS=OFF` lässt die Bibliothek weg.
+
+Speicherpriorität beim Rendern: Grafikspeicher bevorzugen / Arbeitsspeicher bevorzugen. Nur Live2D Vulkan. Änderungen laden das Rendering neu. Grafikspeicher bevorzugt Geschwindigkeit; Arbeitsspeicher entlastet den VRAM, kann aber langsamer sein. Nicht unterstützte Ressourcen weichen automatisch aus. Andere Backends verteilen automatisch; integrierte GPUs teilen den Speicher.
+
+### Tastatur-Soundeffekte
+
+Soundeffekte unter Plugins aktivieren. Eine Taste anklicken, Audio wählen, den Dateinamen beim Überfahren sehen und mit der physischen Taste abspielen. Zuweisungen werden automatisch gespeichert. Sounds und Objekte haben separate Threads. WAV/MP3/Ogg Vorbis/FLAC am primären Haustier. Siehe [Soundeffekte](sounds-plugin.md); `BONGO_CAT_BUILD_SOUNDS=OFF` lässt die Bibliothek weg.
+
+Das Rust-Shop-Plugin bietet Modellvorschauen, Autorenlinks und Download-/Deinstallationsschaltflächen. SHA-256 wird vor der Installation geprüft. Ein unveröffentlichter Katalog zeigt einen Platzhalter. [Shop-Plugin](store-plugin.md).
+
+Die automatische Updateprüfung ist unter Einstellungen → Anwendung standardmäßig aktiviert und läuft bei jedem Start einmal im Hintergrund. Hinweise auf neue Versionen bleiben bis zum Öffnen der Einstellungen erhalten und bieten oben rechts „Jetzt aktualisieren“. Alle Benachrichtigungen in den Einstellungen lassen sich manuell schließen.
+
+Die Modellseite fasst Modi desselben Pakets in einer Karte mit Modusauswahl zusammen, einschließlich Standard, Tastatur und Gamepad der Standardmodelle. Mehrere Modell-ZIPs können gleichzeitig abgelegt und im Hintergrund entpackt, geprüft und importiert werden. Das Schließen der Einstellungen unterbricht den Import nicht. Beim Beenden werden weitere Importe gestoppt; laufende Quelldateien werden vor der Freigabe von Threads und temporären Ressourcen fertig verarbeitet.
+
+Tastenkombinationen sind jetzt unter Einstellungen über Einstellungen / Tastenkombinationen erreichbar. Der Store liegt unter Modell und wird über Lokale Modelle / Store geöffnet. Die beiden eigenen Seitenleisteneinträge entfallen; jede Unterseite behält ihre Scrollposition.
+
+Beim Aktivieren von Live2D ohne Cubism Core erscheinen beide offiziellen Lizenzverträge. Unter Windows lädt Zustimmen und herunterladen das Native-R5-SDK per offiziellem HTTPS, entpackt nur den passenden dynamischen Core und aktiviert das Rendering lokal. Abbrechen und fortfahren lässt das Plugin ohne Rendering aktiviert. Downloads können erneut versucht werden; manueller Import bleibt möglich. Anwendung und Pakete enthalten weder SDK noch Core.

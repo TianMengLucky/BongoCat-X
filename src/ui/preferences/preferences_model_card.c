@@ -63,17 +63,19 @@ bool bongo_cat_preferences_model_import_card(BongoCatPreferences *value,
     float cx = bounds.x + bounds.w * .5f, cy = bounds.y + 91;
     bongo_cat_preferences_icon_draw(value, canvas,
         BONGO_CAT_UI_ICON_UPLOAD, nk_rect(cx - 20, cy - 20, 40, 40), p.pink);
-    const char *label = tr(value->app,
-        "pages.preference.model.hints.clickOrDragToImport",
-        "Click or drag a model folder");
+    const char *label = importing ? tr(value->app,
+        "pages.preference.model.hints.importingBackground", "Importing in background...") :
+        tr(value->app, "pages.preference.model.hints.clickOrDragToImport",
+            "Click or drag a model folder or ZIP");
     float width = value->ui.caption_font->width(value->ui.caption_font->userdata,
         value->ui.caption_font->height, label, nk_strlen(label));
-    text(context, canvas, nk_rect(cx - width * .5f, cy + 25,
+    text(context, canvas, nk_rect(cx - NK_MIN(width, bounds.w - 20) * .5f, cy + 25,
         NK_MIN(width + 1, bounds.w - 20), 24), label, p.accent,
         value->ui.caption_font);
     if (pointer_hover) bongo_cat_ui_cursor_hover_rect(context, bounds,
         BONGO_CAT_UI_CURSOR_POINTER);
-    return pointer_hover && nk_input_is_mouse_click_in_rect(&context->input,
+    return pointer_hover && !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_click_in_rect(&context->input,
         NK_BUTTON_LEFT, bounds);
 }
 
@@ -90,6 +92,7 @@ void bongo_cat_preferences_model_select(BongoCatPreferences *value,
     if (!value || !entry) return;
     if (value->model_loading && !strcmp(entry->id, value->loading_model_id))
         return;
+    value->pending_model_replace_id[0] = '\0';
     bool multiple = value->app->settings.model.multiple_pets;
     bool selected = bongo_cat_app_model_active(value->app, entry->id);
     if (multiple && !selected && bongo_cat_app_active_model_count(value->app) >=
@@ -182,6 +185,7 @@ static void switch_away_from_hidden(BongoCatPreferences *value,
         bongo_cat_preferences_model_select(value, fallback);
     } else {
         value->pending_model_id[0] = '\0';
+        value->pending_model_replace_id[0] = '\0';
         value->model_selection_pending = true;
         value->pending_model_multiple = false;
     }
@@ -240,13 +244,22 @@ static bool draw_hide_tab(BongoCatPreferences *value,
         nk_rect(cx - inset - icon_size * .5f, cy + inset - icon_size * .5f,
             icon_size, icon_size),
         bongo_cat_ui_color_alpha(nk_rgb(255, 255, 255), .8f + .2f * amount));
-    if (hover && nk_input_is_mouse_click_in_rect(&context->input,
-            NK_BUTTON_LEFT, hit)) {
+    if (hover && !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, hit)) {
         bool hidden = bongo_cat_settings_model_hidden(
             &value->app->settings, entry->id);
-        bongo_cat_settings_set_model_hidden(&value->app->settings,
-            entry->id, !hidden);
-        if (!hidden) switch_away_from_hidden(value, entry);
+        for (size_t i = 0; i < value->app->models.count; ++i) {
+            const BongoCatModelEntry *mode = &value->app->models.entries[i];
+            if (bongo_cat_preferences_model_same_family(entry, mode))
+                bongo_cat_settings_set_model_hidden(&value->app->settings, mode->id, !hidden);
+        }
+        if (!hidden) {
+            for (size_t i = 0; i < value->app->models.count; ++i) {
+                const BongoCatModelEntry *mode = &value->app->models.entries[i];
+                if (bongo_cat_preferences_model_same_family(entry, mode))
+                    switch_away_from_hidden(value, mode);
+            }
+        }
         value->render_dirty = true;
     }
     if (hover) {
@@ -277,8 +290,9 @@ static void draw_actions(BongoCatPreferences *value,
         nk_input_is_mouse_hovering_rect(&context->input, items[1]),
         deletable && nk_input_is_mouse_hovering_rect(
             &context->input, items[2])};
-    bool hover[3] = {region_hover[0],
-        region_hover[1], delete_enabled && region_hover[2]};
+    bool interactive = !(context->current->layout->flags & NK_WINDOW_ROM);
+    bool hover[3] = {interactive && region_hover[0],
+        interactive && region_hover[1], interactive && delete_enabled && region_hover[2]};
     for (int i = 1; i < (deletable ? 3 : 2); ++i)
         nk_stroke_line(canvas, items[i].x, items[i].y + 10,
             items[i].x, items[i].y + items[i].h - 10, 1, p.border_subtle);
@@ -347,6 +361,8 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
         bounds.w - 18, 30);
     bool name_hover = bongo_cat_preferences_model_name_draw(value,
         context, canvas, entry, name_bounds, p);
+    bool mode_hover = bongo_cat_preferences_model_mode_selector(value, context,
+        entry, nk_rect(bounds.x + 9, bounds.y + bounds.h - 79, bounds.w - 18, 38));
     bool action_hover = false;
     draw_actions(value, context, canvas, bounds, entry, p,
         storage_busy, &action_hover);
@@ -371,7 +387,8 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
     if (!name_hover && (action_hover || hover))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);
-    if (!name_hover && !action_hover && !tab_hover && hover &&
+    if (!(context->current->layout->flags & NK_WINDOW_ROM) &&
+        !name_hover && !mode_hover && !action_hover && !tab_hover && hover &&
         nk_input_is_mouse_click_in_rect(&context->input,
             NK_BUTTON_LEFT, bounds))
         bongo_cat_preferences_model_select(value, entry);

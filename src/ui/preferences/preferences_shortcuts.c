@@ -1,3 +1,4 @@
+#include "preferences_live2d_setup.h"
 #include "preferences_state.h"
 #include "preferences_notice.h"
 #include "preferences_widgets.h"
@@ -222,7 +223,7 @@ bool bongo_cat_preferences_shortcut_event(BongoCatPreferences *value,
 
 bool bongo_cat_preferences_shortcuts_blocked(
     const BongoCatPreferences *value) {
-    return value && (value->shortcut_recording ||
+    return value && (bongo_cat_preferences_live2d_setup_active(value) || value->shortcut_recording ||
         SDL_GetTicksNS() < value->shortcut_suppress_until_ns);
 }
 
@@ -246,6 +247,8 @@ static void shortcut_row(BongoCatPreferences *value, struct nk_context *context,
 void bongo_cat_preferences_page_shortcuts(BongoCatPreferences *value,
     struct nk_context *context) {
     BongoCatShortcutPreferences *keys = &value->app->settings.shortcuts;
+    bongo_cat_pref_intro(context, tr(value, "pages.preference.navigation.shortcutHint",
+        "Click a binding to record a shortcut. Press Escape to cancel; use the clear icon to remove a binding."));
     shortcut_row(value, context, "shortcut-menu", "native.shortcut.openMenu",
         "Show/Hide Radial Menu",
         keys->open_menu, sizeof(keys->open_menu),

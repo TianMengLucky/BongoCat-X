@@ -7,6 +7,38 @@
 #include "ui_paint.h"
 #include "ui_tooltip.h"
 #include "../rendering/ui_icons.h"
+bool bongo_cat_pref_card_begin(struct nk_context *context, const char *id,
+    struct nk_style_window *saved) {
+    *saved = context->style.window;
+    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    context->style.window.fixed_background = nk_style_item_color(p.surface);
+    context->style.window.background = p.surface;
+    context->style.window.group_border = 1;
+    context->style.window.group_border_color = p.border_subtle;
+    context->style.window.rounding = 14;
+    context->style.window.group_padding = nk_vec2(18, 14);
+    context->style.window.spacing = nk_vec2(10, 8);
+    if (nk_group_begin(context, id, NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) return true;
+    context->style.window = *saved;
+    return false;
+}
+void bongo_cat_pref_card_end(struct nk_context *context, const struct nk_style_window *saved) {
+    nk_group_end(context);
+    context->style.window = *saved;
+}
+void bongo_cat_pref_intro(struct nk_context *context, const char *text) {
+    float width = NK_MAX(1.0f, nk_window_get_content_region(context).w - 32.0f);
+    int lines = bongo_cat_pref_detail_text(context, text, nk_rect(0, 0, width, 0), false);
+    nk_layout_row_dynamic(context, NK_MAX(52.0f, 28.0f + (float)lines * 19.0f), 1);
+    struct nk_rect bounds;
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
+    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
+    nk_fill_rect(canvas, bounds, 12, p.hover);
+    nk_stroke_rect(canvas, bounds, 12, 1, p.border);
+    bounds.x += 16; bounds.y += 14; bounds.w -= 32; bounds.h -= 28;
+    (void)bongo_cat_pref_detail_text(context, text, bounds, true);
+}
 static struct nk_context *section_context;
 static bool section_first;
 void bongo_cat_pref_section_rows_begin(struct nk_context *context) {
@@ -43,8 +75,8 @@ bool bongo_cat_pref_form_begin(struct nk_context *context, const char *id,
     context->style.window.group_padding = nk_vec2(13, 11);
     context->style.window.spacing = nk_vec2(8, 3);
     context->style.window.group_border = 0;
-    float height = lines ? 70.0f + description_line_height * lines : 76.0f;
-    if (section_context == context && section_first && !lines) height = 69.0f;
+    float height = lines ? 66.0f + description_line_height * lines : 68.0f;
+    if (section_context == context && section_first && !lines) height = 68.0f;
     if (section_context == context) section_first = false;
     nk_layout_row_dynamic(context, height, 1);
     if (!nk_group_begin(context, id, NK_WINDOW_NO_SCROLLBAR)) {

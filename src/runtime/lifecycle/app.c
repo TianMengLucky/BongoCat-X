@@ -1,6 +1,10 @@
 #include "runtime.h"
 #include "bongo_cat/audio.h"
+#include "bongo_cat/safe_ffi.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/sounds.h"
+#include "bongo_cat/store.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/image.h"
@@ -45,6 +49,9 @@ void attach_rhi_info(BongoCatApp *app) {
         }
         if (options->render_large_allocation) requested |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
     }
+    if (app->rhi.backend == BONGO_CAT_RHI_VULKAN &&
+        bongo_safe_render_system_memory_get(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json))) requested |= BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY;
     SDL_SetNumberProperty(SDL_GetGlobalProperties(), "BongoCat.RenderOptimizationFlags", requested);
     BongoCatRhiDeviceInfo info;
     if (app->model_runtime && bongo_cat_rhi_get_device_info(&app->rhi, &info))
@@ -140,6 +147,9 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     attach_rhi_info(app);
     optional = (BongoCatError){0};
     app->overlay = bongo_cat_overlay_create(&optional);
+    bongo_cat_items_start(app);
+    bongo_cat_sounds_start(app);
+    bongo_cat_store_start(app);
     if (!app->overlay) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
         "Overlay disabled: %s", optional.message);
     optional = (BongoCatError){0}; app->audio = bongo_cat_audio_create(&optional);

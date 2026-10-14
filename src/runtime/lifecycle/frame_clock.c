@@ -53,6 +53,7 @@ int bongo_cat_window_wait_timeout(const BongoCatApp *app, uint64_t now) {
             BONGO_CAT_WHEEL_FRAME_INTERVAL_NS, now);
         if (wait_ms > wheel_wait) wait_ms = wheel_wait;
     }
+    if (app->edge_bounce_end_ns && wait_ms > 8) wait_ms = 8;
     if (app->hover_fade_active && wait_ms > 8) wait_ms = 8;
     if (app->resize_target_pending) {
         int resize_wait = remaining_ms(app->resize_next_ns, now);

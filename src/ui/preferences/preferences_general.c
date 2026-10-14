@@ -13,6 +13,7 @@
 #include "bongo_cat/tray.h"
 #include "portable_mode.h"
 #include "runtime.h"
+#include "bongo_cat/safe_ffi.h"
 #ifdef _WIN32
 #include "windows_game_compatibility.h"
 #endif
@@ -193,6 +194,20 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
             "pages.preference.general.hints.githubDownloadAcceleration",
             "Use gh-proxy.com for GitHub update checks, update downloads and contributor images. Applies to the next request."),
             &options->github_download_acceleration);
+        bool automatic = bongo_safe_auto_update_get(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json));
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
+        if (bongo_cat_pref_toggle(context, "auto-check-updates", tr(app,
+                "pages.preference.general.labels.autoCheckUpdates", "Automatically Check for Updates"),
+                tr(app, "pages.preference.general.hints.autoCheckUpdates",
+                    "Check once on every launch. Show new versions in the top-right corner of Settings."),
+                &automatic)) {
+            if (!bongo_safe_auto_update_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), automatic))
+                bongo_cat_preferences_notice_show(app, tr(app,
+                    "pages.preference.general.hints.autoCheckUpdatesSaveFailed",
+                    "Unable to save the automatic update setting"), true);
+        }
         bongo_cat_preferences_render_backend_row(app, options, context);
         bongo_cat_preferences_low_memory_row(app, options, context);
         bongo_cat_preferences_large_render_row(app, options, context);
@@ -226,6 +241,22 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
             "theme", tr(app, "pages.preference.general.labels.themeMode",
             "Theme"), tr(app, "pages.preference.general.hints.themeMode",
                 "Follow the system appearance or choose a light or dark settings window."), themes, options->theme);
+        bool rounded = value->rounded_window;
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_WINDOW_CORNERS);
+        if (bongo_cat_pref_toggle(context, "settings-corners", tr(app,
+            "pages.preference.general.labels.roundedCorners", "Rounded Settings Window"),
+            tr(app, "pages.preference.general.hints.roundedCorners",
+                "Use rounded corners for the settings window. Turn off for square corners."), &rounded)) {
+            if (bongo_safe_preferences_rounded_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), rounded)) {
+                value->rounded_window = rounded;
+                value->style_theme = -1;
+                bongo_cat_preferences_apply_theme(value);
+                value->render_dirty = true;
+            } else bongo_cat_preferences_notice_show(app, tr(app,
+                "pages.preference.general.hints.cornersSaveFailed",
+                "Unable to save the window corner setting"), true);
+        }
     }
     if (appearance_open) bongo_cat_preferences_options_end(value, context);
 #ifdef __APPLE__

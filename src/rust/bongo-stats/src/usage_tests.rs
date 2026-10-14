@@ -107,6 +107,7 @@ fn snapshots_never_wait_for_worker_cache_lock() {
         cache: std::sync::Arc::new(std::sync::Mutex::new(crate::worker::Cache::default())),
         failed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         export_status: std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0)),
+        reset_status: std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0)),
         commands: std::sync::mpsc::sync_channel(1).0,
         worker: None,
     };

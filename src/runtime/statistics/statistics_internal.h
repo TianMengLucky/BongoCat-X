@@ -2,6 +2,7 @@
 #define BONGO_CAT_STATISTICS_INTERNAL_H
 #include "bongo_cat/app.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/statistics_reset_plugin.h"
 #include <SDL3/SDL.h>
 
 struct BongoCatStatistics {
@@ -13,7 +14,8 @@ struct BongoCatStatistics {
     BongoCatStatisticsPage page;
     BongoCatStatisticsSnapshot cached;
     BongoCatApplicationSnapshot applications[4];
-    unsigned export_status;
+    unsigned export_status, reset_status;
+    const BongoCatStatisticsResetPlugin *reset;
     SDL_Thread *retirement;
     atomic_bool retired;
     bool close_ok, operation_ok, restart;

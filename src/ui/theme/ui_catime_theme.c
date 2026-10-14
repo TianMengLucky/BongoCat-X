@@ -39,22 +39,22 @@ BongoCatUIPalette bongo_cat_ui_palette(bool dark) {
 #ifdef _WIN32
     if (high_contrast(&value)) return value;
 #endif
-    value.background = rgb(dark ? 0x010409 : 0xF0F4F9);
-    value.surface = rgb(dark ? 0x010409 : 0xFFFFFF);
-    value.surface_glass = rgb(dark ? 0x010409 : 0xFBFCFE);
-    value.field = rgb(dark ? 0x2A2E37 : 0xF5F8FC);
-    value.border = rgb(dark ? 0x345473 : 0xDAEDFE);
-    value.border_subtle = rgb(dark ? 0x343A45 : 0xE8EBF1);
-    value.text = rgb(dark ? 0xF4F7FB : 0x182230);
-    value.muted = rgb(dark ? 0xA9B2C0 : 0x6D7888);
-    value.accent = rgb(0x54AEFF);
-    value.accent_hover = rgb(0x3C9AE8);
-    value.accent_pressed = rgb(0x2587CF);
+    value.background = rgb(dark ? 0x111824 : 0xF5F8FD);
+    value.surface = rgb(dark ? 0x182231 : 0xFFFFFF);
+    value.surface_glass = rgb(dark ? 0x182231 : 0xFBFDFF);
+    value.field = rgb(dark ? 0x222F41 : 0xF0F5FB);
+    value.border = rgb(dark ? 0x3B5572 : 0xD7E6F5);
+    value.border_subtle = rgb(dark ? 0x2E4056 : 0xE2EAF4);
+    value.text = rgb(dark ? 0xEDF4FD : 0x25354B);
+    value.muted = rgb(dark ? 0xA5B7CE : 0x708198);
+    value.accent = rgb(0x4C9DE9);
+    value.accent_hover = rgb(0x3B8EDB);
+    value.accent_pressed = rgb(0x2C7CC8);
     value.pink = rgb(0xF77DAA);
     value.pink_hover = rgb(0xED6F9D);
-    value.hover = rgb(dark ? 0x292E37 : 0xEFF7FE);
+    value.hover = rgb(dark ? 0x213449 : 0xEFF6FD);
     value.hover_pink = rgb(dark ? 0x3B2933 : 0xFBEFF6);
-    value.selection = rgb(dark ? 0x27384B : 0xE7F3FE);
+    value.selection = rgb(dark ? 0x263F5A : 0xE3F0FC);
     value.danger = rgb(dark ? 0xFFA4A4 : 0xFF4D6D);
     value.danger_background = rgb(dark ? 0x4B2B31 : 0xFFECF0);
     value.effects = true;
@@ -77,7 +77,8 @@ static void geometry(struct nk_style *style) {
     style->window.rounding = 12;
     style->button.border = 1;
     style->button.rounding = 10;
-    style->button.padding = nk_vec2(14, 8);
+    style->button.padding = nk_vec2(12, 3);
+    style->button.text_alignment = NK_TEXT_CENTERED;
     style->edit.border = 1;
     style->edit.rounding = 10;
     style->edit.padding = nk_vec2(12, 8);

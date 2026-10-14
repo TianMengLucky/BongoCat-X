@@ -4,6 +4,7 @@
 #include "preferences_widgets_internal.h"
 #include "preferences_notice.h"
 #include "bongo_cat/i18n.h"
+#include "bongo_cat/safe_ffi.h"
 #include "bongo_cat/model_plugin.h"
 #include "runtime.h"
 #include <stdio.h>
@@ -64,6 +65,25 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
             "pages.preference.general.hints.renderBackendChanged",
             "Switching the render backend"), false);
     }
+#ifdef _WIN32
+    if (bongo_cat_rhi_is_gl(&app->rhi)) {
+        bool enabled = bongo_safe_gl_true_transparency_get(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json));
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
+        if (bongo_cat_pref_toggle(context, "gl-true-transparency", tr(app,
+                "pages.preference.general.labels.glTrueTransparency", "True transparency"),
+                tr(app, "pages.preference.general.hints.glTrueTransparency",
+                    "Use per-pixel alpha composition like Vulkan. Applies immediately; pixel readback may increase CPU/GPU usage."),
+                &enabled)) {
+            if (bongo_safe_gl_true_transparency_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), enabled))
+                app->render_backend_swap_pending = true;
+            else bongo_cat_preferences_notice_show(app, tr(app,
+                "pages.preference.general.hints.glTrueTransparencySaveFailed",
+                "Unable to save the transparency preference"), true);
+        }
+    }
+#endif
 }
 
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,

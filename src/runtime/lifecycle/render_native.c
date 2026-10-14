@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "bongo_cat/items.h"
 #include "model_cover.h"
 #include "bongo_cat/overlay.h"
 #include "bongo_cat/memory_policy.h"
@@ -80,6 +81,8 @@ bool bongo_cat_app_render_native(BongoCatApp *app, bool present) {
     bongo_cat_window_clear_background(app);
     int x = 0, y = 0, cw = width, ch = height;
     (void)bongo_cat_model_runtime_overlay_viewport(app->model_runtime, &x, &y, &cw, &ch);
+    bongo_cat_overlay_set_items(app->overlay, present && bongo_cat_items_revision(app) ?
+        bongo_cat_items_draw_native : NULL, app, bongo_cat_items_revision(app));
     if (!bongo_cat_overlay_prepare_native_background(app->overlay, &app->rhi,
         width, height, x, y, cw, ch, app->settings.model.mirror,
         app->settings.model.vertical_flip, app->settings.window.obs_background,

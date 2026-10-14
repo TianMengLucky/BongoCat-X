@@ -18,6 +18,12 @@ typedef struct BongoCatOverlayInputDiagnostics {
 BongoCatOverlayInputDiagnostics bongo_cat_overlay_input_diagnostics(
     const BongoCatOverlay *overlay);
 
+typedef struct SDL_Renderer SDL_Renderer;
+typedef bool (*BongoCatOverlayItemsDraw)(void *userdata, SDL_Renderer *renderer,
+    bool front, int width, int height, int x, int y, int cw, int ch);
+void bongo_cat_overlay_set_items(BongoCatOverlay *value, BongoCatOverlayItemsDraw draw,
+    void *userdata, uint64_t revision);
+
 BongoCatOverlay *bongo_cat_overlay_create(BongoCatError *error);
 void bongo_cat_overlay_destroy(BongoCatOverlay *overlay);
 void bongo_cat_overlay_clear(BongoCatOverlay *overlay);

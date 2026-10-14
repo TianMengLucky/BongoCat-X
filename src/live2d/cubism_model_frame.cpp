@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 namespace bongo_cat {
 namespace {
@@ -14,7 +15,9 @@ namespace {
    queries constant time. Only used while loading; no texture readback. */
 struct AlphaCoverage {
     int width = 0, height = 0;
-    std::vector<unsigned> sums;
+    static_assert(BONGO_CAT_ALPHA_MASK_SIZE * BONGO_CAT_ALPHA_MASK_SIZE <= UINT16_MAX,
+        "Alpha coverage counts must fit in 16 bits");
+    std::vector<uint16_t> sums;
 
     explicit AlphaCoverage(const BongoCatImageAlphaMask *mask) {
         if (!mask || mask->width <= 0 || mask->height <= 0) return;
@@ -26,7 +29,7 @@ struct AlphaCoverage {
             for (int x = 0; x < width; ++x) {
                 row += mask->pixels[(size_t)y * width + x] > 0;
                 sums[(size_t)(y + 1) * (width + 1) + x + 1] =
-                    sums[(size_t)y * (width + 1) + x + 1] + row;
+                    (uint16_t)(sums[(size_t)y * (width + 1) + x + 1] + row);
             }
         }
     }
@@ -60,12 +63,13 @@ void NativeModel::prepare_frame_bounds() {
     for (size_t i = 0; i < texture_count(); ++i)
         coverage.emplace_back(texture_alpha((int)i));
     frame_drawables_.resize((size_t)_model->GetDrawableCount());
+    std::vector<unsigned char> used;
     for (int i = 0; i < _model->GetDrawableCount(); ++i) {
         int count = _model->GetDrawableVertexCount(i);
         const auto *indices = _model->GetDrawableVertexIndices(i);
         const auto *uv = _model->GetDrawableVertexUvs(i);
         if (count <= 0 || !indices || !uv) continue;
-        std::vector<unsigned char> used((size_t)count, 0);
+        used.assign((size_t)count, 0);
         int texture = _model->GetDrawableTextureIndex(i);
         const AlphaCoverage *alpha = texture >= 0 && (size_t)texture < coverage.size()
             ? &coverage[(size_t)texture] : nullptr;
@@ -81,6 +85,7 @@ void NativeModel::prepare_frame_bounds() {
             used[a] = used[b] = used[c] = 1;
         }
         auto &vertices = frame_drawables_[(size_t)i].vertices;
+        vertices.reserve((size_t)std::count(used.begin(), used.end(), (unsigned char)1));
         for (int j = 0; j < count; ++j)
             if (used[(size_t)j]) vertices.push_back((unsigned short)j);
     }

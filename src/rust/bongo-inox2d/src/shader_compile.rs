@@ -10,15 +10,19 @@ pub fn module() -> Result<(naga::Module, naga::valid::ModuleInfo), String> {
     .map_err(|e| e.to_string())?;
     Ok((module, info))
 }
-pub fn spirv(stage: naga::ShaderStage, entry: &str) -> Result<Vec<u32>, String> {
-    let (module, info) = module()?;
+pub fn spirv(
+    module: &naga::Module,
+    info: &naga::valid::ModuleInfo,
+    stage: naga::ShaderStage,
+    entry: &str,
+) -> Result<Vec<u32>, String> {
     let options = naga::back::spv::Options {
         flags: naga::back::spv::WriterFlags::empty(),
         ..Default::default()
     };
     naga::back::spv::write_vec(
-        &module,
-        &info,
+        module,
+        info,
         &options,
         Some(&naga::back::spv::PipelineOptions {
             shader_stage: stage,
@@ -27,9 +31,11 @@ pub fn spirv(stage: naga::ShaderStage, entry: &str) -> Result<Vec<u32>, String> 
     )
     .map_err(|e| e.to_string())
 }
-pub fn msl() -> Result<(String, String, String), String> {
+pub fn msl(
+    module: &naga::Module,
+    info: &naga::valid::ModuleInfo,
+) -> Result<(String, String, String), String> {
     use naga::{back::msl::*, ResourceBinding};
-    let (module, info) = module()?;
     let mut resources = EntryPointResources::default();
     resources.resources.insert(
         ResourceBinding {
@@ -73,8 +79,8 @@ pub fn msl() -> Result<(String, String, String), String> {
         .per_entry_point_map
         .insert("fragment".into(), resources);
     let (source, translated) = write_string(
-        &module,
-        &info,
+        module,
+        info,
         &options,
         &PipelineOptions {
             allow_and_force_point_size: false,
@@ -95,7 +101,8 @@ pub fn msl() -> Result<(String, String, String), String> {
 mod tests {
     #[test]
     fn metal_stages_translate() {
-        let (source, vertex, fragment) = super::msl().unwrap();
+        let (module, info) = super::module().unwrap();
+        let (source, vertex, fragment) = super::msl(&module, &info).unwrap();
         assert!(source.contains(&vertex));
         assert!(source.contains(&fragment));
     }
@@ -103,13 +110,17 @@ mod tests {
     fn native_shader_is_valid() {
         super::module().unwrap();
     }
-        #[test]
+    #[test]
     fn spirv_stages_translate() {
+        let (module, info) = super::module().unwrap();
         for (stage, name) in [
             (naga::ShaderStage::Vertex, "vertex"),
             (naga::ShaderStage::Fragment, "fragment"),
         ] {
-            assert_eq!(super::spirv(stage, name).unwrap()[0], 0x07230203);
+            assert_eq!(
+                super::spirv(&module, &info, stage, name).unwrap()[0],
+                0x07230203
+            );
         }
     }
 }

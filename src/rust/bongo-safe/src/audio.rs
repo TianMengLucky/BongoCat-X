@@ -84,6 +84,7 @@ pub unsafe extern "C" fn bongo_safe_audio_decode_file(
         };
         let mut decoded_samples: Vec<f32> = Vec::new();
         let mut spec = None;
+        let mut converted: Option<SampleBuffer<f32>> = None;
         loop {
             let packet = match probed.format.next_packet() {
                 Ok(packet) => packet,
@@ -104,12 +105,23 @@ pub unsafe extern "C" fn bongo_safe_audio_decode_file(
                 Some(existing) if existing != buffer_spec => return false,
                 _ => {}
             }
-            if decoded_samples.len() + buffer.capacity() * buffer_spec.channels.count()
-                > MAX_SAMPLES
-            {
+            let Some(sample_capacity) = buffer.capacity().checked_mul(buffer_spec.channels.count())
+            else {
+                return false;
+            };
+            if sample_capacity > MAX_SAMPLES - decoded_samples.len() {
                 return false;
             }
-            let mut converted = SampleBuffer::<f32>::new(buffer.capacity() as u64, buffer_spec);
+            if converted
+                .as_ref()
+                .is_none_or(|value| value.capacity() < sample_capacity)
+            {
+                converted = Some(SampleBuffer::<f32>::new(
+                    buffer.capacity() as u64,
+                    buffer_spec,
+                ));
+            }
+            let converted = converted.as_mut().unwrap();
             converted.copy_interleaved_ref(buffer);
             decoded_samples.extend_from_slice(converted.samples());
         }
@@ -176,7 +188,7 @@ mod tests {
         let directory = std::env::temp_dir().join("bongo-safe-test");
         std::fs::create_dir_all(&directory).unwrap();
         let path = directory.join("test.wav");
-        write_wave(&path, 800);
+        write_wave(&path, 10_000);
         // C callers pass NUL-terminated strings; mirror that here.
         let path_cstring = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         let mut samples: *mut f32 = std::ptr::null_mut();
@@ -193,11 +205,18 @@ mod tests {
             )
         };
         assert!(ok);
-        assert_eq!(frames, 800);
+        assert_eq!(frames, 10_000);
         assert_eq!(rate, 8000);
         assert_eq!(channels, 1);
         let slice = unsafe { std::slice::from_raw_parts(samples, frames as usize) };
-        assert!(slice[0].abs() > 0.1);
+        for (index, &sample) in slice.iter().enumerate() {
+            let expected = if (index / 16) % 2 == 0 {
+                8000.0 / 32768.0
+            } else {
+                0.0
+            };
+            assert_eq!(sample, expected, "sample {index}");
+        }
         unsafe { bongo_safe_free_samples(samples, frames as usize) };
         let _ = std::fs::remove_file(&path);
     }

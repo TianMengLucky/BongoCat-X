@@ -155,6 +155,9 @@ bool NativeModel::load(const char *directory, const char *setting_file,
         bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot allocate model setting");
         return false;
     }
+    // CubismModelSettingJson owns its parsed data; discard the input capacity
+    // before loading the moc, expressions and motions on either backend.
+    std::vector<unsigned char>().swap(json);
     if (!load_model(error)) return false;
     if (progress) progress(userdata, .25f);
     load_expressions();

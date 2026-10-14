@@ -86,7 +86,7 @@ struct ApplicationPreferences {
     autostart: bool,
     run_as_admin: bool,
     tray_visible: bool,
-    low_memory_mode: bool,
+    reserved_app_byte: u8,
     large_render_optimization: bool,
     render_parallel_recording: bool,
     render_bindless: bool,
@@ -640,7 +640,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     meaning under the old key; the new key wins when both are present. */
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
     boolean(object, DESCRIPTION, "showTrayIcon", &mut value.tray_visible)?;
-    boolean(object, DESCRIPTION, "lowMemoryMode", &mut value.low_memory_mode)?;
+    value.reserved_app_byte = 0;
     boolean(object, DESCRIPTION, "largeRenderOptimization", &mut value.large_render_optimization)?;
     // Older settings requested all features through the master switch.
     value.render_parallel_recording = true;
@@ -1121,7 +1121,6 @@ fn write_app(value: &ApplicationPreferences) -> Value {
         "runAsAdmin": value.run_as_admin,
         "githubDownloadAcceleration": value.github_download_acceleration,
         "showTrayIcon": value.tray_visible,
-        "lowMemoryMode": value.low_memory_mode,
         "largeRenderOptimization": value.large_render_optimization,
         "largeRenderParallelRecording": value.render_parallel_recording,
         "largeRenderBindless": value.render_bindless,
@@ -1653,7 +1652,7 @@ mod tests {
     fn metal_backend_survives_settings_serialization() {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
-            low_memory_mode: false,
+            reserved_app_byte: 0,
             large_render_optimization: false,
             render_parallel_recording: true,
             render_bindless: true,
@@ -1684,15 +1683,13 @@ mod tests {
     }
 
     #[test]
-    fn low_memory_mode_round_trips_and_rejects_invalid_types() {
+    fn removed_memory_mode_is_ignored_and_not_saved() {
         let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
-        read_app(serde_json::json!({}).as_object().unwrap(), &mut app).unwrap();
-        assert!(!app.low_memory_mode);
-        for enabled in [true, false] {
-            read_app(serde_json::json!({"lowMemoryMode": enabled}).as_object().unwrap(), &mut app).unwrap();
-            assert_eq!(write_app(&app)["lowMemoryMode"], enabled);
+        for legacy in [serde_json::json!(true), serde_json::json!(false), serde_json::json!("true")] {
+            read_app(serde_json::json!({"lowMemoryMode": legacy}).as_object().unwrap(), &mut app).unwrap();
+            assert_eq!(app.reserved_app_byte, 0);
+            assert!(write_app(&app).get("lowMemoryMode").is_none());
         }
-        assert!(read_app(serde_json::json!({"lowMemoryMode": "true"}).as_object().unwrap(), &mut app).is_err());
     }
 
     #[test]

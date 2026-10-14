@@ -94,12 +94,15 @@ fn dropping_a_prepared_update_cleans_only_its_private_stage() {
 }
 
 #[cfg(windows)]
-fn run_helper(rollback: bool) {
+fn run_helper(rollback: bool, target_root: Option<&Path>) {
     use std::process::Command;
     let root = tempfile::tempdir().unwrap();
     let stage = root.path().join("stage");
     let source = stage.join("payload");
-    let target = root.path().join("app");
+    let target_directory = target_root.map(|path| tempfile::tempdir_in(path).unwrap());
+    let target = target_directory
+        .as_ref()
+        .map_or_else(|| root.path().join("app"), |dir| dir.path().join("app"));
     fs::create_dir_all(&source).unwrap();
     fs::create_dir_all(&target).unwrap();
     let executable = target.join("BongoCat.exe");
@@ -159,6 +162,11 @@ fn run_helper(rollback: bool) {
         fs::read(target.join("settings.json")).unwrap(),
         b"user settings"
     );
+    assert!(!fs::read_dir(&target).unwrap().any(|entry| entry
+        .unwrap()
+        .file_name()
+        .to_string_lossy()
+        .contains(".bongo-update-")));
     if rollback {
         assert_eq!(fs::read(executable).unwrap(), b"old application");
         assert!(!target.join("new.txt").exists());
@@ -172,11 +180,30 @@ fn run_helper(rollback: bool) {
 #[cfg(windows)]
 #[test]
 fn portable_helper_replaces_existing_files_and_preserves_user_data() {
-    run_helper(false);
+    run_helper(false, None);
 }
 
 #[cfg(windows)]
 #[test]
 fn portable_helper_rolls_back_replaced_and_new_files() {
-    run_helper(true);
+    run_helper(true, None);
+}
+
+#[cfg(windows)]
+#[test]
+fn portable_helper_updates_and_rolls_back_across_volumes() {
+    let cache = fs::canonicalize(std::env::temp_dir()).unwrap();
+    let volume = cache.components().next().unwrap();
+    for drive in b'A'..=b'Z' {
+        let root = PathBuf::from(format!("{}:\\", drive as char));
+        if let Ok(directory) = tempfile::tempdir_in(&root) {
+            let target = fs::canonicalize(directory.path()).unwrap();
+            if target.components().next() != Some(volume) {
+                run_helper(false, Some(directory.path()));
+                run_helper(true, Some(directory.path()));
+                return;
+            }
+        }
+    }
+    eprintln!("Skipping cross-volume update test: no second writable volume");
 }

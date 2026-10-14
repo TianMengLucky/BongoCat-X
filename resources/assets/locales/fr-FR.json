@@ -254,7 +254,6 @@
         "title": "Général",
         "labels": {
           "memoryPreference": "Préférence mémoire du rendu",
-          "lowMemoryMode": "Mode mémoire réduite",
           "largeRenderOptimization": "Optimisation des rendus volumineux",
           "appSettings": "Application",
           "autoCheckUpdates": "Rechercher automatiquement les mises à jour",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "Le moteur actuel ne prend pas en charge la préférence de mémoire système.",
           "memoryPreferenceSaveFailed": "Impossible de sauvegarder la préférence mémoire",
           "memoryPreference": "Live2D Vulkan uniquement ; recharge le rendu. La priorité vidéo privilégie la VRAM et réduit les copies CPU, la mémoire temporaire de transfert et les caches de pipeline. La priorité système privilégie la RAM. Les accès CPU requis et les allocations non prises en charge utilisent une solution de repli ; les GPU intégrés partagent la mémoire.",
-          "lowMemoryMode": "Limite la qualité des textures à 10%, leurs côtés à 512 pixels et les masques Live2D à 256 pixels. Suspend les grandes optimisations de rendu et recharge le moteur. La désactivation restaure la qualité enregistrée. La mémoire dépend du modèle et du pilote.",
           "largeRenderOptimization": "Choisissez des optimisations Vulkan/Metal facultatives. Les changements rechargent le modèle ; la mémoire peut augmenter et la prise en charge dépend du moteur.",
           "largeRenderUnavailable": "Le moteur du modèle actuel ne propose aucune de ces optimisations ; le rendu reste inchangé.",
           "showTrayIcon": "Lorsque cette option est activée, l'icône de l'application apparaît dans la zone de notification.",

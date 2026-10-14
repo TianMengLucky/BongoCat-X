@@ -254,7 +254,6 @@
         "title": "General",
         "labels": {
           "memoryPreference": "Preferencia de memoria de renderizado",
-          "lowMemoryMode": "Modo de memoria reducida",
           "largeRenderOptimization": "Optimización de renderizado grande",
           "appSettings": "Aplicación",
           "autoCheckUpdates": "Buscar actualizaciones automáticamente",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "El renderizador actual no admite priorizar la memoria del sistema.",
           "memoryPreferenceSaveFailed": "No se pudo guardar la preferencia de memoria",
           "memoryPreference": "Solo Live2D Vulkan; recarga el renderizado. Priorizar memoria de vídeo favorece VRAM y reduce copias de CPU, memoria temporal de carga y cachés de canalización. Priorizar memoria del sistema favorece RAM. El acceso necesario de CPU y las asignaciones no compatibles usan alternativas; las GPU integradas comparten memoria.",
-          "lowMemoryMode": "Limita la calidad de texturas al 10%, sus lados a 512 píxeles y las máscaras Live2D a 256 píxeles. Suspende las optimizaciones de renderizado grandes y recarga el renderizador. Al desactivarlo restaura la calidad guardada. La memoria depende del modelo y del controlador.",
           "largeRenderOptimization": "Elige optimizaciones opcionales de Vulkan/Metal. Los cambios recargan el modelo; pueden usar más memoria y dependen del renderizador.",
           "largeRenderUnavailable": "El motor del modelo actual no ofrece estas optimizaciones; el renderizado no cambia.",
           "showTrayIcon": "Al activarlo, el icono de la aplicación aparece en la bandeja del sistema.",

@@ -234,8 +234,7 @@ void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
 /* Render backend row of the general page (hot-switched via the app loop). */
 void bongo_cat_preferences_mouse_range_row(BongoCatApp *app, struct nk_context *context);
-void bongo_cat_preferences_low_memory_row(BongoCatApp *app,
-    BongoCatApplicationPreferences *options, struct nk_context *context);
+void bongo_cat_preferences_memory_row(BongoCatApp *app, struct nk_context *context);
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context);
 void bongo_cat_preferences_render_backend_row(BongoCatApp *app,

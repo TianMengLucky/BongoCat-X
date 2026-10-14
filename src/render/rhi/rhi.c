@@ -159,6 +159,14 @@ bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
     return false;
 }
 
+bool bongo_cat_rhi_release_idle_memory(BongoCatRhi *rhi) {
+    if (!rhi || !rhi->window) return false;
+    SDL_WindowFlags flags = SDL_GetWindowFlags(rhi->window);
+    if (!(flags & (SDL_WINDOW_HIDDEN | SDL_WINDOW_MINIMIZED))) return false;
+    return rhi->backend == BONGO_CAT_RHI_VULKAN &&
+        bongo_cat_rhi_vk_release_idle_memory(rhi);
+}
+
 bool bongo_cat_rhi_wait_idle(const BongoCatRhi *rhi) {
     return rhi && (rhi->backend != BONGO_CAT_RHI_VULKAN ||
         bongo_cat_rhi_vk_wait_idle(rhi));

@@ -73,10 +73,8 @@ BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int 
     /* Keep a lower-cost MSAA path for drivers that cannot provide 4 samples. */
     const int options[][2] = {{true, 4}, {true, 2}, {true, 0}, {false, 0}};
     char failure[256] = {0};
-    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
     bool force_fallback = SDL_getenv("BONGO_CAT_TEST_GL_FALLBACK") != NULL;
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i) {
-        if (low_memory && options[i][1] > 0) continue;
         if (force_fallback && options[i][1] > 0) {
             SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Test requested OpenGL fallback");
             continue;

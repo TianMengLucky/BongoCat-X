@@ -189,18 +189,18 @@ void NativeModel::bind_textures() {
 
 void NativeModel::release_textures() {
     cancel_texture_refresh();
-    native_texture_info_.clear();
-    textures_.clear();
+    std::vector<TextureDimensions>().swap(native_texture_info_);
+    std::vector<std::shared_ptr<ModelTexture>>().swap(textures_);
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     release_textures_vulkan();
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
     release_textures_metal();
 #endif
-    native_alpha_.clear();
+    std::vector<BongoCatImageAlphaMask>().swap(native_alpha_);
     native_texture_bytes_ = 0;
-    triangle_alpha_.clear();
-    frame_drawables_.clear();
+    decltype(triangle_alpha_)().swap(triangle_alpha_);
+    decltype(frame_drawables_)().swap(frame_drawables_);
 }
 
 const BongoCatImageAlphaMask *NativeModel::texture_alpha(int index) const {
@@ -215,11 +215,11 @@ bool NativeModel::load_textures(BongoCatError *error,
     BongoCatModelRuntimeLoadProgress progress, void *userdata,
     int display_width, int display_height, float render_quality_percent) {
     if (!texture_quality_valid(render_quality_percent)) render_quality_percent = 100.0f;
-    if (low_memory_mode_) render_quality_percent = std::min(render_quality_percent, 10.0f);
     render_quality_percent_ = render_quality_percent;
     if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL)
         return load_textures_native(error, progress, userdata, display_width, display_height);
-    release_textures();
+    // Retire the previous masks and geometry before allocating new atlases.
+    release_render_resources();
     int count = setting_->GetTextureCount();
     textures_.assign((size_t)count, nullptr);
     int canvas_width = 0, canvas_height = 0;
@@ -238,7 +238,6 @@ bool NativeModel::load_textures(BongoCatError *error,
     }
     GLint texture_limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_limit);
-    if (low_memory_mode_) texture_limit = std::min(texture_limit, 512);
     texture_limit_ = texture_limit;
     TextureProgressContext texture_context = {progress, userdata, .50f,
         .45f / (float)(count > 0 ? count : 1)};
@@ -263,7 +262,6 @@ bool NativeModel::load_textures(BongoCatError *error,
         frame_prepared_ = true;
     }
     prepare_frame_bounds();
-    release_renderer();
     if (!create_renderer(error)) {
         release_textures();
         return false;

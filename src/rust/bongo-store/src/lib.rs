@@ -15,6 +15,10 @@ pub struct Entry {
     download_url: [u8; 2048],
     sha256: [u8; 65],
 }
+struct StoredEntry {
+    model: catalog::Model,
+    links: [String; 4],
+}
 fn buffer<const N: usize>(value: &str) -> [u8; N] {
     let mut out = [0; N];
     out[..value.len()].copy_from_slice(value.as_bytes());
@@ -25,12 +29,14 @@ fn guard<T>(fallback: T, body: impl FnOnce() -> T) -> T {
 }
 extern "C" fn create() -> *mut c_void {
     guard(std::ptr::null_mut(), || {
-        Box::into_raw(Box::new(Vec::<Entry>::new())).cast()
+        Box::into_raw(Box::new(Vec::<StoredEntry>::new())).cast()
     })
 }
 unsafe extern "C" fn destroy(instance: *mut c_void) {
     if !instance.is_null() {
-        guard((), || drop(Box::from_raw(instance.cast::<Vec<Entry>>())));
+        guard((), || {
+            drop(Box::from_raw(instance.cast::<Vec<StoredEntry>>()))
+        });
     }
 }
 unsafe extern "C" fn parse(instance: *mut c_void, bytes: *const u8, length: usize) -> u32 {
@@ -42,21 +48,19 @@ unsafe extern "C" fn parse(instance: *mut c_void, bytes: *const u8, length: usiz
             return 0;
         };
         let entries = models
-            .iter()
-            .map(|m| Entry {
-                name: buffer(&m.name),
-                author: buffer(&m.author),
-                author_url: buffer(&m.author_url),
-                repository_path: buffer(&m.repository_path),
-                folder_path: buffer(&m.folder_path),
-                file_url: buffer(&catalog::link(&m.repository_path, "blob")),
-                folder_url: buffer(&catalog::link(&m.folder_path, "tree")),
-                preview_url: buffer(&catalog::raw_link(&m.preview_path)),
-                download_url: buffer(&catalog::raw_link(&m.repository_path)),
-                sha256: buffer(&m.sha256.to_ascii_lowercase()),
+            .into_iter()
+            .map(|mut model| {
+                let links = [
+                    catalog::link(&model.repository_path, "blob"),
+                    catalog::link(&model.folder_path, "tree"),
+                    catalog::raw_link(&model.preview_path),
+                    catalog::raw_link(&model.repository_path),
+                ];
+                model.sha256.make_ascii_lowercase();
+                StoredEntry { model, links }
             })
             .collect();
-        *instance.cast::<Vec<Entry>>() = entries;
+        *instance.cast::<Vec<StoredEntry>>() = entries;
         1
     })
 }
@@ -65,7 +69,7 @@ unsafe extern "C" fn count(instance: *mut c_void) -> u32 {
         if instance.is_null() {
             0
         } else {
-            (&*instance.cast::<Vec<Entry>>()).len() as u32
+            (&*instance.cast::<Vec<StoredEntry>>()).len() as u32
         }
     })
 }
@@ -74,10 +78,22 @@ unsafe extern "C" fn entry(instance: *mut c_void, index: u32, out: *mut Entry) -
         if instance.is_null() || out.is_null() {
             return 0;
         }
-        let Some(value) = (&*instance.cast::<Vec<Entry>>()).get(index as usize) else {
+        let Some(value) = (&*instance.cast::<Vec<StoredEntry>>()).get(index as usize) else {
             return 0;
         };
-        out.write(*value);
+        let model = &value.model;
+        out.write(Entry {
+            name: buffer(&model.name),
+            author: buffer(&model.author),
+            author_url: buffer(&model.author_url),
+            repository_path: buffer(&model.repository_path),
+            folder_path: buffer(&model.folder_path),
+            file_url: buffer(&value.links[0]),
+            folder_url: buffer(&value.links[1]),
+            preview_url: buffer(&value.links[2]),
+            download_url: buffer(&value.links[3]),
+            sha256: buffer(&model.sha256),
+        });
         1
     })
 }
@@ -119,7 +135,7 @@ mod tests {
             assert!(!instance.is_null());
             let bytes = serde_json::to_vec(&serde_json::json!([{"name":"猫", "author":"作者",
                 "repository_path":"models/cat.zip", "folder_path":"models",
-                "preview_path":"models/cat.png", "sha256":"a".repeat(64)}]))
+                "preview_path":"models/cat.png", "sha256":"A".repeat(64)}]))
             .unwrap();
             assert_eq!(parse(instance, bytes.as_ptr(), bytes.len()), 1);
             assert_eq!(count(instance), 1);
@@ -129,6 +145,30 @@ mod tests {
             let out = out.assume_init();
             assert_eq!(&out.name[..3], "猫".as_bytes());
             assert_eq!(out.author_url[0], 0);
+            assert_eq!(&out.sha256[..64], "a".repeat(64).as_bytes());
+            let text = |bytes: &[u8]| {
+                String::from_utf8(bytes.iter().copied().take_while(|&v| v != 0).collect()).unwrap()
+            };
+            assert_eq!(text(&out.file_url), catalog::link("models/cat.zip", "blob"));
+            assert_eq!(text(&out.folder_url), catalog::link("models", "tree"));
+            assert_eq!(text(&out.preview_url), catalog::raw_link("models/cat.png"));
+            assert_eq!(text(&out.download_url), catalog::raw_link("models/cat.zip"));
+            let stored = &(&*instance.cast::<Vec<StoredEntry>>())[0];
+            let model = &stored.model;
+            let heap_bytes = [
+                &model.name,
+                &model.author,
+                &model.author_url,
+                &model.repository_path,
+                &model.folder_path,
+                &model.preview_path,
+                &model.sha256,
+            ]
+            .into_iter()
+            .chain(stored.links.iter())
+            .map(String::capacity)
+            .sum::<usize>();
+            assert!(std::mem::size_of::<StoredEntry>() + heap_bytes < std::mem::size_of::<Entry>());
             assert_eq!(count(instance), 1);
             destroy(instance);
         }

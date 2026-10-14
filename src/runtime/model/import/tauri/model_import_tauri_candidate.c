@@ -18,11 +18,10 @@ static bool ascii_contains_ci(const char *value, const char *needle) {
 static bool utf8_contains(const char *value, const unsigned char *needle,
     size_t length) {
     if (!value || !needle || !length) return false;
-    for (const unsigned char *cursor = (const unsigned char *)value; *cursor;
-        ++cursor) {
-        size_t remaining = strlen((const char *)cursor);
-        if (remaining >= length && memcmp(cursor, needle, length) == 0)
-            return true;
+    size_t remaining = strlen(value);
+    for (const unsigned char *cursor = (const unsigned char *)value;
+        remaining >= length; ++cursor, --remaining) {
+        if (memcmp(cursor, needle, length) == 0) return true;
     }
     return false;
 }

@@ -103,7 +103,6 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
 
 void bongo_cat_preferences_large_render_row(BongoCatApp *app,
     BongoCatApplicationPreferences *options, struct nk_context *context) {
-    if (options->low_memory_mode) return;
     bool metal = app->rhi.backend == BONGO_CAT_RHI_METAL;
     if (app->rhi.backend != BONGO_CAT_RHI_VULKAN && !metal) return;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);

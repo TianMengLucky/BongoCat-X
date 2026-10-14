@@ -21,9 +21,10 @@ bool bongo_cat_ui_resize_cache_capture(BongoCatUIBackend *ui) {
     int width = 0, height = 0;
     SDL_GetWindowSizeInPixels(ui->window, &width, &height);
     if (width < 1 || height < 1) return false;
-    bongo_cat_ui_resize_cache_destroy(ui);
+    bool reuse = ui->resize_cache_texture && ui->resize_cache_width == width &&
+        ui->resize_cache_height == height;
     bongo_cat_gl_clear_errors();
-    glGenTextures(1, &ui->resize_cache_texture);
+    if (!ui->resize_cache_texture) glGenTextures(1, &ui->resize_cache_texture);
     glBindTexture(GL_TEXTURE_2D, ui->resize_cache_texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -32,8 +33,9 @@ bool bongo_cat_ui_resize_cache_capture(BongoCatUIBackend *ui) {
     GLint previous = GL_BACK;
     glGetIntegerv(GL_READ_BUFFER, &previous);
     glReadBuffer(GL_FRONT);
-    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0,
-        width, height, 0);
+    /* Same-size captures overwrite storage after the previous draw in GL order. */
+    if (reuse) glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+    else glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, width, height, 0);
     glReadBuffer((GLenum)previous);
     if (glGetError() != GL_NO_ERROR) {
         ui->resize_cache_failures++;
@@ -84,16 +86,23 @@ bool bongo_cat_ui_resize_cache_present(BongoCatUIBackend *ui) {
     ui->gl.active_texture(GL_TEXTURE0);
     ui->gl.bind_vertex_array(ui->vao);
     ui->gl.bind_buffer(GL_ARRAY_BUFFER, ui->vbo);
-    ui->gl.buffer_data(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-        GL_STREAM_DRAW);
+    if (ui->gpu_vertex_capacity < sizeof(vertices)) {
+        ui->gl.buffer_data(GL_ARRAY_BUFFER, sizeof(vertices), NULL, GL_DYNAMIC_DRAW);
+        ui->gpu_vertex_capacity = sizeof(vertices);
+    }
+    ui->gl.buffer_sub_data(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
     ui->gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, ui->ebo);
-    ui->gl.buffer_data(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-        GL_STREAM_DRAW);
+    if (ui->gpu_element_capacity < sizeof(indices)) {
+        ui->gl.buffer_data(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_DYNAMIC_DRAW);
+        ui->gpu_element_capacity = sizeof(indices);
+    }
+    ui->gl.buffer_sub_data(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
     glBindTexture(GL_TEXTURE_2D, ui->resize_cache_texture);
     glDrawElements(GL_TRIANGLES, 6,
         sizeof(nk_draw_index) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, NULL);
     glDisable(GL_BLEND);
     if (glGetError() != GL_NO_ERROR) {
+        ui->gpu_vertex_capacity = ui->gpu_element_capacity = 0;
         ui->resize_cache_failures++;
         return false;
     }

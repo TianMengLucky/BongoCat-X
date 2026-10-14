@@ -17,7 +17,6 @@ pub struct Runtime {
     pub width: i32,
     pub height: i32,
     pub backend: i32,
-    pub low_memory: bool,
     pub large_allocation: bool,
     pub parallel_recording: bool,
     pub mirror: bool,
@@ -43,7 +42,6 @@ impl Runtime {
             width: 612,
             height: 354,
             backend: 0,
-            low_memory: false,
             large_allocation: false,
             parallel_recording: false,
             mirror: false,
@@ -62,11 +60,11 @@ impl Runtime {
         let bytes = bongo_safe::inochi::read_file(&file)?;
         let (mut model, json) = bongo_safe::inochi::parse(&bytes)?;
         drop(bytes);
-        if self.low_memory { crate::low_memory::shrink_textures(&mut model, quality)?; }
         let mut hidden = HashSet::new();
         hidden_nodes(&json["nodes"], false, &mut hidden);
         let base = Bounds::measure(&model, &hidden)?;
         let parameters = Parameters::new(&json, directory)?;
+        drop(json);
         let renderer = Renderer::new(
             self.backend,
             &model,
@@ -75,6 +73,9 @@ impl Runtime {
             self.large_allocation,
             self.parallel_recording,
         )?;
+        // All backends own uploaded textures after successful construction.
+        // Animation and draw traversal use the puppet, not the encoded atlases.
+        model.textures = Vec::new();
         self.loaded = Some(Loaded {
             renderer,
             model,

@@ -8,6 +8,7 @@
 #include "cubism_mask_policy.hpp"
 #include "cubism_metal_geometry.hpp"
 #include "cubism_texture_refresh_memory.hpp"
+#include "cubism_texture_dimensions.hpp"
 
 #include <Model/CubismUserModel.hpp>
 #include <CubismModelSettingJson.hpp>
@@ -59,7 +60,6 @@ public:
         ? textures_.size() : native_alpha_.size(); }
     double texture_storage_mib() const;
     float render_quality_percent() const { return render_quality_percent_; }
-    void set_low_memory_mode(bool enabled) { low_memory_mode_ = enabled; }
     bool try_reuse_texture_quality(float quality_percent);
     void release_render_resources();
     bool canvas_size(int *width, int *height) const;
@@ -187,7 +187,7 @@ private:
     bool native_texture_refresh_busy() const;
     void cancel_native_texture_refresh(bool wait);
     void cancel_texture_refresh();
-    TextureResolution texture_refresh_bound(const ModelTexture &texture,
+    TextureResolution texture_refresh_bound(const TextureDimensions &texture,
         int limit, float quality_percent) const;
     const BongoCatImageAlphaMask *texture_alpha(int index) const;
     void release_renderer();
@@ -219,7 +219,7 @@ private:
     BongoCatRhiDeviceInfo rhi_info_ = {};
     std::vector<BongoCatImageAlphaMask> native_alpha_;
     size_t native_texture_bytes_ = 0;
-    std::vector<std::shared_ptr<ModelTexture>> native_texture_info_;
+    std::vector<TextureDimensions> native_texture_info_;
     NativeTextureRefresh *native_texture_refresh_ = nullptr;
 
     int prepare_mask_layout();
@@ -350,7 +350,6 @@ private:
     BongoCatModelRuntimeRenderOptions render_options_{};
     bool direct_textures_ = false;
     bool dynamic_texture_resolution_ = false;
-    bool low_memory_mode_ = false;
     float render_quality_percent_ = 100.0f;
     int texture_limit_ = 0;
     TextureRefresh *texture_refresh_ = nullptr;
@@ -359,6 +358,8 @@ private:
     uint64_t texture_resize_ns_ = 0;
     size_t texture_refresh_index_ = 0;
     bool trim_offscreen_pool_ = true;
+    unsigned offscreen_pool_used_ = 0;
+    uint64_t offscreen_pool_unused_ns_ = 0;
     bool parameter_overrides_applied_ = false;
     int builtin_accessory_parameter_ = -1;
     int builtin_accessory_part_ = -1;

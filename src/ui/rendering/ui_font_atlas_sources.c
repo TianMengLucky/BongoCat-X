@@ -49,7 +49,7 @@ static struct nk_font_config font_config(float size, const nk_rune *ranges) {
     struct nk_font_config config = nk_font_config(size);
     config.range = ranges;
     /* Preserve antialiased strokes in every script. Sparse glyph ranges,
-       rather than reduced font sampling, bound low-memory atlas storage. */
+       rather than reduced font sampling, bound atlas storage. */
     config.oversample_h = 2;
     config.oversample_v = 2;
     return config;

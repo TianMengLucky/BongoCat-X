@@ -21,6 +21,7 @@ struct Presenter {
     ComPtr<IDCompositionDevice> composition;
     ComPtr<IDCompositionTarget> target;
     ComPtr<IDCompositionVisual> visual;
+    ComPtr<IDCompositionEffectGroup> effect;
     std::vector<unsigned char> upload;
     int width = 0, height = 0;
     float opacity = -1.0f;
@@ -54,6 +55,8 @@ HRESULT initialize(Presenter &p, HWND window, int width, int height) {
             IID_PPV_ARGS(p.composition.GetAddressOf()))) ||
         FAILED(hr = p.composition->CreateTargetForHwnd(window, TRUE, p.target.GetAddressOf())) ||
         FAILED(hr = p.composition->CreateVisual(p.visual.GetAddressOf())) ||
+        FAILED(hr = p.composition->CreateEffectGroup(p.effect.GetAddressOf())) ||
+        FAILED(hr = p.visual->SetEffect(p.effect.Get())) ||
         FAILED(hr = p.visual->SetContent(p.swap.Get())) ||
         FAILED(hr = p.target->SetRoot(p.visual.Get()))) return hr;
     p.width = width;
@@ -145,7 +148,7 @@ bool present(Presenter &p, HWND window, const RECT &bounds,
     if (FAILED(hr)) return SDL_SetError("DXGI back buffer failed (0x%08lx)", static_cast<unsigned long>(hr));
     p.context->UpdateSubresource(buffer.Get(), 0, nullptr, p.upload.data(), static_cast<UINT>(stride), 0);
     if (!p.committed || p.opacity != opacity) {
-        hr = p.visual->SetOpacity(opacity);
+        hr = p.effect->SetOpacity(opacity);
         if (SUCCEEDED(hr)) hr = p.composition->Commit();
         if (FAILED(hr)) return SDL_SetError("DirectComposition commit failed (0x%08lx)", static_cast<unsigned long>(hr));
         p.opacity = opacity;

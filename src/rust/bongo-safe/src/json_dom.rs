@@ -1,19 +1,32 @@
 //! Rust-owned JSON DOM. C only borrows stable node handles until document free.
-use serde_json::{Map, Number, Value};
+#[cfg(test)]
+use serde_json::Map;
+use serde_json::{Number, Value};
 use std::{ffi::c_char, ptr};
 
 #[path = "json_dom_access.rs"]
-mod access;
+pub(crate) mod access;
 #[path = "json_dom_read.rs"]
 pub(crate) mod read;
 #[path = "json_dom_write.rs"]
 mod write;
 
+pub(crate) struct JsonString(Box<str>);
+impl JsonString {
+    fn new(mut text: String) -> Self {
+        text.push('\0');
+        Self(text.into_boxed_str())
+    }
+    fn text(&self) -> &str {
+        &self.0[..self.0.len() - 1]
+    }
+}
+
 pub(crate) enum Data {
     Null,
     Bool(bool),
     Number(Number),
-    String(String, Vec<u8>),
+    String(JsonString),
     Array(Vec<*mut Node>),
     Object(Vec<(*mut Node, *mut Node)>),
 }
@@ -37,27 +50,26 @@ impl Doc {
         self.nodes.push(node);
         pointer
     }
-    fn string(&mut self, text: &str) -> *mut Node {
-        let mut bytes = text.as_bytes().to_vec();
-        bytes.push(0);
-        self.alloc(Data::String(text.to_owned(), bytes))
+    fn string(&mut self, text: String) -> *mut Node {
+        self.alloc(Data::String(JsonString::new(text)))
     }
     fn from_value(&mut self, value: Value) -> *mut Node {
         let data = match value {
             Value::Null => Data::Null,
             Value::Bool(v) => Data::Bool(v),
             Value::Number(v) => Data::Number(v),
-            Value::String(v) => return self.string(&v),
+            Value::String(v) => return self.string(v),
             Value::Array(v) => Data::Array(v.into_iter().map(|v| self.from_value(v)).collect()),
             Value::Object(v) => Data::Object(
                 v.into_iter()
-                    .map(|(k, v)| (self.string(&k), self.from_value(v)))
+                    .map(|(k, v)| (self.string(k), self.from_value(v)))
                     .collect(),
             ),
         };
         self.alloc(data)
     }
 }
+#[cfg(test)]
 pub(crate) unsafe fn to_value(node: *const Node, depth: usize) -> Result<Value, String> {
     if depth > 128 {
         return Err("JSON nesting exceeds 128 levels".into());
@@ -66,7 +78,7 @@ pub(crate) unsafe fn to_value(node: *const Node, depth: usize) -> Result<Value, 
         None | Some(Data::Null) => Value::Null,
         Some(Data::Bool(v)) => Value::Bool(*v),
         Some(Data::Number(v)) => Value::Number(v.clone()),
-        Some(Data::String(v, _)) => Value::String(v.clone()),
+        Some(Data::String(v)) => Value::String(v.text().to_owned()),
         Some(Data::Array(v)) => Value::Array(
             v.iter()
                 .map(|v| to_value(*v, depth + 1))
@@ -75,8 +87,8 @@ pub(crate) unsafe fn to_value(node: *const Node, depth: usize) -> Result<Value, 
         Some(Data::Object(v)) => {
             let mut result = Map::new();
             for &(key, value) in v {
-                if let Data::String(key, _) = &(*key).data {
-                    result.insert(key.clone(), to_value(value, depth + 1)?);
+                if let Data::String(key) = &(*key).data {
+                    result.insert(key.text().to_owned(), to_value(value, depth + 1)?);
                 }
             }
             Value::Object(result)
@@ -100,11 +112,11 @@ unsafe fn add_object(doc: *mut Doc, obj: *mut Node, key: *const c_char, data: Da
     let value = doc.alloc(data);
     if let Some(pair) = items
         .iter_mut()
-        .find(|(k, _)| matches!(&(**k).data,Data::String(v,_) if v==key))
+        .find(|(k, _)| matches!(&(**k).data,Data::String(v) if v.text()==key))
     {
         pair.1 = value;
     } else {
-        items.push((doc.string(key), value));
+        items.push((doc.string(key.to_owned()), value));
     }
     true
 }
@@ -150,14 +162,20 @@ mod tests {
         let output = unsafe { to_value(doc.root, 0).unwrap() };
         assert_eq!(output["name"], "a\0b");
         assert_eq!(output["id"].as_u64(), Some(u64::MAX));
+        unsafe {
+            let name = access::bongo_json_obj_get(doc.root, b"name\0".as_ptr().cast());
+            assert_eq!(access::bongo_json_get_len(name), 3);
+            let pointer = access::bongo_json_get_str(name).cast::<u8>();
+            assert_eq!(std::slice::from_raw_parts(pointer, 4), b"a\0b\0");
+        }
     }
     #[test]
     fn nodes_stay_stable_while_document_grows() {
         let mut doc = Doc::new();
-        let pointer = doc.string("original");
+        let pointer = doc.string("original".to_owned());
         for _ in 0..10000 {
             doc.alloc(Data::Null);
         }
-        assert!(matches!(unsafe { &(*pointer).data },Data::String(v,_) if v=="original"));
+        assert!(matches!(unsafe { &(*pointer).data },Data::String(v) if v.text()=="original"));
     }
 }

@@ -97,13 +97,12 @@ impl Pipelines {
                 None,
             )
             .map_err(|e| e.to_string())?;
-        let vertex = crate::native_shader::spirv(naga::ShaderStage::Vertex, "vertex")?;
-        let fragment = crate::native_shader::spirv(naga::ShaderStage::Fragment, "fragment")?;
+        let (vertex, fragment) = crate::native_shader::spirv();
         let vs = d
-            .create_shader_module(&vk::ShaderModuleCreateInfo::builder().code(&vertex), None)
+            .create_shader_module(&vk::ShaderModuleCreateInfo::builder().code(vertex), None)
             .map_err(|e| e.to_string())?;
         let fs = match d
-            .create_shader_module(&vk::ShaderModuleCreateInfo::builder().code(&fragment), None)
+            .create_shader_module(&vk::ShaderModuleCreateInfo::builder().code(fragment), None)
         {
             Ok(v) => v,
             Err(e) => {

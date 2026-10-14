@@ -311,7 +311,7 @@ static void settle_quality(BongoCatPreferences *value) {
     BongoCatError error = {0};
     bool reloaded = !app->loaded_model[0] ||
         bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
-            app->settings.app.low_memory_mode ? SDL_min(model->render_quality_percent, 10.0f) : model->render_quality_percent) || bongo_cat_app_reload_model_with_error(app, &error);
+            model->render_quality_percent) || bongo_cat_app_reload_model_with_error(app, &error);
     if (!reloaded) {
         model->render_quality_percent = value->quality_reload_from;
         char message[1024];

@@ -254,7 +254,6 @@
         "title": "一般設定",
         "labels": {
           "memoryPreference": "渲染記憶體優先順序",
-          "lowMemoryMode": "低記憶體模式",
           "largeRenderOptimization": "大型渲染最佳化",
           "appSettings": "應用程式",
           "autoCheckUpdates": "自動檢查更新",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "目前渲染器不支援系統記憶體優先。",
           "memoryPreferenceSaveFailed": "無法儲存記憶體優先順序設定",
           "memoryPreference": "僅適用於 Live2D Vulkan，修改後重新載入渲染。顯示記憶體優先盡量使用顯示記憶體，縮減 CPU 副本、上傳暫存及管線快取；系統記憶體優先盡量使用系統記憶體。必要的 CPU 存取與不支援的分配自動回退；內顯使用共享記憶體。",
-          "lowMemoryMode": "紋理畫質最高 10%，紋理邊長上限 512 像素、Live2D 遮罩上限 256 像素，暫停大型渲染最佳化。切換會重新載入渲染器，關閉後恢復原畫質設定。實際記憶體取決於模型和顯示卡驅動。",
           "largeRenderOptimization": "選擇 Vulkan/Metal 的可選最佳化；變更會重新載入模型，可能增加記憶體用量，可用性取決於繪圖器。",
           "largeRenderUnavailable": "目前模型渲染器未提供這些最佳化，開關暫不影響繪製。",
           "showTrayIcon": "啟用後，在系統托盤中顯示應用程式圖示。",

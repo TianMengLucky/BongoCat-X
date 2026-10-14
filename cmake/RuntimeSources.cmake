@@ -337,7 +337,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_resources.c
   src/ui/preferences/preferences_live_resize.c
   src/ui/preferences/preferences_mouse_range.c
-  src/ui/preferences/preferences_low_memory.c
+  src/ui/preferences/preferences_memory.c
   src/ui/preferences/preferences_model.c
   src/ui/preferences/preferences_model_card.c
   src/ui/preferences/preferences_model_modes.c

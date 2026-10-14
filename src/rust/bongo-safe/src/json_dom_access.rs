@@ -114,7 +114,7 @@ getter!(
     ptr::null(),
     n,
     match n.as_ref().map(|n| &n.data) {
-        Some(Data::String(_, bytes)) => bytes.as_ptr().cast(),
+        Some(Data::String(v)) => v.0.as_ptr().cast(),
         _ => ptr::null(),
     }
 );
@@ -131,7 +131,7 @@ getter!(
     0,
     n,
     match n.as_ref().map(|n| &n.data) {
-        Some(Data::String(v, _)) => v.len(),
+        Some(Data::String(v)) => v.text().len(),
         Some(Data::Array(v)) => v.len(),
         Some(Data::Object(v)) => v.len(),
         _ => 0,
@@ -186,7 +186,7 @@ pub unsafe extern "C" fn bongo_json_obj_get(n: *const Node, key: *const c_char) 
         match n.as_ref().map(|n| &n.data) {
             Some(Data::Object(v)) => v
                 .iter()
-                .find(|(k, _)| matches!(&(**k).data,Data::String(v,_) if v==key))
+                .find(|(k, _)| matches!(&(**k).data,Data::String(v) if v.text()==key))
                 .map(|(_, v)| *v)
                 .unwrap_or(ptr::null_mut()),
             _ => ptr::null_mut(),

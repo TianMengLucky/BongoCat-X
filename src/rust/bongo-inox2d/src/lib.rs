@@ -12,7 +12,6 @@ mod native_vulkan;
 mod parameters;
 mod renderer;
 mod runtime;
-mod low_memory;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod vulkan_pipeline;
 #[cfg(any(target_os = "windows", target_os = "linux"))]

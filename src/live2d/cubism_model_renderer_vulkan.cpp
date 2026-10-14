@@ -17,13 +17,12 @@ uint32_t configure_vulkan_optimization(BongoCatModelRuntime *runtime,
     const auto &info = runtime->rhi_info;
     const bool vulkan = backend == BONGO_CAT_RHI_VULKAN && info.backend == BONGO_CAT_RHI_VULKAN;
     const bool allocation = vulkan && (requested & BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION) != 0;
-    const bool low_memory = vulkan && (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY) != 0;
     const bool system_memory = vulkan && (requested & BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY) != 0;
     uint32_t active = 0;
     if (bongo_cat::vulkan_memory_configure((VkInstance)info.vulkan_instance,
             (VkPhysicalDevice)info.vulkan_physical_device,
             (VkDevice)info.vulkan_device, vulkan,
-            low_memory, system_memory)) {
+            allocation, system_memory)) {
         if (allocation) active |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
         if (system_memory) active |= BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY;
     }
@@ -67,19 +66,21 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
         return false;
     }
     vulkan_submit_initialize((VkDevice)info.vulkan_device, (VkQueue)info.vulkan_queue,
-        (VkCommandPool)info.vulkan_command_pool, !low_memory_mode_ && !vulkan_memory_prefers_device());
+        (VkCommandPool)info.vulkan_command_pool, !vulkan_memory_prefers_device());
     Csm::Rendering::CubismRenderer_Vulkan::SetConstantSettings(
         (VkDevice)info.vulkan_device, (VkPhysicalDevice)info.vulkan_physical_device,
         (VkCommandPool)info.vulkan_command_pool, (VkQueue)info.vulkan_queue,
         info.image_count, VkExtent2D{info.extent_width, info.extent_height},
         VK_NULL_HANDLE, (VkFormat)info.color_format, (VkFormat)info.depth_format);
     std::vector<VkDescriptorImageInfo> atlases;
+    atlases.reserve(vulkan_textures_.size());
     for (const auto &texture : vulkan_textures_)
         atlases.push_back({texture.GetSampler(), texture.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     vulkan_bindless_model(atlases.data(), atlases.size(),
         _model && !_model->IsBlendModeEnabled() && _model->GetOffscreenCount() == 0);
     release_renderer();
     std::vector<int> vertex_counts;
+    vertex_counts.reserve((size_t)_model->GetDrawableCount());
     for (int i = 0; i < _model->GetDrawableCount(); ++i)
         vertex_counts.push_back(_model->GetDrawableVertexCount(i));
     vulkan_geometry_ = vulkan_geometry_create((VkDevice)info.vulkan_device,
@@ -89,6 +90,9 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
     try {
         CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_, prepare_mask_layout());
         vulkan_upload_batch_end();
+        // Renderer initialization also uploads indices. Retire their staging
+        // before returning, including when the model will initially be hidden.
+        vulkan_submit_wait();
     } catch (...) { vulkan_submit_cancel(); throw; }
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
     if (!renderer) {
@@ -173,6 +177,7 @@ bool NativeModel::upload_texture_vulkan(int index,
         if (renderer) {
             (void)rhi; // Previous draw fence was waited before replacement; upload is queued.
             std::vector<VkDescriptorImageInfo> atlases;
+            atlases.reserve(vulkan_textures_.size());
             for (size_t i = 0; i < vulkan_textures_.size(); ++i) {
                 const auto &atlas = i == (size_t)index ? image : vulkan_textures_[i];
                 atlases.push_back({atlas.GetSampler(), atlas.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});

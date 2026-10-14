@@ -23,7 +23,6 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
     const char *heading_fallback_path,
     const char *heading_korean_fallback_path,
     const nk_rune *glyph_ranges, const nk_rune *heading_ranges, float raster_scale) {
-    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
     UIFontSource sources[6] = {0};
     const char *paths[] = {body_path, body_fallback_path,
         body_korean_fallback_path, heading_path, heading_fallback_path,
@@ -60,8 +59,7 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
             bongo_cat_ui_font_source_release(&sources[i]);
         return false;
     }
-    bool sparse_heading = heading_ranges && SDL_GetBooleanProperty(
-        SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
+    bool sparse_heading = heading_ranges != NULL;
     if (sparse_heading && !bongo_cat_ui_font_split_ranges(heading_ranges,
             &ui->heading_primary_ranges, &ui->heading_cjk_ranges, &ui->heading_korean_ranges)) {
         free(korean_ranges); free(cjk_ranges); free(primary_ranges);
@@ -86,7 +84,7 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
         20.0f * font_scale, glyph_ranges, primary_ranges, cjk_ranges,
         korean_ranges);
     /* Identical families at 20 px can share glyphs and the font handle. */
-    bool shared_label = low_memory || (body_source == heading_source &&
+    bool shared_label = (body_source == heading_source &&
         fallback_source == heading_fallback_source &&
         body_korean_fallback_source == heading_korean_fallback_source);
     struct nk_font *label_font = shared_label ? body_font :

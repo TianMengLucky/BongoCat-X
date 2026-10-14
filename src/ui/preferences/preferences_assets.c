@@ -68,8 +68,7 @@ void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
     if (needs_hidpi && !value->icon_hidpi_attempted) {
         int width = 0, height = 0;
         value->icon_hidpi_attempted = true;
-        int cell = value->app->settings.app.low_memory_mode ?
-            SDL_clamp((int)ceilf(48*value->ui.raster_scale),48,96) : 96;
+        int cell = SDL_clamp((int)ceilf(48*value->ui.raster_scale),48,96);
         value->icon_texture_hidpi = load_sized(value,"ui-symbols@4x.png",
             cell*BONGO_CAT_UI_ICON_COUNT,cell,&width,&height);
         value->icon_hidpi_cell = cell;

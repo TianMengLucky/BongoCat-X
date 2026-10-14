@@ -5,6 +5,7 @@ No third-party sources are committed. The output crate lives in the build tree.
 import argparse
 import pathlib
 import shutil
+import tempfile
 
 REV = "d4dd9dd7f16b775042cbda44370570abf9a8cf81"
 
@@ -22,6 +23,21 @@ def main():
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     upstream, source, output = map(pathlib.Path, (args.upstream, args.source, args.output))
+    output.mkdir(parents=True, exist_ok=True)
+    # Patch in a private staging tree so unchanged Cargo inputs keep their mtimes.
+    with tempfile.TemporaryDirectory(prefix="prepare-", dir=output) as temporary:
+        staging = pathlib.Path(temporary).resolve()
+        assert staging.parent == output.resolve()
+        generate(upstream, source, staging)
+        for path in staging.rglob("*"):
+            if path.is_file():
+                destination = output / path.relative_to(staging)
+                if not destination.is_file() or destination.read_bytes() != path.read_bytes():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(path, destination)
+
+
+def generate(upstream, source, output):
     renderer = output / "inox2d-opengl"
     renderer.mkdir(parents=True, exist_ok=True)
     shutil.copytree(upstream / "inox2d-opengl", renderer, dirs_exist_ok=True)

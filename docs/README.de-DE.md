@@ -336,11 +336,10 @@ Unter Einstellungen → Einstellungen → Fenster bietet Eigenes Hintergrundbild
 
 Live2D verwendet Geometriepuffer und wiederholte Renderzustände automatisch wieder. OpenGL-Streaming, Vulkan-Upload-Batches und Pipeline-Caches, gemeinsame Metal-Puffer sowie adaptive native Masken benötigen keinen zusätzlichen Schalter. Leistung und Plattformverhalten sind noch zu prüfen.
 
-Einstellungen → Anwendung → Speichersparmodus ist standardmäßig aus. Er begrenzt Texturqualität auf 10%, Kanten auf 512 Pixel und Live2D-Masken auf 256 Pixel, pausiert große Renderoptimierungen und lädt neu. Ausschalten stellt die gespeicherte Qualität wieder her. 50MB sind ein Ziel; der Bedarf hängt von Modell und Treiber ab.
+Vulkan verwaltet Speicher automatisch: Live2D nutzt standardmäßig VMA-Blöcke von 1 MiB, bei aktivierter großer Speicherzuweisung 16 MiB. Die Windows-Layered-Darstellung behält ein Farbziel. Verborgene oder minimierte Fenster geben Rücklesecaches nach GPU-Abschluss frei und erzeugen sie bei Bedarf neu. Texturqualität und dynamische Auflösung bleiben getrennte Einstellungen.
 
-Einstellungen → Haustier → Maus-Folgebereich: horizontal/vertikal 25–400%, standardmäßig aus, 100% unverändert. Gezeichnete Mver-Pfoten bewegen sich weiter; Live2D behält Modellgrenzen. Blick und Fenster bleiben gleich. Der Speichersparmodus deaktiviert OpenGL-MSAA und reduziert ungenutzte Shader und Vulkan-Pipelines.
+Einstellungen → Haustier → Maus-Folgebereich: horizontal/vertikal 25–400%, standardmäßig aus, 100% unverändert. Gezeichnete Mver-Pfoten bewegen sich weiter; Live2D behält Modellgrenzen. Blick und Fenster bleiben gleich
 
-Unter Windows nutzen speichersparende Einstellungen für OpenGL/Vulkan abschnittsweise SDL-Softwaredarstellung mit undurchsichtigem Hintergrund. Schriftgröße, Bildschirm-DPI und Kantenglättung bleiben erhalten. Der Schriftatlas speichert A8-Masken und konvertiert nur das gezeichnete Zeichen. Auf anderen Plattformen nutzt OpenGL weiterhin den Kontext des Begleiters.
 ### Mehrere Tasten und lesbare Spiegelzeichen
 
 Mver (OpenGL/Vulkan/Metal) schneidet Hand, Blasenrahmen und Zeichen getrennt zu und verbindet gedrückte Tasten mit + in einer Blase. Rahmen und Zipfel werden mit dem Modell gespiegelt; die Zeichen bleiben auch im Einzeltastenmodus lesbar. Konfigurieren Sie die drei Bereiche, den Abstand um + und das Limit je Seite in `hand-layout.json` neben den Handbildern; starten Sie nach Änderungen neu. Siehe [Anleitung und Beispiel](hand-layout.md).

@@ -47,16 +47,17 @@ pub unsafe extern "C" fn bongo_safe_model_kind_file(path: *const c_char) -> i32 
         if doc.is_null() {
             return 0;
         }
-        let json = crate::json_dom::to_value((*doc).root, 0);
+        use crate::json_dom::{access, Data};
+        let root = (*doc).root;
+        let version = access::bongo_json_obj_get(root, b"Version\0".as_ptr().cast());
+        let references = access::bongo_json_obj_get(root, b"FileReferences\0".as_ptr().cast());
+        let moc = access::bongo_json_obj_get(references, b"Moc\0".as_ptr().cast());
+        let model3 = matches!(version.as_ref().map(|v| &v.data),
+            Some(Data::Number(v)) if v.as_u64().is_some_and(|v| v >= 3))
+            && access::bongo_json_is_str(moc)
+            && access::bongo_json_get_len(moc) > 0;
         crate::json_dom::read::bongo_json_doc_free(doc);
-        let Ok(json) = json else {
-            return 0;
-        };
-        if json["Version"].as_u64().is_some_and(|v| v >= 3)
-            && json["FileReferences"]["Moc"]
-                .as_str()
-                .is_some_and(|s| !s.is_empty())
-        {
+        if model3 {
             1
         } else {
             0

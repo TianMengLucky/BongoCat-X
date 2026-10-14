@@ -73,6 +73,9 @@ bool bongo_cat_rhi_submit_commands_checked(const BongoCatRhi *rhi, void *command
 /* Draw/capture the acquired frame before platform presentation. swap then
    presents that prepared frame; this also supports capture-only rendering. */
 bool bongo_cat_rhi_render_frame(BongoCatRhi *rhi);
+/* Owning thread, hidden/minimized window only. Waits for GPU use before
+   releasing regenerable readback storage; returns false on unsafe completion. */
+bool bongo_cat_rhi_release_idle_memory(BongoCatRhi *rhi);
 /* Cached premultiplied RGBA canvas, top-down. NULL removes the background. */
 bool bongo_cat_rhi_set_background(BongoCatRhi *rhi, const void *pixels,
     int width, int height, int pitch, uint64_t revision);

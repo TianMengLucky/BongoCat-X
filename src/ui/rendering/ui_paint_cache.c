@@ -28,8 +28,7 @@ static void release_texture(BongoCatUIPaintTexture *item) {
 
 static bool reserve_bytes(BongoCatUIBackend *backend,
     BongoCatUIPaintTexture *keep, size_t required) {
-    size_t limit = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) ?
-        512u * 1024u : PAINT_CACHE_BYTE_LIMIT;
+    size_t limit = backend->software_renderer ? 512u * 1024u : PAINT_CACHE_BYTE_LIMIT;
     if (required > limit) return false;
     for (;;) {
         size_t used = 0;
@@ -71,15 +70,20 @@ BongoCatUIPaintTexture *bongo_cat_ui_paint_cache_get(
     release_texture(item);
     item->backend = backend;
     item->key = *key;
-    /* Software effects always occupy RGBA storage. Check/reserve the bounded
-       cache before callers allocate and rasterize a texture we cannot keep. */
-    if (backend->software_renderer && SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
-            "BongoCat.LowMemoryMode", false)) {
-        if (key->width <= 0 || key->height <= 0 ||
-            (size_t)key->width > SIZE_MAX/4/(size_t)key->height ||
-            !reserve_bytes(backend,item,(size_t)key->width*key->height*4)) {
-            memset(item,0,sizeof(*item)); return NULL;
-        }
+    /* Reserve before callers allocate raster pixels on either backend.
+       Mask effects use R8 in GL; SDL software textures use RGBA storage. */
+    bool mask = key->kind == BONGO_CAT_UI_PAINT_SHADOW ||
+        key->kind == BONGO_CAT_UI_PAINT_SIDEBAR_GLOW ||
+        key->kind == BONGO_CAT_UI_PAINT_ROUNDED_SURFACE ||
+        ((key->kind == BONGO_CAT_UI_PAINT_RADIAL ||
+          key->kind == BONGO_CAT_UI_PAINT_RADIAL_CIRCLE) &&
+         key->first_color == key->second_color);
+    size_t channels = mask && !backend->software_renderer ? 1u : 4u;
+    if (key->width <= 0 || key->height <= 0 ||
+        (size_t)key->width > SIZE_MAX / channels / (size_t)key->height ||
+        !reserve_bytes(backend, item, (size_t)key->width * key->height * channels)) {
+        memset(item, 0, sizeof(*item));
+        return NULL;
     }
     item->used = ++use_counter;
     return item;
@@ -125,8 +129,15 @@ void bongo_cat_ui_paint_cache_begin_frame(BongoCatUIBackend *backend) {
 }
 
 void bongo_cat_ui_paint_cache_trim_idle(BongoCatUIBackend *backend) {
-    /* Keep small reusable effects, evict older variants first. No timer or
-       extra redraw is needed; closing the window releases everything. */
+    if (!backend) return;
+    /* Commands are consumed and animations have settled. Drop effects from
+       previous frames; current visible effects remain reusable. */
+    for (size_t i = 0; i < PAINT_CACHE_COUNT; ++i) {
+        BongoCatUIPaintTexture *item = &textures[i];
+        if (item->backend == backend && item->texture &&
+            backend->paint_frame_marker && item->used < backend->paint_frame_marker)
+            release_texture(item);
+    }
     size_t bytes = bongo_cat_ui_paint_cache_usage(backend, NULL);
     while (bytes > 4u * 1024u * 1024u) {
         BongoCatUIPaintTexture *oldest = NULL;

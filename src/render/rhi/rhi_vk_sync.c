@@ -12,6 +12,36 @@ bool bongo_cat_rhi_vk_background_matches(const BongoCatRhi *rhi, int width, int 
         (uint32_t)height == vk->extent.height && revision == vk->background_revision;
 }
 
+bool bongo_cat_rhi_vk_release_idle_memory(BongoCatRhi *rhi) {
+    BongoCatRhiVk *vk = rhi ? rhi->impl : NULL;
+    if (!vk || !vk->device || vk->failed) return false;
+    /* A WSI frame must still consume its presentation semaphore normally. */
+    if (vk->frame_ready && !vk->layered_target) return false;
+    bool allocated = false;
+    for (unsigned i = 0; i < BONGO_CAT_VK_FRAMES; ++i) {
+        allocated |= vk->readbacks[i].readback_memory != VK_NULL_HANDLE;
+        allocated |= vk->uploads[i].pool != VK_NULL_HANDLE ||
+            vk->uploads[i].buffer != VK_NULL_HANDLE;
+    }
+    if (!allocated) return true; /* No repeated queue waits while hidden. */
+    for (unsigned i = 0; i < BONGO_CAT_VK_FRAMES; ++i)
+        if (!bongo_cat_rhi_vk_wait_frame(vk, &vk->frames[i])) return false;
+    /* Foreground uploads can also reference the readback buffers. Fence all
+       earlier queue work, including plugin submissions, before destruction. */
+    if (!bongo_cat_rhi_vk_queue_checkpoint(vk)) return false;
+    if (vk->frame_ready) {
+        vk->frame_ready = false;
+        vk->current_image = VK_NULL_HANDLE;
+        vk->current_view = VK_NULL_HANDLE;
+        vk->frame_slot = (vk->frame_slot + 1) % BONGO_CAT_VK_FRAMES;
+    }
+    bongo_cat_rhi_vk_release_readback(vk);
+    // The checkpoint covers texture uploads too. Release staging and empty
+    // command pools now; a hidden model may not submit another frame.
+    bongo_cat_rhi_vk_destroy_uploads(vk);
+    return true;
+}
+
 bool bongo_cat_rhi_vk_create_frames(BongoCatRhiVk *vk) {
     for (unsigned i = 0; i < BONGO_CAT_VK_FRAMES; ++i) {
         BongoCatRhiVkFrame *frame = &vk->frames[i];

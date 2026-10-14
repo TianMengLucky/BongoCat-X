@@ -42,15 +42,13 @@ extern "C" PLUGIN_EXPORT uint32_t bongo_cat_model_plugin_optimize_v1(
     BongoCatModelRuntime *runtime, uint32_t requested, uint32_t backend) {
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (!runtime || runtime->model) return 0;
-    runtime->low_memory_mode = (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY) != 0;
-    try { return bongo_cat::configure_vulkan_optimization(runtime, requested, backend) |
-        (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY); }
+    try { return bongo_cat::configure_vulkan_optimization(runtime, requested, backend); }
     catch (...) { return 0; }
 #else
     (void)backend;
     if (!runtime || runtime->model) return 0;
-    runtime->low_memory_mode = (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY) != 0;
-    return requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY;
+    (void)requested;
+    return 0;
 #endif
 }
 

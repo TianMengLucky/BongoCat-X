@@ -20,8 +20,7 @@ static float rounded_distance(float x, float y, float width, float height,
 void bongo_cat_ui_paint_rounded_surface(struct nk_context *context,
     struct nk_rect bounds, float rounding, struct nk_color color) {
     BongoCatUIBackend *backend = bongo_cat_ui_backend_for_context(context);
-    if (!backend || !backend->window || backend->live_resize_fast || SDL_GetBooleanProperty(
-            SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false)) {
+    if (!backend || !backend->window || backend->live_resize_fast) {
         nk_fill_rect(nk_window_get_canvas(context), bounds, rounding, color);
         return;
     }

@@ -254,7 +254,6 @@
         "title": "一般",
         "labels": {
           "memoryPreference": "描画メモリの優先順位",
-          "lowMemoryMode": "低メモリモード",
           "largeRenderOptimization": "大規模レンダリング最適化",
           "appSettings": "アプリ",
           "autoCheckUpdates": "更新を自動確認",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "現在のレンダラーはシステムメモリ優先に対応していません。",
           "memoryPreferenceSaveFailed": "メモリ優先順位を保存できません",
           "memoryPreference": "Live2D Vulkan 専用。変更時に再読み込みします。ビデオメモリ優先は VRAM を優先し、CPU コピー、転送用メモリ、パイプラインキャッシュを削減します。システムメモリ優先は RAM を優先します。必要な CPU アクセスや非対応の割り当ては自動的にフォールバックします。内蔵 GPU は共有メモリを使用します。",
-          "lowMemoryMode": "テクスチャ品質を最大10%、辺を512ピクセル、Live2Dマスクを256ピクセルに制限し、大規模描画最適化を停止します。切替時に描画を再読み込みし、無効化すると元の品質設定に戻ります。メモリ使用量はモデルとドライバーによって異なります。",
           "largeRenderOptimization": "Vulkan/Metal の追加最適化を選びます。変更時にモデルを再読み込みし、メモリ使用量が増える場合があります。対応は描画プラグインによります。",
           "largeRenderUnavailable": "現在のモデルのレンダラーはこれらの最適化に非対応です。描画は変わりません。",
           "showTrayIcon": "有効にすると、システムトレイにアプリアイコンを表示します。",

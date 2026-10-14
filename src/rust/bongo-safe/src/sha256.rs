@@ -51,18 +51,24 @@ pub unsafe extern "C" fn bongo_safe_sha256_finish(state: *mut Sha256State, outpu
     if output.is_null() {
         return;
     }
-    let digest = guard(Vec::new(), || {
+    let digest = guard(None, || {
         if state.is_null() {
-            return Vec::new();
+            return None;
         }
-        Box::from_raw(state).hasher.finalize().to_vec()
+        Some(Box::from_raw(state).hasher.finalize().into())
     });
+    write_digest(digest, output);
+}
+
+unsafe fn write_digest(digest: Option<[u8; 32]>, output: *mut c_char) {
     let out = std::slice::from_raw_parts_mut(output.cast::<u8>(), 65);
     out.fill(0);
     const HEX: &[u8; 16] = b"0123456789abcdef";
-    for (index, byte) in digest.iter().enumerate().take(32) {
-        out[index * 2] = HEX[(byte >> 4) as usize];
-        out[index * 2 + 1] = HEX[(byte & 15) as usize];
+    if let Some(digest) = digest {
+        for (index, byte) in digest.iter().enumerate() {
+            out[index * 2] = HEX[(byte >> 4) as usize];
+            out[index * 2 + 1] = HEX[(byte & 15) as usize];
+        }
     }
     out[64] = 0;
 }
@@ -75,13 +81,18 @@ pub unsafe extern "C" fn bongo_safe_sha256_bytes(
     size: usize,
     output: *mut c_char,
 ) {
-    let state = bongo_safe_sha256_new();
-    if state.is_null() {
-        *output = 0;
+    if output.is_null() {
         return;
     }
-    bongo_safe_sha256_update(state, data, size);
-    bongo_safe_sha256_finish(state, output);
+    let digest = guard(None, || {
+        let bytes = if data.is_null() || size == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(data.cast::<u8>(), size)
+        };
+        Some(Sha256::digest(bytes).into())
+    });
+    write_digest(digest, output);
 }
 
 #[cfg(test)]
@@ -110,6 +121,21 @@ mod tests {
             hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
             "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1\0"
         );
+    }
+
+    #[test]
+    fn handles_null_inputs() {
+        let mut output = [1 as c_char; 65];
+        unsafe {
+            bongo_safe_sha256_bytes(std::ptr::null(), 0, output.as_mut_ptr());
+            assert_eq!(
+                std::ffi::CStr::from_ptr(output.as_ptr()).to_bytes().len(),
+                64
+            );
+            bongo_safe_sha256_finish(std::ptr::null_mut(), output.as_mut_ptr());
+            assert_eq!(output, [0; 65]);
+            bongo_safe_sha256_bytes(std::ptr::null(), 0, std::ptr::null_mut());
+        }
     }
 
     #[test]

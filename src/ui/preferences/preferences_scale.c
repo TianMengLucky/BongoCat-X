@@ -121,12 +121,7 @@ bool bongo_cat_preferences_open_window(BongoCatPreferences *value) {
             !SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) ||
             !SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8)) return false;
     }
-    bool software = value->app->settings.app.low_memory_mode && !value->app->gl_context;
-#ifdef _WIN32
-    // Keep low-memory settings independent of both native and OpenGL pet draws.
-    // A second WGL drawable can retain its own driver-managed framebuffers.
-    software = value->app->settings.app.low_memory_mode;
-#endif
+    bool software = false;
     SDL_WindowFlags flags = (software ? 0 : SDL_WINDOW_OPENGL) | SDL_WINDOW_BORDERLESS |
         SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
     SDL_DisplayID display = SDL_GetPrimaryDisplay();

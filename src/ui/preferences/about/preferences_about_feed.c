@@ -16,8 +16,7 @@ static bool about_cancelled(void *userdata) {
 BongoCatAboutFeed *bongo_cat_about_feed_parse(char *svg, SDL_AtomicInt *cancel) {
     if (!svg || !cancel) return NULL;
     bongo_safe_about_person *persons = NULL;
-    int size = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) ?
-        32 : BONGO_ABOUT_AVATAR_SIZE;
+    int size = BONGO_ABOUT_AVATAR_SIZE;
     int count = bongo_safe_about_feed_parse(svg, strlen(svg), about_cancelled,
         cancel, size, BONGO_ABOUT_CONTRIBUTOR_CAP, &persons);
     if (count < 0) return NULL;

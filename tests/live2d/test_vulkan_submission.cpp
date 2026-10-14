@@ -78,6 +78,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice, VkPipelineCac
     const VkGraphicsPipelineCreateInfo *, const VkAllocationCallbacks *, VkPipeline *) { return VK_SUCCESS; }
 }
 namespace bongo_cat {
+bool vulkan_memory_prefers_device() { return false; }
 bool vulkan_buffer_destroy(VkBuffer buffer) {
     CHECK(!pending[buffer_fence[id(buffer)]]);
     freed_buffers++; return true;
@@ -164,7 +165,7 @@ int main() {
     bongo_cat::vulkan_submit_initialize((VkDevice)(uintptr_t)1,
         (VkQueue)(uintptr_t)2, (VkCommandPool)(uintptr_t)3);
     CHECK(live_fences == 3 && live_caches == 1);
-    // Switching to low memory drops only the CPU cache, preserving draw fences.
+    // Disabling pipeline cache retention drops only the CPU cache, preserving draw fences.
     bongo_cat::vulkan_submit_initialize((VkDevice)(uintptr_t)1,
         (VkQueue)(uintptr_t)2, (VkCommandPool)(uintptr_t)3, false);
     CHECK(live_fences == 3 && live_caches == 0);

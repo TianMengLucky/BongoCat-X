@@ -35,7 +35,6 @@ static void draw(BongoCatUIBackend *ui, unsigned red, unsigned alpha) {
 int main(void) {
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy", SDL_HINT_OVERRIDE);
     CHECK(SDL_Init(SDL_INIT_VIDEO));
-    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", true);
     SDL_Window *window = SDL_CreateWindow("test", 128, 128, SDL_WINDOW_HIDDEN);
     CHECK(window != NULL);
     if (!window) { SDL_Quit(); return 1; }
@@ -66,6 +65,17 @@ int main(void) {
         BongoCatUIPaintTexture *next=bongo_cat_ui_paint_cache_get(&ui,&rejected);
         CHECK(next && bongo_cat_ui_paint_cache_upload(next,paint_pixels,false));
         CHECK(bongo_cat_ui_paint_cache_usage(&ui,NULL)==320000);
+        first=bongo_cat_ui_paint_cache_get(&ui,&small);
+        CHECK(first && bongo_cat_ui_paint_cache_upload(first,paint_pixels,false));
+        CHECK(bongo_cat_ui_paint_cache_usage(&ui,NULL)==360000);
+        bongo_cat_ui_paint_cache_begin_frame(&ui);
+        CHECK(bongo_cat_ui_paint_cache_get(&ui,&rejected)==next);
+        bongo_cat_ui_paint_cache_trim_idle(&ui);
+        CHECK(bongo_cat_ui_paint_cache_usage(&ui,NULL)==320000);
+        CHECK(bongo_cat_ui_paint_cache_ready(next));
+        bongo_cat_ui_paint_cache_begin_frame(&ui);
+        bongo_cat_ui_paint_cache_trim_idle(&ui);
+        CHECK(bongo_cat_ui_paint_cache_usage(&ui,NULL)==0);
         bongo_cat_ui_paint_cache_destroy(&ui); free(paint_pixels);
     }
     const unsigned char rgba[] = {255, 0, 0, 255}, mask[] = {128};
@@ -73,6 +83,28 @@ int main(void) {
     unsigned alpha = bongo_cat_ui_texture_upload(&ui, mask, 1, 1, true);
     CHECK(red && alpha && red != alpha);
     draw(&ui, red, alpha);
+    void *larger = realloc(ui.vertices, 1024u * 1024u);
+    CHECK(larger != NULL);
+    if (larger) { ui.vertices = larger; ui.vertex_capacity = 1024u * 1024u; }
+    larger = realloc(ui.elements, 512u * 1024u);
+    CHECK(larger != NULL);
+    if (larger) { ui.elements = larger; ui.element_capacity = 512u * 1024u; }
+    size_t old_vertices = ui.vertex_capacity, old_elements = ui.element_capacity;
+    // Both command buffers have been cleared but can retain a large allocation.
+    struct nk_allocator allocator = ui.commands.pool;
+    nk_buffer_free(&ui.commands);
+    nk_buffer_init(&ui.commands, &allocator, 2u * 1024u * 1024u);
+    allocator = ui.context.memory.pool;
+    nk_buffer_free(&ui.context.memory);
+    nk_buffer_init(&ui.context.memory, &allocator, 2u * 1024u * 1024u);
+    CHECK(!ui.commands.allocated && !ui.context.memory.allocated);
+    bongo_cat_ui_trim_idle(&ui);
+    CHECK(nk_buffer_total(&ui.commands) < 2u * 1024u * 1024u &&
+        nk_buffer_total(&ui.context.memory) < 2u * 1024u * 1024u);
+    CHECK(ui.vertex_capacity < old_vertices && ui.element_capacity < old_elements);
+    CHECK(ui.vertex_capacity >= ui.last_vertex_bytes &&
+        ui.element_capacity >= ui.last_element_bytes);
+    draw(&ui, red, alpha); // Trimming must preserve the next full render.
     SDL_Surface *pixels = SDL_RenderReadPixels(ui.software_renderer, NULL);
     CHECK(pixels != NULL);
     if (pixels) {
@@ -168,6 +200,13 @@ int main(void) {
     }
     nk_end(&ui.context);
     CHECK(bongo_cat_ui_render(&ui) && ui.software_pending);
+    void *pending_vertices = ui.vertices, *pending_elements = ui.elements;
+    size_t pending_commands = nk_buffer_total(&ui.commands);
+    void *pending_memory = nk_buffer_memory(&ui.context.memory);
+    bongo_cat_ui_trim_idle(&ui);
+    CHECK(ui.software_pending && ui.vertices == pending_vertices &&
+        ui.elements == pending_elements && nk_buffer_total(&ui.commands) == pending_commands &&
+        nk_buffer_memory(&ui.context.memory) == pending_memory);
     bongo_cat_ui_destroy(&ui);
     CHECK(SDL_GetPointerProperty(SDL_GetWindowProperties(window), "BongoCat.SoftwareUIRenderer", NULL) == NULL);
     SDL_DestroyWindow(window); SDL_Quit();

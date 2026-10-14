@@ -196,11 +196,11 @@ pub unsafe extern "C" fn bongo_safe_model_json_parse(
                             repaired[second] = b' ';
                             result = bongo_json_read(repaired.as_ptr().cast(), len, 4 | 8 | 16);
                             if !result.is_null() {
-                                let value = to_value((*result).root, 0).ok();
-                                if !value
-                                    .as_ref()
-                                    .is_some_and(|v| v["FileReferences"].is_object())
-                                {
+                                let references = access::bongo_json_obj_get(
+                                    (*result).root,
+                                    b"FileReferences\0".as_ptr().cast(),
+                                );
+                                if !access::bongo_json_is_obj(references) {
                                     bongo_json_doc_free(result);
                                     result = ptr::null_mut();
                                 }

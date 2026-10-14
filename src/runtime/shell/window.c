@@ -30,8 +30,6 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
     }
     /* The dispatcher falls back to the OpenGL compatibility ladder when the
        selected backend is unavailable or fails to initialize. */
-    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode",
-        app->settings.app.low_memory_mode);
 #ifdef _WIN32
     SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition",
         bongo_safe_direct_composition_get(app->settings.extensions_json,

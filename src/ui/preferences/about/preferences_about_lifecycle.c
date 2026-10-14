@@ -38,8 +38,8 @@ void bongo_cat_about_refresh(BongoCatPreferences *value) {
                 bongo_cat_about_feed_free(s->contributors);
                 s->contributors = job->feed;
                 job->feed = NULL;
-                s->portraits_loaded = false;
-                s->portraits_next = 0;
+                s->portraits_current = false;
+                s->portraits_attempted = 0;
             }
         }
         bongo_cat_about_request_free(job);
@@ -74,8 +74,8 @@ void bongo_cat_about_assets_clear(BongoCatPreferences *value, bool gl_ready) {
         bongo_cat_ui_texture_delete(&value->ui, BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
     }
     memset(s->portraits, 0, sizeof(s->portraits));
-    s->portraits_loaded = false;
-    s->portraits_next = 0;
+    s->portraits_current = false;
+    s->portraits_attempted = 0;
 }
 
 void bongo_cat_about_clear(BongoCatPreferences *value, bool gl_ready) {
@@ -87,7 +87,7 @@ void bongo_cat_about_clear(BongoCatPreferences *value, bool gl_ready) {
     s->contributors = NULL;
     s->contributors_attempted = false;
     bongo_cat_about_assets_clear(value, gl_ready);
-    s->portraits_loaded = false;
+    s->portraits_current = false;
 }
 
 void bongo_cat_about_shutdown(BongoCatPreferences *value) {

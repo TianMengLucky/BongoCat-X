@@ -9,6 +9,8 @@
 #include <string.h>
 
 #define UI_COMMAND_BUFFER_TRIM_LIMIT (1024u * 1024u)
+#define UI_VERTEX_BUFFER_MIN (64u * 1024u)
+#define UI_ELEMENT_BUFFER_MIN (32u * 1024u)
 
 typedef struct UIVertex {
     float position[2];
@@ -72,10 +74,18 @@ static bool create_device(BongoCatUIBackend *ui, BongoCatError *error) {
     return true;
 }
 
+static void trim_empty_buffer(struct nk_buffer *buffer) {
+    // allocated is cleared after each frame; total measures retained capacity.
+    // A back allocation can own persistent state, so require an empty buffer.
+    size_t capacity = (size_t)nk_buffer_total(buffer);
+    if (buffer->type != NK_BUFFER_DYNAMIC || buffer->allocated ||
+        buffer->size != capacity || capacity <= UI_COMMAND_BUFFER_TRIM_LIMIT) return;
+    nk_buffer_free(buffer);
+    nk_buffer_init_default(buffer);
+}
+
 static void trim_commands(BongoCatUIBackend *ui) {
-    if (!ui || ui->commands.allocated <= UI_COMMAND_BUFFER_TRIM_LIMIT) return;
-    nk_buffer_free(&ui->commands);
-    nk_buffer_init_default(&ui->commands);
+    if (ui) trim_empty_buffer(&ui->commands);
 }
 
 bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
@@ -89,8 +99,8 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
     ui->window = window;
     ui->layout_scale = layout_scale;
     ui->raster_scale = raster_scale;
-    ui->vertex_capacity = 256 * 1024;
-    ui->element_capacity = 96 * 1024;
+    ui->vertex_capacity = UI_VERTEX_BUFFER_MIN;
+    ui->element_capacity = UI_ELEMENT_BUFFER_MIN;
     ui->vertices = malloc(ui->vertex_capacity);
     ui->elements = malloc(ui->element_capacity);
     if (!ui->vertices || !ui->elements || !nk_init_default(&ui->context, NULL) ||
@@ -309,10 +319,37 @@ bool bongo_cat_ui_render(BongoCatUIBackend *ui) {
     return ui->last_gl_error == GL_NO_ERROR;
 }
 
+static void trim_geometry(BongoCatUIBackend *ui, void **data,
+    size_t *capacity, size_t used, size_t minimum, GLenum target,
+    GLuint buffer, size_t *gpu_capacity) {
+    // Power-of-two slack prevents reallocations around a page's typical size.
+    size_t wanted = minimum;
+    while (wanted < used) wanted *= 2;
+    if (*capacity > wanted && *capacity / 2 >= wanted) {
+        void *smaller = realloc(*data, wanted);
+        if (smaller) { *data = smaller; *capacity = wanted; }
+    }
+    if (!ui->software_renderer && *gpu_capacity > wanted &&
+        *gpu_capacity / 2 >= wanted) {
+        ui->gl.bind_vertex_array(ui->vao);
+        ui->gl.bind_buffer(target, buffer);
+        ui->gl.buffer_data(target, (GLsizeiptr)wanted, NULL, GL_DYNAMIC_DRAW);
+        // A failed shrink leaves no reliable capacity; force reallocation.
+        *gpu_capacity = glGetError() == GL_NO_ERROR ? wanted : 0;
+    }
+}
+
 void bongo_cat_ui_trim_idle(BongoCatUIBackend *ui) {
-    if (!ui) return;
+    if (!ui || ui->software_pending || ui->frame_building) return;
     bongo_cat_ui_paint_cache_trim_idle(ui);
     trim_commands(ui);
+    // Default initialization stores window state in a separate pool. The raw
+    // command buffer is empty after nk_clear and can release its high water.
+    if (ui->context.use_pool) trim_empty_buffer(&ui->context.memory);
+    trim_geometry(ui, &ui->vertices, &ui->vertex_capacity, ui->last_vertex_bytes,
+        UI_VERTEX_BUFFER_MIN, GL_ARRAY_BUFFER, ui->vbo, &ui->gpu_vertex_capacity);
+    trim_geometry(ui, &ui->elements, &ui->element_capacity, ui->last_element_bytes,
+        UI_ELEMENT_BUFFER_MIN, GL_ELEMENT_ARRAY_BUFFER, ui->ebo, &ui->gpu_element_capacity);
 }
 
 bool bongo_cat_ui_frame_valid(const BongoCatUIBackend *ui) {

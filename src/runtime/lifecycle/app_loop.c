@@ -294,6 +294,8 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         if (bongo_cat_model_frame_due(app, now)) update_model(app, now);
         else if (!app->session.window.visible || app->window_minimized) {
             app->last_frame_ns = now;
+            if (bongo_cat_rhi_release_idle_memory(&app->rhi))
+                app->native_async_pending = false;
             bongo_cat_memory_policy_idle();
         }
         bongo_cat_diagnostics_phase("model-cover-capture");

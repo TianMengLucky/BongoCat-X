@@ -9,6 +9,18 @@ Release 工作流构建并发布 GitHub Release；发布说明取自本文件，
 
 ## [未发布]
 
+- 修复 Windows 构建：DirectComposition 窗口透明度通过 IDCompositionEffectGroup 应用；补齐 Vulkan 异步提交测试的内存策略模拟函数。
+
+- 进一步优化 Live2D 与设置界面渲染内存：OpenGL 表情所需离屏目标减少并稳定 0.5 秒后回收闲置目标；Vulkan 复用打包顶点检测变化、回收渲染器初始化上传暂存，并在纹理尺寸等价时复用画质调整；释放旧模型渲染资源时归还 CPU 容器容量。设置界面绘制缓冲从 64／32 KiB 按需增长并在空闲时收缩 CPU／GPU 高水位，修复 Nuklear 命令缓冲用清零后的计数判断容量而未触发回收的问题，缓存画面绘制复用 VBO／EBO；Windows 软件界面缩略图复用有界 WIC 解码；关于页仅为可见贡献者保留头像纹理；两种设置渲染路径均在效果栅格化前检查缓存预算。隐藏窗口同时回收 Vulkan 上传暂存与命令池。
+
+- 继续优化 Live2D OpenGL／Vulkan 内存：OpenGL 重载纹理前释放旧遮罩与几何缓冲；Vulkan 加载结束时等待上传 Fence 回收最后一批暂存，避免隐藏模型保留上传内存；原生后端尺寸记录移除每张纹理约 16 KiB 的重复 Alpha 缓冲及独立堆分配；两种后端提前释放模型设置 JSON 输入缓冲。
+
+- 优化 Inox2D OpenGL／Vulkan 内存：纹理上传成功后释放模型中的压缩纹理数据；Vulkan 临时上传缓冲改用独立分配并在加载完成前等待 Fence 回收，避免隐藏模型保留上传缓冲及撑大长期分配池；OpenGL 状态保存改用固定数组，减少每帧堆分配。
+
+- 删除低内存模式开关、配置及强制画质限制；参考 bongocat-turbo 的按需分配与闲置回收原则，缩小默认 Live2D Vulkan VMA 分配块，Windows 使用单一分层绘制目标，隐藏／最小化后按 Fence 安全释放回读缓存。
+
+- 修复 Windows 便携版点击「重启以更新」后跨盘更新失败：原子替换备份改为保存在应用文件旁，支持缓存与应用位于不同磁盘，保留失败回滚并清理临时备份。
+
 - Release Actions 增加按平台、Rust 工具链及依赖隔离的 Cargo 构建产物缓存，缓存 Git 依赖并统一 sccache 目录；Windows 体积优化限制激进内联，并在构建摘要记录 EXE 字节数。
 
 - Windows 通用设置新增默认关闭的「DirectComposition 呈现」：通过预乘 Alpha 的 DXGI 合成交换链呈现，失败时回退 UpdateLayeredWindow；保留透明像素鼠标穿透、窗口透明度及位置同步。此阶段仍使用像素读回，尚未实现 GPU 纹理共享，也不保证游戏保持 Independent Flip。

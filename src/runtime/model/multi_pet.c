@@ -215,8 +215,6 @@ static void reload_secondary_settings(BongoCatApp *app) {
         settings.model.vertical_flip !=
         app->settings.model.vertical_flip ||
         settings.model.mouse_vertical_flip != app->settings.model.mouse_vertical_flip;
-    if (settings.app.low_memory_mode != app->settings.app.low_memory_mode)
-        app->render_backend_swap_pending = true;
     app->settings = settings;
     if (pointer_orientation_changed) bongo_cat_app_reset_pointer_tracking(app);
     if (hands_changed) bongo_cat_app_refresh_hands(app);
@@ -230,8 +228,7 @@ static void reload_secondary_settings(BongoCatApp *app) {
         bool reused = settings.model.dynamic_texture_resolution ==
             previous_settings.model.dynamic_texture_resolution &&
             bongo_cat_model_runtime_try_reuse_texture_quality(app->model_runtime,
-                settings.app.low_memory_mode ?
-                    SDL_min(settings.model.render_quality_percent, 10.0f) : settings.model.render_quality_percent);
+                settings.model.render_quality_percent);
         if (!reused && !bongo_cat_app_reload_model_with_error(app, &reload_error)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                 "[runtime] Multi-pet texture resolution reload failed: %s",

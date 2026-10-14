@@ -40,8 +40,7 @@ static void cache_startup_display_fps(BongoCatApp *app) {
 void attach_rhi_info(BongoCatApp *app) {
     const BongoCatApplicationPreferences *options = &app->settings.app;
     uint32_t requested = 0;
-    if (options->low_memory_mode) requested = BONGO_CAT_OPTIMIZE_LOW_MEMORY;
-    if (!options->low_memory_mode && options->large_render_optimization &&
+    if (options->large_render_optimization &&
         (app->rhi.backend == BONGO_CAT_RHI_VULKAN || app->rhi.backend == BONGO_CAT_RHI_METAL)) {
         if (app->rhi.backend == BONGO_CAT_RHI_VULKAN) {
             if (options->render_parallel_recording) requested |= BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING;

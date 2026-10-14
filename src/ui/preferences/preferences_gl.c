@@ -32,12 +32,6 @@ bool bongo_cat_preferences_gl_create(BongoCatPreferences *value) {
         return false;
     if (SDL_GetBooleanProperty(SDL_GetWindowProperties(value->window), "BongoCat.SoftwareUI", false)) return true;
     bool share = value->app->gl_context != NULL;
-    if (share && value->app->settings.app.low_memory_mode &&
-        SDL_GL_MakeCurrent(value->window, value->app->gl_context)) {
-        value->gl_context = value->app->gl_context;
-        value->owns_gl_context = false;
-        return true;
-    }
     SDL_ClearError();
     if (share && !SDL_GL_MakeCurrent(value->app->window, value->app->gl_context))
         return fail(value, SDL_GetError());

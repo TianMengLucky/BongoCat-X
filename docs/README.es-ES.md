@@ -337,11 +337,10 @@ Preferencias → Preferencias → Ventana permite elegir una imagen de fondo per
 
 Live2D reutiliza automáticamente los búferes de geometría y estados de renderizado repetidos. Las cargas dinámicas de OpenGL, los lotes y la caché de Vulkan, los búferes compartidos de Metal y las máscaras nativas adaptativas no requieren otro interruptor. El rendimiento y el comportamiento por plataforma están pendientes de medición.
 
-Ajustes → Aplicación → Modo de memoria reducida está desactivado por defecto. Limita la calidad al 10%, los lados de texturas a 512 píxeles y las máscaras Live2D a 256, suspende grandes optimizaciones y recarga el renderizador. Desactivar restaura la calidad guardada. 50MB es un objetivo; depende del modelo y controlador.
+Vulkan administra la memoria automáticamente: Live2D usa bloques VMA de 1 MiB por defecto o de 16 MiB con asignaciones grandes activadas. La presentación por capas de Windows conserva un destino de color. Al ocultar o minimizar, libera las cachés de lectura tras finalizar la GPU y las recrea cuando se necesitan. Calidad y resolución dinámica se configuran por separado.
 
-Ajustes → Mascota → Rango de seguimiento: horizontal/vertical 25–400%, desactivado por defecto; 100% conserva el rango. Las patas Mver dibujadas pueden moverse más; Live2D mantiene sus límites. Mirada y ventana no cambian. El modo de memoria reducida desactiva MSAA y reduce shaders y pipelines sin uso.
+Ajustes → Mascota → Rango de seguimiento: horizontal/vertical 25–400%, desactivado por defecto; 100% conserva el rango. Las patas Mver dibujadas pueden moverse más; Live2D mantiene sus límites. Mirada y ventana no cambian
 
-En Windows, los ajustes de memoria reducida usan renderizado SDL por software en bloques y fondo opaco con OpenGL/Vulkan. Se conservan el tamaño real, DPI y antialiasing de las fuentes. El atlas almacena máscaras A8 y convierte solo el glifo dibujado. OpenGL en otras plataformas sigue reutilizando el contexto de la mascota.
 ### Varias teclas y caracteres legibles en modo espejo
 
 Mver (OpenGL/Vulkan/Metal) recorta por separado la mano, el marco y los caracteres, uniendo las teclas pulsadas con + en un solo bocadillo. El marco y la cola se reflejan con el modelo; los caracteres siguen siendo legibles, también en modo de una tecla. Configura las tres áreas, el espacio alrededor de + y el límite por lado en `hand-layout.json` junto a las imágenes de las manos; reinicia tras editar. Consulta la [guía y el ejemplo](hand-layout.md).

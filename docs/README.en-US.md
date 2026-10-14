@@ -460,11 +460,10 @@ Preferences → Preferences → Window includes Custom Image Background. Choose 
 
 Live2D automatically reuses geometry buffers and repeated render state. OpenGL streaming, Vulkan upload batching and pipeline caching, Metal shared buffer slots, and native adaptive masks require no additional switch. Performance and platform behavior of these new paths remain to be measured.
 
-Settings → Application → Low Memory Mode is off by default. It caps texture quality at 10%, edges at 512 pixels and Live2D masks at 256 pixels, suspends large rendering optimizations and reloads the renderer. Disabling restores saved quality; memory depends on the model and driver. 50MB is a target, not a guarantee.
+Vulkan manages memory automatically: Live2D uses 1 MiB VMA blocks by default, or 16 MiB with explicit large allocation. Windows layered presentation keeps one color target. Hidden or minimized windows release readback caches after GPU completion and recreate them on demand. Texture quality and dynamic resolution remain independent settings.
 
-Settings → Pet → Custom Mouse Follow Range provides horizontal/vertical 25–400%, default off; 100% keeps the original range. Drawn Mver hands and mice can move farther; Live2D retains authored parameter limits. Gaze and window position are unchanged. Low Memory Mode disables OpenGL MSAA and reduces unused OpenGL shaders and Vulkan blend pipelines.
+Settings → Pet → Custom Mouse Follow Range provides horizontal/vertical 25–400%, default off; 100% keeps the original range. Drawn Mver hands and mice can move farther; Live2D retains authored parameter limits. Gaze and window position are unchanged
 
-On Windows, low-memory settings use chunked SDL software drawing and an opaque background for OpenGL/Vulkan. Fonts retain their actual sizes, display DPI and antialiasing. The software atlas stores A8 coverage and converts only the glyph being drawn. OpenGL on other platforms continues to reuse the pet context.
 ### Multiple keys and readable mirrored characters
 
 Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).

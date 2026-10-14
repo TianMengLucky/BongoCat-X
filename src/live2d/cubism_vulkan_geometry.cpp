@@ -12,7 +12,6 @@ namespace {
 struct Mesh {
     VkDeviceSize offset = 0;
     int count = 0;
-    std::vector<float> positions, uv;
 };
 }
 struct VulkanGeometry {
@@ -26,7 +25,6 @@ struct VulkanGeometry {
     float *packed_data = nullptr;
     std::vector<VkBufferCopy> copies;
     bool mapped_packing = false;
-    bool compact = false;
     bool valid = false, dirty = false, uploaded = false, direct = false;
 };
 namespace {
@@ -39,17 +37,12 @@ std::shared_ptr<VulkanGeometry> vulkan_geometry_create(VkDevice device, VkPhysic
     const int *counts, size_t count) {
     try {
         auto next = std::make_shared<VulkanGeometry>(device);
-        next->compact = vulkan_memory_prefers_device();
         next->meshes.resize(count);
         for (size_t i = 0; i < count; ++i) {
             auto &mesh = next->meshes[i];
             if (counts[i] < 0) return {};
             mesh.offset = next->size;
             mesh.count = counts[i];
-            if (!next->compact) {
-                mesh.positions.resize((size_t)counts[i] * 2);
-                mesh.uv.resize((size_t)counts[i] * 2);
-            }
             next->size += (VkDeviceSize)counts[i] * sizeof(float) * 4;
         }
         if (!next->size) return {};
@@ -104,22 +97,16 @@ void vulkan_geometry_prepare(size_t index, const float *positions, const float *
     const size_t bytes = (size_t)mesh.count * sizeof(float) * 2;
     if (!bytes) return;
     auto *target = geometry->packed_data + (size_t)mesh.offset / sizeof(float);
-    if (geometry->compact) {
-        // Compare with the existing upload mapping instead of retaining two
-        // additional CPU arrays. The draw fence was waited before this call.
-        bool unchanged = geometry->valid;
-        for (int i = 0; unchanged && i < mesh.count; ++i)
-            unchanged = std::memcmp(target + (size_t)i * 4,
-                positions + (size_t)i * 2, sizeof(float) * 2) == 0 &&
-                std::memcmp(target + (size_t)i * 4 + 2,
-                    uv + (size_t)i * 2, sizeof(float) * 2) == 0;
-        if (unchanged) return;
-    } else {
-        if (geometry->valid && std::memcmp(mesh.positions.data(), positions, bytes) == 0 &&
-            std::memcmp(mesh.uv.data(), uv, bytes) == 0) return;
-        std::memcpy(mesh.positions.data(), positions, bytes);
-        std::memcpy(mesh.uv.data(), uv, bytes);
-    }
+    // The draw fence was waited before this call. The packed mapping (or the
+    // raw-SDK fallback vector) already holds the preceding vertices and UVs.
+    // Reuse it for comparison without another per-mesh copy on the CPU.
+    bool unchanged = geometry->valid;
+    for (int i = 0; unchanged && i < mesh.count; ++i)
+        unchanged = std::memcmp(target + (size_t)i * 4,
+            positions + (size_t)i * 2, sizeof(float) * 2) == 0 &&
+            std::memcmp(target + (size_t)i * 4 + 2,
+                uv + (size_t)i * 2, sizeof(float) * 2) == 0;
+    if (unchanged) return;
     for (int i = 0; i < mesh.count; ++i) {
         std::memcpy(target + (size_t)i * 4, positions + (size_t)i * 2, sizeof(float) * 2);
         std::memcpy(target + (size_t)i * 4 + 2, uv + (size_t)i * 2, sizeof(float) * 2);

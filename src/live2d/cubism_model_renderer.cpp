@@ -350,12 +350,21 @@ void NativeModel::draw() {
         prepare_gl_geometry();
         renderer->DrawModel();
     }
-    if (trim_offscreen_pool_) {
-        // The first completed frame establishes how many targets this model
-        // needs. Drop unused targets retained by a previously loaded model.
-        manager->ReleaseStaleRenderTextures();
-        trim_offscreen_pool_ = false;
-    }
+    const unsigned used = manager->GetPreviousActiveRenderTextureCount();
+    if (manager->GetOffscreenRenderTargetListSize() > used) {
+        const uint64_t now = SDL_GetTicksNS();
+        if (!offscreen_pool_unused_ns_ || offscreen_pool_used_ != used) {
+            offscreen_pool_used_ = used;
+            offscreen_pool_unused_ns_ = now;
+        }
+        // Expressions can briefly need extra blend targets. Reclaim a settled
+        // lower count after 0.5 s; a new model still trims its first frame.
+        if (trim_offscreen_pool_ || now - offscreen_pool_unused_ns_ >= 500000000ull) {
+            manager->ReleaseStaleRenderTextures();
+            offscreen_pool_unused_ns_ = 0;
+        }
+    } else offscreen_pool_unused_ns_ = 0;
+    trim_offscreen_pool_ = false;
     if (resources_changed) {
         // Cubism creates each clipping manager only when the model uses that
         // mask type. Its count getters dereference those optional managers.
@@ -411,6 +420,8 @@ void NativeModel::release_renderer() {
     mask_last_width_ = mask_last_height_ = 0;
     visual_state_ready_ = false;
     trim_offscreen_pool_ = true;
+    offscreen_pool_used_ = 0;
+    offscreen_pool_unused_ns_ = 0;
 }
 
 void NativeModel::release_render_resources() {
@@ -455,7 +466,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
             release_renderer();
             return false;
         }
-        mask_texture_limit_ = low_memory_mode_ ? std::min((int)texture_limit, 256) : (int)texture_limit;
+        mask_texture_limit_ = (int)texture_limit;
         bind_textures();
         if (!update_mask_buffers()) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM,

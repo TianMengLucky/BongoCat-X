@@ -5,8 +5,8 @@ use std::{num::NonZeroU32, rc::Rc};
 /// on both normal returns and unwinding, including interrupted plugin loads.
 pub struct State {
     gl: Rc<glow::Context>,
-    integers: Vec<(u32, i32)>,
-    enabled: Vec<(u32, bool)>,
+    integers: [(u32, i32); 29],
+    enabled: [(u32, bool); 6],
     viewport: [i32; 4],
     color: [i32; 4],
     clear: [f32; 4],
@@ -46,10 +46,7 @@ impl State {
             glow::STENCIL_BACK_PASS_DEPTH_FAIL,
             glow::STENCIL_BACK_PASS_DEPTH_PASS,
         ];
-        let integers = keys
-            .into_iter()
-            .map(|key| (key, gl.get_parameter_i32(key)))
-            .collect();
+        let integers = keys.map(|key| (key, gl.get_parameter_i32(key)));
         let enabled = [
             glow::BLEND,
             glow::DEPTH_TEST,
@@ -58,9 +55,7 @@ impl State {
             glow::STENCIL_TEST,
             glow::FRAMEBUFFER_SRGB,
         ]
-        .into_iter()
-        .map(|key| (key, gl.is_enabled(key)))
-        .collect();
+        .map(|key| (key, gl.is_enabled(key)));
         let mut viewport = [0; 4];
         let mut color = [0; 4];
         let mut clear = [0.0; 4];

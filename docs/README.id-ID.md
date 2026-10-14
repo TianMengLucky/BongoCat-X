@@ -451,11 +451,10 @@ Preferensi → Preferensi → Jendela menyediakan latar gambar kustom. Pilih PNG
 
 Live2D otomatis menggunakan kembali buffer geometri dan status render berulang. Streaming OpenGL, unggahan berkelompok dan cache pipeline Vulkan, slot buffer bersama Metal, serta mask native adaptif tidak memerlukan sakelar tambahan. Kinerja dan perilaku platform masih perlu diukur.
 
-Pengaturan → Aplikasi → Mode Memori Rendah nonaktif secara default. Mode ini membatasi kualitas tekstur ke 10%, sisi ke 512 piksel dan masker Live2D ke 256 piksel, menunda optimasi render besar dan memuat ulang renderer. Menonaktifkan memulihkan kualitas tersimpan. 50MB adalah target, bergantung pada model dan driver.
+Vulkan mengelola memori secara otomatis: Live2D memakai blok VMA 1 MiB secara default, atau 16 MiB jika alokasi besar diaktifkan. Presentasi berlapis Windows menyimpan satu target warna. Jendela tersembunyi atau diminimalkan melepaskan cache baca setelah GPU selesai dan membuatnya kembali saat diperlukan. Kualitas dan resolusi dinamis tetap diatur secara terpisah.
 
-Pengaturan → Pet → Rentang mouse: horizontal/vertikal 25–400%, default nonaktif; 100% mempertahankan semula. Kaki Mver yang digambar bergerak lebih jauh; Live2D mempertahankan batas model. Pandangan dan posisi jendela tetap. Mode memori rendah menonaktifkan MSAA dan mengurangi shader dan pipeline yang tidak digunakan.
+Pengaturan → Pet → Rentang mouse: horizontal/vertikal 25–400%, default nonaktif; 100% mempertahankan semula. Kaki Mver yang digambar bergerak lebih jauh; Live2D mempertahankan batas model. Pandangan dan posisi jendela tetap
 
-Di Windows, pengaturan hemat memori menggunakan perenderan perangkat lunak SDL bertahap dengan latar buram untuk OpenGL/Vulkan. Ukuran font, DPI layar dan antialiasing dipertahankan. Atlas menyimpan masker A8 dan hanya mengonversi glif yang digambar. OpenGL di platform lain tetap memakai konteks pet.
 ### Beberapa tombol dan karakter yang terbaca dalam mode cermin
 
 Mver (OpenGL/Vulkan/Metal) memotong tangan, bingkai gelembung, dan karakter secara terpisah, lalu menyambungkan tombol yang ditahan dengan + dalam satu gelembung. Bingkai dan ekornya mengikuti pencerminan model; karakter tetap terbaca, termasuk dalam mode satu tombol. Atur tiga area potong, jarak di sekitar +, dan batas per sisi dalam `hand-layout.json` di samping gambar tangan, lalu mulai ulang aplikasi. Lihat [panduan dan contoh](hand-layout.md).

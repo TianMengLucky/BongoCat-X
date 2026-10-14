@@ -209,7 +209,7 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
                     "Unable to save the automatic update setting"), true);
         }
         bongo_cat_preferences_render_backend_row(app, options, context);
-        bongo_cat_preferences_low_memory_row(app, options, context);
+        bongo_cat_preferences_memory_row(app, context);
         bongo_cat_preferences_large_render_row(app, options, context);
     }
     if (application_open) bongo_cat_preferences_options_end(value, context);

@@ -3,18 +3,19 @@
 
 #include "preferences_about_online.h"
 #include "nuklear_config.h"
+#include <stdint.h>
 
 typedef struct BongoCatPreferences BongoCatPreferences;
 
 /* UI-owned state. Workers publish results through the request objects. */
 typedef struct BongoCatAboutState {
-    /* Retained for this settings session, including GL asset rebuilds. */
+    /* Decoded feed pixels survive asset rebuilds; native textures are visible-only. */
     unsigned int portraits[BONGO_ABOUT_CONTRIBUTOR_CAP];
     BongoCatAboutRequest *contributors_request;
     BongoCatAboutFeed *contributors;
     bool contributors_attempted;
-    bool portraits_loaded;
-    int portraits_next;
+    bool portraits_current;
+    uint64_t portraits_attempted;
     Uint32 event_type;
     struct nk_user_font detail_font;
     struct nk_user_font title_font, description_font;

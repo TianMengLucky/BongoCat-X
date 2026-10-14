@@ -329,11 +329,10 @@ Preferências → Preferências → Janela permite escolher uma imagem de fundo 
 
 Live2D reutiliza automaticamente buffers de geometria e estados de renderização repetidos. Uploads OpenGL, lotes e cache de pipelines Vulkan, buffers compartilhados Metal e máscaras nativas adaptativas não exigem outro interruptor. O desempenho e o comportamento por plataforma ainda precisam ser medidos.
 
-Configurações → Aplicativo → Modo de pouca memória vem desativado. Limita a qualidade a 10%, os lados das texturas a 512 pixels e as máscaras Live2D a 256, suspende grandes otimizações e recarrega o renderizador. Desativar restaura a qualidade salva. 50MB é uma meta e depende do modelo e driver.
+Vulkan gerencia a memória automaticamente: Live2D usa blocos VMA de 1 MiB por padrão ou de 16 MiB com alocações grandes ativadas. A apresentação em camadas do Windows mantém um destino de cor. Janelas ocultas ou minimizadas liberam caches de leitura após a conclusão da GPU e os recriam quando necessário. Qualidade e resolução dinâmica continuam sendo configurações independentes.
 
-Configurações → Pet → Faixa do mouse: horizontal/vertical 25–400%, desativada por padrão; 100% mantém o original. As patas Mver desenhadas vão mais longe; Live2D mantém seus limites. Olhar e janela não mudam. O modo de pouca memória desativa MSAA e reduz shaders e pipelines não usados.
+Configurações → Pet → Faixa do mouse: horizontal/vertical 25–400%, desativada por padrão; 100% mantém o original. As patas Mver desenhadas vão mais longe; Live2D mantém seus limites. Olhar e janela não mudam
 
-No Windows, as configurações de pouca memória usam renderização SDL por software em blocos e fundo opaco para OpenGL/Vulkan. Tamanho real, DPI e suavização das fontes são preservados. O atlas armazena máscaras A8 e converte apenas o glifo desenhado. Em outras plataformas, OpenGL continua reutilizando o contexto do mascote.
 ### Várias teclas e caracteres legíveis no modo espelho
 
 Mver (OpenGL/Vulkan/Metal) recorta separadamente a mão, a borda e os caracteres, unindo as teclas pressionadas com + em um único balão. A borda e a ponta espelham com o modelo; os caracteres continuam legíveis, também no modo de uma tecla. Configure as três áreas, o espaçamento ao redor de + e o limite por lado em `hand-layout.json` junto às imagens das mãos e reinicie após editar. Veja o [guia e o exemplo](hand-layout.md).

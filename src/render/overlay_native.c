@@ -88,7 +88,7 @@ bool bongo_cat_overlay_prepare_native_background(BongoCatOverlay *value,
         value, rhi, width, height, x, y, cw, ch, mirror, flip);
     bool ok = bongo_cat_rhi_set_background(rhi, canvas->pixels, canvas->w,
         canvas->h, canvas->pitch, value->native_revision);
-    if (ok && SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false) &&
+    if (ok &&
         bongo_cat_rhi_background_matches(rhi,width,height,value->native_revision)) {
         // Upload owns its staging copy before returning. Rebuild this temporary
         // composition only when geometry, art, or the renderer changes.

@@ -2,7 +2,6 @@
 #include "cubism_model.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "cubism_texture_resolution.hpp"
-#include "cubism_model_texture.hpp"
 #include <SDL3/SDL_log.h>
 #include <cstring>
 #include <algorithm>
@@ -64,7 +63,7 @@ bool NativeModel::load_textures_native(BongoCatError *error,
     if (display_width <= 0 || display_height <= 0) {
         display_width = viewport_width_; display_height = viewport_height_;
     }
-    int limit = low_memory_mode_ ? 512 : 16384;
+    int limit = 16384;
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     if (rhi_info_.backend == BONGO_CAT_RHI_VULKAN) {
         VkPhysicalDeviceProperties properties{};
@@ -106,8 +105,8 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         bongo_cat_image_make_alpha_mask(&image, &native_alpha_[(size_t)i]);
         auto bound = texture_resolution_for(dynamic_texture_resolution_, display_width, display_height,
             reference_width, reference_height, width, height, limit, render_quality_percent_);
-        auto metadata = std::make_shared<ModelTexture>();
-        metadata->source_width = width; metadata->source_height = height;
+        auto &metadata = native_texture_info_[(size_t)i];
+        metadata.source_width = width; metadata.source_height = height;
         BongoCatImage resized{};
         const auto free_image = [](BongoCatImage *value) { bongo_cat_image_free(value); };
         std::unique_ptr<BongoCatImage, decltype(free_image)> resized_owner(&resized, free_image);
@@ -139,13 +138,17 @@ bool NativeModel::load_textures_native(BongoCatError *error,
         if (!uploaded) { release_render_resources(); return false; }
         resized_owner.reset();
         native_texture_bytes_ += pixel_bytes;
-        metadata->width = width; metadata->height = height;
-        native_texture_info_[(size_t)i] = std::move(metadata);
+        metadata.width = width; metadata.height = height;
         if (progress) progress(userdata, .50f + .45f * (float)(i + 1) /
             (float)(count > 0 ? count : 1));
     }
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
-    if (upload_batch.active) { vulkan_upload_batch_end(); upload_batch.active = false; }
+    if (upload_batch.active) {
+        vulkan_upload_batch_end();
+        // Hidden models may never draw: retire the final staging slots now.
+        vulkan_submit_wait();
+        upload_batch.active = false;
+    }
 #endif
     if (!frame_prepared_) { prepare_expression_frame(); frame_prepared_ = true; }
     prepare_frame_bounds();
@@ -156,7 +159,7 @@ bool NativeModel::load_textures_native(BongoCatError *error,
 
 void NativeModel::prepare_native_mask_sizes() {
     // Bound atlas memory while retaining the same layout and resize hysteresis.
-    const int limit = std::min(texture_limit_ > 0 ? texture_limit_ : 16384, low_memory_mode_ ? 256 : 2048);
+    const int limit = std::min(texture_limit_ > 0 ? texture_limit_ : 16384, 2048);
     drawable_masks_.size = mask_target_size(drawable_masks_.layout,
         viewport_width_, viewport_height_, limit, drawable_masks_.size);
     offscreen_masks_.size = mask_target_size(offscreen_masks_.layout,

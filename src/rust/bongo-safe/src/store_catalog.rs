@@ -1,6 +1,6 @@
 //! Shared catalog parser, compiled into the optional Rust store plugin.
-use reqwest::Url;
 use serde::Deserialize;
+use url::Url;
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

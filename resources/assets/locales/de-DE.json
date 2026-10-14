@@ -254,7 +254,6 @@
         "title": "Allgemein",
         "labels": {
           "memoryPreference": "Speicherpriorität beim Rendern",
-          "lowMemoryMode": "Speichersparmodus",
           "largeRenderOptimization": "Optimierung großer Renderaufgaben",
           "appSettings": "Anwendung",
           "autoCheckUpdates": "Automatisch nach Updates suchen",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "Der aktuelle Renderer unterstützt diese Arbeitsspeicherpriorität nicht.",
           "memoryPreferenceSaveFailed": "Speicherpriorität konnte nicht gespeichert werden",
           "memoryPreference": "Nur Live2D Vulkan; lädt das Rendering neu. Videospeicher zuerst bevorzugt VRAM und minimiert CPU-Kopien, Upload-Zwischenspeicher und Pipeline-Caches. Systemspeicher zuerst bevorzugt RAM. Erforderlicher CPU-Zugriff und nicht unterstützte Zuweisungen nutzen Alternativen; integrierte GPUs teilen den Speicher.",
-          "lowMemoryMode": "Begrenzt Texturqualität auf 10%, Texturkanten auf 512 Pixel und Live2D-Masken auf 256 Pixel. Pausiert große Renderoptimierungen und lädt den Renderer neu. Ausschalten stellt die gespeicherte Qualität wieder her. Speicherbedarf hängt von Modell und Treiber ab.",
           "largeRenderOptimization": "Zusätzliche Vulkan/Metal-Optimierungen wählen. Änderungen laden das Modell neu; Speicherbedarf und Unterstützung hängen vom Renderer ab.",
           "largeRenderUnavailable": "Der aktuelle Modell-Renderer unterstützt keine dieser Optimierungen; die Darstellung bleibt unverändert.",
           "showTrayIcon": "Wenn aktiviert, wird das Anwendungssymbol im Infobereich angezeigt.",

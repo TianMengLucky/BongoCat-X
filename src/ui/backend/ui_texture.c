@@ -1,5 +1,6 @@
 #include "ui_software.h"
 #include "bongo_cat/image.h"
+#include "../../media/image_internal.h"
 #include <SDL3/SDL_opengl.h>
 unsigned int bongo_cat_ui_software_upload(BongoCatUIBackend *, const unsigned char *, int, int, bool);
 void bongo_cat_ui_software_delete(BongoCatUIBackend *, int, const unsigned int *);
@@ -34,10 +35,18 @@ unsigned int bongo_cat_ui_texture_thumbnail(BongoCatUIBackend *ui, const char *p
     if (!ui || !ui->software_renderer) return bongo_cat_image_texture_thumbnail(path,
         max_width, max_height, width, height, error);
     BongoCatImage source = {0}, image = {0};
-    if (bongo_cat_image_load(path, &source, error) != BONGO_CAT_OK) return 0;
-    if (!bongo_cat_image_resize_rgba_take(&source, max_width > 0 ? max_width : source.width,
-            max_height > 0 ? max_height : source.height, &image, error)) {
-        bongo_cat_image_free(&source); return 0;
+    bool decoded = false;
+#ifdef _WIN32
+    if (max_width > 0 && max_height > 0)
+        decoded = bongo_cat_image_decode_wic_responsive(path, &image,
+            max_width, max_height, NULL, NULL);
+#endif
+    if (!decoded) {
+        if (bongo_cat_image_load(path, &source, error) != BONGO_CAT_OK) return 0;
+        if (!bongo_cat_image_resize_rgba_take(&source, max_width > 0 ? max_width : source.width,
+                max_height > 0 ? max_height : source.height, &image, error)) {
+            bongo_cat_image_free(&source); return 0;
+        }
     }
     unsigned texture = bongo_cat_ui_texture_upload(ui, image.pixels, image.width, image.height, false);
     if (width) *width = image.width;

@@ -13,7 +13,7 @@ namespace {
 VmaAllocator allocator;
 VkDevice allocator_device;
 bool use_pool;
-bool allocator_low_memory;
+bool allocator_large_allocation;
 bool allocator_system_memory;
 uint32_t host_memory_types;
 struct BufferAllocation {
@@ -28,11 +28,11 @@ void check(VkResult result) {
 }
 }
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
-    VkDevice device, bool enabled, bool low_memory, bool system_memory) {
+    VkDevice device, bool enabled, bool large_allocation, bool system_memory) {
     // Policy changes occur before loading, after the previous model is released.
     if (!buffers.empty() || !images.empty()) return false;
     if (allocator && (allocator_device != device || !enabled ||
-        allocator_low_memory != low_memory || allocator_system_memory != system_memory)) vulkan_memory_release();
+        allocator_large_allocation != large_allocation || allocator_system_memory != system_memory)) vulkan_memory_release();
     use_pool = false;
     if (!enabled) return true;
     if (!instance || !physical || !device) return false;
@@ -47,11 +47,11 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         info.vulkanApiVersion = VK_API_VERSION_1_3;
         // Keep small models from reserving large mostly empty blocks per memory type.
         // VMA still grows the pool and dedicates oversized resources as needed.
-        info.preferredLargeHeapBlockSize = low_memory ? 256ull * 1024 : 16ull * 1024 * 1024;
+        info.preferredLargeHeapBlockSize = large_allocation ? 16ull * 1024 * 1024 : 1ull * 1024 * 1024;
         info.pVulkanFunctions = &functions;
         if (vmaCreateAllocator(&info, &allocator) != VK_SUCCESS) return false;
         allocator_device = device;
-        allocator_low_memory = low_memory;
+        allocator_large_allocation = large_allocation;
         allocator_system_memory = system_memory;
         host_memory_types = 0;
         VkPhysicalDeviceMemoryProperties memory_properties{};

@@ -7,28 +7,16 @@
 #include "ui_paint.h"
 #include "ui_icons.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 static void contributors_load(BongoCatPreferences *value) {
     BongoCatAboutState *s = &value->about;
     bongo_cat_about_refresh(value);
-    if (s->contributors && !s->portraits_loaded) {
-        if (!s->portraits_next) {
-            bongo_cat_ui_texture_delete(&value->ui, BONGO_ABOUT_CONTRIBUTOR_CAP, s->portraits);
-            memset(s->portraits, 0, sizeof(s->portraits));
-        }
-        /* Bound GL work per frame, including the maximum-size contributor list. */
-        int end = NK_MIN(s->portraits_next + 4, s->contributors->count);
-        for (int i = s->portraits_next; i < end; i++) {
-            unsigned char *pixels = s->contributors->people[i].pixels;
-            if (!pixels) continue;
-            s->portraits[i] = bongo_cat_ui_texture_upload(&value->ui, pixels,
-                s->contributors->avatar_size, s->contributors->avatar_size, false);
-        }
-        s->portraits_next = end;
-        s->portraits_loaded = end == s->contributors->count;
-        if (!s->portraits_loaded) value->render_dirty = true;
+    if (s->contributors && !s->portraits_current) {
+        bongo_cat_about_assets_clear(value, true);
+        s->portraits_current = true;
     }
 }
 
@@ -101,8 +89,10 @@ void bongo_cat_about_contributors(BongoCatPreferences *value, struct nk_context 
     float button_y = wide ? 28.0f + (content_height - 28.0f - 46.0f) * .5f : content_height + 24.0f;
     struct nk_rect bounds;
     nk_layout_row_dynamic(context, join_y + NK_MAX(content_height, button_y + 46.0f) + 44.0f, 1);
-    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID)
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) {
+        bongo_cat_about_assets_clear(value, true);
         return;
+    }
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     struct nk_rect avatars[BONGO_ABOUT_CONTRIBUTOR_CAP];
@@ -157,8 +147,34 @@ void bongo_cat_about_contributors(BongoCatPreferences *value, struct nk_context 
             }
         }
     }
+    // Keep native textures only for visible avatars and a small hover guard.
+    // The preceding frame has finished, and no portrait commands were built yet.
+    unsigned upload_budget = 4;
+    BongoCatAboutState *state = &value->about;
     for (int i = 0; i < total; i++) {
         struct nk_rect avatar = avatars[i];
+        const float guard = 24.0f;
+        bool visible = avatar.x + avatar.w + guard > canvas->clip.x &&
+            avatar.y + avatar.h + guard > canvas->clip.y &&
+            avatar.x - guard < canvas->clip.x + canvas->clip.w &&
+            avatar.y - guard < canvas->clip.y + canvas->clip.h;
+        uint64_t bit = UINT64_C(1) << i;
+        if (!visible) {
+            if (state->portraits[i])
+                bongo_cat_ui_texture_delete(&value->ui, 1, &state->portraits[i]);
+            state->portraits[i] = 0;
+            state->portraits_attempted &= ~bit;
+            continue;
+        }
+        const unsigned char *pixels = state->contributors->people[i].pixels;
+        if (pixels && !state->portraits[i] && !(state->portraits_attempted & bit)) {
+            if (upload_budget) {
+                --upload_budget;
+                state->portraits_attempted |= bit;
+                state->portraits[i] = bongo_cat_ui_texture_upload(&value->ui, pixels,
+                    state->contributors->avatar_size, state->contributors->avatar_size, false);
+            } else value->render_dirty = true;
+        }
         bool hover = nk_input_is_mouse_hovering_rect(&context->input, canvas->clip) &&
                      nk_input_is_mouse_hovering_rect(&context->input, avatar);
         char id[32];

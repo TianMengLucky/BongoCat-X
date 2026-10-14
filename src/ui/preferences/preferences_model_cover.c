@@ -92,9 +92,6 @@ void bongo_cat_preferences_model_covers_begin(BongoCatApp *app) {
 const BongoCatModelCover *bongo_cat_preferences_cover_path(
     BongoCatApp *app, const char *path,
     int pixel_width, int pixel_height) {
-    if (app && app->settings.app.low_memory_mode) {
-        pixel_width = SDL_min(pixel_width, 96); pixel_height = SDL_min(pixel_height, 96);
-    }
     if (!path || !bongo_cat_path_is_file(path)) return NULL;
     ModelCoverSlot *empty = NULL;
     for (size_t i = 0; i < BONGO_CAT_MODEL_CAP; ++i) {

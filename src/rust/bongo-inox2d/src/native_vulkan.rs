@@ -155,6 +155,11 @@ impl Vulkan {
             result.textures.push(texture);
             commands.submit()?;
         }
+        // Retire uploads even if this model stays hidden and never draws.
+        // Keep staging owned by result until the wait succeeds so error cleanup
+        // still synchronizes through Vulkan::drop before destroying the buffers.
+        result.gpu.wait_commands()?;
+        *result.staging.borrow_mut() = Default::default();
         Ok(result)
     }
     unsafe fn surface(&self, width: u32, height: u32) -> Result<Surface, String> {
@@ -241,6 +246,13 @@ impl Vulkan {
             *surface = Some(self.surface(width as u32, height as u32)?);
         }
         let s = surface.as_ref().unwrap();
+        let area = vk::Rect2D {
+            offset: Default::default(),
+            extent: vk::Extent2D {
+                width: s.width,
+                height: s.height,
+            },
+        };
         let plan = Plan::collect(model, &self.hidden, matrix);
         let count = plan
             .iter()
@@ -407,13 +419,7 @@ impl Vulkan {
                     &vk::RenderPassBeginInfo::builder()
                         .render_pass(self.pipelines.pass)
                         .framebuffer(frame.framebuffers[target])
-                        .render_area(vk::Rect2D {
-                            offset: Default::default(),
-                            extent: vk::Extent2D {
-                                width: s.width,
-                                height: s.height,
-                            },
-                        }),
+                        .render_area(area),
                     if secondary.is_some() {
                         vk::SubpassContents::SECONDARY_COMMAND_BUFFERS
                     } else {
@@ -433,17 +439,7 @@ impl Vulkan {
                             max_depth: 1.0,
                         }],
                     );
-                    d.cmd_set_scissor(
-                        cmd,
-                        0,
-                        &[vk::Rect2D {
-                            offset: Default::default(),
-                            extent: vk::Extent2D {
-                                width: s.width,
-                                height: s.height,
-                            },
-                        }],
-                    );
+                    d.cmd_set_scissor(cmd, 0, &[area]);
                 }
                 current = Some(target);
             }
@@ -465,13 +461,7 @@ impl Vulkan {
                 draw,
                 &self.pipelines.pipelines,
                 self.pipelines.layout,
-                vk::Rect2D {
-                    offset: Default::default(),
-                    extent: vk::Extent2D {
-                        width: s.width,
-                        height: s.height,
-                    },
-                },
+                area,
             );
         }
         if let Some(old) = current {

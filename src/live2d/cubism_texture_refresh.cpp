@@ -58,7 +58,7 @@ static std::pair<int, int> fitted_size(const ModelTexture &texture,
     return size;
 }
 
-TextureResolution NativeModel::texture_refresh_bound(const ModelTexture &texture,
+TextureResolution NativeModel::texture_refresh_bound(const TextureDimensions &texture,
     int limit, float quality_percent) const {
     int reference_width = 0, reference_height = 0;
     canvas_size(&reference_width, &reference_height);
@@ -77,9 +77,22 @@ bool NativeModel::try_reuse_texture_quality(float quality_percent) {
     /* No GL calls: settings can be drawn with a different context current.
        Commit only after every atlas fits. Active workers keep their original
        budget; a real resize still uses the existing reload/rollback path. */
-    if (!texture_quality_valid(quality_percent) || !_model || textures_.empty() ||
-        texture_refresh_ || texture_limit_ < 1 ||
-        !GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()) return false;
+    if (!texture_quality_valid(quality_percent) || !_model ||
+        texture_refresh_ || native_texture_refresh_ || texture_limit_ < 1 ||
+        !GetRenderer<Csm::Rendering::CubismRenderer>()) return false;
+    if (rhi_info_.backend != BONGO_CAT_RHI_OPENGL) {
+        if (native_texture_info_.empty()) return false;
+        for (const auto &texture : native_texture_info_) {
+            if (texture.width < 1 || texture.height < 1 ||
+                texture.source_width < 1 || texture.source_height < 1) return false;
+            const auto bound = texture_refresh_bound(texture, texture_limit_, quality_percent);
+            if (texture_fitted_size(texture.source_width, texture.source_height, bound) !=
+                std::make_pair(texture.width, texture.height)) return false;
+        }
+        render_quality_percent_ = quality_percent;
+        return true;
+    }
+    if (textures_.empty()) return false;
     for (const auto &texture : textures_) {
         if (!texture || !texture->id || texture->source_width < 1 ||
             texture->source_height < 1) return false;
@@ -281,7 +294,6 @@ bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
         now - texture_resize_ns_ < kEnlargeSettleNs) return false;
     GLint limit = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limit);
-    if (low_memory_mode_) limit = std::min(limit, 512);
     if (limit < 1) { texture_refresh_pending_ = false; return false; }
     for (; texture_refresh_index_ < textures_.size(); ++texture_refresh_index_) {
         const auto &current = textures_[texture_refresh_index_];

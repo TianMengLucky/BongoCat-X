@@ -57,12 +57,16 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
 bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
     BongoCatError *error) {
 #ifdef _WIN32
-    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false)) {
-        if (!bongo_cat_rhi_vk_create_layered_target(vk, width, height)) return false;
-        vk->image_count = 1;
-        return create_render_pass(vk, error) && create_targets(vk, error);
+    /* Layered presentation consumes readback pixels, never WSI images.
+       Keep one full-size color target instead of an unused swapchain. */
+    if (!bongo_cat_rhi_vk_create_layered_target(vk, width, height)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
+            "Cannot allocate the Vulkan layered target");
+        return false;
     }
-#endif
+    vk->image_count = 1;
+    return create_render_pass(vk, error) && create_targets(vk, error);
+#else
     VkSurfaceCapabilitiesKHR caps;
     if (vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical,
             vk->surface, &caps) != VK_SUCCESS) {
@@ -108,8 +112,7 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
             "Vulkan surface requires an unsupported readback format");
         return false;
     }
-    bool low_memory = SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode", false);
-    uint32_t image_count = caps.minImageCount + (low_memory ? 0u : 1u);
+    uint32_t image_count = caps.minImageCount + 1u;
     if (caps.maxImageCount && image_count > caps.maxImageCount)
         image_count = caps.maxImageCount;
     VkExtent2D extent = caps.currentExtent;
@@ -183,6 +186,7 @@ bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
         return false;
     }
     return create_targets(vk, error);
+#endif
 }
 
 static bool create_targets(BongoCatRhiVk *vk, BongoCatError *error) {

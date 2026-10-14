@@ -254,7 +254,6 @@
         "title": "General",
         "labels": {
           "memoryPreference": "Render memory preference",
-          "lowMemoryMode": "Low Memory Mode",
           "largeRenderOptimization": "Large Rendering Optimization",
           "appSettings": "Application",
           "autoCheckUpdates": "Automatically Check for Updates",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "The current renderer does not support system memory preference.",
           "memoryPreferenceSaveFailed": "Unable to save the memory preference",
           "memoryPreference": "Live2D Vulkan only; reloads rendering. Video memory first prefers VRAM and minimizes CPU copies, upload staging and pipeline caches. System memory first prefers RAM. Required CPU access and unsupported allocations fall back automatically; integrated GPUs share memory.",
-          "lowMemoryMode": "Limit texture quality to 10%, texture edges to 512 pixels and Live2D masks to 256 pixels. Suspend large rendering optimizations. Reloads the renderer; disabling restores saved quality. Memory depends on the model and driver.",
           "largeRenderOptimization": "Choose optional Vulkan/Metal optimizations. Changes reload the model; memory use may increase and support depends on the renderer.",
           "largeRenderUnavailable": "The current model renderer provides none of these optimizations; rendering is unaffected.",
           "showTrayIcon": "When enabled, the app icon is displayed in the system tray.",

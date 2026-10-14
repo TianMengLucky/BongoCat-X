@@ -254,7 +254,6 @@
         "title": "通用设置",
         "labels": {
           "memoryPreference": "渲染内存优先级",
-          "lowMemoryMode": "低内存模式",
           "largeRenderOptimization": "大型渲染优化",
           "appSettings": "应用",
           "autoCheckUpdates": "自动检查更新",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "当前渲染器不支持系统内存优先。",
           "memoryPreferenceSaveFailed": "无法保存内存优先级设置",
           "memoryPreference": "仅适用于 Live2D Vulkan，修改后重新加载渲染。显存优先尽量使用显存，压缩 CPU 副本、上传暂存和管线缓存；内存优先尽量使用系统内存。必要的 CPU 访问及不支持的分配自动回退；核显使用共享内存。",
-          "lowMemoryMode": "纹理画质最高 10%，纹理边长上限 512 像素、Live2D 遮罩上限 256 像素，暂停大型渲染优化。切换会重新加载渲染器，关闭后恢复原画质设置。实际内存取决于模型和显卡驱动。",
           "largeRenderOptimization": "选择 Vulkan/Metal 的可选优化；更改会重载模型，可能增加内存占用，可用性取决于渲染器。",
           "largeRenderUnavailable": "当前模型渲染器未提供这些优化，开关暂不影响绘制。",
           "showTrayIcon": "启用后，在系统托盘中显示应用图标。",

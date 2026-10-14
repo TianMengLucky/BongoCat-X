@@ -73,3 +73,29 @@ fn reject_invalid_indices_and_recursive_masks() {
         .unwrap_err()
         .contains("recursively"));
 }
+
+#[test]
+fn detects_model_kind_without_changing_json_semantics() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("model.json");
+    let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+    for (json, kind) in [
+        (r#"{"Version":3,"FileReferences":{"Moc":"cat.moc3"}}"#, 1),
+        (r#"{Version:3,FileReferences:{Moc:'cat.moc3'}}"#, 1),
+        (
+            r#"{"Version":18446744073709551615,"FileReferences":{"Moc":"cat.moc3"}}"#,
+            1,
+        ),
+        (r#"{"Version":3,"FileReferences":{"Moc":"\u0000"}}"#, 1),
+        (r#"{"Version":3,"FileReferences":{"Moc":""}}"#, 0),
+        (r#"{"Version":3.5,"FileReferences":{"Moc":"cat.moc3"}}"#, 0),
+        (r#"{"Version":2,"FileReferences":{"Moc":"cat.moc3"}}"#, 0),
+        (r#"{"Version":3,"FileReferences":{"Moc":[]}}"#, 0),
+    ] {
+        std::fs::write(&path, json).unwrap();
+        assert_eq!(
+            unsafe { super::bongo_safe_model_kind_file(c_path.as_ptr()) },
+            kind
+        );
+    }
+}

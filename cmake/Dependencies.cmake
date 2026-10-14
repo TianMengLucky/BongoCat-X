@@ -32,7 +32,7 @@ if(BONGO_CAT_FETCH_DEPS)
   endforeach()
   set(SDL_GPU OFF CACHE BOOL "" FORCE)
   # Keep SDL's window integration for all supported graphics backends;
-  # Pet rendering stays in the RHI; native low-memory settings use SDL software.
+  # Pet rendering stays in the RHI; software rendering supports overlay canvases.
   set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
   set(SDL_VULKAN ${BONGO_CAT_PLATFORM_VULKAN} CACHE BOOL "" FORCE)
   set(SDL_METAL ${APPLE} CACHE BOOL "" FORCE)

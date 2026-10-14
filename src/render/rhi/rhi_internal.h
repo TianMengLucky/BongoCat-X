@@ -43,6 +43,7 @@ bool bongo_cat_rhi_vk_set_background(BongoCatRhi *rhi, const void *pixels,
 bool bongo_cat_rhi_vk_get_frame_info(const BongoCatRhi *rhi, BongoCatRhiVulkanFrameInfo *info);
 bool bongo_cat_rhi_vk_background_matches(const BongoCatRhi *, int width, int height, uint64_t revision);
 bool bongo_cat_rhi_vk_wait_idle(const BongoCatRhi *rhi);
+bool bongo_cat_rhi_vk_release_idle_memory(BongoCatRhi *rhi);
 
 BongoCatResult bongo_cat_rhi_metal_create_window(const char *title, int width,
     int height, SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);

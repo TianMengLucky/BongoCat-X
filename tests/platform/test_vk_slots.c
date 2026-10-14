@@ -6,6 +6,7 @@ int bongo_cat_test_failures;
 static uintptr_t handles;
 static unsigned pools, fences, commands, buffers_freed, memory_freed, blocking_waits;
 static bool pending[64];
+static unsigned pool_commands[64];
 static VkResult submit_result = VK_SUCCESS, wait_result = VK_SUCCESS;
 static VkSemaphore signaled;
 static uintptr_t id(VkFence fence) { return (uintptr_t)fence; }
@@ -15,12 +16,19 @@ static VKAPI_ATTR VkResult VKAPI_CALL create_pool(VkDevice d,
     *out = (VkCommandPool)++handles; pools++; return VK_SUCCESS;
 }
 static VKAPI_ATTR void VKAPI_CALL destroy_pool(VkDevice d, VkCommandPool p,
-    const VkAllocationCallbacks *a) { (void)d; (void)p; (void)a; pools--; }
+    const VkAllocationCallbacks *a) {
+    (void)d; (void)a;
+    commands -= pool_commands[(uintptr_t)p];
+    pool_commands[(uintptr_t)p] = 0;
+    pools--;
+}
 static VKAPI_ATTR VkResult VKAPI_CALL allocate_commands(VkDevice d,
     const VkCommandBufferAllocateInfo *info, VkCommandBuffer *out) {
     (void)d;
     for (uint32_t i = 0; i < info->commandBufferCount; ++i) out[i] = (VkCommandBuffer)++handles;
-    commands += info->commandBufferCount; return VK_SUCCESS;
+    commands += info->commandBufferCount;
+    pool_commands[(uintptr_t)info->commandPool] += info->commandBufferCount;
+    return VK_SUCCESS;
 }
 static VKAPI_ATTR VkResult VKAPI_CALL create_fence(VkDevice d,
     const VkFenceCreateInfo *info, const VkAllocationCallbacks *a, VkFence *out) {
@@ -61,7 +69,14 @@ static VKAPI_ATTR void VKAPI_CALL destroy_buffer(VkDevice d, VkBuffer b, const V
 static VKAPI_ATTR void VKAPI_CALL free_memory(VkDevice d, VkDeviceMemory m, const VkAllocationCallbacks *a) {
     (void)d; (void)m; (void)a; memory_freed++;
 }
-void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk) { (void)vk; }
+static unsigned readbacks_released;
+void bongo_cat_rhi_vk_release_readback(BongoCatRhiVk *vk) {
+    for (unsigned i = 0; i < BONGO_CAT_VK_FRAMES; ++i) {
+        if (vk->readbacks[i].readback_memory) readbacks_released++;
+        memset(&vk->readbacks[i], 0, sizeof(vk->readbacks[i]));
+    }
+    vk->pixels_valid = false;
+}
 static BongoCatRhiVk mock(void) {
     BongoCatRhiVk vk = {0};
     vk.device = (VkDevice)(uintptr_t)1;
@@ -149,7 +164,62 @@ static void cached_background(void) {
     vk.background_ready=true; vk.failed=true;
     CHECK(!bongo_cat_rhi_vk_background_matches(&rhi,80,60,7));
 }
+static void idle_memory(void) {
+    BongoCatRhiVk vk = mock(); BongoCatRhi rhi = {0}; rhi.impl = &vk;
+    CHECK(bongo_cat_rhi_vk_create_frames(&vk));
+    vk.layered_target = true; vk.frame_ready = true; vk.pixels_valid = true;
+    vk.current_image = (VkImage)(uintptr_t)101;
+    vk.readbacks[0].readback_memory = (VkDeviceMemory)(uintptr_t)102;
+    CHECK(bongo_cat_rhi_vk_submit_frame(&vk, vk.frames[0].finish));
+    unsigned released = readbacks_released;
+    wait_result = VK_ERROR_DEVICE_LOST;
+    CHECK(!bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(readbacks_released == released && vk.readbacks[0].readback_memory);
+    vk.failed = false; wait_result = VK_SUCCESS;
+    submit_result = VK_ERROR_OUT_OF_HOST_MEMORY;
+    CHECK(!bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(readbacks_released == released && vk.readbacks[0].readback_memory);
+    vk.failed = false; submit_result = VK_SUCCESS;
+    CHECK(bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(readbacks_released == released + 1 && !vk.readbacks[0].readback_memory);
+    CHECK(!vk.frame_ready && !vk.pixels_valid && !vk.current_image && vk.frame_slot == 1);
+    unsigned waits = blocking_waits;
+    CHECK(bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(blocking_waits == waits); /* Repeated hidden polls do not wait or allocate. */
+    vk.layered_target = false; vk.frame_ready = true;
+    vk.readbacks[0].readback_memory = (VkDeviceMemory)(uintptr_t)103;
+    CHECK(!bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(readbacks_released == released + 1 && vk.frame_ready);
+    bongo_cat_rhi_vk_destroy_frames(&vk);
+    if (vk.submit_fence) destroy_fence(vk.device, vk.submit_fence, NULL);
+    CHECK(!pools && !fences);
+}
+static void idle_upload_memory(void) {
+    BongoCatRhiVk vk = mock(); BongoCatRhi rhi = {0}; rhi.impl = &vk;
+    BongoCatRhiVkUpload *slot = bongo_cat_rhi_vk_begin_upload(&vk);
+    CHECK(slot != NULL);
+    if (!slot) return;
+    CHECK(bongo_cat_rhi_vk_submit_upload(&vk, slot, (VkBuffer)(uintptr_t)501,
+        (VkDeviceMemory)(uintptr_t)502));
+    unsigned freed = buffers_freed;
+    wait_result = VK_ERROR_DEVICE_LOST;
+    CHECK(!bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(slot->buffer && slot->pending && buffers_freed == freed);
+    // Simulate completion before retrying the failed checkpoint fence.
+    pending[id(vk.submit_fence)] = false;
+    pending[id(slot->fence)] = false;
+    vk.failed = false; wait_result = VK_SUCCESS;
+    // The queue checkpoint completes all earlier uploads.
+    CHECK(bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(buffers_freed == freed + 1 && !slot->buffer && !slot->pool);
+    unsigned waits = blocking_waits;
+    CHECK(bongo_cat_rhi_vk_release_idle_memory(&rhi));
+    CHECK(waits == blocking_waits);
+    if (vk.submit_fence) destroy_fence(vk.device, vk.submit_fence, NULL);
+    CHECK(!pools && !fences);
+}
 int main(void) {
+    idle_upload_memory();
     frame_slots();
     // Layered presentation has no WSI consumer or signal semaphore.
     BongoCatRhiVk layered = mock();
@@ -175,5 +245,6 @@ int main(void) {
     CHECK(bongo_cat_rhi_vk_wait_frame(&layered, &layered.frames[0]));
     bongo_cat_rhi_vk_destroy_frames(&layered);
     upload_slots();
+    cached_background(); idle_memory();
     return bongo_cat_test_failures ? 1 : 0;
 }

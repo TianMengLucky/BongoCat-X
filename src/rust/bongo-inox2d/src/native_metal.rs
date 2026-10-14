@@ -36,10 +36,10 @@ impl Metal {
             return Err("Missing host Metal device".into());
         }
         let device = DeviceRef::from_ptr(info.metal_device.cast()).to_owned();
-        let (source, vs, fs) = crate::native_shader::msl()?;
-        let library = device.new_library_with_source(&source, &CompileOptions::new())?;
-        let vertex = library.get_function(&vs, None)?;
-        let fragment = library.get_function(&fs, None)?;
+        let (source, vs, fs) = crate::native_shader::msl();
+        let library = device.new_library_with_source(source, &CompileOptions::new())?;
+        let vertex = library.get_function(vs, None)?;
+        let fragment = library.get_function(fs, None)?;
         let layout = VertexDescriptor::new();
         for (index, format, offset) in [
             (0, MTLVertexFormat::Float4, 0),

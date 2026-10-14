@@ -24,6 +24,7 @@ BongoCatRhiAsyncState bongo_cat_rhi_vk_async_frame_state(const BongoCatRhi *rhi)
 }
 bool bongo_cat_rhi_vk_render_frame(BongoCatRhi *rhi) { (void)rhi; return false; }
 bool bongo_cat_rhi_vk_wait_idle(const BongoCatRhi *rhi) { (void)rhi; return false; }
+bool bongo_cat_rhi_vk_release_idle_memory(BongoCatRhi *rhi) { (void)rhi; return false; }
 
 BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error) {

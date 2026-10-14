@@ -254,7 +254,6 @@
         "title": "일반",
         "labels": {
           "memoryPreference": "렌더링 메모리 우선순위",
-          "lowMemoryMode": "저메모리 모드",
           "largeRenderOptimization": "대규모 렌더링 최적화",
           "appSettings": "앱",
           "autoCheckUpdates": "자동으로 업데이트 확인",
@@ -291,7 +290,6 @@
           "memoryPreferenceUnavailable": "현재 렌더러는 시스템 메모리 우선을 지원하지 않습니다.",
           "memoryPreferenceSaveFailed": "메모리 우선순위를 저장할 수 없습니다",
           "memoryPreference": "Live2D Vulkan 전용이며 변경 시 렌더링을 다시 로드합니다. 비디오 메모리 우선은 VRAM을 우선하고 CPU 복사본, 업로드 임시 메모리와 파이프라인 캐시를 줄입니다. 시스템 메모리 우선은 RAM을 우선합니다. 필수 CPU 접근과 미지원 할당은 자동 대체됩니다. 내장 GPU는 메모리를 공유합니다.",
-          "lowMemoryMode": "텍스처 품질을 최대 10%, 변을 512픽셀, Live2D 마스크를 256픽셀로 제한하고 대규모 렌더링 최적화를 중지합니다. 전환 시 렌더러를 다시 로드하며 끄면 기존 품질로 복원됩니다. 메모리 사용량은 모델과 드라이버에 따라 다릅니다.",
           "largeRenderOptimization": "Vulkan/Metal 추가 최적화를 선택합니다. 변경 시 모델을 다시 로드하며 메모리 사용량이 늘 수 있습니다. 지원 여부는 렌더러에 따라 다릅니다.",
           "largeRenderUnavailable": "현재 모델 렌더러는 이 최적화를 지원하지 않아 렌더링에 영향을 주지 않습니다.",
           "showTrayIcon": "활성화하면 시스템 트레이에 앱 아이콘이 표시됩니다.",

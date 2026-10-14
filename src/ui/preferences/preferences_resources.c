@@ -16,11 +16,13 @@ void bongo_cat_preferences_resource_note(BongoCatPreferences *value, const char 
     bongo_cat_resource_trace_note(BONGO_CAT_RESOURCE_SETTINGS, stage,
         "window=%d context=%d initialized=%d font=%dx%d font_r8_est_mib=%.2f "
         "covers=%zu cover_rgba_est_mib=%.2f paint_textures=%zu paint_est_mib=%.2f "
-        "resize_cache=%dx%d draw_cpu_capacity_mib=%.2f",
+        "resize_cache=%dx%d draw_cpu_capacity_mib=%.2f draw_gpu_capacity_mib=%.2f",
         value->window != NULL, value->gl_context != NULL, value->ui_initialized,
         value->ui.font_atlas_width, value->ui.font_atlas_height,
         (double)value->ui.font_atlas_width * value->ui.font_atlas_height / mib,
         covers, cover_bytes / mib, paint, paint_bytes / mib,
         value->ui.resize_cache_width, value->ui.resize_cache_height,
-        (value->ui.vertex_capacity + value->ui.element_capacity + value->ui.commands.allocated) / mib);
+        (value->ui.vertex_capacity + value->ui.element_capacity +
+            nk_buffer_total(&value->ui.commands) + nk_buffer_total(&value->ui.context.memory)) / mib,
+        (value->ui.gpu_vertex_capacity + value->ui.gpu_element_capacity) / mib);
 }

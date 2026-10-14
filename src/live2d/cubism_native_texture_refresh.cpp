@@ -1,6 +1,5 @@
 #include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
-#include "cubism_model_texture.hpp"
 #include "cubism_texture_resolution.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "bongo_cat/log.h"
@@ -90,7 +89,7 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
                 bongo_cat_error_set(&job.error, BONGO_CAT_ERROR_MEMORY, "%s", exception.what());
             }
             if (changed) {
-                auto &metadata = *native_texture_info_[job.index];
+                auto &metadata = native_texture_info_[job.index];
                 native_texture_bytes_ -= (size_t)metadata.width * (size_t)metadata.height * 4;
                 metadata.width = width; metadata.height = height;
                 metadata.source_width = job.source_width;
@@ -117,7 +116,7 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
     }
     if (!active || !allow_start || !dynamic_texture_resolution_ || !setting_) return false;
     for (; texture_refresh_index_ < native_texture_info_.size(); ++texture_refresh_index_) {
-        const auto &metadata = *native_texture_info_[texture_refresh_index_];
+        const auto &metadata = native_texture_info_[texture_refresh_index_];
         const auto bound = texture_refresh_bound(metadata, texture_limit_, render_quality_percent_);
         const auto fitted = texture_fitted_size(metadata.source_width, metadata.source_height, bound);
         if (fitted == std::make_pair(metadata.width, metadata.height)) continue;

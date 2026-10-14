@@ -473,11 +473,10 @@ Préférences → Préférences → Fenêtre permet de choisir une image de fond
 
 Live2D réutilise automatiquement les tampons de géométrie et les états de rendu répétés. Les transferts OpenGL, les lots et le cache Vulkan, les tampons partagés Metal et les masques natifs adaptatifs ne nécessitent aucun interrupteur supplémentaire. Les performances et le comportement par plateforme restent à mesurer.
 
-Paramètres → Application → Mode mémoire réduite est désactivé par défaut. Il limite la qualité à 10%, les textures à 512 pixels par côté et les masques Live2D à 256, suspend les grandes optimisations et recharge le moteur. La désactivation restaure la qualité enregistrée. 50MB est un objectif dépendant du modèle et du pilote.
+Vulkan gère automatiquement la mémoire : Live2D utilise des blocs VMA de 1 MiB par défaut, ou de 16 MiB avec les grandes allocations activées. La présentation Windows par couches conserve une cible couleur. Les fenêtres masquées ou réduites libèrent les caches de lecture après la fin des opérations GPU et les recréent au besoin. Qualité et résolution dynamique restent des réglages indépendants.
 
-Paramètres → Animal → Plage de suivi : horizontal/vertical 25–400%, désactivée par défaut, 100% inchangé. Les pattes Mver dessinées vont plus loin ; Live2D garde les limites du modèle. Regard et fenêtre inchangés. Le mode mémoire réduite désactive MSAA et réduit les shaders et pipelines inutilisés.
+Paramètres → Animal → Plage de suivi : horizontal/vertical 25–400%, désactivée par défaut, 100% inchangé. Les pattes Mver dessinées vont plus loin ; Live2D garde les limites du modèle. Regard et fenêtre inchangés
 
-Sous Windows, les paramètres en basse mémoire utilisent un rendu logiciel SDL par blocs et un fond opaque avec OpenGL/Vulkan. Taille réelle, DPI et anticrénelage des polices sont conservés. L’atlas stocke des masques A8 et convertit uniquement le glyphe dessiné. Sur les autres plateformes, OpenGL réutilise le contexte du compagnon.
 ### Plusieurs touches et caractères lisibles en mode miroir
 
 Mver (OpenGL/Vulkan/Metal) découpe séparément la main, le cadre et les caractères, puis relie les touches maintenues avec + dans une seule bulle. Le cadre et la queue se reflètent avec le modèle ; les caractères restent lisibles, aussi en mode touche unique. Configurez les trois zones, l’espacement autour de + et la limite par côté dans `hand-layout.json` à côté des images des mains, puis redémarrez. Consultez le [guide et l’exemple](hand-layout.md).

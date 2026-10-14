@@ -92,7 +92,12 @@ impl Gpu {
                 requirements: self.device.get_buffer_memory_requirements(raw),
                 location: MemoryLocation::CpuToGpu,
                 linear: true,
-                allocation_scheme: AllocationScheme::GpuAllocatorManaged,
+                // Upload-only buffers must not grow or pin the mesh/uniform pool.
+                allocation_scheme: if usage == vk::BufferUsageFlags::TRANSFER_SRC {
+                    AllocationScheme::DedicatedBuffer(raw)
+                } else {
+                    AllocationScheme::GpuAllocatorManaged
+                },
             })
             .map_err(|e| e.to_string())?;
         result.allocation = Some(allocation);

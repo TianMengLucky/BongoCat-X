@@ -43,7 +43,6 @@ $target = {target}
 $exe = {exe}
 $package = {package}
 $nearby = {nearby}
-$backup = Join-Path $stage 'backup'
 $journal = [Collections.Generic.List[object]]::new()
 function Relaunch {{ Start-Process -FilePath $exe -ArgumentList ('"--nearby-root=' + $nearby + '"') -WorkingDirectory $target }}
 try {{
@@ -67,15 +66,16 @@ try {{
         body.push_str(r#"    foreach ($file in Get-ChildItem -LiteralPath $source -File -Recurse) {
         $relative = $file.FullName.Substring($source.Length + 1)
         $destination = Join-Path $target $relative
-        $saved = Join-Path $backup $relative
         New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
         $existed = Test-Path -LiteralPath $destination -PathType Leaf
-        if ($existed) {
-            New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($saved)) -Force | Out-Null
-            Copy-Item -LiteralPath $destination -Destination $saved
-        }
         $temporary = $destination + '.bongo-update-' + $PID
-        if (Test-Path -LiteralPath $temporary) { throw 'Update temporary file already exists' }
+        # File.Replace requires its backup on the destination volume, which
+        # may differ from the cache volume. Keep it beside the destination.
+        $saved = $temporary + '.backup'
+        if ((Test-Path -LiteralPath $temporary) -or (Test-Path -LiteralPath $saved)) {
+            throw 'Update temporary file already exists'
+        }
+        if ($existed) { Copy-Item -LiteralPath $destination -Destination $saved }
         $journal.Add(@{ Destination=$destination; Saved=$saved; Existed=$existed; Temporary=$temporary })
         Copy-Item -LiteralPath $file.FullName -Destination $temporary
         # PowerShell coerces $null to an empty string for this .NET overload.
@@ -86,6 +86,9 @@ try {{
 "#);
     }
     body.push_str(r#"    Relaunch
+    foreach ($entry in $journal) {
+        Remove-Item -LiteralPath $entry.Saved -Force -ErrorAction SilentlyContinue
+    }
     $resolved = [IO.Path]::GetFullPath($stage)
     if ($resolved -eq $stage -and [IO.Path]::GetFileName($resolved).StartsWith('bongo-update-')) {
         Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction SilentlyContinue
@@ -98,6 +101,7 @@ try {{
             if ($entry.Existed) { Copy-Item -LiteralPath $entry.Saved -Destination $entry.Destination -Force }
             else { Remove-Item -LiteralPath $entry.Destination -Force -ErrorAction SilentlyContinue }
             Remove-Item -LiteralPath $entry.Temporary -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $entry.Saved -Force -ErrorAction SilentlyContinue
         } catch { $_ | Out-File -LiteralPath (Join-Path $stage 'update-error.log') -Append }
     }
     if (!$parent -or $parent.HasExited) { Relaunch }

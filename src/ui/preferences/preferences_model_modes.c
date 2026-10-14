@@ -59,11 +59,12 @@ static const char *mode_label(BongoCatApp *app, BongoCatModelMode mode) {
 
 bool bongo_cat_preferences_model_mode_selector(BongoCatPreferences *value,
     struct nk_context *context, const BongoCatModelEntry *entry, struct nk_rect bounds) {
+    if (!value || !value->app || !context || !entry) return false;
     const BongoCatModelEntry *modes[BONGO_CAT_MODEL_CAP];
     const char *labels[BONGO_CAT_MODEL_CAP];
     int count = 0, selected = 0;
     bool hidden = bongo_cat_settings_model_hidden(&value->app->settings, entry->id);
-    for (size_t i = 0; i < value->app->models.count; ++i) {
+    for (size_t i = 0; i < value->app->models.count && count < BONGO_CAT_MODEL_CAP; ++i) {
         const BongoCatModelEntry *mode = &value->app->models.entries[i];
         if (!visible_mode(value, mode, hidden) ||
             !bongo_cat_preferences_model_same_family(entry, mode)) continue;
@@ -93,7 +94,7 @@ bool bongo_cat_preferences_model_mode_selector(BongoCatPreferences *value,
     panel->max_x = saved.max_x;
     panel->row = saved.row;
     bool hovered = nk_input_is_mouse_hovering_rect(&context->input, bounds);
-    if (choice != selected && !value->model_loading) {
+    if (choice >= 0 && choice < count && choice != selected && !value->model_loading) {
         const BongoCatModelEntry *next = modes[choice];
         // A replacement bypasses the eight-pet limit and never toggles off the new mode.
         const BongoCatModelEntry *previous = NULL;

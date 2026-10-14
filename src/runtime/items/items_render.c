@@ -159,7 +159,7 @@ void bongo_cat_items_draw_gl(BongoCatApp *app, bool front, int width, int height
         float c = cosf((float)angle * .01745329252f), s = sinf((float)angle * .01745329252f);
         float vertices[4][8];
         for (unsigned j = 0; j < 4; ++j) {
-            float u = (float)(j / 2), t = (float)(j % 2);
+            float u = j >= 2 ? 1.0f : 0.0f, t = (j & 1u) ? 1.0f : 0.0f;
             float dx = (u - .5f) * rect.w, dy = (t - .5f) * rect.h;
             vertices[j][0] = (rect.x + rect.w / 2 + c * dx - s * dy) / width * 2 - 1;
             vertices[j][1] = 1 - (rect.y + rect.h / 2 + s * dx + c * dy) / height * 2;

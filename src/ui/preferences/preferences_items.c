@@ -186,7 +186,13 @@ void bongo_cat_preferences_page_items(BongoCatPreferences *value, struct nk_cont
     bongo_cat_pref_int(context, "item-layer", label(app, "layer", "Layer"),
         label(app, "layerHint", "Negative layers are behind the model; zero and positive layers are in front. Higher layers draw last."), -30, &layer, 30, 1, 0);
     item.layer = layer;
-    if (memcmp(&item, &original, sizeof(item))) (void)bongo_cat_items_update(app, (uint32_t)value->selected_item, &item);
+    bool changed = item.visible != original.visible || item.locked != original.locked ||
+        item.follow_model != original.follow_model || item.layer != original.layer ||
+        SDL_fabsf(item.x - original.x) > 0 || SDL_fabsf(item.y - original.y) > 0 ||
+        SDL_fabsf(item.scale - original.scale) > 0 ||
+        SDL_fabsf(item.rotation - original.rotation) > 0 ||
+        SDL_fabsf(item.opacity - original.opacity) > 0;
+    if (changed) (void)bongo_cat_items_update(app, (uint32_t)value->selected_item, &item);
     if (busy) nk_widget_disable_end(context);
 }
 void bongo_cat_preferences_items_plugin_card(BongoCatPreferences *value, struct nk_context *context) {

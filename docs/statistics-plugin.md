@@ -1,5 +1,20 @@
 # 统计插件 / Statistics plugin
 
+统计页支持「重置统计」，经页面内确认后，在 Rust 工作线程用 SQLite 事务清空
+输入次数、每日／小时图表及应用时长历史，并立即刷新已发布缓存。失败时回滚且保留历史；
+统计开关设置、插件启用状态与已导出的 CSV 保留。重置使用可选的版本 1 扩展
+`include/bongo_cat/statistics_reset_plugin.h`，旧插件仍可统计，但需更新后才能重置。
+统计悬浮窗使用淡蓝色背景（约 39% 不透明度）和深蓝文字。
+
+The Statistics page offers Reset statistics with inline confirmation. The Rust worker
+clears input counters, daily/hourly charts and application time in one SQLite transaction,
+and publishes fresh snapshots before reporting completion. Failure rolls back and preserves
+history. Collection settings, plugin activation and previously exported CSV files are kept.
+Reset uses the optional version 1 extension in `include/bongo_cat/statistics_reset_plugin.h`;
+older plugins still collect statistics and need updating to offer reset.
+The floating statistics panel uses a pale blue background at about 39% opacity with dark blue text.
+
+
 Rust crate：`src/rust/bongo-stats`，独立 `cdylib`，不与宿主静态链接。
 键鼠功能参考 [keyStats](https://github.com/debugtheworldbot/keyStats)，前台应用计时参考
 [Work-Review](https://github.com/wm94i/Work-Review) 的应用识别、空闲暂停与本地存储方式。

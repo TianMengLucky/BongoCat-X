@@ -26,6 +26,19 @@ int bongo_safe_http_get(bongo_safe_http_client *client, const char *url,
     bool accelerate_github, size_t limit, bongo_safe_cancelled cancelled,
     void *userdata, unsigned char **response, size_t *length,
     char *message, size_t message_capacity);
+/* Streams at most 512 MiB, verifies SHA-256, then atomically publishes target.
+   Failed/cancelled downloads leave no partial file. */
+int bongo_safe_store_download(const char *url, const char *sha256,
+    const char *target, bool accelerate_github, bongo_safe_cancelled cancelled,
+    bongo_safe_http_progress progress, void *userdata, char *message, size_t message_capacity);
+/* Live2D agreements are fetched/displayed before the UI enables download.
+   Only the official Native R5 archive is requested; Rust extracts one dynamic
+   Core with CRC/size checks and atomically writes it. No SDK is bundled. */
+bool bongo_safe_live2d_license_text(const unsigned char *bytes, size_t length,
+    char *output, size_t capacity);
+int bongo_safe_live2d_download(const char *target, bool x64,
+    bongo_safe_cancelled cancelled, bongo_safe_http_progress progress, void *userdata,
+    char *message, size_t message_capacity);
 void bongo_safe_free_http_response(unsigned char *response, size_t length);
 
 #ifdef __cplusplus

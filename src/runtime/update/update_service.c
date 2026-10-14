@@ -3,6 +3,7 @@
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/preferences.h"
+#include "bongo_cat/safe_ffi.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -168,12 +169,10 @@ bool bongo_cat_update_refresh_and_open(BongoCatUpdateService *service) {
 void bongo_cat_update_start_automatic(BongoCatUpdateService *service) {
     if (!service || !service->app || service->app->smoke ||
         service->app->secondary_pet) return;
-    int today = local_day();
-    BongoCatSessionState *session = &service->app->session;
-    if (today && session->last_update_check_day == today &&
-        strcmp(session->last_update_check_version, BONGO_CAT_VERSION) == 0)
-        return;
-    if (!bongo_cat_update_check(service, false)) return;
+    if (service->automatic_started || !bongo_safe_auto_update_get(
+            service->app->settings.extensions_json,
+            sizeof(service->app->settings.extensions_json))) return;
+    if (bongo_cat_update_check(service, false)) service->automatic_started = true;
 }
 
 void bongo_cat_update_snapshot(BongoCatUpdateService *service,
@@ -251,6 +250,15 @@ bool bongo_cat_update_event(BongoCatUpdateService *service,
             bongo_cat_preferences_notice_show(service->app, detail, true);
         }
     } else if (manual) bongo_cat_update_show_completion(service);
+    else if (status == BONGO_CAT_UPDATE_AVAILABLE && bongo_safe_auto_update_get(
+            service->app->settings.extensions_json,
+            sizeof(service->app->settings.extensions_json))) {
+        char message[192];
+        snprintf(message, sizeof(message), "%s v%s", tr(service,
+            "native.support.updateAvailable", "New version available:"),
+            release.version);
+        bongo_cat_preferences_notice_show_update(service->app, message);
+    }
     return true;
 }
 

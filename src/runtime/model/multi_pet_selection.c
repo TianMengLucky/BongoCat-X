@@ -84,6 +84,34 @@ bool bongo_cat_app_set_model_active(BongoCatApp *app, const char *id,
     return true;
 }
 
+bool bongo_cat_app_replace_model_active(BongoCatApp *app, const char *previous,
+    const char *next, BongoCatError *error) {
+    if (!app || !previous || !next || !bongo_cat_models_find(&app->models, next)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_ARGUMENT, "Invalid model mode selection");
+        return false;
+    }
+    if (!strcmp(previous, next)) return true;
+    if (!app->settings.model.multiple_pets ||
+        !strcmp(app->session.active_model_id, previous)) {
+        /* The model loader commits selection only after a successful load. */
+        if (!bongo_cat_app_select_model_with_error(app, next, error)) return false;
+        bongo_cat_window_set_visible(app, true);
+    } else {
+        bool selected = bongo_cat_app_model_active(app, next);
+        bool replaced = false;
+        for (size_t i = 0; i < app->session.additional_model_count; ++i) {
+            if (strcmp(app->session.additional_model_ids[i], previous)) continue;
+            if (selected) bongo_cat_session_remove_model(&app->session, previous);
+            else snprintf(app->session.additional_model_ids[i], BONGO_CAT_ID_CAP, "%s", next);
+            replaced = true;
+            break;
+        }
+        if (!replaced) return bongo_cat_app_set_model_active(app, next, true, error);
+    }
+    bongo_cat_multi_pet_primary_update(app, SDL_GetTicksNS());
+    return true;
+}
+
 void bongo_cat_app_set_multiple_pets(BongoCatApp *app, bool enabled) {
     if (!app) return;
     app->settings.model.multiple_pets = enabled;

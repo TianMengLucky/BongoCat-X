@@ -12,7 +12,6 @@ enum BongoCatOptionsSection {
     BONGO_CAT_OPTIONS_PERMISSIONS
 };
 
-void bongo_cat_preferences_options_style(BongoCatPreferences *value, struct nk_context *context);
 bool bongo_cat_preferences_options_begin(BongoCatPreferences *value,
     struct nk_context *context, enum BongoCatOptionsSection section,
     const char *title, BongoCatPrefIcon icon);

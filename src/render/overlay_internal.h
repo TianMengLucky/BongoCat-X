@@ -67,6 +67,9 @@ typedef struct OverlayKeySide {
 } OverlayKeySide;
 
 struct BongoCatOverlay {
+    BongoCatOverlayItemsDraw items_draw;
+    void *items_userdata;
+    uint64_t items_revision;
     bool native;
     BongoCatImage native_background;
     BongoCatImage custom_background;

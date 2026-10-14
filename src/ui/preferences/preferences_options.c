@@ -1,58 +1,51 @@
 #include "preferences_state.h"
 #include "preferences_options.h"
-#include "preferences_theme.h"
-#include "preferences_notice.h"
-#include "bongo_cat/safe_ffi.h"
 #include "ui_paint.h"
-
-void bongo_cat_preferences_options_style(BongoCatPreferences *value, struct nk_context *context) {
-    BongoCatApp *app = value->app;
-    const char *labels[] = {
-        bongo_cat_i18n_get(app->i18n, "pages.preference.optionsLayout.expanded", "Expanded options"),
-        bongo_cat_i18n_get(app->i18n, "pages.preference.optionsLayout.folded", "Collapsible groups")};
-    nk_layout_row_dynamic(context, 38, 1);
-    int selected = bongo_cat_pref_segments(context, "options-layout", labels, 2,
-        value->collapsible_options ? 1 : 0);
-    if ((selected != 0) != value->collapsible_options) {
-        if (bongo_safe_preferences_collapsible_set(app->settings.extensions_json,
-            sizeof(app->settings.extensions_json), selected != 0)) {
-            value->collapsible_options = selected != 0;
-            value->scroll_current[0] = 0; value->scroll_target[0] = 0;
-            nk_group_set_scroll(context, "page-settings", 0, 0);
-            value->render_dirty = true;
-        } else bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
-            "pages.preference.optionsLayout.saveFailed", "Unable to save the options layout"), true);
-    }
-    nk_layout_row_dynamic(context, 44, 1);
-    nk_label_wrap(context, bongo_cat_i18n_get(app->i18n, "pages.preference.optionsLayout.hint",
-        "Choose a layout. In collapsible mode, click a group title to show or hide its options."));
-}
+#include "preferences_icons_internal.h"
 
 bool bongo_cat_preferences_options_begin(BongoCatPreferences *value,
     struct nk_context *context, enum BongoCatOptionsSection section,
     const char *title, BongoCatPrefIcon icon) {
-    if (!value->collapsible_options) {
-        bongo_cat_pref_section_icon(context, title, icon);
-        return true;
+    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_style_button style = context->style.button;
+    bool open = value->options_sections[section] == NK_MAXIMIZED;
+    style.normal = nk_style_item_color(open ? p.selection : p.surface);
+    style.hover = nk_style_item_color(p.hover);
+    style.active = nk_style_item_color(p.selection);
+    style.border_color = open ? p.border : p.border_subtle;
+    style.border = 1;
+    style.rounding = 12;
+    nk_layout_row_dynamic(context, 48, 1);
+    struct nk_rect bounds = nk_widget_bounds(context);
+    if (nk_button_label_styled(context, &style, "")) {
+        open = !open;
+        value->options_sections[section] = open ? NK_MAXIMIZED : NK_MINIMIZED;
+        value->render_dirty = true;
     }
-    struct nk_style_tab saved = context->style.tab;
-    BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
-    context->style.tab.background = nk_style_item_color(palette.surface);
-    context->style.tab.border_color = palette.border_subtle;
-    context->style.tab.text = palette.text;
-    context->style.tab.padding = nk_vec2(12, 12);
-    context->style.tab.rounding = 10;
-    context->style.tab.border = 1;
-    enum nk_collapse_states before = value->options_sections[section];
-    nk_style_push_font(context, bongo_cat_ui_label_font(context));
-    bool open = nk_tree_state_push(context, NK_TREE_TAB, title, &value->options_sections[section]) != 0;
-    nk_style_pop_font(context);
-    context->style.tab = saved;
-    if (before != value->options_sections[section]) value->render_dirty = true;
+    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
+    struct nk_rect glyph = nk_rect(bounds.x + 16, bounds.y + 14, 20, 20);
+    (void)bongo_cat_pref_section_icon_draw(canvas, glyph, icon, p.accent);
+    const struct nk_user_font *font = bongo_cat_ui_label_font(context);
+    struct nk_rect text = nk_rect(bounds.x + 48,
+        bounds.y + (bounds.h - font->height) * .5f, bounds.w - 84, font->height);
+    nk_draw_text(canvas, text, title, nk_strlen(title), font,
+        nk_rgba(0, 0, 0, 0), p.text);
+    float x = bounds.x + bounds.w - 24, y = bounds.y + bounds.h * .5f;
+    if (open) {
+        nk_stroke_line(canvas, x - 4, y - 2, x, y + 2, 1.5f, p.muted);
+        nk_stroke_line(canvas, x, y + 2, x + 4, y - 2, 1.5f, p.muted);
+    } else {
+        nk_stroke_line(canvas, x - 2, y - 4, x + 2, y, 1.5f, p.muted);
+        nk_stroke_line(canvas, x + 2, y, x - 2, y + 4, 1.5f, p.muted);
+    }
+    if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
+        bongo_cat_ui_cursor_hover_rect(context, bounds, BONGO_CAT_UI_CURSOR_POINTER);
     if (open) bongo_cat_pref_section_rows_begin(context);
     return open;
 }
 
 void bongo_cat_preferences_options_end(BongoCatPreferences *value, struct nk_context *context) {
-    if (value->collapsible_options) nk_tree_state_pop(context);
+    (void)value;
+    nk_layout_row_dynamic(context, 6, 1);
+    nk_spacing(context, 1);
 }

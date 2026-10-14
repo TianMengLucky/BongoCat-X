@@ -1,3 +1,4 @@
+#include "preferences_live2d_setup.h"
 #include "bongo_cat/log.h"
 #include "ui_software.h"
 #include "preferences_gl.h"
@@ -33,6 +34,7 @@ static void finish_frame(BongoCatPreferences *value, bool rendered, uint64_t now
             "Preferences frame presentation failed: %s", SDL_GetError());
     } else if (!loading_model) bongo_cat_memory_policy_ui_frame_presented();
     /* Commands have been consumed; page-only textures can now be released. */
+    if (value->page != 6) bongo_cat_preferences_items_preview_clear(value, true);
     if (value->page != 5 && (value->about.contributors ||
             value->about.contributors_attempted || value->qq_texture)) {
         bongo_cat_about_clear(value, true);
@@ -41,7 +43,7 @@ static void finish_frame(BongoCatPreferences *value, bool rendered, uint64_t now
         bongo_cat_memory_policy_ui_loaded();
         bongo_cat_memory_policy_ui_frame_presented();
     }
-    if (value->page != 1) bongo_cat_preferences_model_cover_cache_clear(value->app);
+    if (value->page != 1 && value->page != 8) bongo_cat_preferences_model_cover_cache_clear(value->app);
     bongo_cat_preferences_record_frame(value);
     if (value->shortcut_recording || value->model_load_visual_active ||
         importing || bongo_cat_pref_controls_animating(&value->ui.context) ||
@@ -71,6 +73,7 @@ static void finish_frame(BongoCatPreferences *value, bool rendered, uint64_t now
 }
 
 void bongo_cat_preferences_render(BongoCatPreferences *value) {
+    bongo_cat_preferences_live2d_setup_poll(value);
     bongo_cat_preferences_release_idle_window(value);
     if (!value || !value->window || !value->visible) return;
     if (bongo_cat_preferences_window_fade_tick(value)) return;

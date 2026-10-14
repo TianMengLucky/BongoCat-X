@@ -61,6 +61,7 @@ void bongo_cat_preferences_import_report_progress(BongoCatImportJob *job,
         ? SDL_calloc(1, sizeof(*progress)) : NULL;
     if (progress) {
         progress->job = job;
+        progress->generation = job->generation;
         progress->package_index = package_index;
         progress->installed_count = receipt->installed_count;
         bongo_cat_import_package_base_id(progress->package_id,
@@ -96,7 +97,8 @@ bool bongo_cat_preferences_import_progress_event(
         (BongoCatImportProgress *)event->user.data1;
     SDL_LockMutex(dialog->mutex);
     bool current = progress && dialog->active &&
-        dialog->worker_job == progress->job;
+        dialog->worker_job == progress->job &&
+        dialog->worker_generation == progress->generation;
     SDL_UnlockMutex(dialog->mutex);
     if (current && app) {
         bool restored = bongo_cat_settings_restore_model_package(

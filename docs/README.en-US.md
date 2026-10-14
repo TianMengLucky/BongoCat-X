@@ -1,5 +1,7 @@
 
 
+2.2.2 adds items, keyboard sounds and model store plugins, with improved background imports and automatic updates. Screen edge bounce requires Keep on screen. Windows OpenGL true transparency uses per-pixel alpha and may increase pixel readback overhead.
+
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="resources/assets/bongocat.png" alt="BongoCat" width="249">
@@ -56,7 +58,7 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.1.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.1.4))
+- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -438,7 +440,7 @@ Made with ❤️ & ⌨️
 
 ### Preferences options layout
 
-Use the buttons at the top of Preferences to switch between expanded options and collapsible groups. Click Window, Model, Application or Appearance to show or hide the group. The layout choice is saved and existing option values are preserved.
+Preferences uses one grouped card layout, with Window, Model, Application and Appearance expanded by default. Click a group title to collapse or expand its options. There is no layout switch; existing setting values are preserved.
 
 ### Input statistics plugin
 
@@ -468,3 +470,23 @@ On Windows, low-memory settings use chunked SDL software drawing and an opaque b
 Mver (OpenGL/Vulkan/Metal) crops the hand, bubble frame and characters separately, joining held keys with + inside one bubble. The frame and tail mirror with the model while characters stay readable, also in single-key mode. Configure the three crop regions, spacing around + and per-side display limit in `hand-layout.json` beside the hand images; restart after editing. See the [configuration guide and example](hand-layout.md).
 
 The action dialog checks each motion’s `Sound` reference and whether the audio file exists, then shows an individual volume control beside motions with audio. Set 0–100% by dragging or typing; double-click restores 100%, and 0% mutes. Settings persist per model and motion and apply to dialog playback, shortcuts, random motions and the context menu, including live adjustment. Other motions sharing the same clip keep their own volume.
+
+### Items plugin
+
+The independent Items plugin is bundled by default. Enable it on Preferences → Plugins to show the Items page. It supports batch image import/drop, multiple props, position, scale, rotation, opacity, front/back layers, locks, duplicates and scene saving on OpenGL, Vulkan and Metal. Viewport following is not mesh pinning; GIF uses its first frame, with up to 16 items on the primary pet. See [Items plugin](items-plugin.md). Set `BONGO_CAT_BUILD_ITEMS=OFF` to omit the bundled library.
+
+Render memory preference: Video memory first / System memory first. Live2D Vulkan only. Reloads rendering. Prefer video memory for speed or system memory to reduce VRAM pressure. Unsupported resources fall back automatically; system memory may be slower. Other backends allocate automatically; integrated GPUs share memory.
+
+### Keyboard sound effects plugin
+
+Enable Sound effects on Plugins. Click a keyboard key to choose audio, hover to see its filename, and press the physical key to play it. Bindings save automatically. Sounds and Items each have a separate persistent worker. WAV/MP3/Ogg Vorbis/FLAC are supported on the primary pet. See [Sound effects plugin](sounds-plugin.md); `BONGO_CAT_BUILD_SOUNDS=OFF` omits the library.
+
+The Rust model store plugin shows preview cards, author links, and download/uninstall buttons. Downloads must pass SHA-256 verification before installation. The store shows a reserved state until the catalog is published. See [store plugin](store-plugin.md).
+
+Automatically Check for Updates is enabled by default under Preferences → Application. Each launch checks once in the background. New-version notifications stay available until Settings opens and offer an Update now button in the top-right corner. Every settings toast can be dismissed manually.
+
+The Models page groups modes from the same package into one card with a mode selector, including the default Standard, Keyboard and Gamepad modes. Drop several model ZIPs to queue extraction, discovery and installation in the background. Closing Settings keeps imports running. Quitting stops subsequent imports and waits for the current source to finish before releasing workers and temporary resources.
+
+Shortcuts is now a subpage of Preferences: enter Preferences, then switch Settings / Shortcuts at the top. Store is a subpage of Model: enter Model, then switch Local models / Store. These two standalone sidebar entries are removed; each subpage retains its own scroll position.
+
+Enabling Live2D without Cubism Core opens both official license agreements. On Windows, Agree and download fetches the Native R5 SDK over official HTTPS, extracts only the matching dynamic Core and enables rendering locally. Cancel and continue keeps the plugin enabled without rendering. Failed downloads can be retried, and manual import remains available. The application and packages contain no SDK or Core.

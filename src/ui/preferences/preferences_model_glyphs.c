@@ -1,5 +1,6 @@
 #include "preferences_state.h"
 #include "preferences_model_glyphs.h"
+#include "bongo_cat/store.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +130,14 @@ void bongo_cat_preferences_model_glyphs(const BongoCatApp *app,
     }
     used = written;
     ranges[used] = 0;
+    unsigned store_count = 0;
+    (void)bongo_cat_store_status((BongoCatApp *)app, &store_count);
+    for (unsigned i = 0; i < store_count; ++i) {
+        BongoCatStoreEntry entry;
+        if (!bongo_cat_store_entry((BongoCatApp *)app, i, &entry)) continue;
+        add_text(ranges, capacity, &used, entry.name);
+        add_text(ranges, capacity, &used, entry.author);
+    }
     /* Symbols used by the HTML reference's contribution category badges. */
     add_text(ranges, capacity, &used, "〈/〉▤♧文");
     for (size_t i = 0; i < app->models.count; ++i) {

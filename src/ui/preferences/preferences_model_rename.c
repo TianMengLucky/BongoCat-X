@@ -13,7 +13,8 @@ bool bongo_cat_preferences_model_name_draw(BongoCatPreferences *value,
     bool renaming = !strcmp(session->id, entry->id);
     bool hover = !renaming && nk_input_is_mouse_hovering_rect(
         &context->input, bounds);
-    bool clicked = hover && nk_input_is_mouse_click_in_rect(
+    bool clicked = hover && !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_click_in_rect(
         &context->input, NK_BUTTON_LEFT, bounds);
     if (renaming || hover) {
         nk_fill_rect(canvas, bounds, 7, renaming ? p.hover_pink : p.hover);

@@ -18,11 +18,15 @@ uint32_t configure_vulkan_optimization(BongoCatModelRuntime *runtime,
     const bool vulkan = backend == BONGO_CAT_RHI_VULKAN && info.backend == BONGO_CAT_RHI_VULKAN;
     const bool allocation = vulkan && (requested & BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION) != 0;
     const bool low_memory = vulkan && (requested & BONGO_CAT_OPTIMIZE_LOW_MEMORY) != 0;
+    const bool system_memory = vulkan && (requested & BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY) != 0;
     uint32_t active = 0;
     if (bongo_cat::vulkan_memory_configure((VkInstance)info.vulkan_instance,
             (VkPhysicalDevice)info.vulkan_physical_device,
-            (VkDevice)info.vulkan_device, allocation || low_memory, low_memory) && allocation)
-        active |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
+            (VkDevice)info.vulkan_device, vulkan,
+            low_memory, system_memory)) {
+        if (allocation) active |= BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION;
+        if (system_memory) active |= BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY;
+    }
     if (vulkan_recording_configure((VkDevice)info.vulkan_device, info.queue_family,
             vulkan && (requested & BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING) != 0))
         active |= BONGO_CAT_OPTIMIZE_PARALLEL_RECORDING;
@@ -63,7 +67,7 @@ bool NativeModel::create_renderer_vulkan(BongoCatError *error) {
         return false;
     }
     vulkan_submit_initialize((VkDevice)info.vulkan_device, (VkQueue)info.vulkan_queue,
-        (VkCommandPool)info.vulkan_command_pool, !low_memory_mode_);
+        (VkCommandPool)info.vulkan_command_pool, !low_memory_mode_ && !vulkan_memory_prefers_device());
     Csm::Rendering::CubismRenderer_Vulkan::SetConstantSettings(
         (VkDevice)info.vulkan_device, (VkPhysicalDevice)info.vulkan_physical_device,
         (VkCommandPool)info.vulkan_command_pool, (VkQueue)info.vulkan_queue,

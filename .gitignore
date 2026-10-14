@@ -64,6 +64,9 @@ Desktop.ini
 !/docs/
 !/docs/model-plugins.md
 !/docs/statistics-plugin.md
+!/docs/items-plugin.md
+!/docs/sounds-plugin.md
+!/docs/store-plugin.md
 !/docs/hand-layout.md
 !/docs/hand-layout.example.json
 !/docs/README.en-US.md

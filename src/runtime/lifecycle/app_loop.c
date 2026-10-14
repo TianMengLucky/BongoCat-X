@@ -1,4 +1,6 @@
 #include "runtime.h"
+#include "bongo_cat/items.h"
+#include "bongo_cat/statistics.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/model_memory.h"
@@ -77,9 +79,16 @@ static bool render(BongoCatApp *app, bool present) {
     if (content_viewport)
         glViewport(content_x, content_y, content_width, content_height);
     bongo_cat_overlay_set_vertical_flip(app->overlay, app->settings.model.vertical_flip);
+    bool model_rendering = bongo_cat_model_runtime_rendering(app->model_runtime);
+    if (present && !model_rendering) {
+        bongo_cat_items_draw_gl(app, false, width, height, content_x, content_y, content_width, content_height);
+        if (content_viewport) glViewport(content_x, content_y, content_width, content_height);
+    }
     bongo_cat_overlay_draw_background(app->overlay,
         app->settings.model.mirror);
     glViewport(0, 0, width, height);
+    if (present && model_rendering) bongo_cat_items_draw_gl(app, false, width, height,
+        content_x, content_y, content_width, content_height);
     bongo_cat_diagnostics_phase("model-draw");
     if (app->loaded_model[0]) bongo_cat_model_runtime_draw(app->model_runtime);
     bongo_cat_diagnostics_phase("overlay-draw");
@@ -94,6 +103,8 @@ static bool render(BongoCatApp *app, bool present) {
     bongo_cat_overlay_draw_effect(app->overlay, app->settings.model.mirror);
     bongo_cat_overlay_draw_pointer_after_keys(app->overlay);
     glViewport(0, 0, width, height);
+    if (present) bongo_cat_items_draw_gl(app, true, width, height,
+        content_x, content_y, content_width, content_height);
     bool cover_handled = true;
     if (cover_requested) {
         if (!cover_ready) {
@@ -203,6 +214,10 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_diagnostics_phase("loop-prepare");
         int wait_ms = bongo_cat_window_wait_timeout(app, SDL_GetTicksNS());
         if (app->secondary_pet && wait_ms > 100) wait_ms = 100;
+        if (bongo_cat_preferences_imports_busy(app->preferences) &&
+            (wait_ms < 0 || wait_ms > 100)) wait_ms = 100;
+        if ((app->statistics_overlay || app->statistics_overlay_retry_ns) &&
+            (wait_ms < 0 || wait_ms > 100)) wait_ms = 100;
         bongo_cat_preferences_input_begin(app->preferences);
         SDL_Event event;
         /* An unbounded idle wait is normal; a bounded frame wait should return. */
@@ -228,6 +243,7 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_diagnostics_phase("model-watch-and-refresh");
         uint64_t now = SDL_GetTicksNS();
         bongo_cat_preferences_model_watch(app->preferences, now);
+        bongo_cat_preferences_poll_imports(app->preferences);
         bongo_cat_model_refresh_update(app);
         take_instance_wake(app);
         if (bongo_cat_platform_single_instance_take_settings()) {
@@ -248,6 +264,7 @@ void bongo_cat_app_loop(BongoCatApp *app) {
                     "unknown error");
         }
         now = SDL_GetTicksNS();
+        bongo_cat_window_update_edge_bounce(app, now);
         bongo_cat_window_update_wheel_animation(app, now);
         bongo_cat_diagnostics_phase("snapshot-and-multi-pet");
         bongo_cat_window_snapshot_update(app, now);
@@ -288,6 +305,7 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_preferences_render(app->preferences);
         bongo_cat_diagnostics_phase("model-selection");
         bongo_cat_preferences_process_model_selection(app->preferences);
+        bongo_cat_statistics_overlay_update(app);
         if (app->session.window.visible && !app->window_minimized && app->dirty)
             render(app, true);
         bongo_cat_diagnostics_phase("tray-and-config-save");

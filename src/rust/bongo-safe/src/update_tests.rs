@@ -92,3 +92,91 @@ fn dropping_a_prepared_update_cleans_only_its_private_stage() {
     assert!(!stage.exists());
     assert_eq!(fs::read(executable).unwrap(), b"running");
 }
+
+#[cfg(windows)]
+fn run_helper(rollback: bool) {
+    use std::process::Command;
+    let root = tempfile::tempdir().unwrap();
+    let stage = root.path().join("stage");
+    let source = stage.join("payload");
+    let target = root.path().join("app");
+    fs::create_dir_all(&source).unwrap();
+    fs::create_dir_all(&target).unwrap();
+    let executable = target.join("BongoCat.exe");
+    fs::write(&executable, b"old application").unwrap();
+    fs::write(source.join("BongoCat.exe"), b"new application").unwrap();
+    fs::write(source.join("new.txt"), b"new asset").unwrap();
+    fs::write(target.join("settings.json"), b"user settings").unwrap();
+    let update = BongoSafeUpdate {
+        directory: None,
+        stage: stage.clone(),
+        package: stage.join("release.zip"),
+        source,
+        target: target.clone(),
+        executable: executable.clone(),
+        installed: false,
+        digest: [0; 32],
+    };
+    // Exercise the real helper without waiting for this test process or
+    // launching an application. Record the relaunch request instead.
+    let mut body = crate::update_apply::script(&update, "").unwrap();
+    body = body.replace(
+        &format!(
+            "[Diagnostics.Process]::GetProcessById({})",
+            std::process::id()
+        ),
+        "[Diagnostics.Process]::GetProcessById(-1)",
+    );
+    body = body.replace(
+        "function Relaunch { Start-Process -FilePath $exe -ArgumentList ('\"--nearby-root=' + $nearby + '\"') -WorkingDirectory $target }",
+        "function Relaunch { Set-Content -LiteralPath (Join-Path $stage 'relaunched') -Value 'yes' }",
+    );
+    assert!(!body.contains("Start-Process"));
+    if rollback {
+        body = body.replace(
+            "    Relaunch\n",
+            "    throw 'Injected failure after replacement'\n",
+        );
+    }
+    let helper = stage.join("test.ps1");
+    fs::write(&helper, format!("\u{feff}{body}")).unwrap();
+    let system = std::env::var_os("SystemRoot").unwrap();
+    let result =
+        Command::new(Path::new(&system).join("System32/WindowsPowerShell/v1.0/powershell.exe"))
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+            ])
+            .arg(helper)
+            .output()
+            .unwrap();
+    assert_eq!(result.status.success(), !rollback);
+    assert!(stage.join("relaunched").exists());
+    assert_eq!(
+        fs::read(target.join("settings.json")).unwrap(),
+        b"user settings"
+    );
+    if rollback {
+        assert_eq!(fs::read(executable).unwrap(), b"old application");
+        assert!(!target.join("new.txt").exists());
+        assert!(stage.join("update-error.log").exists());
+    } else {
+        assert_eq!(fs::read(executable).unwrap(), b"new application");
+        assert_eq!(fs::read(target.join("new.txt")).unwrap(), b"new asset");
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn portable_helper_replaces_existing_files_and_preserves_user_data() {
+    run_helper(false);
+}
+
+#[cfg(windows)]
+#[test]
+fn portable_helper_rolls_back_replaced_and_new_files() {
+    run_helper(true);
+}

@@ -34,7 +34,7 @@ fn path(path: &Path) -> Outcome<String> {
 }
 
 #[cfg(windows)]
-fn script(update: &BongoSafeUpdate, nearby: &str) -> Outcome<String> {
+pub(crate) fn script(update: &BongoSafeUpdate, nearby: &str) -> Outcome<String> {
     let mut body = format!(
         r#"$ErrorActionPreference = 'Stop'
 $stage = {stage}
@@ -78,7 +78,9 @@ try {{
         if (Test-Path -LiteralPath $temporary) { throw 'Update temporary file already exists' }
         $journal.Add(@{ Destination=$destination; Saved=$saved; Existed=$existed; Temporary=$temporary })
         Copy-Item -LiteralPath $file.FullName -Destination $temporary
-        if ($existed) { [IO.File]::Replace($temporary, $destination, $null) }
+        # PowerShell coerces $null to an empty string for this .NET overload.
+        # Use a real backup path; File.Replace atomically saves the old file.
+        if ($existed) { [IO.File]::Replace($temporary, $destination, $saved) }
         else { [IO.File]::Move($temporary, $destination) }
     }
 "#);

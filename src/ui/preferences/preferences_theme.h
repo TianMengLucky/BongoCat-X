@@ -6,6 +6,8 @@
 
 bool bongo_cat_pref_capsule_button(struct nk_context *context,
     const char *id, const char *label);
+int bongo_cat_pref_page_tabs(struct nk_context *context, const char *id,
+    const char *const *labels, int count, int selected);
 int bongo_cat_pref_segments(struct nk_context *context, const char *id,
     const char *const *labels, int count, int selected);
 

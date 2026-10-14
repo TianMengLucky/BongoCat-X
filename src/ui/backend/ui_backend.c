@@ -105,6 +105,7 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
         return false;
     }
     nk_buffer_init_default(&ui->commands);
+    ui->next_backend = context_backend;
     context_backend = ui;
     ui->context.clip.copy = clipboard_copy;
     ui->context.clip.paste = clipboard_paste;
@@ -113,7 +114,9 @@ bool bongo_cat_ui_init(BongoCatUIBackend *ui, SDL_Window *window,
 
 static void release(BongoCatUIBackend *ui, bool release_gl) {
     if (!ui) return;
-    if (context_backend == ui) context_backend = NULL;
+    BongoCatUIBackend **entry = &context_backend;
+    while (*entry && *entry != ui) entry = &(*entry)->next_backend;
+    if (*entry) *entry = ui->next_backend;
     // Destroying a pending software job cancels it before its context is freed.
     ui->software_pending = false;
     ui->software_frame_valid = false;
@@ -323,6 +326,7 @@ bool bongo_cat_ui_frame_valid(const BongoCatUIBackend *ui) {
 
 BongoCatUIBackend *bongo_cat_ui_backend_for_context(
     const struct nk_context *context) {
-    return context_backend && context == &context_backend->context
-        ? context_backend : NULL;
+    for (BongoCatUIBackend *ui = context_backend; ui; ui = ui->next_backend)
+        if (context == &ui->context) return ui;
+    return NULL;
 }

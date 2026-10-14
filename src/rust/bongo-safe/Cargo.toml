@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.1.4"
+version = "2.2.2"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false
@@ -24,6 +24,7 @@ image = { version = "0.25", default-features = false, features = [
     "hdr",
 ] }
 roxmltree = "0.20"
+html2text = "0.17.2"
 reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls-native-roots", "system-proxy"] }
 tokio = { version = "1", features = ["rt", "time", "macros"] }
 tempfile = "3"

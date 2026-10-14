@@ -153,7 +153,13 @@ impl BongoSafeHttpClient {
         callbacks: Callbacks,
         mut receive: impl FnMut(&[u8]) -> Outcome<()>,
     ) -> Outcome<()> {
+        let live2d = url.host_str() == Some("cubism.live2d.com") &&
+            url.path().starts_with("/sdk-native/bin/");
         let mut request = self.client.get(url).timeout(timeout);
+        if live2d {
+            request = request.header("User-Agent", "Mozilla/5.0 (compatible; BongoCat)")
+                .header("Referer", "https://www.live2d.com/en/sdk/download/native/");
+        }
         if api {
             request = request
                 .header("Accept", "application/vnd.github+json")
@@ -166,7 +172,7 @@ impl BongoSafeHttpClient {
                 if status != 200 {
                     return Err(Failure(
                         RESPONSE,
-                        format!("GitHub returned HTTP status {status}"),
+                        format!("Server returned HTTP status {status}"),
                     ));
                 }
                 let total = response.content_length().unwrap_or(0);

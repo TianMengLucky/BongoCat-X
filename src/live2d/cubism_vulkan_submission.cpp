@@ -162,12 +162,20 @@ VkCommandBuffer vulkan_upload_begin() {
     return command;
 }
 void vulkan_upload_budget(VkDeviceSize bytes) {
-    if (!batch) { wait_upload(upload_slots[next_upload]); return; }
-    if (upload_bytes && (bytes > 16ull * 1024 * 1024 ||
-        upload_bytes > 16ull * 1024 * 1024 - bytes)) {
+    const bool compact = vulkan_memory_prefers_device();
+    if (!batch) {
+        if (compact) vulkan_submit_wait();
+        else wait_upload(upload_slots[next_upload]);
+        return;
+    }
+    const VkDeviceSize budget = compact ? 1024ull * 1024 : 16ull * 1024 * 1024;
+    if (upload_bytes && (bytes > budget || upload_bytes > budget - bytes)) {
         vulkan_upload_batch_end(); batch = true;
     }
-    if (!upload_bytes) wait_upload(upload_slots[next_upload]);
+    if (!upload_bytes) {
+        if (compact) vulkan_submit_wait();
+        else wait_upload(upload_slots[next_upload]);
+    }
     upload_bytes += bytes;
 }
 void vulkan_upload_batch_begin() {

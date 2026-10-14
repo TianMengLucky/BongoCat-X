@@ -83,6 +83,19 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
             "Keep the pet within usable screen space when moving or resizing. Adjacent screens can be crossed."),
             &window->keep_in_screen) && window->keep_in_screen)
             bongo_cat_window_clamp_to_display(app);
+        if (window->keep_in_screen) {
+            float saved_x = context->current->layout->at_x;
+            float saved_width = context->current->layout->bounds.w;
+            context->current->layout->at_x += 24.0f;
+            context->current->layout->bounds.w -= 24.0f;
+            bongo_cat_pref_toggle(context, "screen-edge-bounce", tr(app,
+                "pages.preference.cat.labels.screenEdgeBounce", "Screen Edge Bounce"), tr(app,
+                "pages.preference.cat.hints.screenEdgeBounce",
+                "Drag quickly into a screen edge to rebound at a constant speed. Requires [Keep on Screen]."),
+                &window->screen_edge_bounce);
+            context->current->layout->at_x = saved_x;
+            context->current->layout->bounds.w = saved_width;
+        }
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_FRAME_BOUNDS);
         bongo_cat_pref_toggle(context, "edge-snap", tr(app,
             "pages.preference.cat.labels.edgeSnap", "Edge Snapping"), tr(app, "pages.preference.cat.hints.edgeSnap",
@@ -311,7 +324,6 @@ static void settle_quality(BongoCatPreferences *value) {
 
 void bongo_cat_preferences_page_settings(BongoCatPreferences *value,
     struct nk_context *context) {
-    bongo_cat_preferences_options_style(value, context);
     page_display(value, context);
     settle_quality(value);
     section_gap(context, 10);

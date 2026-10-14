@@ -6,7 +6,7 @@
 
 #define BONGO_CAT_UI_MARGIN 8.0f
 #define BONGO_CAT_UI_HEADER_HEIGHT 56.0f
-#define BONGO_CAT_UI_SIDEBAR_WIDTH 148.0f
+#define BONGO_CAT_UI_SIDEBAR_WIDTH 176.0f
 #define BONGO_CAT_UI_SIDEBAR_NARROW 84.0f
 
 typedef struct BongoCatUIPalette {

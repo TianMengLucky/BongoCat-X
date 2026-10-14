@@ -1,5 +1,8 @@
 mod metrics;
 mod page_ffi;
+mod reset_ffi;
+#[cfg(test)]
+mod reset_tests;
 mod storage;
 #[cfg(test)]
 mod tests;
@@ -24,12 +27,14 @@ enum Command {
     Enable(bool),
     Export(PathBuf, bool),
     Flush(mpsc::Sender<bool>),
+    Reset,
     Stop,
 }
 struct Instance {
     cache: Arc<Mutex<worker::Cache>>,
     failed: Arc<AtomicBool>,
     export_status: Arc<AtomicU32>,
+    reset_status: Arc<AtomicU32>,
     commands: mpsc::SyncSender<Command>,
     worker: Option<JoinHandle<bool>>,
 }
@@ -59,11 +64,13 @@ unsafe extern "C" fn create(directory: *const c_char) -> *mut c_void {
         let shared = cache.clone();
         let error = failed.clone();
         let exported = export_status.clone();
+        let reset_status = Arc::new(AtomicU32::new(0));
+        let reset = reset_status.clone();
         let Ok(worker) = std::thread::Builder::new()
             .name("bongo-statistics".into())
             .spawn(move || {
                 let ok = guarded(false, || {
-                    worker::run(directory, receiver, shared, error.clone(), exported)
+                    worker::run(directory, receiver, shared, error.clone(), exported, reset)
                 });
                 if !ok {
                     error.store(true, Ordering::Relaxed);
@@ -77,6 +84,7 @@ unsafe extern "C" fn create(directory: *const c_char) -> *mut c_void {
             cache,
             failed,
             export_status,
+            reset_status,
             commands,
             worker: Some(worker),
         }))

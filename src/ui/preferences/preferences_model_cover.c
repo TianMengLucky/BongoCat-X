@@ -89,24 +89,13 @@ void bongo_cat_preferences_model_covers_begin(BongoCatApp *app) {
     cover_load_deferred = false;
 }
 
-const BongoCatModelCover *bongo_cat_preferences_model_cover(
-    BongoCatApp *app, const BongoCatModelEntry *entry,
+const BongoCatModelCover *bongo_cat_preferences_cover_path(
+    BongoCatApp *app, const char *path,
     int pixel_width, int pixel_height) {
     if (app && app->settings.app.low_memory_mode) {
         pixel_width = SDL_min(pixel_width, 96); pixel_height = SDL_min(pixel_height, 96);
     }
-    char path[BONGO_CAT_PATH_CAP];
-    if (!bongo_cat_path_join(path, sizeof(path), entry->adapter_directory,
-        "resources/cover.png")) return NULL;
-    if (!bongo_cat_path_is_file(path)) {
-        static char last_missing[BONGO_CAT_PATH_CAP];
-        if (strcmp(last_missing, path)) {
-            snprintf(last_missing, sizeof(last_missing), "%s", path);
-            SDL_Log("Model cover unavailable: id=%s path=%s",
-                entry->id, path);
-        }
-        return NULL;
-    }
+    if (!path || !bongo_cat_path_is_file(path)) return NULL;
     ModelCoverSlot *empty = NULL;
     for (size_t i = 0; i < BONGO_CAT_MODEL_CAP; ++i) {
         ModelCoverSlot *slot = &cover_cache[i];
@@ -138,6 +127,14 @@ const BongoCatModelCover *bongo_cat_preferences_model_cover(
     empty->requested_height = pixel_height;
     snprintf(empty->path, sizeof(empty->path), "%s", path);
     return &empty->image;
+}
+
+const BongoCatModelCover *bongo_cat_preferences_model_cover(
+    BongoCatApp *app, const BongoCatModelEntry *entry, int pixel_width, int pixel_height) {
+    char path[BONGO_CAT_PATH_CAP];
+    if (!entry || !bongo_cat_path_join(path, sizeof(path), entry->adapter_directory,
+        "resources/cover.png")) return NULL;
+    return bongo_cat_preferences_cover_path(app, path, pixel_width, pixel_height);
 }
 
 void bongo_cat_preferences_model_covers_prune(BongoCatApp *app) {

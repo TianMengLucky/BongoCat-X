@@ -359,7 +359,7 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     if (!platform || !platform->window) return false;
     BongoCatWindowsLayered *value = platform->presenter;
     bool required = platform->present_ops && platform->present_ops->requires_layered;
-    if (required && !value) return SDL_SetError("The Vulkan layered presenter is unavailable");
+    if (required && !value) return SDL_SetError("The layered presenter is unavailable");
     if (value && required) value->pixel_hit_test = true;
     bool hdr = bongo_cat_windows_hdr_enabled(platform->window);
     bool active = value && !value->hdr_failed &&

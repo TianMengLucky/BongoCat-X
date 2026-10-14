@@ -71,6 +71,11 @@ typedef struct BongoCatApp {
     BongoCatI18n *i18n;
     BongoCatPlatform platform;
     BongoCatModelRuntime *model_runtime;
+    struct BongoCatSounds *sounds;
+    struct BongoCatStore *store;
+    struct BongoCatItems *items;
+    struct BongoCatStatisticsOverlay *statistics_overlay;
+    uint64_t statistics_overlay_retry_ns;
     BongoCatStatistics *statistics;
     BongoCatStatistics *statistics_retiring;
     BongoCatAudio *audio;
@@ -237,6 +242,12 @@ typedef struct BongoCatApp {
     int drag_window_x, drag_window_y;
     void *drag_display_bounds;
     int drag_display_count;
+    uint64_t drag_sample_ns, drag_velocity_ns;
+    float drag_sample_x, drag_sample_y;
+    float drag_velocity_x, drag_velocity_y;
+    uint64_t edge_bounce_start_ns, edge_bounce_end_ns;
+    int edge_bounce_x, edge_bounce_y;
+    float edge_bounce_velocity_x, edge_bounce_velocity_y;
     float left_stick_x, left_stick_y;
     float right_stick_x, right_stick_y;
     bool left_stick_pressed, right_stick_pressed;

@@ -8,6 +8,14 @@
 #include "ui_catime.h"
 #include <SDL3/SDL.h>
 
+void bongo_cat_preferences_items_preview_clear(BongoCatPreferences *value, bool graphics);
+void bongo_cat_preferences_items_preview(BongoCatPreferences *value, struct nk_context *context, const char *asset);
+void bongo_cat_preferences_page_sounds(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_sounds_plugin_card(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_sounds_import(BongoCatApp *app, const char *key, const char *path);
+void bongo_cat_preferences_page_items(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_items_plugin_card(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_items_import(BongoCatApp *app, const char *path);
 void bongo_cat_preferences_statistics_usage(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_page_statistics(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_statistics_plugin_card(BongoCatPreferences *value, struct nk_context *context);
@@ -94,6 +102,8 @@ bool bongo_cat_preferences_chrome_drag_allowed(
 typedef struct BongoCatImportDialog BongoCatImportDialog;
 BongoCatImportDialog *bongo_cat_preferences_import_create(void);
 void bongo_cat_preferences_import_destroy(BongoCatImportDialog *dialog);
+bool bongo_cat_preferences_import_sound_open(BongoCatImportDialog *dialog, SDL_Window *window, const char *key);
+bool bongo_cat_preferences_import_items_open(BongoCatImportDialog *dialog, SDL_Window *window);
 bool bongo_cat_preferences_import_background_open(BongoCatImportDialog *dialog, SDL_Window *window);
 bool bongo_cat_preferences_import_open(BongoCatImportDialog *dialog,
     SDL_Window *window);
@@ -103,5 +113,9 @@ bool bongo_cat_preferences_import_status(const BongoCatImportDialog *dialog,
     uint64_t *started_ns, size_t *completed, size_t *total);
 bool bongo_cat_preferences_import_event(BongoCatImportDialog *dialog,
     BongoCatApp *app, const SDL_Event *event);
+
+void bongo_cat_preferences_store_cards(BongoCatPreferences *value, struct nk_context *context, unsigned count);
+void bongo_cat_preferences_page_store(BongoCatPreferences *value, struct nk_context *context);
+void bongo_cat_preferences_store_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 
 #endif

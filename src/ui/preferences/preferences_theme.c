@@ -34,7 +34,7 @@ static bool form_begin(struct nk_context *context, const char *id, int lines,
     context->style.window.group_padding = nk_vec2(13, 11);
     context->style.window.spacing = nk_vec2(8, 3);
     context->style.window.group_border = 0;
-    float height = lines ? 70.0f + 19.0f * lines : 76.0f;
+    float height = lines ? 66.0f + 19.0f * lines : 68.0f;
     nk_layout_row_dynamic(context, height, 1);
     if (nk_group_begin(context, id, NK_WINDOW_NO_SCROLLBAR)) return true;
     context->style.window.fixed_background = saved->background;
@@ -100,10 +100,11 @@ static void draw_icon(struct nk_command_buffer *canvas, int icon,
 
 static int capsule(struct nk_context *context, const char *id,
     const char *const *labels, int count, bool icons, int selected,
-    bool *clicked) {
+    bool *clicked, bool page_navigation) {
     struct nk_rect widget;
     if (nk_widget(&widget, context) == NK_WIDGET_INVALID) return selected;
     selected = NK_CLAMP(0, selected, count - 1);
+    if (page_navigation) { widget.x += 24; widget.w = NK_MAX(1.0f, widget.w - 48); }
     float width = count == 1 ? widget.w : 156.0f;
     if (!icons && count > 1) {
         const struct nk_user_font *font = context->style.font;
@@ -111,10 +112,11 @@ static int capsule(struct nk_context *context, const char *id,
             width = NK_MAX(width, count * (24.0f + font->width(
                 font->userdata, font->height, labels[i], nk_strlen(labels[i]))));
     }
-    struct nk_rect bounds = nk_rect(widget.x + NK_MAX(0.0f,
-        widget.w - width - 6.0f), widget.y - 1, NK_MIN(width, widget.w), 38);
+    struct nk_rect bounds = nk_rect(page_navigation ? widget.x : widget.x + NK_MAX(0.0f,
+        widget.w - width - 6.0f), widget.y, NK_MIN(width, widget.w), 38);
     float segment = bounds.w / count;
-    bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
+    bool interactive = !(context->current->layout->flags & NK_WINDOW_ROM);
+    bool hover = interactive && nk_input_is_mouse_hovering_rect(&context->input, bounds);
     int hovered = hover ? NK_CLAMP(0, (int)((context->input.mouse.pos.x -
         bounds.x) / segment), count - 1) : -1;
     if (hover && nk_input_is_mouse_click_in_rect(&context->input,
@@ -211,7 +213,7 @@ static int choice_row(struct nk_context *context, const char *id,
     bongo_cat_pref_form_label(context, title);
     nk_layout_row_push(context, count >= 10 ? choice_width : NK_MAX(choice_width,
         available - left - 8.0f));
-    selected = capsule(context, id, labels, count, icons, selected, clicked);
+    selected = capsule(context, id, labels, count, icons, selected, clicked, false);
     nk_layout_row_end(context);
     bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved);
@@ -283,12 +285,18 @@ bool bongo_cat_pref_capsule_button(struct nk_context *context,
     const char *id, const char *label) {
     const char *labels[] = {label};
     bool clicked = false;
-    capsule(context, id, labels, 1, false, 0, &clicked);
+    capsule(context, id, labels, 1, false, 0, &clicked, false);
     return clicked;
 }
 
 int bongo_cat_pref_segments(struct nk_context *context, const char *id,
     const char *const *labels, int count, int selected) {
     bool clicked = false;
-    return capsule(context, id, labels, count, false, selected, &clicked);
+    return capsule(context, id, labels, count, false, selected, &clicked, false);
+}
+
+int bongo_cat_pref_page_tabs(struct nk_context *context, const char *id,
+    const char *const *labels, int count, int selected) {
+    bool clicked = false;
+    return capsule(context, id, labels, count, false, selected, &clicked, true);
 }

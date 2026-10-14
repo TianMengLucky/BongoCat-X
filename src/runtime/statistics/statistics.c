@@ -75,6 +75,14 @@ static const BongoCatStatisticsUsagePlugin *usage_query(SDL_SharedObject *librar
     return p && p->abi_version == 1 && p->struct_size == sizeof(*p) && p->configure &&
         p->snapshot && p->set_enabled && p->export_csv && p->export_status ? p : NULL;
 }
+static const BongoCatStatisticsResetPlugin *reset_query(SDL_SharedObject *library) {
+    union { SDL_FunctionPointer function; BongoCatStatisticsResetQuery query; } entry;
+    entry.function = SDL_LoadFunction(library, BONGO_CAT_STATISTICS_RESET_SYMBOL);
+    const BongoCatStatisticsResetPlugin *p = entry.function ? entry.query(BONGO_CAT_STATISTICS_RESET_ABI) : NULL;
+    if (!entry.function) SDL_ClearError(); /* Older plugins can still count. */
+    return p && p->abi_version == BONGO_CAT_STATISTICS_RESET_ABI &&
+        p->struct_size == sizeof(*p) && p->reset && p->status ? p : NULL;
+}
 static bool start(BongoCatApp *app, BongoCatError *error) {
     if (!app || app->secondary_pet || app->smoke_ignore_global_input) return false;
     if (app->statistics) return true;
@@ -99,6 +107,7 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     }
     stats->library = library; stats->plugin = plugin; stats->instance = instance;
     stats->usage = usage_query(library);
+    stats->reset = reset_query(library);
     const BongoCatStatisticsPagePlugin *page = bongo_cat_statistics_page_api(library);
     stats->page.struct_size = sizeof(stats->page);
     if (!page || !page->page(instance, &stats->page) ||
@@ -158,6 +167,18 @@ void bongo_cat_statistics_tick(BongoCatApp *app) {
                 status == 2 ? "CSV saved in the data folder" : "Statistics export failed"), status != 2);
         }
         app->statistics->export_status = status;
+        BongoCatStatistics *stats = app->statistics;
+        unsigned reset = stats->reset ? stats->reset->status(stats->instance) : 0;
+        if (stats->reset_status == 1 && reset >= 2) {
+            bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
+                reset == 2 ? "pages.preference.statistics.resetDone" : "pages.preference.statistics.failed",
+                reset == 2 ? "Statistics reset" : "Unable to reset statistics"), reset != 2);
+            if (reset == 2) {
+                (void)bongo_cat_statistics_snapshot(app, &stats->cached);
+                bongo_cat_statistics_overlay_destroy(app);
+            }
+        }
+        stats->reset_status = reset;
         bongo_cat_preferences_statistics_invalidate(app->preferences);
     }
 }
@@ -214,4 +235,20 @@ bool bongo_cat_statistics_export(BongoCatApp *app, BongoCatError *error) {
     if (!app || !app->statistics || !bongo_cat_path_join(path, sizeof(path), app->data_root, "statistics-export.csv")) return false;
     if (app->statistics->plugin->export_csv(app->statistics->instance, path)) { app->statistics->export_status = 1; return true; }
     bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot export statistics CSV"); return false;
+}
+
+bool bongo_cat_statistics_reset_available(const BongoCatApp *app) {
+    return app && app->statistics && app->statistics->reset;
+}
+bool bongo_cat_statistics_reset_busy(const BongoCatApp *app) {
+    return app && app->statistics && app->statistics->reset_status == 1;
+}
+bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error) {
+    if (!bongo_cat_statistics_reset_available(app) || bongo_cat_statistics_reset_busy(app) ||
+        !app->statistics->reset->reset(app->statistics->instance)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot queue statistics reset"); return false;
+    }
+    app->statistics->reset_status = 1;
+    bongo_cat_preferences_invalidate(app->preferences);
+    return true;
 }

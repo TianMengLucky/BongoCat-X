@@ -1,5 +1,7 @@
 #include "preferences_import_internal.h"
 #include "preferences_state.h"
+#include "preferences_notice.h"
+#include "preferences_model_card.h"
 #include "bongo_cat/utf8.h"
 #include "bongo_cat/i18n.h"
 
@@ -169,10 +171,135 @@ static void queued_completion(BongoCatApp *app) {
     SDL_QuitSubSystem(SDL_INIT_EVENTS);
 }
 
+static void dismiss_notices(void) {
+    BongoCatPreferences *value = calloc(1, sizeof(*value));
+    CHECK(value != NULL);
+    if (!value) return;
+    value->ui.layout_scale = 2.0f;
+    BongoCatPreferenceNotice *notice = &value->notices[0];
+    strcpy(notice->message, "Closable notification");
+    notice->bounds = nk_rect(100, 20, 200, 50);
+    notice->close_bounds = nk_rect(270, 27, 24, 24);
+    SDL_Event event = {0};
+    event.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    event.button.button = SDL_BUTTON_LEFT;
+    event.button.x = 560; event.button.y = 70;
+    CHECK(bongo_cat_preferences_notice_event(value, &event));
+    CHECK(value->notice_pointer_captured && !notice->closing_ns);
+    event.type = SDL_EVENT_MOUSE_BUTTON_UP;
+    CHECK(bongo_cat_preferences_notice_event(value, &event));
+    CHECK(!value->notice_pointer_captured && notice->closing_ns);
+    // Releasing outside consumes the click without dismissing the toast.
+    notice->closing_ns = 0;
+    event.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    CHECK(bongo_cat_preferences_notice_event(value, &event));
+    event.type = SDL_EVENT_MOUSE_BUTTON_UP;
+    event.button.x = 20;
+    CHECK(bongo_cat_preferences_notice_event(value, &event));
+    CHECK(!value->notice_pointer_captured && !notice->closing_ns);
+    CHECK(!bongo_cat_preferences_notice_event(value, &event));
+    free(value);
+}
+
+static void grouped_modes(BongoCatApp *app) {
+    BongoCatPreferences *value = calloc(1, sizeof(*value));
+    CHECK(value != NULL);
+    if (!value) return;
+    value->app = app;
+    app->models.count = 3;
+    for (size_t i = 0; i < 3; ++i) {
+        snprintf(app->models.entries[i].id, BONGO_CAT_ID_CAP, "mode-%zu", i);
+        strcpy(app->models.entries[i].family_id, i < 2 ? "cat" : "other-cat");
+    }
+    BongoCatModelEntry *first = &app->models.entries[0];
+    BongoCatModelEntry *second = &app->models.entries[1];
+    CHECK(bongo_cat_preferences_model_same_family(first, second));
+    CHECK(!bongo_cat_preferences_model_same_family(first, &app->models.entries[2]));
+    strcpy(app->session.active_model_id, second->id);
+    CHECK(bongo_cat_preferences_model_group_entry(value, first, false) == second);
+    CHECK(bongo_cat_preferences_model_group_entry(value, second, false) == NULL);
+    value->model_selection_pending = true;
+    strcpy(value->pending_model_id, first->id);
+    CHECK(bongo_cat_preferences_model_group_entry(value, first, false) == first);
+    value->model_selection_pending = false;
+    bongo_cat_settings_set_model_hidden(&app->settings, first->id, true);
+    CHECK(bongo_cat_preferences_model_group_entry(value, second, false) == second);
+    bongo_cat_settings_set_model_hidden(&app->settings, first->id, false);
+    second->managed = true;
+    CHECK(!bongo_cat_preferences_model_same_family(first, second));
+    second->managed = false;
+    first->family_id[0] = second->family_id[0] = '\0';
+    strcpy(first->id, "standard");
+    strcpy(second->id, "keyboard");
+    first->preset = second->preset = true;
+    CHECK(bongo_cat_preferences_model_same_family(first, second));
+    second->preset = false;
+    CHECK(!bongo_cat_preferences_model_same_family(first, second));
+    bongo_cat_models_init(&app->models);
+    app->session.active_model_id[0] = '\0';
+    free(value);
+}
+
+static void fallback_cleanup(BongoCatApp *app) {
+    CHECK(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    BongoCatPreferences *value = calloc(1, sizeof(*value));
+    BongoCatImportDialog *dialog = bongo_cat_preferences_import_create();
+    CHECK(value && dialog);
+    if (!value || !dialog) {
+        free(value);
+        bongo_cat_preferences_import_destroy(dialog);
+        SDL_QuitSubSystem(SDL_INIT_EVENTS);
+        return;
+    }
+    value->app = app;
+    value->import_dialog = dialog;
+    app->preferences = value;
+    BongoCatImportJob *job = completed_job(dialog, "Fallback Cat");
+    CHECK(job != NULL);
+    if (job) {
+        dialog->worker_generation = job->generation = 2;
+        BongoCatImportProgress *stale = SDL_calloc(1, sizeof(*stale));
+        CHECK(stale != NULL);
+        if (stale) {
+            stale->job = job;
+            stale->generation = 1; // Emulate a recycled task address.
+            stale->installed_count = 1;
+            strcpy(stale->package_id, "Fallback Cat");
+            SDL_Event event = {0};
+            event.user.code = BONGO_CAT_IMPORT_PROGRESS_CODE;
+            event.user.data1 = stale;
+            CHECK(bongo_cat_preferences_import_progress_event(dialog, app, &event));
+            CHECK(job->restored_count == 0 && !job->package_refresh_requested[0]);
+        }
+        dialog->completion_pending = true;
+        bongo_cat_preferences_poll_imports(value);
+        CHECK(!dialog->worker_job && !dialog->completion_pending && !dialog->busy);
+        CHECK(dialog->references == 1);
+        CHECK(strstr(value->notices[0].message, "Fallback Cat") != NULL);
+    }
+    job = completed_job(dialog, "Closing Cat");
+    CHECK(job != NULL);
+    if (job) {
+        dialog->completion_pending = true;
+        ++dialog->references; // Retain an observer to inspect destruction cleanup.
+        bongo_cat_preferences_stop_imports(value);
+        CHECK(!dialog->active);
+        bongo_cat_preferences_import_destroy(dialog);
+        CHECK(dialog->references == 1 && !dialog->worker_job && !dialog->pending_head);
+        bongo_cat_preferences_import_dialog_release(dialog);
+    } else bongo_cat_preferences_import_destroy(dialog);
+    app->preferences = NULL;
+    free(value);
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
 int test_preferences_import(void) {
     BongoCatApp *app = calloc(1, sizeof(*app));
     CHECK(app != NULL);
     if (!app) return failures;
+    grouped_modes(app);
+    fallback_cleanup(app);
+    dismiss_notices();
     summary_messages(app);
     queued_completion(app);
     free(app);

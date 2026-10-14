@@ -113,6 +113,7 @@ void bongo_cat_window_drag_begin(BongoCatApp *app,
 void bongo_cat_window_drag_motion(BongoCatApp *app,
     const SDL_MouseMotionEvent *event);
 void bongo_cat_window_drag_end(BongoCatApp *app);
+void bongo_cat_window_update_edge_bounce(BongoCatApp *app, uint64_t now);
 void bongo_cat_window_resize_by_pointer(BongoCatApp *app, const SDL_Event *event);
 void bongo_cat_window_resize_begin(BongoCatApp *app, const SDL_MouseButtonEvent *event);
 void bongo_cat_window_resize_end(BongoCatApp *app);
@@ -163,6 +164,8 @@ void bongo_cat_config_store_flush(BongoCatApp *app);
 bool bongo_cat_multi_pet_secondary_argument(int argc, char **argv);
 bool bongo_cat_multi_pet_state_directory(char *target, size_t capacity,
     const char *root, const char *model_id);
+bool bongo_cat_app_replace_model_active(BongoCatApp *app, const char *previous,
+    const char *next, BongoCatError *error);
 void bongo_cat_multi_pet_update(BongoCatApp *app, uint64_t now);
 void bongo_cat_multi_pet_prune_selection(BongoCatApp *app);
 void bongo_cat_multi_pet_primary_update(BongoCatApp *app, uint64_t now);

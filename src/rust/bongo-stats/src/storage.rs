@@ -131,6 +131,22 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
     Ok(())
 }
 
+// Commit deletion before replacing memory, so a database failure preserves history.
+pub fn reset(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite::Result<()> {
+    let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
+    let transaction = connection.transaction()?;
+    transaction.execute_batch(
+        "DELETE FROM metrics; DELETE FROM application_hours; DELETE FROM applications;",
+    )?;
+    transaction.commit()?;
+    let mut empty = Store::default();
+    empty.oldest_day = store.oldest_day;
+    empty.revision = store.revision.wrapping_add(1);
+    empty.usage.enabled = store.usage.enabled;
+    *store = empty;
+    Ok(())
+}
+
 pub fn export(shared: &Arc<Mutex<Store>>, path: &Path) -> std::io::Result<()> {
     use std::io::Write;
     let (hours, lifetime) = {

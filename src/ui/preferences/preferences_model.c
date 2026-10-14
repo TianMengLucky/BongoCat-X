@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MODEL_CARD_HEIGHT 214
+#define MODEL_CARD_HEIGHT 254
 #define MODEL_LOAD_RENDER_INTERVAL_NS 100000000ull
 
 static const char *tr(BongoCatApp *app, const char *key,
@@ -130,6 +130,9 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value) {
     char id[BONGO_CAT_ID_CAP];
     snprintf(id, sizeof(id), "%s", value->pending_model_id);
     bool active = value->pending_model_active;
+    char previous[BONGO_CAT_ID_CAP];
+    snprintf(previous, sizeof(previous), "%s", value->pending_model_replace_id);
+    value->pending_model_replace_id[0] = '\0';
     value->pending_model_id[0] = '\0';
     value->model_selection_pending = false;
     value->pending_model_multiple = false;
@@ -146,8 +149,18 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value) {
     snprintf(value->loading_model_id, sizeof(value->loading_model_id), "%s", id);
     BongoCatError error = {0};
     bongo_cat_preferences_resource_note(value, "before-model-switch");
-    bool selected = id[0] ? bongo_cat_app_set_model_active(
+    bool selected = previous[0] ? bongo_cat_app_replace_model_active(
+        value->app, previous, id, &error) : id[0] ? bongo_cat_app_set_model_active(
         value->app, id, active, &error) : bongo_cat_app_clear_model(value->app, &error);
+    if (selected && previous[0] && value->app->settings.model.multiple_pets) {
+        const BongoCatModelEntry *mode = bongo_cat_models_find(&value->app->models, id);
+        for (size_t i = 0; i < value->app->models.count; ++i) {
+            const BongoCatModelEntry *other = &value->app->models.entries[i];
+            if (strcmp(other->id, id) && bongo_cat_preferences_model_same_family(mode, other) &&
+                bongo_cat_app_model_active(value->app, other->id))
+                bongo_cat_app_set_model_active(value->app, other->id, false, &error);
+        }
+    }
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
         "[model-switch-ui] success=%d frames=%u total_ms=%.1f deferred=%u",
         selected, value->model_load_render_count,
@@ -221,7 +234,9 @@ static void draw_models(BongoCatPreferences *value,
             if (entry->managed != managed || preset_model_order(entry) != order)
                 continue;
             if (model_hidden(value, entry->id) != hidden) continue;
-            bongo_cat_preferences_model_card(value, context, entry,
+            const BongoCatModelEntry *shown =
+                bongo_cat_preferences_model_group_entry(value, entry, hidden);
+            if (shown) bongo_cat_preferences_model_card(value, context, shown,
                 storage_busy);
         }
     }
@@ -237,6 +252,8 @@ static bool builtin_models_missing(const BongoCatApp *app) {
 void bongo_cat_preferences_page_model(BongoCatPreferences *value,
     struct nk_context *context) {
     BongoCatApp *app = value->app;
+    bongo_cat_pref_intro(context, tr(app, "pages.preference.navigation.localModelsHint",
+        "Select a model card to display it. Import local models here, or switch to Store to browse community models."));
     smoke_model_behavior(value);
     bool show_hidden = value->model_show_hidden &&
         (visible_model_count(value, false, true) ||

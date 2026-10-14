@@ -17,7 +17,8 @@ extern "C" {
 #define BONGO_CAT_OPTIMIZE_ASYNC_COMPUTE (1u << 2) /* Reserved v1 bit; no longer requested. */
 #define BONGO_CAT_OPTIMIZE_LARGE_ALLOCATION (1u << 3)
 #define BONGO_CAT_OPTIMIZE_LOW_MEMORY (1u << 4)
-#define BONGO_CAT_OPTIMIZE_ALL 27u
+#define BONGO_CAT_OPTIMIZE_SYSTEM_MEMORY (1u << 5) /* Allocation preference, not a guarantee. */
+#define BONGO_CAT_OPTIMIZE_ALL 59u
 /* Additive device-feature handoff. Old hosts omit it, so new plugins must
    default to no enabled optional device features. Never infer enablement
    from physical-device support alone. Called before optimize_v1. */

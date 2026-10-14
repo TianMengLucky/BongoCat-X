@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "bongo_cat/safe_ffi.h"
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
 
@@ -39,6 +40,11 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
         BONGO_CAT_PET_WINDOW_TITLE, app->session.window.width,
         app->session.window.height, true, &app->window, &app->rhi, error);
     if (result != BONGO_CAT_OK) return result;
+#ifdef _WIN32
+    if (bongo_cat_rhi_is_gl(&app->rhi))
+        app->rhi.present.requires_layered = bongo_safe_gl_true_transparency_get(
+            app->settings.extensions_json, sizeof(app->settings.extensions_json));
+#endif
     if (app->settings.app.render_backend != BONGO_CAT_RENDER_BACKEND_AUTO &&
         app->rhi.backend == BONGO_CAT_RHI_OPENGL)
         app->settings.app.render_backend = BONGO_CAT_RENDER_BACKEND_OPENGL;

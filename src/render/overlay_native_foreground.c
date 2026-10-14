@@ -20,7 +20,7 @@ bool bongo_cat_overlay_prepare_native_foreground(BongoCatOverlay *value,
     if (!value || !value->native) return bongo_cat_rhi_set_foreground(rhi, NULL, 0, 0, 0, 0);
     if (!value->left && !value->right && !value->effect &&
         !value->left_keys.count && !value->right_keys.count &&
-        !bongo_cat_overlay_mver_pointer_enabled(value))
+        !bongo_cat_overlay_mver_pointer_enabled(value) && !value->items_draw)
         return bongo_cat_rhi_set_foreground(rhi, NULL, 0, 0, 0, 0);
     int geometry[6] = {width, height, x, y, cw, ch};
     bool resized = !value->native_foreground || !value->native_renderer ||
@@ -51,6 +51,9 @@ bool bongo_cat_overlay_prepare_native_foreground(BongoCatOverlay *value,
         bongo_cat_overlay_keys_draw(value, mirror);
         if (value->effect) full_sprite(value, value->effect_path, mirror);
         bongo_cat_mver_pointer_overlay_draw_after_keys(value->mver_pointer);
+        if (value->items_draw && (!SDL_SetRenderClipRect(value->native_renderer, NULL) ||
+            !value->items_draw(value->items_userdata, value->native_renderer, true,
+                width, height, x, y, cw, ch))) return false;
         if (value->native_draw_failed || !SDL_RenderPresent(value->native_renderer)) return false;
         value->native_input_seen = value->native_input_revision;
         ++value->native_foreground_revision;

@@ -18,6 +18,8 @@ mod corners;
 mod expression;
 mod hand_layout;
 mod http;
+mod live2d_download;
+mod store_download;
 mod update;
 mod update_apply;
 mod update_archive;

@@ -35,6 +35,7 @@ pub fn run(
     cache: Arc<Mutex<Cache>>,
     failed: Arc<AtomicBool>,
     export_status: Arc<AtomicU32>,
+    reset_status: Arc<AtomicU32>,
 ) -> bool {
     let mut opened = None;
     let mut source: Option<Source> = None;
@@ -83,7 +84,8 @@ pub fn run(
             }
         }
         if let Some((connection, shared)) = &mut opened {
-            let sampling = last_sample.elapsed() >= Duration::from_secs(1);
+            let resetting = matches!(&command, Ok(Command::Reset));
+            let sampling = !resetting && last_sample.elapsed() >= Duration::from_secs(1);
             {
                 let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
                 store.ingest(now.date_naive(), now.hour(), pending_metrics);
@@ -110,19 +112,22 @@ pub fn run(
                     last_sample = Instant::now();
                 }
             }
+            let reset_ok = resetting && storage::reset(connection, shared).is_ok();
+            if resetting {
+                last_sample = Instant::now();
+            }
             let should_save = stop
                 || last_save.elapsed() >= Duration::from_secs(30)
                 || matches!(
                     &command,
                     Ok(Command::Flush(_)) | Ok(Command::Export(_, _)) | Ok(Command::Enable(_))
                 );
+            let mut save_ok = true;
             if should_save {
                 let ok = storage::save(connection, shared).is_ok();
+                save_ok = ok;
                 failed.store(!ok, Ordering::Relaxed);
                 last_save = Instant::now();
-                if let Ok(Command::Flush(reply)) = &command {
-                    let _ = reply.send(ok);
-                }
             }
             if let Ok(Command::Export(target, applications)) = &command {
                 let ok = if *applications && !failed.load(Ordering::Relaxed) {
@@ -134,7 +139,7 @@ pub fn run(
                 };
                 export_status.store(if ok { 2 } else { 3 }, Ordering::Release);
             }
-            if sampling || should_save {
+            if sampling || should_save || resetting {
                 let store = shared.lock().unwrap_or_else(|e| e.into_inner());
                 let updated = Cache {
                     metrics: store.snapshot(now.date_naive(), failed.load(Ordering::Relaxed)),
@@ -142,9 +147,17 @@ pub fn run(
                         store.usage.snapshot(now.date_naive(), period as u32)
                     }),
                 };
-                if let Ok(mut snapshot) = cache.try_lock() {
+                if resetting || matches!(&command, Ok(Command::Flush(_))) {
+                    *cache.lock().unwrap_or_else(|e| e.into_inner()) = updated;
+                    if resetting {
+                        reset_status.store(if reset_ok { 2 } else { 3 }, Ordering::Release);
+                    }
+                } else if let Ok(mut snapshot) = cache.try_lock() {
                     *snapshot = updated;
                 }
+            }
+            if let Ok(Command::Flush(reply)) = &command {
+                let _ = reply.send(save_ok);
             }
         } else {
             if let Ok(mut snapshot) = cache.try_lock() {
@@ -152,6 +165,9 @@ pub fn run(
             }
             if let Ok(Command::Flush(reply)) = &command {
                 let _ = reply.send(false);
+            }
+            if matches!(&command, Ok(Command::Reset)) {
+                reset_status.store(3, Ordering::Release);
             }
             if matches!(&command, Ok(Command::Export(_, _))) {
                 export_status.store(3, Ordering::Release);

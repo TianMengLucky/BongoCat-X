@@ -106,6 +106,8 @@ typedef struct BongoCatWindowPreferences {
     char custom_background_path[BONGO_CAT_PATH_CAP];
     /* Hundredths, 0..500. Uses trailing padding to retain the C/Rust ABI;
        serialized under rendering.mouseSensitivity. Use the settings accessors. */
+    /* Uses the byte before mouse sensitivity; existing field offsets stay stable. */
+    bool screen_edge_bounce;
     uint16_t mouse_sensitivity_hundredths;
 } BongoCatWindowPreferences;
 

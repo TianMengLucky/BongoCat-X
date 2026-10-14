@@ -14,6 +14,8 @@ VmaAllocator allocator;
 VkDevice allocator_device;
 bool use_pool;
 bool allocator_low_memory;
+bool allocator_system_memory;
+uint32_t host_memory_types;
 struct BufferAllocation {
     VmaAllocation allocation;
     unsigned maps = 0;
@@ -26,10 +28,11 @@ void check(VkResult result) {
 }
 }
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
-    VkDevice device, bool enabled, bool low_memory) {
+    VkDevice device, bool enabled, bool low_memory, bool system_memory) {
     // Policy changes occur before loading, after the previous model is released.
     if (!buffers.empty() || !images.empty()) return false;
-    if (allocator && (allocator_device != device || !enabled || allocator_low_memory != low_memory)) vulkan_memory_release();
+    if (allocator && (allocator_device != device || !enabled ||
+        allocator_low_memory != low_memory || allocator_system_memory != system_memory)) vulkan_memory_release();
     use_pool = false;
     if (!enabled) return true;
     if (!instance || !physical || !device) return false;
@@ -49,9 +52,21 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         if (vmaCreateAllocator(&info, &allocator) != VK_SUCCESS) return false;
         allocator_device = device;
         allocator_low_memory = low_memory;
+        allocator_system_memory = system_memory;
+        host_memory_types = 0;
+        VkPhysicalDeviceMemoryProperties memory_properties{};
+        vkGetPhysicalDeviceMemoryProperties(physical, &memory_properties);
+        for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+            const auto flags = memory_properties.memoryTypes[i].propertyFlags;
+            if ((flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
+                !(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) host_memory_types |= 1u << i;
+        }
     }
     use_pool = true;
     return true;
+}
+bool vulkan_memory_prefers_device() {
+    return use_pool && !allocator_system_memory;
 }
 void vulkan_memory_release() {
     // Resources must be destroyed before the SDK's final device release.
@@ -75,10 +90,25 @@ bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
     allocation_info.flags = transient ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT :
         VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
     allocation_info.requiredFlags = properties;
+    // Prefer device-local heaps even for CPU-visible buffers (BAR/UMA), while
+    // preserving required host access/coherence and allowing compatible fallback.
+    if (!allocator_system_memory)
+        allocation_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (allocator_system_memory && !transient) {
+        allocation_info.requiredFlags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        allocation_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocation_info.memoryTypeBits = host_memory_types;
+    }
     VmaAllocation allocation{};
     VmaAllocationInfo details{};
     VkBuffer raw{};
-    check(vmaCreateBuffer(allocator, &info, &allocation_info, &raw, &allocation, &details));
+    VkResult result = vmaCreateBuffer(allocator, &info, &allocation_info, &raw, &allocation, &details);
+    if (result != VK_SUCCESS && allocation_info.memoryTypeBits) {
+        // Some resources cannot use a non-device-local heap. Keep required CPU access.
+        allocation_info.memoryTypeBits = 0;
+        result = vmaCreateBuffer(allocator, &info, &allocation_info, &raw, &allocation, &details);
+    }
+    check(result);
     try { buffers.emplace(raw, BufferAllocation{allocation, 0}); }
     catch (...) { vmaDestroyBuffer(allocator, raw, allocation); throw; }
     *buffer = raw;
@@ -90,11 +120,20 @@ bool vulkan_image_create(VkDevice device, const VkImageCreateInfo &info,
     if (!use_pool || device != allocator_device) return false;
     VmaAllocationCreateInfo allocation_info{};
     allocation_info.flags = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
-    allocation_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (allocator_system_memory) {
+        allocation_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocation_info.memoryTypeBits = host_memory_types;
+    } else allocation_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     VmaAllocation allocation{};
     VmaAllocationInfo details{};
     VkImage raw{};
-    check(vmaCreateImage(allocator, &info, &allocation_info, &raw, &allocation, &details));
+    VkResult result = vmaCreateImage(allocator, &info, &allocation_info, &raw, &allocation, &details);
+    if (result != VK_SUCCESS && allocation_info.memoryTypeBits) {
+        // Optimal images often require device-local memory; preference must not break loading.
+        allocation_info.memoryTypeBits = 0;
+        result = vmaCreateImage(allocator, &info, &allocation_info, &raw, &allocation, &details);
+    }
+    check(result);
     try { images.emplace(raw, allocation); }
     catch (...) { vmaDestroyImage(allocator, raw, allocation); throw; }
     *image = raw;

@@ -26,6 +26,20 @@ pub unsafe extern "C" fn bongo_safe_preferences_collapsible_get(
     get_bool(extensions, capacity, "collapsibleOptions", false)
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_direct_composition_get(
+    extensions: *const c_char, capacity: usize,
+) -> bool {
+    get_bool(extensions, capacity, "directComposition", false)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_direct_composition_set(
+    extensions: *mut c_char, capacity: usize, enabled: bool,
+) -> bool {
+    set_bool(extensions, capacity, "directComposition", enabled)
+}
+
 // Stored in extensions to preserve the public settings structure layout.
 #[no_mangle]
 pub unsafe extern "C" fn bongo_safe_gl_true_transparency_get(
@@ -151,6 +165,24 @@ unsafe fn set_bool(extensions: *mut c_char, capacity: usize, key: &str, enabled:
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn direct_composition_is_opt_in_and_preserves_transparency() {
+        let mut buffer = [0u8; CAP];
+        unsafe {
+            assert!(!bongo_safe_direct_composition_get(buffer.as_ptr().cast(), CAP));
+            assert!(bongo_safe_gl_true_transparency_set(buffer.as_mut_ptr().cast(), CAP, true));
+            for enabled in [true, false, true] {
+                assert!(bongo_safe_direct_composition_set(buffer.as_mut_ptr().cast(), CAP, enabled));
+                assert_eq!(bongo_safe_direct_composition_get(buffer.as_ptr().cast(), CAP), enabled);
+                assert!(bongo_safe_gl_true_transparency_get(buffer.as_ptr().cast(), CAP));
+            }
+            let before = buffer;
+            assert!(!bongo_safe_direct_composition_set(buffer.as_mut_ptr().cast(), 8, false));
+            assert_eq!(before, buffer);
+            assert!(!bongo_safe_direct_composition_get(std::ptr::null(), CAP));
+        }
+    }
 
     #[test]
     fn automatic_updates_default_enabled_and_preserve_other_settings() {

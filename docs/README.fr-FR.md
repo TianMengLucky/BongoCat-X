@@ -503,3 +503,5 @@ La page des modèles regroupe les modes d’un même paquet dans une carte avec 
 Les raccourcis sont intégrés aux préférences, via Réglages / Raccourcis. La boutique est intégrée à Modèle, via Modèles locaux / Boutique. Ces deux entrées indépendantes sont retirées de la barre latérale ; chaque sous-page conserve sa position de défilement.
 
 L’activation de Live2D sans Cubism Core affiche les deux accords officiels. Sous Windows, Accepter et télécharger récupère le SDK Native R5 via HTTPS officiel, extrait uniquement le Core dynamique compatible et active le rendu local. Annuler et continuer garde le plugin activé sans rendu. Le téléchargement peut être retenté et l’import manuel reste disponible. L’application et les paquets ne contiennent ni SDK ni Core.
+
+Windows: Présentation DirectComposition. Composition Alpha DXGI expérimentale. Application immédiate et retour au mode précédent en cas d’échec. La lecture des pixels demeure ; Independent Flip des jeux n’est pas garanti.

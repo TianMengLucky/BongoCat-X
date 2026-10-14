@@ -13,10 +13,11 @@ if(BONGO_CAT_FETCH_DEPS)
     "${miniz_SOURCE_DIR}/miniz_tinfl.c" "${miniz_SOURCE_DIR}/miniz_tdef.c")
   target_include_directories(bongo_cat_archive SYSTEM PUBLIC
     "${miniz_SOURCE_DIR}" "${miniz_BINARY_DIR}")
-  if(UNIX)
-    # Strict C11 hides the POSIX ftello/fseeko declarations used by miniz.
-    target_compile_definitions(bongo_cat_archive PRIVATE _POSIX_C_SOURCE=200809L)
-  endif()
+  # Archive callers supply SDL stream callbacks or in-memory data. Removing
+  # stdio also prunes file branches retained by the shared ZIP cleanup code.
+  # Keep this PUBLIC so every header consumer sees the same available APIs;
+  # system packages below retain their original compile-time configuration.
+  target_compile_definitions(bongo_cat_archive PUBLIC MINIZ_NO_STDIO)
 else()
   find_package(miniz CONFIG REQUIRED)
   add_library(bongo_cat_archive INTERFACE)

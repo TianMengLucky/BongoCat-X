@@ -101,15 +101,13 @@ bool bongo_cat_ui_font_atlas_create(BongoCatUIBackend *ui,
         sparse_heading ? ui->heading_primary_ranges : primary_ranges,
         sparse_heading ? ui->heading_cjk_ranges : cjk_ranges,
         sparse_heading ? ui->heading_korean_ranges : korean_ranges);
-    // The only hero label is the literal BongoCat product name. Bake its exact
+    // The only hero label is the literal BongoCat-X product name. Bake its exact
     // glyphs at 36 px, rather than scaling body text or duplicating all CJK glyphs.
-    static const nk_rune hero_ranges[] = {'B','B','C','C','a','a','g','g','n','o','t','t',0};
+    static const nk_rune hero_ranges[] = {'-','-','B','B','C','C','X','X','a','a','g','g','n','o','t','t',0};
     struct nk_font *hero_font = bongo_cat_ui_font_add_family(&ui->atlas,
         heading_source, heading_fallback_source,
         heading_korean_fallback_source, 36.0f * font_scale,
-        low_memory ? hero_ranges : glyph_ranges,
-        low_memory ? hero_ranges : primary_ranges,
-        low_memory ? NULL : cjk_ranges, low_memory ? NULL : korean_ranges);
+        hero_ranges, hero_ranges, NULL, NULL);
     bool uploaded = caption_font && body_font && label_font && heading_font &&
         hero_font && bongo_cat_ui_font_upload_atlas(ui);
     if (uploaded) {

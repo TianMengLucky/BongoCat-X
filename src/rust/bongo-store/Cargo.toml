@@ -11,3 +11,10 @@ crate-type = ["cdylib"]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12.28", default-features = false }
+
+# Keep release code compact without changing unwinding across the FFI boundary.
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

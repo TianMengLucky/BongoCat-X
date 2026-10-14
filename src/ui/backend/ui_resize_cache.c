@@ -53,6 +53,11 @@ bool bongo_cat_ui_resize_cache_present(BongoCatUIBackend *ui) {
     bongo_cat_ui_logical_size(ui, &width, &height);
     if (pixel_width < 1 || pixel_height < 1 || width < 1 || height < 1)
         return false;
+    /* Stretching a cached frame resamples text and can compound blur when
+       captured again. Let the caller redraw at the new pixel size instead. */
+    if (pixel_width != ui->resize_cache_width ||
+        pixel_height != ui->resize_cache_height)
+        return false;
     const CachedVertex vertices[] = {
         {{0, 0}, {0, 1}, {255, 255, 255, 255}},
         {{width, 0}, {1, 1}, {255, 255, 255, 255}},

@@ -54,11 +54,9 @@ if(BONGO_CAT_FETCH_DEPS)
   set(MINIAUDIO_NO_LIBOPUS ON CACHE BOOL "" FORCE)
   set(MINIAUDIO_NO_ENCODING ON CACHE BOOL "" FORCE)
   set(MINIAUDIO_NO_CUSTOM ON CACHE BOOL "" FORCE)
-  # Motion metadata may reference WAV/MP3 files, so keep both decoders enabled.
-  # FORCE also repairs build trees created by older size-only configurations.
-  set(MINIAUDIO_NO_WAV OFF CACHE BOOL "" FORCE)
-  set(MINIAUDIO_NO_FLAC OFF CACHE BOOL "" FORCE)
-  set(MINIAUDIO_NO_MP3 OFF CACHE BOOL "" FORCE)
+  # Rust decodes every audio format before passing PCM to miniaudio.
+  set(MINIAUDIO_NO_DECODING ON CACHE BOOL "" FORCE)
+  set(MINIAUDIO_NO_RESOURCE_MANAGER ON CACHE BOOL "" FORCE)
   set(MINIAUDIO_NO_GENERATION ON CACHE BOOL "" FORCE)
   FetchContent_Declare(SDL3 URL https://github.com/libsdl-org/SDL/archive/402fc52af4e731184ad6a704068b5ccd27d8f1b8.tar.gz
     URL_HASH SHA256=e413151af71c23d316b6076a96a999342142afa792394eaf8a542a03503fc491)
@@ -130,7 +128,7 @@ else()
     bongo_cat_require_dependency_header(BONGO_CAT_MINIAUDIO_INCLUDE_DIR miniaudio.h
       "Install miniaudio headers or a miniaudio CMake package")
 
-    # AudioDecoder.cmake supplies the implementation and the Vorbis backend.
+    # AudioDecoder.cmake supplies the PCM playback implementation.
     add_library(bongo_cat_miniaudio_system INTERFACE)
     target_include_directories(bongo_cat_miniaudio_system SYSTEM INTERFACE
       "${BONGO_CAT_MINIAUDIO_INCLUDE_DIR}")

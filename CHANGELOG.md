@@ -7,7 +7,23 @@
 Release 工作流构建并发布 GitHub Release；发布说明取自本文件，优先匹配 `## [<版本号>]`
 小节，若无匹配则使用最上方小节。发版前请把「未发布」小节标题改为对应版本号。
 
+## [未发布]
+
+- Release Actions 增加按平台、Rust 工具链及依赖隔离的 Cargo 构建产物缓存，缓存 Git 依赖并统一 sccache 目录；Windows 体积优化限制激进内联，并在构建摘要记录 EXE 字节数。
+
+- Windows 通用设置新增默认关闭的「DirectComposition 呈现」：通过预乘 Alpha 的 DXGI 合成交换链呈现，失败时回退 UpdateLayeredWindow；保留透明像素鼠标穿透、窗口透明度及位置同步。此阶段仍使用像素读回，尚未实现 GPU 纹理共享，也不保证游戏保持 Independent Flip。
+
 ## [2.2.0] · 2026-10-14
+
+- 精简本地构建的 miniz，关闭未使用的 stdio 文件读写分支，保留 SDL 流回调、内存 ZIP 操作与 PNG 压缩；系统预编译依赖保持原配置。
+
+- Windows 资源打包时通过现有 Rust JSON 库紧凑序列化语言字典，移除嵌入 EXE 的格式空白；源文件仍保留可读格式，模型资源保持原始字节。
+
+- PNG 导出复用已有 miniz 压缩库，移除 stb 内置的重复 zlib 压缩实现及未使用的文件路径写入接口，继续精简 EXE 并保留封面导出与模型导入。
+
+- 进一步精简 EXE：移除 miniaudio 中与 Rust 重复的文件解码器、Vorbis 实现和文件资源管理器，保留 PCM 播放与混音；将 Release 链接时优化扩展到本地编译的 SDL、音频、压缩及 Vulkan 加载静态库。
+
+- 精简设置页 36px 品牌标题字体图集，仅烘焙 BongoCat-X 所需字符，减少字体内存与纹理占用；各 Rust 模块的 Release 构建启用体积优化、Thin LTO、单代码生成单元并去除调试信息。
 
 - **版本与文档**：项目及 Rust crate 版本统一为 2.2.0，更新各语言 README、插件说明及发布下载链接。
 

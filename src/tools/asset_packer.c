@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include "bongo_cat/json_dom.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -93,6 +94,31 @@ done:
     return ok;
 }
 
+/* Only locale dictionaries are normalized: model JSON and binary assets
+   remain byte-identical. Parsing stays in the existing Rust JSON library. */
+static int compact_locale(const char *relative, unsigned char **data, size_t *size) {
+    size_t length = strlen(relative);
+    if (strncmp(relative, "locales/", 8) != 0 || length < 5 ||
+        strcmp(relative + length - 5, ".json") != 0) return 1;
+    BongoJsonDoc *doc = bongo_json_read((const char *)*data, *size,
+        BONGO_JSON_READ_ALLOW_BOM);
+    if (!doc) return 0;
+    size_t compact_size = 0;
+    char *text = bongo_json_write(doc, 0, &compact_size);
+    bongo_json_doc_free(doc);
+    if (!text) return 0;
+    if (compact_size < *size) {
+        unsigned char *compact = malloc(compact_size ? compact_size : 1);
+        if (!compact) { bongo_json_free_text(text); return 0; }
+        memcpy(compact, text, compact_size);
+        free(*data);
+        *data = compact;
+        *size = compact_size;
+    }
+    bongo_json_free_text(text);
+    return 1;
+}
+
 static int append_asset(AssetList *list, const wchar_t *file,
     const char *relative) {
     Asset *asset;
@@ -102,6 +128,7 @@ static int append_asset(AssetList *list, const wchar_t *file,
     size_t relative_length = strlen(relative);
     size_t path_length = 7 + relative_length;
     if (path_length > UINT16_MAX || !read_file(file, &data, &size)) return 0;
+    if (!compact_locale(relative, &data, &size)) { free(data); return 0; }
     path = (char *)malloc(path_length + 1);
     if (!path) { free(data); return 0; }
     memcpy(path, "assets/", 7);

@@ -366,3 +366,5 @@ Die Modellseite fasst Modi desselben Pakets in einer Karte mit Modusauswahl zusa
 Tastenkombinationen sind jetzt unter Einstellungen über Einstellungen / Tastenkombinationen erreichbar. Der Store liegt unter Modell und wird über Lokale Modelle / Store geöffnet. Die beiden eigenen Seitenleisteneinträge entfallen; jede Unterseite behält ihre Scrollposition.
 
 Beim Aktivieren von Live2D ohne Cubism Core erscheinen beide offiziellen Lizenzverträge. Unter Windows lädt Zustimmen und herunterladen das Native-R5-SDK per offiziellem HTTPS, entpackt nur den passenden dynamischen Core und aktiviert das Rendering lokal. Abbrechen und fortfahren lässt das Plugin ohne Rendering aktiviert. Downloads können erneut versucht werden; manueller Import bleibt möglich. Anwendung und Pakete enthalten weder SDK noch Core.
+
+Windows: DirectComposition-Darstellung. Experimentelle DXGI-Alpha-Komposition. Sofort wirksam; bei Fehlern Rückfall auf den bisherigen Presenter. Pixel-Rücklesen bleibt; Independent Flip für Spiele ist nicht garantiert.

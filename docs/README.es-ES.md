@@ -367,3 +367,5 @@ La página de modelos agrupa los modos del mismo paquete en una tarjeta con sele
 Los atajos están dentro de Preferencias, con el selector Ajustes / Atajos. La tienda está dentro de Modelo, con Modelos locales / Tienda. Se eliminan sus dos entradas independientes de la barra lateral; cada subpágina conserva su posición de desplazamiento.
 
 Al activar Live2D sin Cubism Core se muestran ambos acuerdos oficiales. En Windows, Aceptar y descargar obtiene el SDK Native R5 por HTTPS oficial, extrae solo el Core dinámico compatible y activa el renderizado local. Cancelar y continuar mantiene el complemento activado sin renderizado. Se puede reintentar o importar manualmente. La aplicación y los paquetes no incluyen SDK ni Core.
+
+Windows: Presentación DirectComposition. Composición Alpha DXGI experimental. Se aplica inmediatamente; vuelve al método anterior si falla. Se mantiene la lectura de píxeles; no garantiza Independent Flip en juegos.

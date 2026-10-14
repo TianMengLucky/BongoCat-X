@@ -245,7 +245,10 @@ if(NOT APPLE)
     src/render/rhi/rhi_metal_stub.c)
 endif()
 set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
-bongo_cat_enable_release_ipo(Framework bongo_cat_core bongo_cat_runtime bongo_cat)
+# Include locally compiled static dependencies so unused implementation
+# details can be removed across the final executable link.
+bongo_cat_enable_release_ipo(Framework bongo_cat_core bongo_cat_runtime bongo_cat
+  SDL3-static ${BONGO_CAT_MINIAUDIO_TARGET} bongo_cat_archive bongo_cat_host_volk)
 
 include(cmake/ValidationTools.cmake)
 include(cmake/ApplicationResources.cmake)

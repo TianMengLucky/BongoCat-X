@@ -149,6 +149,7 @@ jobs:
     env:
       # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
       RUSTC_WRAPPER: sccache
+      SCCACHE_DIR: ${{ runner.temp }}/sccache
       MACOSX_DEPLOYMENT_TARGET: ${{ startsWith(matrix.platform, 'macos-') && '15.0' || '' }}
       RELEASE_TAG: ${{ needs.version-check.outputs.tag }}
     steps:
@@ -202,9 +203,33 @@ jobs:
         if: steps.skip-check.outputs.skip != 'true'
         uses: actions/cache@v5
         with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ runner.os }}-${{ hashFiles('src/rust/**/Cargo.lock') }}
-          restore-keys: cargo-registry-${{ runner.os }}-
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git/db
+          key: cargo-downloads-v2-${{ runner.os }}-${{ hashFiles('src/rust/**/Cargo.lock') }}
+          restore-keys: cargo-downloads-v2-${{ runner.os }}-
+
+      - name: Identify Rust toolchain
+        if: steps.skip-check.outputs.skip != 'true'
+        id: rust
+        shell: pwsh
+        run: |
+          $version = (rustc --version).Replace(' ', '-')
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot identify Rust compiler' }
+          "version=$version" | Add-Content $env:GITHUB_OUTPUT
+
+      # Corrosion passes --target-dir explicitly; ~/.cargo/target is unused.
+      # Cache only Cargo outputs, never the SDK or native CMake build tree.
+      - name: Cache Rust build artifacts
+        if: steps.skip-check.outputs.skip != 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/cargo/build
+            build-release/${{ matrix.cmake_arch }}/Release/cargo/build
+          key: rust-release-v1-${{ matrix.platform }}-${{ steps.rust.outputs.version }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml', 'cmake/Rust.cmake', 'cmake/Inox2D.cmake', 'cmake/prepare_inox2d.py') }}-${{ needs.version-check.outputs.sha }}
+          restore-keys: |
+            rust-release-v1-${{ matrix.platform }}-${{ steps.rust.outputs.version }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml', 'cmake/Rust.cmake', 'cmake/Inox2D.cmake', 'cmake/prepare_inox2d.py') }}-
 
       - name: Set validated package version
         id: version
@@ -272,12 +297,9 @@ jobs:
         if: steps.skip-check.outputs.skip != 'true'
         uses: actions/cache@v5
         with:
-          path: |
-            ~/.cache/sccache
-            ~/Library/Caches/Mozilla.sccache
-            ~/AppData/Local/Mozilla/sccache/cache
-          key: sccache-${{ matrix.platform }}-${{ github.sha }}
-          restore-keys: sccache-${{ matrix.platform }}-
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-v2-${{ matrix.platform }}-${{ needs.version-check.outputs.sha }}
+          restore-keys: sccache-v2-${{ matrix.platform }}-
 
       # Compiles the Cubism Framework + bridge into the runtime-Core binary.
       # The Core binary extracted here is build-time only: the package steps
@@ -380,6 +402,15 @@ jobs:
           if (Get-Command sccache -ErrorAction SilentlyContinue) {
             sccache --show-stats
           }
+
+      - name: Report Windows executable size
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          $exe = Get-Item 'build-release/Release/BongoCat.exe' -ErrorAction Stop
+          "### ${{ matrix.platform }} executable" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "BongoCat.exe: $($exe.Length) bytes ($([Math]::Round($exe.Length / 1MB, 2)) MiB)" |
+            Add-Content $env:GITHUB_STEP_SUMMARY
 
       - name: Check native shader resources before packaging
         if: steps.skip-check.outputs.skip != 'true'

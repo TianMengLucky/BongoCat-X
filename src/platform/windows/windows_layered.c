@@ -1,4 +1,5 @@
 #include "windows_layered.h"
+#include "windows_composition.h"
 #include "bongo_cat/rhi.h"
 #include "windows_layered_internal.h"
 #include "windows_capture.h"
@@ -30,7 +31,9 @@ static HWND native_window(BongoCatPlatform *platform) {
 void *bongo_cat_windows_layered_create(bool pixel_hit_test) {
     BongoCatWindowsLayered *value = calloc(1, sizeof(*value));
     if (!value) return NULL;
-    value->pixel_hit_test = pixel_hit_test;
+    value->composition_requested = SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
+        "BongoCat.DirectComposition", false);
+    value->pixel_hit_test = pixel_hit_test || value->composition_requested;
     value->memory_dc = CreateCompatibleDC(NULL);
     if (value->memory_dc) return value;
     free(value);
@@ -84,6 +87,7 @@ void bongo_cat_windows_layered_destroy(BongoCatPlatform *platform) {
     restore_source(platform);
     bongo_cat_windows_layered_unbind(platform);
     if (source) RemovePropW(source, proxy_property);
+    bongo_cat_windows_composition_destroy(value->composition);
     if (value->proxy) DestroyWindow(value->proxy);
     release_bitmap(value);
     release_readback(value);
@@ -146,6 +150,26 @@ bool bongo_cat_windows_layered_update_proxy(BongoCatPlatform *platform,
     if (!source_window || !value || !value->proxy || !value->bitmap ||
         !GetWindowRect(source_window, &bounds))
         return SDL_SetError("Cannot locate the Windows layered window");
+    if (value->composition_requested && !value->composition_failed) {
+        if (bongo_cat_windows_composition_present(&value->composition, value->proxy,
+                &bounds, value->pixels, value->width, value->height,
+                platform->window_opacity)) {
+            value->applied_alpha = (BYTE)(platform->window_opacity * 255.0f + 0.5f);
+            value->applied_alpha_valid = true;
+            return true;
+        }
+        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+            "DirectComposition failed; falling back to UpdateLayeredWindow: %s", SDL_GetError());
+        bongo_cat_windows_composition_destroy(value->composition);
+        value->composition = NULL;
+        value->composition_failed = true;
+        SetWindowRgn(value->proxy, NULL, FALSE);
+        LONG_PTR style = GetWindowLongPtrW(value->proxy, GWL_EXSTYLE);
+        SetWindowLongPtrW(value->proxy, GWL_EXSTYLE,
+            (style & ~WS_EX_NOREDIRECTIONBITMAP) | WS_EX_LAYERED);
+        SetWindowPos(value->proxy, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE |
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
     POINT destination = {bounds.left, bounds.top};
     POINT source = {0, 0};
     SIZE size = {value->width, value->height};

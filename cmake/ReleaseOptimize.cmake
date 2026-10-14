@@ -19,6 +19,11 @@ function(bongo_cat_enable_release_ipo)
   foreach(target IN LISTS ARGN)
     if(BONGO_CAT_OPTIMIZE_RELEASE_IPO AND BONGO_CAT_IPO_SUPPORTED AND
         NOT MINGW AND TARGET "${target}")
+      get_target_property(imported "${target}" IMPORTED)
+      get_target_property(type "${target}" TYPE)
+      if(imported OR type STREQUAL "INTERFACE_LIBRARY")
+        continue()
+      endif()
       set_property(TARGET "${target}" PROPERTY
         INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
       set_property(TARGET "${target}" PROPERTY
@@ -48,7 +53,9 @@ if(BONGO_CAT_OPTIMIZE_RELEASE_SIZE)
   if(MSVC OR CMAKE_C_SIMULATE_ID STREQUAL "MSVC")
     # Omit unused inline COMDATs and incremental-link padding. Keep the
     # existing runtime, exception handling and floating-point semantics.
+    # Override CMake Release's /Ob2: aggressive inlining works against /O1.
     add_compile_options($<$<CONFIG:Release,MinSizeRel>:/O1>
+      $<$<CONFIG:Release,MinSizeRel>:/Ob1>
       $<$<CONFIG:Release,MinSizeRel>:/Gy> $<$<CONFIG:Release,MinSizeRel>:/Gw>
       $<$<CONFIG:Release,MinSizeRel>:/Zc:inline>)
     add_link_options($<$<CONFIG:Release,MinSizeRel>:/OPT:REF>

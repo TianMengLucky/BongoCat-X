@@ -48,3 +48,10 @@ symphonia = { version = "0.5", default-features = false, features = [
 
 [build-dependencies]
 naga = { version = "0.19", features = ["wgsl-in", "spv-out"] }
+
+# Keep release code compact without changing unwinding across the FFI boundary.
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

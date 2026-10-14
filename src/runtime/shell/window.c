@@ -32,6 +32,11 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
        selected backend is unavailable or fails to initialize. */
     SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.LowMemoryMode",
         app->settings.app.low_memory_mode);
+#ifdef _WIN32
+    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition",
+        bongo_safe_direct_composition_get(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json)));
+#endif
     BongoCatRhi choice = {0};
     choice.backend = resolve_rhi_backend(app->settings.app.render_backend);
     if (!bongo_cat_rhi_live2d_supported(&choice)) choice.backend = BONGO_CAT_RHI_OPENGL;

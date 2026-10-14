@@ -35,7 +35,8 @@ if(WIN32)
   add_executable(bongo_cat_asset_packer src/tools/asset_packer.c)
   target_compile_definitions(bongo_cat_asset_packer PRIVATE
     _CRT_SECURE_NO_WARNINGS)
-  target_link_libraries(bongo_cat_asset_packer PRIVATE bongo_cat_warnings)
+  target_include_directories(bongo_cat_asset_packer PRIVATE include)
+  target_link_libraries(bongo_cat_asset_packer PRIVATE bongo_cat_warnings bongo_safe)
   set(BONGO_CAT_ASSET_STAGE "${CMAKE_CURRENT_BINARY_DIR}/embedded-assets")
   set(BONGO_CAT_ASSET_PACK "${CMAKE_CURRENT_BINARY_DIR}/bongocat-assets.pak")
   file(GLOB_RECURSE BONGO_CAT_ASSET_INPUTS CONFIGURE_DEPENDS

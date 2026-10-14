@@ -7,6 +7,8 @@
 #include <windows.h>
 
 typedef struct BongoCatWindowsLayered {
+    void *composition;
+    bool composition_requested, composition_failed;
     HDC memory_dc;
     HBITMAP bitmap;
     HGDIOBJ original_bitmap;

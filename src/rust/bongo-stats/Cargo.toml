@@ -12,3 +12,10 @@ crate-type = ["cdylib"]
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
+
+# Keep release code compact without changing unwinding across the FFI boundary.
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

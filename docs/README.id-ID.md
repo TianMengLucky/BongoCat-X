@@ -481,3 +481,5 @@ Halaman model menggabungkan mode dari paket yang sama dalam satu kartu dengan pe
 Pintasan kini berada di Preferensi melalui Pengaturan / Pintasan. Toko berada di Model melalui Model lokal / Toko. Kedua entri sidebar terpisah dihapus; setiap subhalaman mempertahankan posisi gulirnya.
 
 Mengaktifkan Live2D tanpa Cubism Core menampilkan kedua perjanjian resmi. Di Windows, Setuju dan unduh mengambil SDK Native R5 melalui HTTPS resmi, mengekstrak hanya Core dinamis yang sesuai dan mengaktifkan rendering lokal. Batal dan lanjutkan mempertahankan plugin aktif tanpa rendering. Unduhan dapat dicoba kembali dan impor manual tetap tersedia. Aplikasi dan paket tidak menyertakan SDK atau Core.
+
+Windows: opsi DirectComposition eksperimental di pengaturan umum, nonaktif secara default. Menggunakan komposisi Alpha DXGI dan kembali ke metode lama jika gagal. Pembacaan piksel masih digunakan; Independent Flip game tidak dijamin.

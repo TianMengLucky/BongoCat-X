@@ -34,6 +34,7 @@ if(WIN32)
     src/platform/windows/windows_hdr.c
     src/platform/windows/windows_hdr_display.c
     src/platform/windows/windows_runtime_diagnostics.c
+    src/platform/windows/windows_composition.cpp
     src/platform/windows/windows_layered.c
     src/platform/windows/windows_layered_input.c
     src/platform/windows/windows_layered_state.c
@@ -41,9 +42,14 @@ if(WIN32)
     src/platform/windows/windows_tray.c
     src/platform/windows/windows_assets.c
     src/platform/windows/windows_capture_probe.c)
+  set_source_files_properties(src/platform/windows/windows_composition.cpp PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON
+    COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:/EHsc>")
+  target_compile_features(bongo_cat_runtime PRIVATE cxx_std_17)
   target_include_directories(bongo_cat_runtime PRIVATE
     src/platform/windows)
   target_link_libraries(bongo_cat_runtime PRIVATE
+    d3d11 dxgi dcomp
     dwmapi ole32 shell32 user32 uuid windowscodecs advapi32
     comctl32 oleaut32 taskschd psapi)
 elseif(APPLE)

@@ -490,3 +490,5 @@ The Models page groups modes from the same package into one card with a mode sel
 Shortcuts is now a subpage of Preferences: enter Preferences, then switch Settings / Shortcuts at the top. Store is a subpage of Model: enter Model, then switch Local models / Store. These two standalone sidebar entries are removed; each subpage retains its own scroll position.
 
 Enabling Live2D without Cubism Core opens both official license agreements. On Windows, Agree and download fetches the Native R5 SDK over official HTTPS, extracts only the matching dynamic Core and enables rendering locally. Cancel and continue keeps the plugin enabled without rendering. Failed downloads can be retried, and manual import remains available. The application and packages contain no SDK or Core.
+
+Windows: DirectComposition presentation. Experimental DXGI alpha presentation. Applies immediately; falls back on failure. Pixel readback remains; game Independent Flip is not guaranteed.

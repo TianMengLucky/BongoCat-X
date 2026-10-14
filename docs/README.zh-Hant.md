@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2：新增物品、鍵盤音效和模型商店插件，改善背景匯入與自動更新。螢幕邊緣反彈需開啟「保持在螢幕內」；Windows OpenGL 的真透明開關使用逐像素 Alpha 合成，可能增加像素讀回開銷。
+2.2.0：新增物品、鍵盤音效和模型商店插件，改善背景匯入與自動更新。螢幕邊緣反彈需開啟「保持在螢幕內」；Windows OpenGL 的真透明開關使用逐像素 Alpha 合成，可能增加像素讀回開銷。
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
   </a>
@@ -62,7 +62,7 @@
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
 

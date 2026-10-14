@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2 ajoute des plugins d’objets, de sons du clavier et de boutique de modèles, et améliore les imports en arrière-plan et les mises à jour automatiques. Le rebond nécessite le maintien à l’écran. La transparence réelle OpenGL sous Windows utilise un alpha par pixel et peut augmenter le coût de lecture des pixels.
+2.2.0 ajoute des plugins d’objets, de sons du clavier et de boutique de modèles, et améliore les imports en arrière-plan et les mises à jour automatiques. Le rebond nécessite le maintien à l’écran. La transparence réelle OpenGL sous Windows utilise un alpha par pixel et peut augmenter le coût de lecture des pixels.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
   </a>
@@ -60,7 +60,7 @@ Scannez le QR code avec QQ ou recherchez le groupe **211957388** pour rejoindre 
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Téléchargez la dernière version depuis [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

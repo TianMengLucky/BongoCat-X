@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2：新增物品、键盘音效和模型商店插件，改进后台导入与自动更新。屏幕边缘反弹需开启「保持在屏幕内」；Windows OpenGL 的真透明开关使用逐像素 Alpha 合成，可能增加像素读回开销。
+2.2.0：新增物品、键盘音效和模型商店插件，改进后台导入与自动更新。屏幕边缘反弹需开启「保持在屏幕内」；Windows OpenGL 的真透明开关使用逐像素 Alpha 合成，可能增加像素读回开销。
   <a href="https://bongocat.pet" target="_blank">
     <img src="resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@
 
 ## 📥 下载
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 

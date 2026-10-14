@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2 adiciona plugins de objetos, sons do teclado e loja de modelos, com melhorias na importação em segundo plano e nas atualizações automáticas. O rebote exige manter o mascote na tela. A transparência real do OpenGL no Windows usa alfa por pixel e pode aumentar o custo da leitura de pixels.
+2.2.0 adiciona plugins de objetos, sons do teclado e loja de modelos, com melhorias na importação em segundo plano e nas atualizações automáticas. O rebote exige manter o mascote na tela. A transparência real do OpenGL no Windows usa alfa por pixel e pode aumentar o custo da leitura de pixels.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ Escaneie o código QR com o QQ ou procure o grupo **211957388** para participar 
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Baixe a versão mais recente nas [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

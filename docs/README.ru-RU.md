@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2 добавляет плагины предметов, звуков клавиатуры и магазина моделей, улучшает фоновый импорт и автоматические обновления. Отскок требует удержания питомца на экране. Настоящая прозрачность Windows OpenGL использует альфа-канал каждого пикселя и может увеличить затраты на чтение пикселей.
+2.2.0 добавляет плагины предметов, звуков клавиатуры и магазина моделей, улучшает фоновый импорт и автоматические обновления. Отскок требует удержания питомца на экране. Настоящая прозрачность Windows OpenGL использует альфа-канал каждого пикселя и может увеличить затраты на чтение пикселей.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Скачайте последнюю версию из [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

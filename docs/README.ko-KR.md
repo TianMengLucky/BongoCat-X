@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2는 아이템, 키보드 소리, 모델 스토어 플러그인을 추가하고 백그라운드 가져오기와 자동 업데이트를 개선합니다. 화면 가장자리 반동은 화면 안에 유지 옵션이 필요합니다. Windows OpenGL의 실제 투명도는 픽셀별 알파를 사용하며 픽셀 읽기 비용이 늘어날 수 있습니다.
+2.2.0는 아이템, 키보드 소리, 모델 스토어 플러그인을 추가하고 백그라운드 가져오기와 자동 업데이트를 개선합니다. 화면 가장자리 반동은 화면 안에 유지 옵션이 필요합니다. Windows OpenGL의 실제 투명도는 픽셀별 알파를 사용하며 픽셀 읽기 비용이 늘어날 수 있습니다.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 

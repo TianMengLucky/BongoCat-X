@@ -1,6 +1,6 @@
 
 
-2.2.2 adds items, keyboard sounds and model store plugins, with improved background imports and automatic updates. Screen edge bounce requires Keep on screen. Windows OpenGL true transparency uses per-pixel alpha and may increase pixel readback overhead.
+2.2.0 adds items, keyboard sounds and model store plugins, with improved background imports and automatic updates. Screen edge bounce requires Keep on screen. Windows OpenGL true transparency uses per-pixel alpha and may increase pixel readback overhead.
 
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
@@ -58,7 +58,7 @@ Scan the QR code with QQ or search for group **211957388** to join the **BongoCa
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2 ergänzt Plugins für Objekte, Tastaturklänge und den Modell-Shop und verbessert Hintergrundimporte und automatische Updates. Der Rückprall am Bildschirmrand erfordert „Auf dem Bildschirm halten“. Echte Transparenz unter Windows OpenGL verwendet Alpha pro Pixel und kann den Aufwand für das Auslesen von Pixeln erhöhen.
+2.2.0 ergänzt Plugins für Objekte, Tastaturklänge und den Modell-Shop und verbessert Hintergrundimporte und automatische Updates. Der Rückprall am Bildschirmrand erfordert „Auf dem Bildschirm halten“. Echte Transparenz unter Windows OpenGL verwendet Alpha pro Pixel und kann den Aufwand für das Auslesen von Pixeln erhöhen.
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 <a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 

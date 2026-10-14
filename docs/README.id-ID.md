@@ -1,6 +1,6 @@
 
 
-2.2.2 menambahkan plugin objek, suara keyboard, dan toko model, serta meningkatkan impor latar belakang dan pembaruan otomatis. Pantulan tepi memerlukan opsi tetap di layar. Transparansi nyata OpenGL Windows memakai alfa per piksel dan dapat menambah biaya pembacaan piksel.
+2.2.0 menambahkan plugin objek, suara keyboard, dan toko model, serta meningkatkan impor latar belakang dan pembaruan otomatis. Pantulan tepi memerlukan opsi tetap di layar. Transparansi nyata OpenGL Windows memakai alfa per piksel dan dapat menambah biaya pembacaan piksel.
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
@@ -63,7 +63,7 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
 </a>
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
 
   Unduh rilis terbaru dari [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

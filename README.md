@@ -51,15 +51,6 @@ SDK 的导入与下载统一位于「设置 → 插件」，模型页仅管理�
 > [!IMPORTANT]
 > 官方 Release 为 **runtime-Core 构建**：内置 Live2D 渲染支持，但**不附带** Live2D Cubism Core 运行库（专有授权，不随包分发），**并非**无 Live2D 能力的诊断构建。未检测到 Core 时会回退到诊断后端并在设置窗口提示。
 
-  **启用 Live2D 渲染：**
-
-  Windows 缺少 Core 时，启用 Live2D 插件会提示阅读官方协议；同意后可从官方地址下载 SDK 并在本机提取 Core。也可使用以下手动方式：
-
-  1. **应用内导入（推荐）**：打开「设置 → 插件」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
-  2. **live2d 文件夹投放**：从 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 许可协议）下载 **Cubism SDK for Native**，将 zip 或解压出的 `Live2DCubismCore.dll` 放入应用目录/数据目录下的 `live2d` 文件夹，重启应用后自动识别启用。
-
-  源码构建时 SDK 的完整导入步骤见下方「Live2D / Cubism SDK」章节。
-
 ## ⚠️ Live2D 声明
 
 本仓库与 Live2D 公司（Live2D Inc.）及其官方项目无任何关联。Live2D Cubism SDK 为 Live2D Inc. 的专有软件：本仓库不附带、不内置、也不分发该 SDK。构建前需按下方「Live2D / Cubism SDK」章节的说明，从 Live2D 官网自行下载并导入，使用须遵守 Live2D 的许可协议。
@@ -208,14 +199,6 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 退出程序才会停止监听，隐藏宠物不会停止；不带该变量重新启动即可恢复默认后端。
 鼠标跟随使用未经加速的设备位移，窗口定位、点击穿透和置顶仍取决于 Wayland 合成器。
 
-### 🖼️ Vulkan / Metal 支持到哪一步了？
-
-设置 → 应用 → 渲染后端可即时切换，无需重启：Windows / Linux x64 支持 OpenGL ↔ Vulkan，macOS 支持 OpenGL ↔ Metal；「系统」默认使用 OpenGL。已接通原生后端的 Live2D 纹理上传、SDK 绘制、像素回读与模型重载；切换保留模型及已选动作 / 表情，后端初始化或重载失败时恢复 OpenGL。Vulkan/Metal 仍为实验性：按键 / 特效 / 指针覆盖层已支持所有后端；Live2D 的 OpenGL / Vulkan / Metal 均支持动态纹理分辨率，原生后端后台解码和缩放、主线程同步上传。关闭动态分辨率后按画质比例重载纹理。 原生后端支持缓存静态桌面背景，并将它纳入紧贴边缘范围；圆角遮罩在 GPU 上仅绘制四角，无额外整帧纹理。 覆盖层复用 SDL 软件绘制并按输入变化缓存，在原生帧完成后合成并回传 GPU；性能仍待实测。
-
-「大型渲染优化」在 Vulkan / Metal 后端显示，默认关闭；Vulkan 提供三个独立子项，Metal 仅提供大块内存分配，切换时重载模型。Inox2D Metal 启用后将整帧顶点合并到共享缓冲，关闭后逐节点分配；Live2D Metal 显示不可用。Inox2D Vulkan 支持多线程命令录制与大块内存分配；Live2D Vulkan 支持 VMA 大块分配，以及普通混合、无离屏节点、非高精度遮罩模型的多线程录制。Live2D 至少 128 个 Drawable 才进入次级缓冲路径，至少 128 条可绘制快照才使用最多 4 个工作线程；其余模型保留 SDK 串行路径。Live2D Vulkan 的 Bindless 使用最多 64 张图集的纹理表，适用于普通混合且无离屏节点的模型；设备特性或容量不满足时回退。Inox2D Bindless 尚未实现。更大的内存池可能增加内存占用，性能收益待实测。
-
-带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。Windows 已完成构建与 GPU 回归测试；macOS 的 Metal Rust 接口已通过类型检查，尚待真机验证，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
-
 ## 功能与文档
 
 - **模型与渲染**：支持 Live2D、Inochi2D 和 Mver，多模型模式合并展示，支持多个 ZIP 后台排队导入。Windows 便携版请保留程序旁的 `plugins` 目录；渲染插件 ABI 为 v2，程序与插件需同步更新。见[渲染插件](docs/model-plugins.md)。
@@ -243,7 +226,7 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 <div align="center">
   版权所有 © 2026 - <strong>BongoCat</strong><br>
-  By vladelaina<br>
+  By BongoCat-X Team<br>
   Fork maintained by <a href="https://github.com/TianMengLucky">TianMengLucky</a><br>
   Made with ❤️ &amp; ⌨️
 </div>

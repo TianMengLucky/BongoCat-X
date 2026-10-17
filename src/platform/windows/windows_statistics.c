@@ -4,6 +4,7 @@
 #include "bongo_cat/app.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/path.h"
+#include <SDL3/SDL.h>
 #include <string.h>
 #include <wchar.h>
 

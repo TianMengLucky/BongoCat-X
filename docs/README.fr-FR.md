@@ -10,6 +10,8 @@
   </h1>
 </div>
 
+Les cibles de test sont désactivées par défaut pour accélérer les compilations courantes. Activez-les avec `-DBUILD_TESTING=ON`, puis recompilez avant de lancer CTest.
+
 <!-- Description du projet + icône fusée -->
 <p align="center">
  💘C/C++ × Rust × SDL3, mélangez le tout, assemblez-le ! Bong~ Bongo Cat !!!

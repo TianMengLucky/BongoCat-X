@@ -8,26 +8,6 @@
 #include "bongo_cat/safe_http.h"
 #include <stdio.h>
 #include <string.h>
-static bool rebase_link(BongoCatStore *v, char *url, size_t capacity, bool raw) {
-    const char *prefix = raw ?
-        "https://raw.githubusercontent.com/TianMengLucky/Awesome-BongoCat/" :
-        "https://github.com/TianMengLucky/Awesome-BongoCat/";
-    if (!memchr(url, 0, capacity) || SDL_strncmp(url, prefix, SDL_strlen(prefix))) return false;
-    char result[2048];
-    int length = raw ? SDL_snprintf(result, sizeof(result),
-        "https://raw.githubusercontent.com/%s/%s",
-        v->repository + SDL_strlen("https://github.com/"), url + SDL_strlen(prefix)) :
-        SDL_snprintf(result, sizeof(result), "%s/%s", v->repository, url + SDL_strlen(prefix));
-    if (length < 0 || (size_t)length >= capacity || (size_t)length >= sizeof(result)) return false;
-    SDL_strlcpy(url, result, capacity);
-    return true;
-}
-bool bongo_cat_store_rebase(BongoCatStore *v, BongoCatStoreEntry *entry) {
-    return rebase_link(v, entry->file_url, sizeof(entry->file_url), false) &&
-        rebase_link(v, entry->folder_url, sizeof(entry->folder_url), false) &&
-        rebase_link(v, entry->preview_url, sizeof(entry->preview_url), true) &&
-        rebase_link(v, entry->download_url, sizeof(entry->download_url), true);
-}
 const char *bongo_cat_store_filename(void) {
 #ifdef _WIN32
     return "bongo_store.dll";
@@ -77,7 +57,9 @@ const BongoCatStorePlugin *bongo_cat_store_query(SDL_SharedObject *library) {
     entry.function = SDL_LoadFunction(library, BONGO_CAT_STORE_SYMBOL);
     const BongoCatStorePlugin *api = entry.function ? entry.query(BONGO_CAT_STORE_ABI) : NULL;
     return api && api->abi_version == BONGO_CAT_STORE_ABI && api->struct_size == sizeof(*api) &&
-        api->create && api->destroy && api->parse && api->count && api->entry ? api : NULL;
+        api->create && api->destroy && api->parse && api->count && api->entry &&
+        bongo_cat_store_transfer_query(library) && bongo_cat_store_models_query(library) &&
+        bongo_cat_plugin_events_query(library, "bongo_cat_store_events_query_v1") ? api : NULL;
 }
 static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
     union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
@@ -88,33 +70,18 @@ static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
         contribution->struct_size == sizeof(*contribution) && contribution->draw ?
         contribution : NULL;
 }
-static bool cancelled(void *userdata) {
-    return SDL_GetAtomicInt(&((BongoCatStore *)userdata)->cancel) != 0;
-}
 static bool work(void *userdata, const BongoCatPluginJob *job, BongoCatError *error) {
     BongoCatStore *v = userdata;
     if (job->kind != 1) return bongo_cat_store_asset_work(v, job, error);
-    bongo_safe_http_client *client = bongo_safe_http_new();
-    unsigned char *bytes = NULL; size_t length = 0; char message[512] = {0};
-    char catalog[1024];
-    SDL_snprintf(catalog, sizeof(catalog), "https://raw.githubusercontent.com/%s/main/model.json",
-        v->repository + SDL_strlen("https://github.com/"));
-    int result = client ? bongo_safe_http_get(client,
-        catalog,
-        v->accelerate, 2u * 1024u * 1024u, cancelled, v, &bytes, &length,
-        message, sizeof(message)) : BONGO_SAFE_HTTP_MEMORY;
-    bongo_safe_http_free(client);
+    BongoCatPluginTransferHost host = bongo_cat_store_transfer_host(v);
+    unsigned status = v->transfer->catalog(v->instance, v->repository, v->accelerate, &host);
     SDL_LockMutex(v->worker.state_mutex);
-    bool ok = result == BONGO_SAFE_HTTP_OK && v->api->parse(v->instance, bytes, length) &&
-        v->api->count(v->instance) <= BONGO_CAT_STORE_CAP;
-    if (ok) memset(v->preview_state, 0, sizeof(v->preview_state));
-    v->status = ok ? 2 : strstr(message, "404") ? 3 : 4;
+    v->status = status;
+    if (status == 2) memset(v->preview_state, 0, sizeof(v->preview_state));
     SDL_UnlockMutex(v->worker.state_mutex);
     atomic_store(&v->worker.changed, true);
-    bongo_safe_free_http_response(bytes, length);
-    if (!ok && result != BONGO_SAFE_HTTP_CANCELLED)
-        bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT, "Store catalog: %s", message[0] ? message : "Invalid catalog");
-    return ok;
+    if (status != 2) bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Store plugin catalog operation failed");
+    return status == 2;
 }
 void bongo_cat_store_stop(BongoCatApp *app) {
     if (!app || !app->store) return;
@@ -136,7 +103,14 @@ void bongo_cat_store_start(BongoCatApp *app) {
     SDL_SharedObject *library = SDL_LoadObject(info.path);
     const BongoCatStorePlugin *api = library ? bongo_cat_store_query(library) : NULL;
     BongoCatStore *v = api ? SDL_calloc(1, sizeof(*v)) : NULL;
-    if (v) { atomic_init(&v->receipt_ready, false); v->library = library; v->api = api; v->ui = query_ui(library); v->instance = api->create(); }
+    if (v) {
+        atomic_init(&v->receipt_ready, false);
+        v->library = library; v->api = api;
+        v->transfer = bongo_cat_store_transfer_query(library);
+        v->models = bongo_cat_store_models_query(library);
+        v->events = bongo_cat_plugin_events_query(library, "bongo_cat_store_events_query_v1");
+        v->ui = query_ui(library); v->instance = api->create();
+    }
     if (!v || !v->instance || !bongo_cat_plugin_worker_start(&v->worker, "store", work, v, false)) {
         if (v && v->instance) api->destroy(v->instance);
         SDL_free(v); if (library) SDL_UnloadObject(library);
@@ -204,16 +178,11 @@ bool bongo_cat_store_entry(BongoCatApp *app, unsigned index, BongoCatStoreEntry 
     if (!app || !app->store || !out || index >= BONGO_CAT_STORE_CAP) return false;
     BongoCatStore *v = app->store;
     SDL_LockMutex(v->worker.state_mutex);
-    bool ok = v->api->entry(v->instance, index, out) != 0;
+    bool ok = v->transfer->entry(v->instance, index, v->repository, out) != 0;
     SDL_UnlockMutex(v->worker.state_mutex);
-    return ok && memchr(out->name, 0, sizeof(out->name)) && memchr(out->author, 0, sizeof(out->author)) &&
-        memchr(out->author_url, 0, sizeof(out->author_url)) && memchr(out->repository_path, 0, sizeof(out->repository_path)) &&
-        memchr(out->folder_path, 0, sizeof(out->folder_path)) && memchr(out->file_url, 0, sizeof(out->file_url)) &&
-        memchr(out->folder_url, 0, sizeof(out->folder_url)) &&
-        memchr(out->preview_url, 0, sizeof(out->preview_url)) && memchr(out->download_url, 0, sizeof(out->download_url)) &&
-        memchr(out->sha256, 0, sizeof(out->sha256)) && memchr(out->purchase_url, 0, sizeof(out->purchase_url)) &&
-        bongo_cat_store_rebase(v, out);
+    return ok;
 }
+
 void bongo_cat_store_tick(BongoCatApp *app) {
     if (!app || !app->store) return;
     bongo_cat_store_apply_receipt(app, app->store);

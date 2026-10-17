@@ -61,6 +61,7 @@ pub struct Store {
     pub revision: u64,
     pub oldest_day: u32,
     pub usage: crate::usage::Usage,
+    pub keyboard: crate::keyboard::Store,
 }
 
 impl Store {

@@ -1,91 +1,27 @@
 #include "store_internal.h"
-#include "bongo_cat/safe_http.h"
-#include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
-#include <stdio.h>
 #include <string.h>
-static bool cancelled(void *userdata) {
-    return SDL_GetAtomicInt(&((BongoCatStore *)userdata)->cancel) != 0;
-}
 bool bongo_cat_store_cache_path(BongoCatStore *v, const char *key, const char *suffix, char *out) {
-    if (!key || strlen(key) != 64 || strspn(key, "0123456789abcdef") != 64) return false;
-    char name[96]; snprintf(name, sizeof(name), "%s%s", key, suffix);
-    return bongo_cat_path_join(out, BONGO_CAT_PATH_CAP, v->cache, name);
-}
-static void progress(void *userdata, uint64_t received, uint64_t total) {
-    BongoCatStore *v = userdata;
-    SDL_LockMutex(v->worker.state_mutex); v->received = received; v->total = total;
-    SDL_UnlockMutex(v->worker.state_mutex); atomic_store(&v->worker.changed, true);
-}
-static bool preview(BongoCatStore *v, unsigned index, BongoCatStoreEntry *entry) {
-    char key[65], path[BONGO_CAT_PATH_CAP];
-    bongo_safe_sha256_bytes(entry->preview_url, strlen(entry->preview_url), key);
-    bool ok = bongo_cat_store_cache_path(v, key, ".preview", path);
-    if (ok && !bongo_cat_path_is_file(path)) {
-        bongo_safe_http_client *client = bongo_safe_http_new();
-        unsigned char *bytes = NULL; size_t length = 0; char message[256];
-        ok = client && bongo_safe_http_get(client, entry->preview_url, v->accelerate,
-            4u * 1024u * 1024u, cancelled, v, &bytes, &length, message, sizeof(message)) == BONGO_SAFE_HTTP_OK;
-        bongo_safe_http_free(client);
-        int width = 0, height = 0;
-        if (ok) ok = bongo_safe_image_info(bytes, length, &width, &height) &&
-            width > 0 && height > 0 && width <= 8192 && height <= 8192 &&
-            (uint64_t)width * (uint64_t)height <= 16u * 1024u * 1024u;
-        if (ok && !cancelled(v)) {
-            unsigned char *pixels = bongo_safe_image_decode(bytes, length, &width, &height);
-            ok = pixels != NULL;
-            if (pixels) bongo_safe_free_pixels(pixels, (size_t)width * (size_t)height * 4);
-        }
-        if (ok && !cancelled(v)) {
-            char temporary[BONGO_CAT_PATH_CAP] = {0};
-            ok = bongo_cat_store_cache_path(v, key, ".preview.new", temporary);
-            FILE *file = ok ? bongo_cat_file_open(temporary, "wb") : NULL;
-            ok = file && fwrite(bytes, 1, length, file) == length;
-            if (file && fclose(file) != 0) ok = false;
-            if (ok) ok = bongo_cat_file_replace(temporary, path, true);
-            if (temporary[0]) (void)bongo_cat_file_remove(temporary);
-        } else ok = false;
-        bongo_safe_free_http_response(bytes, length);
-    }
-    SDL_LockMutex(v->worker.state_mutex); v->preview_state[index] = ok ? 2 : 3;
-    SDL_UnlockMutex(v->worker.state_mutex); return ok;
+    return v && v->transfer->cache_path(v->cache, key, suffix, out, BONGO_CAT_PATH_CAP) != 0;
 }
 bool bongo_cat_store_asset_work(BongoCatStore *v, const BongoCatPluginJob *job, BongoCatError *error) {
+    (void)error;
     if (job->kind != 2 && job->kind != 3) return true;
-    if (cancelled(v)) return true;
-    BongoCatStoreEntry entry;
-    SDL_LockMutex(v->worker.state_mutex);
-    bool ok = v->api->entry(v->instance, job->index, &entry) != 0;
-    SDL_UnlockMutex(v->worker.state_mutex);
-    if (!ok || job->index >= BONGO_CAT_STORE_CAP ||
-        !memchr(entry.preview_url, 0, sizeof(entry.preview_url)) ||
-        !memchr(entry.download_url, 0, sizeof(entry.download_url)) ||
-        !memchr(entry.sha256, 0, sizeof(entry.sha256)) ||
-        !memchr(entry.repository_path, 0, sizeof(entry.repository_path))) return false;
-    if (!bongo_cat_store_rebase(v, &entry)) return false;
-    if (job->kind == 2) { (void)preview(v, job->index, &entry); atomic_store(&v->worker.changed, true); return true; }
-    char path[BONGO_CAT_PATH_CAP] = {0}, directory[BONGO_CAT_PATH_CAP] = {0};
-    ok = bongo_cat_store_cache_path(v, entry.sha256, ".download", directory) &&
-        bongo_cat_path_create_directory(directory) &&
-        bongo_cat_path_join(path, sizeof(path), directory, bongo_cat_path_name(entry.repository_path));
-    char message[512] = {0};
-    if (ok) ok = bongo_safe_store_download(entry.download_url, entry.sha256, path, v->accelerate,
-        cancelled, progress, v, message, sizeof(message)) == BONGO_SAFE_HTTP_OK;
     BongoCatImportReceipt receipt = {0};
-    if (ok && !cancelled(v)) {
-        SDL_LockMutex(v->worker.state_mutex); v->operation = 2; SDL_UnlockMutex(v->worker.state_mutex);
-        atomic_store(&v->worker.changed, true);
-        ok = bongo_cat_import_install(path, v->models_root, &receipt, error) == BONGO_CAT_OK && receipt.count;
-    } else ok = false;
-    if (path[0]) (void)bongo_cat_file_remove(path);
-    if (directory[0]) (void)SDL_RemovePath(directory);
-    bool imported = ok;
-    if (ok) (void)bongo_cat_store_save_receipt(v, entry.sha256, &receipt);
+    BongoCatPluginTransferHost host = bongo_cat_store_transfer_host(v);
+    unsigned result = v->transfer->asset(v->instance, job->index, v->repository,
+        v->cache, v->accelerate, job->kind == 2, &host, &receipt);
     SDL_LockMutex(v->worker.state_mutex);
-    if (imported) {
-        v->receipt = receipt; SDL_strlcpy(v->operation_hash, entry.sha256, sizeof(v->operation_hash));
-        atomic_store(&v->receipt_ready, true);
-    } else { v->operation = strstr(message, "SHA-256") ? 5 : 4; }
+    if (job->kind == 2) {
+        if (job->index < BONGO_CAT_STORE_CAP) v->preview_state[job->index] = result == 2 ? 2 : 3;
+    } else if (result == 3) {
+        BongoCatStoreEntry entry;
+        if (v->api->entry(v->instance, job->index, &entry)) {
+            v->receipt = receipt;
+            SDL_strlcpy(v->operation_hash, entry.sha256, sizeof(v->operation_hash));
+            atomic_store(&v->receipt_ready, true);
+        } else v->operation = 4;
+    } else v->operation = result;
     SDL_UnlockMutex(v->worker.state_mutex);
     atomic_store(&v->worker.changed, true);
     return true;

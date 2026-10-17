@@ -39,7 +39,9 @@ unsigned char *bongo_cat_cubism_shader_bytes(const std::string& path, size_t *si
 """)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(rows), encoding="utf-8", newline="\n")
+    content = "\n".join(rows).encode("utf-8")
+    if not output.is_file() or output.read_bytes() != content:
+        output.write_bytes(content)
 
 
 if __name__ == "__main__":

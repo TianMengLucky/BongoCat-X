@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "Mettez à jour le module de statistiques pour afficher la carte thermique.",
+  "pages.preference.statistics.heatmapHint": "Les touches foncées ont plus de frappes. Survolez pour voir le total. Seuls les totaux sans ordre sont enregistrés ; les anciennes données ne détaillent pas les touches. Certaines touches sont regroupées selon la plateforme.",
+  "pages.preference.statistics.heatmap": "Carte thermique du clavier",
+  "pages.preference.statistics.input": "Clavier et souris",
   "pages.preference.statistics.reset": "Réinitialiser les statistiques",
   "pages.preference.statistics.resetConfirm": "Effacer tous les compteurs de saisie, graphiques et temps d’utilisation des applications ? Cette action est irréversible. Les réglages seront conservés.",
   "pages.preference.statistics.resetConfirmButton": "Effacer tout l’historique",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "Exporter CSV",
   "pages.preference.statistics.exported": "CSV enregistré dans le dossier de données",
   "pages.preference.statistics.openFolder": "Ouvrir le dossier de données",
-  "pages.preference.statistics.applications": "Durée d’utilisation des applications",
+  "pages.preference.statistics.applications": "Statistiques des applications",
   "pages.preference.statistics.trackApplications": "Mesurer le temps de l’application active",
   "pages.preference.statistics.usageHint": "L’application active est relevée chaque seconde. Pause après 5 minutes sans saisie, au verrouillage et en veille. Noms et durées restent locaux.",
   "pages.preference.statistics.usageUnavailable": "Le suivi est indisponible dans cette session. Wayland n’est pas pris en charge ; X11 nécessite xcb et xcb-screensaver.",

@@ -19,6 +19,7 @@ static int SDLCALL retire_worker(void *context) {
 bool bongo_cat_statistics_retire(BongoCatApp *app, BongoCatError *error) {
     if (!app || !app->statistics || app->statistics_retiring) return false;
     BongoCatStatistics *stats = app->statistics;
+    bongo_cat_statistics_overlay_destroy(app);
     atomic_init(&stats->retired, false);
     bongo_cat_input_metrics_enable(&app->input, false);
     bongo_cat_i18n_unregister_plugin(app->i18n, "statistics");

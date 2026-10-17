@@ -22,6 +22,8 @@ const char *bongo_cat_statistics_filename(void);
 void bongo_cat_statistics_start(BongoCatApp *app);
 void bongo_cat_statistics_stop(BongoCatApp *app);
 void bongo_cat_statistics_tick(BongoCatApp *app);
+union SDL_Event;
+bool bongo_cat_statistics_overlay_event(BongoCatApp *app, const union SDL_Event *event);
 void bongo_cat_statistics_overlay_update(BongoCatApp *app);
 void bongo_cat_statistics_overlay_destroy(BongoCatApp *app);
 void bongo_cat_statistics_info(BongoCatApp *app, BongoCatStatisticsInfo *info);
@@ -43,6 +45,9 @@ bool bongo_cat_statistics_reset_available(const BongoCatApp *app);
 bool bongo_cat_statistics_reset_busy(const BongoCatApp *app);
 bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error);
 
+bool bongo_cat_statistics_keyboard_snapshot(BongoCatApp *app, unsigned period, uint64_t counts[256]);
+bool bongo_cat_statistics_usage_icon(BongoCatApp *app, unsigned period, unsigned index, char *path);
+bool bongo_cat_statistics_icon_path(const char *root, const char *id, char *path);
 bool bongo_cat_statistics_usage_snapshot(BongoCatApp *app, unsigned period, BongoCatApplicationSnapshot *snapshot);
 bool bongo_cat_statistics_usage_enable(BongoCatApp *app, bool enabled);
 bool bongo_cat_statistics_usage_export(BongoCatApp *app);

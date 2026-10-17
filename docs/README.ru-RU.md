@@ -99,15 +99,19 @@ cmake --build build --config Release --parallel
 
 ### 🧪 Тестирование
 
-Цели CTest включены по умолчанию. После сборки выполните:
+Тестовые цели по умолчанию отключены для ускорения обычной сборки. При необходимости включите и соберите их:
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
 Для генератора с несколькими конфигурациями, такого как Visual Studio, явно укажите конфигурацию сборки:
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

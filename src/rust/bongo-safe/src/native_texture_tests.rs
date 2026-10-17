@@ -37,6 +37,33 @@ fn streaming_resize_preserves_source_coverage_and_avoids_transparent_color_bleed
 }
 
 #[test]
+fn original_size_png_preserves_filter_rounding_and_source_alpha() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("original.png");
+    let image = image::RgbaImage::from_fn(256, 256, |x, y| {
+        image::Rgba([x as u8, 255 - x as u8, y as u8, y as u8])
+    });
+    image.save(&path).unwrap();
+    let texture = png_stream::decode(&path, 256, 256, false, &|| false).unwrap();
+    assert_eq!(
+        (texture.width, texture.height, texture.format),
+        (256, 256, 0)
+    );
+    let mut alpha = [0; ALPHA_BYTES];
+    for (y, row) in image.as_raw().chunks_exact(256 * 4).enumerate() {
+        alpha_row(&mut alpha, row, 256, 256, y as u32);
+    }
+    assert_eq!(texture.alpha, alpha);
+    for (actual, source) in texture.pixels.chunks_exact(4).zip(image.pixels()) {
+        let alpha = f64::from(source[3]) / 255.0;
+        for c in 0..3 {
+            assert_eq!(actual[c], (f64::from(source[c]) * alpha).round() as u8);
+        }
+        assert_eq!(actual[3], source[3]);
+    }
+}
+
+#[test]
 fn native_cache_rejects_corruption_and_misnamed_entries() {
     let _writer = CACHE_WRITES.lock().unwrap();
     let (directory, path) = fixture();

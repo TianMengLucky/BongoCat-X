@@ -15,6 +15,7 @@ pub(super) struct Metrics {
     reset: AtomicBool,
     keys: AtomicU64,
     buttons: [AtomicU64; 5],
+    heatmap: [AtomicU64; 256],
     movement: AtomicU64,
     scroll: AtomicU64,
     pointer: Mutex<Option<(f64, f64)>>,
@@ -26,6 +27,7 @@ impl Metrics {
             reset: AtomicBool::new(true),
             keys: AtomicU64::new(0),
             buttons: std::array::from_fn(|_| AtomicU64::new(0)),
+            heatmap: std::array::from_fn(|_| AtomicU64::new(0)),
             movement: AtomicU64::new(0),
             scroll: AtomicU64::new(0),
             pointer: Mutex::new(None),
@@ -40,6 +42,21 @@ impl Metrics {
         }
         if event.kind == 1 {
             self.keys.fetch_add(1, Ordering::Relaxed);
+            let code = match event.name() {
+                b"ShiftLeft" => 160,
+                b"ShiftRight" => 161,
+                b"ControlLeft" => 162,
+                b"ControlRight" => 163,
+                b"Alt" => 164,
+                b"AltGr" => 165,
+                b"KpReturn" | b"KpEnter" => 166,
+                name => std::str::from_utf8(name).map_or(-1, crate::import_keys::key_code),
+            };
+            if let Ok(code) = usize::try_from(code) {
+                if let Some(counter) = self.heatmap.get(code) {
+                    counter.fetch_add(1, Ordering::Relaxed);
+                }
+            }
         } else if event.kind == 3 {
             let names: [&[u8]; 5] = [b"Left", b"Right", b"Middle", b"Back", b"Forward"];
             if let Some(i) = names.iter().position(|name| *name == event.name()) {
@@ -79,6 +96,9 @@ pub unsafe extern "C" fn bongo_cat_input_metrics_enable(host: *const Host, enabl
         if let Some(i) = get(host) {
             if enabled {
                 i.metrics.reset.store(true, Ordering::Relaxed);
+                for counter in &i.metrics.heatmap {
+                    counter.store(0, Ordering::Relaxed);
+                }
             }
             i.metrics.enabled.store(enabled, Ordering::Release);
         }
@@ -128,9 +148,50 @@ pub unsafe extern "C" fn bongo_cat_input_metrics_take(host: *const Host, output:
         }
     });
 }
+// Only an unordered histogram leaves the input core; event timestamps and order never do.
+#[no_mangle]
+pub unsafe extern "C" fn bongo_cat_input_heatmap_take(host: *const Host, output: *mut u64) {
+    crate::guard((), || {
+        if let Some(i) = get(host).filter(|_| !output.is_null()) {
+            for (n, counter) in i.metrics.heatmap.iter().enumerate() {
+                *output.add(n) = counter.swap(0, Ordering::Relaxed);
+            }
+        }
+    });
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn histogram_counts_keys_without_releases_or_disabled_input() {
+        let metrics = Metrics::new();
+        let event = |name: &[u8], kind| {
+            let mut event = Event::empty();
+            event.kind = kind;
+            event.name[..name.len()].copy_from_slice(name);
+            event
+        };
+        metrics.event(&event(b"KeyA", 1));
+        assert_eq!(metrics.heatmap[65].load(Ordering::Relaxed), 0);
+        metrics.enabled.store(true, Ordering::Release);
+        for name in [b"KeyA".as_slice(), b"ShiftLeft", b"KeyA", b"ShiftRight"] {
+            metrics.event(&event(name, 1));
+        }
+        metrics.event(&event(b"KeyA", 2));
+        metrics.event(&event(b"Unknown", 1));
+        assert_eq!(metrics.heatmap[65].swap(0, Ordering::Relaxed), 2);
+        assert_eq!(metrics.heatmap[160].load(Ordering::Relaxed), 1);
+        assert_eq!(metrics.heatmap[161].load(Ordering::Relaxed), 1);
+        assert_eq!(metrics.heatmap[65].load(Ordering::Relaxed), 0);
+        assert_eq!(
+            metrics
+                .heatmap
+                .iter()
+                .map(|n| n.load(Ordering::Relaxed))
+                .sum::<u64>(),
+            2
+        );
+    }
     #[test]
     fn a_busy_pointer_producer_does_not_block_other_metrics() {
         let metrics = Metrics::new();

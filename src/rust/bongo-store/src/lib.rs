@@ -1,4 +1,6 @@
 mod locale;
+mod transfer;
+mod models;
 pub mod ui;
 mod page_ui;
 use std::ffi::c_void;

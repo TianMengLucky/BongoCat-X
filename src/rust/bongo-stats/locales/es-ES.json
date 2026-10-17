@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "Actualiza el complemento de estadísticas para mostrar el mapa de calor.",
+  "pages.preference.statistics.heatmapHint": "Las teclas más oscuras indican más pulsaciones. Pasa el cursor para ver el total. Solo se guardan totales sin orden; el historial anterior no tiene datos por tecla. Algunas teclas se agrupan según la plataforma.",
+  "pages.preference.statistics.heatmap": "Mapa de calor del teclado",
+  "pages.preference.statistics.input": "Teclado y ratón",
   "pages.preference.statistics.reset": "Restablecer estadísticas",
   "pages.preference.statistics.resetConfirm": "¿Borrar todos los recuentos de entrada, gráficos e historial de uso de aplicaciones? No se puede deshacer. Se conservarán los ajustes.",
   "pages.preference.statistics.resetConfirmButton": "Borrar todo el historial",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "Exportar CSV",
   "pages.preference.statistics.exported": "CSV guardado en la carpeta de datos",
   "pages.preference.statistics.openFolder": "Abrir carpeta de datos",
-  "pages.preference.statistics.applications": "Tiempo de uso de aplicaciones",
+  "pages.preference.statistics.applications": "Estadísticas de aplicaciones",
   "pages.preference.statistics.trackApplications": "Registrar tiempo de la aplicación activa",
   "pages.preference.statistics.usageHint": "Se consulta la aplicación activa cada segundo. Pausa tras 5 minutos sin entrada, al bloquear y al suspender. Nombres y tiempos quedan en el equipo.",
   "pages.preference.statistics.usageUnavailable": "No se puede detectar la aplicación activa en esta sesión. Wayland no es compatible; X11 necesita xcb y xcb-screensaver.",

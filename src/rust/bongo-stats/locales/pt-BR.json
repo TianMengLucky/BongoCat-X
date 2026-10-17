@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "Atualize o plugin de estatísticas para exibir o mapa de calor.",
+  "pages.preference.statistics.heatmapHint": "Teclas mais escuras indicam mais pressionamentos. Passe o cursor para ver o total. Apenas totais sem ordem são salvos; o histórico anterior não tem dados por tecla. Algumas teclas são agrupadas conforme a plataforma.",
+  "pages.preference.statistics.heatmap": "Mapa de calor do teclado",
+  "pages.preference.statistics.input": "Teclado e mouse",
   "pages.preference.statistics.reset": "Redefinir estatísticas",
   "pages.preference.statistics.resetConfirm": "Apagar todas as contagens de entrada, gráficos e histórico de uso de aplicativos? Esta ação não pode ser desfeita. As configurações serão mantidas.",
   "pages.preference.statistics.resetConfirmButton": "Apagar todo o histórico",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "Exportar CSV",
   "pages.preference.statistics.exported": "CSV salvo na pasta de dados",
   "pages.preference.statistics.openFolder": "Abrir pasta de dados",
-  "pages.preference.statistics.applications": "Tempo de uso dos aplicativos",
+  "pages.preference.statistics.applications": "Estatísticas de aplicativos",
   "pages.preference.statistics.trackApplications": "Registrar tempo do aplicativo ativo",
   "pages.preference.statistics.usageHint": "Consulta o aplicativo ativo a cada segundo. Pausa após 5 minutos sem entrada, com tela bloqueada e em suspensão. Nomes e tempos ficam locais.",
   "pages.preference.statistics.usageUnavailable": "O rastreamento não está disponível nesta sessão. Wayland não é suportado; X11 requer xcb e xcb-screensaver.",

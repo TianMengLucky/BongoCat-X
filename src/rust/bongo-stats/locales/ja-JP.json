@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "ヒートマップを表示するには統計プラグインを更新してください。",
+  "pages.preference.statistics.heatmapHint": "色が濃いほど押した回数が多く、ホバーで回数を表示します。キー別合計のみを保存し、入力順序は保存しません。過去の履歴にはキー別データがなく、一部のキーは環境に応じて集計されます。",
+  "pages.preference.statistics.heatmap": "キーボードヒートマップ",
+  "pages.preference.statistics.input": "キーボードとマウス",
   "pages.preference.statistics.reset": "統計をリセット",
   "pages.preference.statistics.resetConfirm": "入力回数、グラフ、アプリ使用時間の履歴をすべて消去しますか？元に戻せません。統計の設定は保持されます。",
   "pages.preference.statistics.resetConfirmButton": "すべての履歴を消去",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "CSV 出力",
   "pages.preference.statistics.exported": "CSV をデータフォルダーに保存しました",
   "pages.preference.statistics.openFolder": "データフォルダーを開く",
-  "pages.preference.statistics.applications": "アプリ使用時間",
+  "pages.preference.statistics.applications": "アプリ統計",
   "pages.preference.statistics.trackApplications": "前面アプリの時間を記録",
   "pages.preference.statistics.usageHint": "前面アプリを毎秒取得します。5 分間の無操作、画面ロック、スリープ中は停止。アプリ名と時間は端末内に保存します。",
   "pages.preference.statistics.usageUnavailable": "このデスクトップ環境では前面アプリを取得できません。Wayland は未対応。X11 には xcb と xcb-screensaver が必要です。",

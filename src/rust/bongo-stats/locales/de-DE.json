@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "Aktualisiere das Statistik-Plugin für die Heatmap.",
+  "pages.preference.statistics.heatmapHint": "Dunklere Tasten wurden häufiger gedrückt. Mauszeiger zeigt die Anzahl. Nur ungeordnete Summen werden gespeichert. Ältere Daten enthalten keine Tastenzähler. Manche Tasten werden plattformbedingt zusammengefasst.",
+  "pages.preference.statistics.heatmap": "Tastatur-Heatmap",
+  "pages.preference.statistics.input": "Tastatur und Maus",
   "pages.preference.statistics.reset": "Statistik zurücksetzen",
   "pages.preference.statistics.resetConfirm": "Alle Eingabezähler, Diagramme und App-Nutzungszeiten löschen? Dies kann nicht rückgängig gemacht werden. Einstellungen bleiben erhalten.",
   "pages.preference.statistics.resetConfirmButton": "Gesamten Verlauf löschen",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "CSV exportieren",
   "pages.preference.statistics.exported": "CSV im Datenordner gespeichert",
   "pages.preference.statistics.openFolder": "Datenordner öffnen",
-  "pages.preference.statistics.applications": "App-Nutzungsdauer",
+  "pages.preference.statistics.applications": "App-Statistiken",
   "pages.preference.statistics.trackApplications": "Zeit der aktiven App erfassen",
   "pages.preference.statistics.usageHint": "Die aktive App wird jede Sekunde erfasst. Pause nach 5 Minuten ohne Eingabe, bei Bildschirmsperre und im Ruhezustand. Namen und Zeiten bleiben lokal.",
   "pages.preference.statistics.usageUnavailable": "App-Erfassung ist in dieser Sitzung nicht verfügbar. Wayland wird nicht unterstützt; X11 benötigt xcb und xcb-screensaver.",

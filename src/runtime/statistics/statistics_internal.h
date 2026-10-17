@@ -1,13 +1,18 @@
 #ifndef BONGO_CAT_STATISTICS_INTERNAL_H
 #define BONGO_CAT_STATISTICS_INTERNAL_H
 #include "plugin_page.h"
+#include "plugin_events.h"
+#include "plugin_overlay.h"
 #include "bongo_cat/app.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/statistics_reset_plugin.h"
+#include "bongo_cat/statistics_keyboard_plugin.h"
 #include <SDL3/SDL.h>
 
 struct BongoCatStatistics {
     SDL_SharedObject *library;
+    const BongoCatPluginEvents *events;
+    const BongoCatPluginOverlay *overlay;
     BongoCatPluginPageSession page_ui;
     const BongoCatStatisticsPlugin *plugin;
     const BongoCatPluginUiContribution *ui;
@@ -17,8 +22,9 @@ struct BongoCatStatistics {
     BongoCatStatisticsPage page;
     BongoCatStatisticsSnapshot cached;
     BongoCatApplicationSnapshot applications[4];
-    unsigned export_status, reset_status;
     const BongoCatStatisticsResetPlugin *reset;
+    const BongoCatStatisticsKeyboardPlugin *keyboard;
+    uint64_t key_counts[4][256];
     SDL_Thread *retirement;
     atomic_bool retired;
     bool close_ok, operation_ok, restart;

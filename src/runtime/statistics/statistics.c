@@ -58,16 +58,32 @@ const BongoCatStatisticsPlugin *bongo_cat_statistics_query(SDL_SharedObject *lib
     const BongoCatStatisticsPlugin *plugin = entry.function ? entry.query(BONGO_CAT_STATISTICS_ABI) : NULL;
     return plugin && plugin->abi_version == BONGO_CAT_STATISTICS_ABI && plugin->struct_size == sizeof(*plugin) &&
         plugin->create && plugin->destroy && plugin->ingest && plugin->snapshot && plugin->flush && plugin->export_csv &&
-        usage_query(library) && bongo_cat_statistics_page_api(library) ? plugin : NULL;
+        usage_query(library) && bongo_cat_statistics_page_api(library) &&
+        bongo_cat_plugin_events_query(library, "bongo_cat_statistics_events_query_v1") &&
+        bongo_cat_plugin_overlay_query(library, "bongo_cat_statistics_overlay_query_v1") ? plugin : NULL;
 }
 static void poll_metrics(void *context, BongoCatStatisticsMetrics *metrics) {
-    bongo_cat_input_metrics_take(context, metrics);
+    BongoCatApp *app = context;
+    bongo_cat_input_metrics_take(&app->input, metrics);
 }
 static void poll_application(void *context, BongoCatApplicationSample *sample) {
-    BongoCatInputState *input = context;
+    BongoCatApp *app = context;
+    BongoCatInputState *input = &app->input;
     *sample = (BongoCatApplicationSample){0};
     if (bongo_cat_input_metrics_enabled(input))
         bongo_cat_statistics_application_poll(context, sample);
+}
+static void poll_keyboard(void *context, uint64_t *counts) {
+    BongoCatApp *app = context;
+    bongo_cat_input_heatmap_take(&app->input, counts);
+}
+static void configure_keyboard(BongoCatStatistics *stats, BongoCatApp *app) {
+    union { SDL_FunctionPointer function; BongoCatStatisticsKeyboardQuery query; } entry;
+    entry.function = SDL_LoadFunction(stats->library, BONGO_CAT_STATISTICS_KEYBOARD_SYMBOL);
+    const BongoCatStatisticsKeyboardPlugin *p = entry.function ? entry.query(1) : NULL;
+    if (p && p->abi_version == 1 && p->struct_size == sizeof(*p) && p->configure && p->snapshot &&
+        p->configure(stats->instance, app, poll_keyboard)) stats->keyboard = p;
+    else SDL_ClearError();
 }
 static const BongoCatStatisticsUsagePlugin *usage_query(SDL_SharedObject *library) {
     union { SDL_FunctionPointer function; BongoCatStatisticsUsageQuery query; } entry;
@@ -116,6 +132,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
         return false;
     }
     stats->library = library; stats->plugin = plugin; stats->instance = instance;
+    stats->events = bongo_cat_plugin_events_query(library, "bongo_cat_statistics_events_query_v1");
+    stats->overlay = bongo_cat_plugin_overlay_query(library, "bongo_cat_statistics_overlay_query_v1");
     stats->usage = usage_query(library);
     stats->reset = reset_query(library);
     stats->ui = query_ui(library);
@@ -137,12 +155,13 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
         stats->applications[i].struct_size = sizeof(stats->applications[i]);
         stats->applications[i].enabled = 1;
     }
-    if (!stats->usage || !stats->usage->configure(instance, &app->input, poll_metrics,
+    if (!stats->usage || !stats->usage->configure(instance, app, poll_metrics,
         poll_application)) {
         plugin->destroy(instance); SDL_UnloadObject(library); SDL_free(stats);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT, "Statistics plugin requires the independent worker extension");
         return false;
     }
+    configure_keyboard(stats, app);
     app->statistics = stats;
     bongo_cat_plugin_locale_load(app->i18n, library, "statistics");
     bongo_cat_preferences_plugin_fonts_changed(app->preferences);
@@ -173,25 +192,16 @@ void bongo_cat_statistics_tick(BongoCatApp *app) {
     uint64_t now = SDL_GetTicks();
     if (now - app->statistics->refresh_ms >= 1000) {
         app->statistics->refresh_ms = now;
-        unsigned status = app->statistics->usage->export_status(app->statistics->instance);
-        if (status != app->statistics->export_status && status >= 2) {
-            const char *key = status == 2 ? "pages.preference.statistics.exported" : "pages.preference.statistics.failed";
-            bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n, key,
-                status == 2 ? "CSV saved in the data folder" : "Statistics export failed"), status != 2);
-        }
-        app->statistics->export_status = status;
         BongoCatStatistics *stats = app->statistics;
-        unsigned reset = stats->reset ? stats->reset->status(stats->instance) : 0;
-        if (stats->reset_status == 1 && reset >= 2) {
-            bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
-                reset == 2 ? "pages.preference.statistics.resetDone" : "pages.preference.statistics.failed",
-                reset == 2 ? "Statistics reset" : "Unable to reset statistics"), reset != 2);
-            if (reset == 2) {
+        for (unsigned i = 0; i < 2; ++i) {
+            uint32_t flags = bongo_cat_plugin_event(app, stats->events, stats->instance,
+                BONGO_PLUGIN_EVENT_TICK, 0);
+            if (!flags) break;
+            if (flags & BONGO_PLUGIN_EVENT_RESET) {
                 (void)bongo_cat_statistics_snapshot(app, &stats->cached);
                 bongo_cat_statistics_overlay_destroy(app);
             }
         }
-        stats->reset_status = reset;
         bongo_cat_preferences_statistics_invalidate(app->preferences);
     }
 }
@@ -202,6 +212,7 @@ void bongo_cat_statistics_stop(BongoCatApp *app) {
         SDL_free(app->statistics_retiring); app->statistics_retiring = NULL;
     }
     if (!app->statistics) return;
+    bongo_cat_statistics_overlay_destroy(app);
     bongo_cat_input_metrics_enable(&app->input, false);
     BongoCatStatistics *stats = app->statistics;
     /* Collection stops before draining, so no producer can refill the batch. */
@@ -246,9 +257,9 @@ bool bongo_cat_statistics_snapshot(BongoCatApp *app, BongoCatStatisticsSnapshot 
     return true;
 }
 bool bongo_cat_statistics_export(BongoCatApp *app, BongoCatError *error) {
-    char path[BONGO_CAT_PATH_CAP];
-    if (!app || !app->statistics || !bongo_cat_path_join(path, sizeof(path), app->data_root, "statistics-export.csv")) return false;
-    if (app->statistics->plugin->export_csv(app->statistics->instance, path)) { app->statistics->export_status = 1; return true; }
+    if (!app || !app->statistics) return false;
+    if (bongo_cat_plugin_event(app, app->statistics->events, app->statistics->instance,
+        BONGO_PLUGIN_EVENT_EXPORT, 0)) return true;
     bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot export statistics CSV"); return false;
 }
 
@@ -256,14 +267,15 @@ bool bongo_cat_statistics_reset_available(const BongoCatApp *app) {
     return app && app->statistics && app->statistics->reset;
 }
 bool bongo_cat_statistics_reset_busy(const BongoCatApp *app) {
-    return app && app->statistics && app->statistics->reset_status == 1;
+    return app && app->statistics && app->statistics->reset &&
+        app->statistics->reset->status(app->statistics->instance) == 1;
 }
 bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error) {
     if (!bongo_cat_statistics_reset_available(app) || bongo_cat_statistics_reset_busy(app) ||
-        !app->statistics->reset->reset(app->statistics->instance)) {
+        !bongo_cat_plugin_event(app, app->statistics->events, app->statistics->instance,
+            BONGO_PLUGIN_EVENT_REQUEST_RESET, 0)) {
         bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot queue statistics reset"); return false;
     }
-    app->statistics->reset_status = 1;
     bongo_cat_preferences_invalidate(app->preferences);
     return true;
 }

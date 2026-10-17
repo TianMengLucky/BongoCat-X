@@ -69,16 +69,18 @@ pub fn open(directory: &Path) -> Result<(Connection, Store), Box<dyn std::error:
     }
     drop(statement);
     crate::usage_storage::load(&connection, &mut store.usage)?;
+    crate::keyboard::load(&connection, &mut store.keyboard, oldest)?;
     Ok((connection, store))
 }
 
 pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite::Result<()> {
-    let (revision, rows, lifetime, usage) = {
+    let (revision, rows, lifetime, usage, keyboard) = {
         let store = shared.lock().unwrap_or_else(|e| e.into_inner());
         if store.dirty.is_empty()
             && store.usage.dirty.is_empty()
             && store.usage.changed.is_empty()
             && !store.usage.options_dirty
+            && store.keyboard.dirty.is_empty()
         {
             return Ok(());
         }
@@ -92,6 +94,7 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
             rows,
             store.lifetime,
             crate::usage_storage::pending(&store.usage),
+            store.keyboard.pending(),
         )
     };
     let transaction = connection.transaction()?;
@@ -122,10 +125,12 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
     let oldest = date_id(today.checked_sub_days(Days::new(729)).unwrap_or(today));
     transaction.execute("DELETE FROM metrics WHERE day>0 AND day<?1", [oldest])?;
     crate::usage_storage::write(&transaction, &usage)?;
+    crate::keyboard::save(&transaction, &keyboard, oldest)?;
     transaction.commit()?;
     let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
     if store.revision == revision {
         store.dirty.clear();
+        store.keyboard.dirty.clear();
         crate::usage_storage::clear(&mut store.usage);
     }
     Ok(())
@@ -136,7 +141,7 @@ pub fn reset(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlit
     let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
     let transaction = connection.transaction()?;
     transaction.execute_batch(
-        "DELETE FROM metrics; DELETE FROM application_hours; DELETE FROM applications;",
+        "DELETE FROM metrics; DELETE FROM application_hours; DELETE FROM applications; DELETE FROM keyboard_counts;",
     )?;
     transaction.commit()?;
     let mut empty = Store::default();

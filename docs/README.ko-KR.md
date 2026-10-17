@@ -99,15 +99,19 @@ cmake --build build --config Release --parallel
 
 ### 🧪 테스트
 
-CTest 대상은 기본적으로 활성화됩니다. 빌드 후 실행:
+일반 빌드의 작업량을 줄이기 위해 테스트 대상은 기본적으로 꺼져 있습니다. 필요할 때 활성화하고 빌드하세요:
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
 Visual Studio와 같은 다중 구성 생성기의 경우 빌드 구성을 명시적으로 지정하세요:
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

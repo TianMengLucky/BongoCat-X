@@ -1,15 +1,19 @@
 #ifndef BONGO_CAT_SOUNDS_INTERNAL_H
 #define BONGO_CAT_SOUNDS_INTERNAL_H
 #include "plugin_page.h"
+#include "plugin_events.h"
 #include "bongo_cat/app.h"
 #include "bongo_cat/sounds.h"
 #include "bongo_cat/audio.h"
 #include <SDL3/SDL.h>
 #include "plugin_worker.h"
+#include "plugin_io.h"
 typedef struct BongoCatSounds {
     SDL_SharedObject *library;
+    const BongoCatPluginEvents *events;
     BongoCatPluginPageSession page_ui;
     const BongoCatSoundsPlugin *api;
+    const BongoCatPluginIo *io;
     const BongoCatPluginUiContribution *ui;
     void *instance;
     BongoCatSoundsPage page;
@@ -26,4 +30,6 @@ bool bongo_cat_sounds_import_audio_now(BongoCatApp *app, const char *key, const 
 bool bongo_cat_sounds_clear_now(BongoCatApp *app, uint32_t index, BongoCatError *error);
 bool bongo_cat_sounds_preview_now(BongoCatApp *app, uint32_t index, BongoCatError *error);
 void bongo_cat_sounds_input_now(BongoCatApp *app, const BongoCatInputEvent *event, bool play);
+bool bongo_cat_sounds_execute(BongoCatApp *app, uint32_t operation, uint32_t index,
+    const char *key, const char *path, bool play);
 #endif

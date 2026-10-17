@@ -58,7 +58,9 @@ const BongoCatSoundsPlugin *bongo_cat_sounds_query(SDL_SharedObject *library) {
     const BongoCatSoundsPlugin *api = entry.function ? entry.query(BONGO_CAT_SOUNDS_ABI) : NULL;
     return api && api->abi_version == BONGO_CAT_SOUNDS_ABI && api->struct_size == sizeof(*api) &&
         api->create && api->destroy && api->page && api->snapshot && api->restore &&
-        api->key_count && api->key && api->bind && api->press && api->key_count() > 0 && api->key_count() <= BONGO_CAT_SOUNDS_CAP ? api : NULL;
+        api->key_count && api->key && api->bind && api->press && api->key_count() > 0 && api->key_count() <= BONGO_CAT_SOUNDS_CAP &&
+        bongo_cat_plugin_io_query(library, "bongo_cat_sounds_io_query_v1") &&
+        bongo_cat_plugin_events_query(library, "bongo_cat_sounds_events_query_v1") ? api : NULL;
 }
 static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
     union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
@@ -95,6 +97,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     if (v) {
         atomic_init(&v->loaded, false);
         v->library = library; v->api = api; v->ui = query_ui(library);
+        v->io = bongo_cat_plugin_io_query(library, "bongo_cat_sounds_io_query_v1");
+        v->events = bongo_cat_plugin_events_query(library, "bongo_cat_sounds_events_query_v1");
         v->instance = api->create();
         v->page.struct_size = sizeof(v->page);
     }

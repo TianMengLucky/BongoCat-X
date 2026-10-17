@@ -99,22 +99,24 @@ pub(crate) fn decode(
     }
     let channels = info.color_type.samples();
     let mut scaler = scale::Scaler::new(w, h, bounds)?;
-    let mut rgba = vec![0; w as usize * 4];
+    // RGBA rows can be borrowed: the scaler writes only to its own output strips.
+    let mut rgba = vec![0; if channels == 3 { w as usize * 4 } else { 0 }];
     for y in 0..h {
         callbacks.check()?;
         let row = reader.next_row().map_err(|_| FORMAT)?.ok_or(FORMAT)?;
         if row.data().len() != w as usize * channels {
             return Err(FORMAT);
         }
-        for (source, target) in row
-            .data()
-            .chunks_exact(channels)
-            .zip(rgba.chunks_exact_mut(4))
-        {
-            target[..3].copy_from_slice(&source[..3]);
-            target[3] = if channels == 4 { source[3] } else { 255 };
-        }
-        scaler.push(&rgba, y, callbacks, consume)?;
+        let pixels = if channels == 4 {
+            row.data()
+        } else {
+            for (source, target) in row.data().chunks_exact(3).zip(rgba.chunks_exact_mut(4)) {
+                target[..3].copy_from_slice(source);
+                target[3] = 255;
+            }
+            &rgba
+        };
+        scaler.push(pixels, y, callbacks, consume)?;
         callbacks.progress((y + 1) as f32 / h as f32);
     }
     reader.finish().map_err(|_| FORMAT)?;

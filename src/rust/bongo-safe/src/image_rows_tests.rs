@@ -71,6 +71,25 @@ fn mutable_output_strips_do_not_corrupt_later_prediction_rows() {
     let (status, state) = run(&path, 193, 257, true);
     assert_eq!(status, CANCELLED);
     assert_eq!(state.calls, 1);
+
+    // Exercise the RGB conversion path with the same mutable strip consumer.
+    let rgb: Vec<u8> = pixels
+        .chunks_exact(4)
+        .flat_map(|p| p[..3].iter().copied())
+        .collect();
+    let mut encoder = png::Encoder::new(File::create(&path).unwrap(), 193, 257);
+    encoder.set_color(png::ColorType::Rgb);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().unwrap();
+    writer.write_image_data(&rgb).unwrap();
+    writer.finish().unwrap();
+    let (status, state) = run(&path, 193, 257, false);
+    assert_eq!(status, 0);
+    let mut expected = pixels;
+    for pixel in expected.chunks_exact_mut(4) {
+        pixel[3] = 255;
+    }
+    assert_eq!(state.bytes, expected);
 }
 #[test]
 fn area_filter_ignores_invisible_rgb_and_keeps_straight_alpha() {

@@ -99,15 +99,19 @@ Die ausführbare Datei befindet sich unter `build/BongoCat` auf Linux, unter `bu
 
 ### 🧪 Tests
 
-Die CTest-Ziele sind standardmäßig aktiviert. Führe nach dem Build Folgendes aus:
+Testziele sind standardmäßig deaktiviert, um normale Builds zu beschleunigen. Bei Bedarf aktivieren und bauen:
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
 Gib bei einem Mehrkonfigurations-Generator wie Visual Studio die Build-Konfiguration explizit an:
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

@@ -96,15 +96,19 @@ cmake --build build --config Release --parallel
 
 ### 🧪 测试
 
-CTest 目标默认启用。构建后运行：
+测试目标默认关闭，以减少日常构建开销。需要测试时，先启用并构建：
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
 对于 Visual Studio 这类多配置生成器，请明确指定构建配置：
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

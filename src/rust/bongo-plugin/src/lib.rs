@@ -7,10 +7,15 @@
 //! layout and guards.
 
 pub mod card;
+pub mod events;
 pub mod guard;
+pub mod io;
 pub mod locale;
+pub mod models;
+pub mod overlay;
 pub mod page;
 pub mod text;
+pub mod transfer;
 pub mod ui;
 
 mod page_export;

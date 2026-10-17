@@ -52,6 +52,8 @@ pub mod read {
     pub const REPOSITORY: u32 = 6;
     pub const INSTALLED: u32 = 7;
     pub const IMAGE: u32 = 8;
+    pub const SECTION: u32 = 9;
+    pub const HEATMAP: u32 = 10;
 }
 pub mod action {
     pub const IMPORT: u32 = 0;
@@ -143,7 +145,7 @@ pub struct Contribution {
     pub draw: unsafe extern "C" fn(*mut c_void, *mut Ui, *const Host, *const Services) -> u32,
 }
 
-fn c(text: &str) -> CString {
+pub(crate) fn c(text: &str) -> CString {
     CString::new(text.split('\0').next().unwrap_or("")).expect("NUL removed")
 }
 pub fn text(bytes: &[u8]) -> &str {

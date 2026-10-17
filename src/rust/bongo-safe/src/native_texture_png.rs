@@ -58,8 +58,10 @@ pub(super) fn decode(
         alpha: [0; ALPHA_BYTES],
     };
     let mut rgba = vec![0; sw as usize * 4];
-    let mut horizontal = vec![0f64; w as usize * 4];
-    let mut sum = vec![0f64; w as usize * 4];
+    let original_size = (sw, sh) == (w, h);
+    let filter_len = if original_size { 0 } else { w as usize * 4 };
+    let mut horizontal = vec![0f64; filter_len];
+    let mut sum = vec![0f64; filter_len];
     let mut output = vec![0; w as usize * 4];
     let sx = f64::from(sw) / f64::from(w);
     let sy = f64::from(sh) / f64::from(h);
@@ -95,6 +97,32 @@ pub(super) fn decode(
             }
         }
         alpha_row(&mut texture.alpha, &rgba, sw, sh, y);
+        if original_size {
+            // Preserve the filter's rounding without allocating or integrating float rows.
+            for (target, pixel) in output.chunks_exact_mut(4).zip(rgba.chunks_exact(4)) {
+                let alpha = f64::from(pixel[3]) / 255.0;
+                for c in 0..3 {
+                    target[c] = (f64::from(pixel[c]) * alpha).round() as u8;
+                }
+                target[3] = pixel[3];
+            }
+            #[cfg(all(
+                target_arch = "x86_64",
+                any(target_os = "windows", target_os = "linux")
+            ))]
+            if let Some(encoder) = &mut encoder {
+                if stopped() {
+                    return None;
+                }
+                encoder.push(&output);
+            }
+            if !compressed {
+                let offset = y as usize * output.len();
+                texture.pixels[offset..offset + output.len()].copy_from_slice(&output);
+            }
+            oy += 1;
+            continue;
+        }
         horizontal.fill(0.0);
         for x in 0..w as usize {
             let left = x as f64 * sx;

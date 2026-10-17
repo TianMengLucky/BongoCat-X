@@ -1,10 +1,14 @@
-#include "bongo_cat/app.h"
+#include "statistics_internal.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/safe_ffi.h"
 #include "bongo_cat/i18n.h"
 #include "ui_backend.h"
 #include "ui_font.h"
 #include "ui_present.h"
+#include "ui_catime.h"
+#include "ui_software.h"
+#include "preferences_model_glyphs.h"
+#include <string.h>
 #include <SDL3/SDL_opengl.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,6 +16,7 @@
 #include "windows_hdr.h"
 #endif
 
+/* Window dimensions and content are contributed by the active plugin. */
 typedef struct BongoCatStatisticsOverlay {
     SDL_Window *window;
     SDL_GLContext context;
@@ -19,13 +24,10 @@ typedef struct BongoCatStatisticsOverlay {
     BongoCatLanguage language;
     uint64_t next_frame_ns;
     int x, y;
+    const BongoCatPluginOverlay *api;
+    BongoCatPluginOverlaySurface surface;
+    uint64_t names_hash;
 } BongoCatStatisticsOverlay;
-
-static const char *label(BongoCatApp *app, const char *key, const char *fallback) {
-    char full[128];
-    snprintf(full, sizeof(full), "pages.preference.statistics.%s", key);
-    return bongo_cat_i18n_get(app->i18n, full, fallback);
-}
 
 void bongo_cat_statistics_overlay_destroy(BongoCatApp *app) {
     BongoCatStatisticsOverlay *v = app->statistics_overlay;
@@ -33,8 +35,10 @@ void bongo_cat_statistics_overlay_destroy(BongoCatApp *app) {
     SDL_Window *previous = SDL_GL_GetCurrentWindow();
     SDL_GLContext context = SDL_GL_GetCurrentContext();
     if (previous == v->window) { previous = NULL; context = NULL; }
-    if (v->context && SDL_GL_MakeCurrent(v->window, v->context))
+    if (v->context && SDL_GL_MakeCurrent(v->window, v->context)) {
+        bongo_cat_plugin_overlay_release(&v->surface);
         bongo_cat_ui_destroy(&v->ui);
+    }
     else bongo_cat_ui_abandon(&v->ui);
     if (v->context) SDL_GL_DestroyContext(v->context);
     SDL_DestroyWindow(v->window);
@@ -50,7 +54,10 @@ static bool create(BongoCatApp *app) {
     app->statistics_overlay = v;
     v->language = app->settings.app.language;
     v->x = v->y = SDL_WINDOWPOS_UNDEFINED;
-    v->window = SDL_CreateWindow(label(app, "title", "Statistics"), 360, 150,
+    v->api = app->statistics->overlay;
+    v->surface.ui = &v->ui; v->surface.i18n = app->i18n;
+    v->window = SDL_CreateWindow(bongo_cat_i18n_get(app->i18n, v->api->title_key, v->api->title),
+        (int)v->api->width, (int)v->api->height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_BORDERLESS |
         SDL_WINDOW_UTILITY | SDL_WINDOW_NOT_FOCUSABLE | SDL_WINDOW_HIDDEN |
         SDL_WINDOW_HIGH_PIXEL_DENSITY);
@@ -71,6 +78,9 @@ static bool create(BongoCatApp *app) {
     const char *kr = bongo_cat_ui_system_korean_font(korean, sizeof(korean));
     nk_rune ranges[8192] = {0};
     bongo_cat_i18n_glyph_ranges(app->i18n, ranges, sizeof(ranges) / sizeof(ranges[0]));
+    BongoCatPluginOverlayGlyphs glyphs = {ranges, SDL_arraysize(ranges), 0};
+    (void)v->api->visit_text(app->statistics->instance, bongo_cat_plugin_overlay_text, &glyphs);
+    v->names_hash = glyphs.hash;
     float layout = 1, raster = 1;
     bongo_cat_ui_query_window_scale(v->window, &layout, &raster);
     BongoCatError error = {0};
@@ -78,7 +88,18 @@ static bool create(BongoCatApp *app) {
         ranges, ranges, 1, raster, &error);
 }
 
-static bool paint(BongoCatApp *app, const BongoCatStatisticsMetrics *m) {
+bool bongo_cat_statistics_overlay_event(BongoCatApp *app, const SDL_Event *event) {
+    BongoCatStatisticsOverlay *v = app ? app->statistics_overlay : NULL;
+    if (!v || !app->statistics || !event || SDL_GetWindowFromEvent(event) != v->window) return false;
+    if ((event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) &&
+        event->button.button == SDL_BUTTON_LEFT) {
+        v->api->pointer(app->statistics->instance, event->button.x, event->button.y, event->button.down);
+        v->next_frame_ns = 0;
+    }
+    return true;
+}
+
+static bool paint(BongoCatApp *app) {
     BongoCatStatisticsOverlay *v = app->statistics_overlay;
     if (!SDL_GL_MakeCurrent(v->window, v->context)) return false;
     int width, height;
@@ -87,37 +108,37 @@ static bool paint(BongoCatApp *app, const BongoCatStatisticsMetrics *m) {
     glDisable(GL_SCISSOR_TEST);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
+    bool dark = app->settings.app.theme == BONGO_CAT_THEME_DARK ||
+        (app->settings.app.theme == BONGO_CAT_THEME_AUTO && SDL_GetSystemTheme() == SDL_SYSTEM_THEME_DARK);
+    v->surface.dark = dark;
     struct nk_context *ctx = &v->ui.context;
-    ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(190, 225, 250, 100));
-    ctx->style.window.padding = nk_vec2(14, 10);
-    ctx->style.window.background = nk_rgba(190, 225, 250, 100);
+    ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    ctx->style.window.padding = nk_vec2(0, 0);
+    ctx->style.window.background = nk_rgba(0, 0, 0, 0);
     ctx->style.window.border = 0;
-    ctx->style.window.rounding = 14;
-    ctx->style.text.color = nk_rgb(32, 68, 100);
     bongo_cat_ui_input_begin(&v->ui);
     bongo_cat_ui_input_end(&v->ui);
-    if (nk_begin(ctx, "statistics-overlay", nk_rect(0, 0, 360, 150), NK_WINDOW_NO_SCROLLBAR)) {
-        nk_layout_row_dynamic(ctx, 22, 1);
-        nk_label(ctx, label(app, "today", "Today"), NK_TEXT_LEFT);
-        uint64_t clicks = 0;
-        for (unsigned i = 0; i < BONGO_CAT_STATISTICS_BUTTONS; ++i)
-            clicks = UINT64_MAX - clicks < m->buttons[i] ? UINT64_MAX : clicks + m->buttons[i];
-        const char *names[] = {label(app, "keys", "Key presses"), label(app, "clicks", "Mouse clicks"),
-            label(app, "overlayMovement", "Pointer travel"), label(app, "overlayScroll", "Scroll")};
-        char numbers[4][48];
-        snprintf(numbers[0], sizeof(numbers[0]), "%llu", (unsigned long long)m->keys);
-        snprintf(numbers[1], sizeof(numbers[1]), "%llu", (unsigned long long)clicks);
-        snprintf(numbers[2], sizeof(numbers[2]), "%.0f", m->movement);
-        snprintf(numbers[3], sizeof(numbers[3]), "%.1f", m->scroll);
-        for (unsigned i = 0; i < 4; ++i) {
-            nk_layout_row_begin(ctx, NK_DYNAMIC, 22, 2);
-            nk_layout_row_push(ctx, .72f); nk_label(ctx, names[i], NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, .28f); nk_label(ctx, numbers[i], NK_TEXT_RIGHT);
-            nk_layout_row_end(ctx);
-        }
+    bool drawn = false;
+    if (nk_begin(ctx, "plugin-overlay", nk_rect(0, 0, (float)v->api->width, (float)v->api->height), NK_WINDOW_NO_SCROLLBAR)) {
+        BongoCatPluginOverlayCanvas canvas = bongo_cat_plugin_overlay_canvas(&v->surface, app->data_root);
+        drawn = v->api->draw(app->statistics->instance, &canvas) != 0;
     }
     nk_end(ctx);
-    return bongo_cat_ui_render(&v->ui) && bongo_cat_ui_present(v->window);
+    return drawn && bongo_cat_ui_render(&v->ui) && bongo_cat_ui_present(v->window);
+}
+
+static bool refresh_application_fonts(BongoCatApp *app, uint64_t now) {
+    BongoCatStatisticsOverlay *v = app->statistics_overlay;
+    BongoCatPluginOverlayGlyphs glyphs = {0};
+    bool active = v->api->visit_text(app->statistics->instance, bongo_cat_plugin_overlay_text, &glyphs) != 0;
+    if (!active || v->names_hash == glyphs.hash) return false;
+    bongo_cat_statistics_overlay_destroy(app);
+    if (!create(app)) {
+        bongo_cat_statistics_overlay_destroy(app);
+        app->statistics_overlay_retry_ns = now + 5000000000ull;
+    }
+    /* Position and topmost state are applied before the new window is shown. */
+    return true;
 }
 
 void bongo_cat_statistics_overlay_update(BongoCatApp *app) {
@@ -153,12 +174,12 @@ void bongo_cat_statistics_overlay_update(BongoCatApp *app) {
     int x, y, width;
     if (!SDL_GetWindowPosition(app->window, &x, &y) ||
         !SDL_GetWindowSize(app->window, &width, NULL)) goto restore;
-    x += (width - 360) / 2;
-    y -= 158;
+    x += (width - (int)v->api->width) / 2;
+    y -= (int)v->api->height + 8;
     SDL_Rect bounds;
     if (SDL_GetDisplayUsableBounds(SDL_GetDisplayForWindow(app->window), &bounds)) {
-        x = SDL_clamp(x, bounds.x, SDL_max(bounds.x, bounds.x + bounds.w - 360));
-        y = SDL_clamp(y, bounds.y, SDL_max(bounds.y, bounds.y + bounds.h - 150));
+        x = SDL_clamp(x, bounds.x, SDL_max(bounds.x, bounds.x + bounds.w - (int)v->api->width));
+        y = SDL_clamp(y, bounds.y, SDL_max(bounds.y, bounds.y + bounds.h - (int)v->api->height));
     }
     if (x != v->x || y != v->y) {
         SDL_SetWindowPosition(v->window, x, y); v->x = x; v->y = y;
@@ -167,8 +188,8 @@ void bongo_cat_statistics_overlay_update(BongoCatApp *app) {
     if (always_on_top != app->settings.window.always_on_top)
         SDL_SetWindowAlwaysOnTop(v->window, app->settings.window.always_on_top);
     if (now >= v->next_frame_ns || (SDL_GetWindowFlags(v->window) & SDL_WINDOW_HIDDEN)) {
-        BongoCatStatisticsSnapshot snapshot;
-        if (bongo_cat_statistics_snapshot(app, &snapshot) && paint(app, &snapshot.today)) {
+        if (refresh_application_fonts(app, now)) goto restore;
+        if (paint(app)) {
             SDL_ShowWindow(v->window);
             v->next_frame_ns = now + 500000000ull;
         } else {

@@ -1,13 +1,17 @@
-use crate::metrics::{Metrics, Snapshot};
+use crate::metrics::Snapshot;
 use bongo_plugin::page::{action, color, read, Page, PageState, Rect};
 
 #[path = "page_ui_charts.rs"]
 mod charts;
+#[path = "page_ui_keyboard.rs"]
+mod keyboard;
 #[path = "page_ui_units.rs"]
 mod units;
 #[derive(Default)]
 struct State {
     period: u32,
+    history_days: u32,
+    selected_app: String,
     reset_confirm: bool,
     units_open: u32,
     units: Option<units::Units>,
@@ -24,9 +28,6 @@ fn act(p: &Page<'_>, op: u32, index: u32) -> bool {
         p.notice(&tr(p, "failed", "Unable to update statistics"), true);
     }
     ok
-}
-fn clicks(m: &Metrics) -> u64 {
-    m.buttons.iter().fold(0u64, |a, &b| a.saturating_add(b))
 }
 fn grouped(raw: &str, unit: &str) -> String {
     let whole = raw.find('.').unwrap_or(raw.len());
@@ -64,7 +65,7 @@ fn metric_card(p: &Page<'_>, title: &str, number: &str) {
     p.stroke(r, 12.0, 1.0, color::BORDER_SUBTLE);
     let content = r.inset(14.0);
     p.paint_text(
-        Rect::new(content.x, content.y, content.w, 32.0),
+        Rect::new(content.x, content.y, content.w, 24.0),
         title,
         1,
         color::TEXT,
@@ -76,7 +77,7 @@ fn metric_card(p: &Page<'_>, title: &str, number: &str) {
         0
     };
     p.paint_text(
-        Rect::new(content.x, content.y + 36.0, content.w, 48.0),
+        Rect::new(content.x, content.y + 28.0, content.w, 36.0),
         number,
         font,
         color::ACCENT,
@@ -138,6 +139,8 @@ impl PageState for State {
             }
         }
         p.intro(&tr(p, "privacy", "Local input totals, app names and durations. No typed text, key order, coordinates, window titles, URLs or screenshots."));
+        let section = unsafe { p.read::<u32>(read::SECTION, 0) };
+        let applications = section == Some(1);
         let mut overlay = p.status().overlay;
         if p.toggle(
             "statistics-overlay",
@@ -167,6 +170,10 @@ impl PageState for State {
                 self.period,
             )
             .min(3);
+        if applications {
+            charts::usage(self, p);
+            return;
+        }
         let metrics = [&data.today, &data.week, &data.month, &data.lifetime];
         let m = metrics[self.period as usize];
         let units = self.units.unwrap_or_default();
@@ -181,7 +188,16 @@ impl PageState for State {
         let count_unit = unit(&units.count, "native.statsCountUnit", "counts");
         let movement_unit = unit(&units.movement, "native.statsInputUnit", "input units");
         let scroll_unit = unit(&units.scroll, "native.statsWheelUnit", "wheel units");
-        p.row(if p.width() >= 540.0 { 2 } else { 1 }, 128.0);
+        p.row(
+            if p.width() >= 760.0 {
+                5
+            } else if p.width() >= 600.0 {
+                3
+            } else {
+                2
+            },
+            104.0,
+        );
         metric_card(
             p,
             &tr(p, "keys", "Key presses"),
@@ -189,8 +205,13 @@ impl PageState for State {
         );
         metric_card(
             p,
-            &tr(p, "clicks", "Mouse clicks"),
-            &grouped(&clicks(m).to_string(), &count_unit),
+            &tr(p, "left", "Left button"),
+            &grouped(&m.buttons[0].to_string(), &count_unit),
+        );
+        metric_card(
+            p,
+            &tr(p, "right", "Right button"),
+            &grouped(&m.buttons[1].to_string(), &count_unit),
         );
         metric_card(
             p,
@@ -202,9 +223,21 @@ impl PageState for State {
             &tr(p, "overlayScroll", "Scroll"),
             &grouped(&scaled(m.scroll, units.scroll_scale, 1), &scroll_unit),
         );
+        keyboard::draw(self, p);
+        p.row(1, 40.0);
+        self.history_days = p
+            .segments(
+                "statistics-trend-period",
+                &[tr(p, "week", "7 days"), tr(p, "month", "30 days")],
+                self.history_days,
+            )
+            .min(1);
+        charts::activity(p, &data, false, self.history_days == 0);
+        charts::activity(p, &data, true, false);
+        if section.is_none() {
+            charts::usage(self, p);
+        }
         for (i, (key, fallback)) in [
-            ("left", "Left button"),
-            ("right", "Right button"),
             ("middle", "Middle button"),
             ("back", "Back button"),
             ("forward", "Forward button"),
@@ -215,14 +248,11 @@ impl PageState for State {
             p.status_row(
                 key,
                 &tr(p, key, fallback),
-                &grouped(&m.buttons[i].to_string(), &count_unit),
+                &grouped(&m.buttons[i + 2].to_string(), &count_unit),
             );
         }
         units::draw(self, p);
         p.wrapped(&tr(p, "unitsHint", "Movement uses desktop pixels/points, or raw device units with Linux evdev. Wheel units vary by device; neither value is a physical distance."), 96.0);
-        charts::usage(self, p);
-        charts::activity(p, &data, false);
-        charts::activity(p, &data, true);
         p.row(2, 36.0);
         if p.button("export", &tr(p, "export", "Export CSV"), 0) && act(p, action::EXPORT_STATS, 0)
         {
@@ -247,10 +277,5 @@ mod tests {
         assert_eq!(scaled(123.0, 0.01, 0), "1.23");
         assert_eq!(scaled(0.0, 0.01, 0), "0");
         assert_eq!(scaled(12.0, 1.0, 1), "12.0");
-        let m = Metrics {
-            buttons: [u64::MAX; 5],
-            ..Metrics::default()
-        };
-        assert_eq!(clicks(&m), u64::MAX);
     }
 }

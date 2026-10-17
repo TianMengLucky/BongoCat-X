@@ -15,6 +15,7 @@
 static void handle_event(BongoCatApp *app, const SDL_Event *event) {
     if (bongo_cat_update_event(app->update, event)) return;
     if (bongo_cat_model_refresh_event(app, event)) return;
+    if (bongo_cat_statistics_overlay_event(app, event)) return;
     if (bongo_cat_preferences_event(app->preferences, event)) return;
     if (!bongo_cat_window_event(app, event)) app->running = false;
     if (event->type >= SDL_EVENT_GAMEPAD_AXIS_MOTION &&

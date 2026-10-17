@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "Обновите плагин статистики для отображения тепловой карты.",
+  "pages.preference.statistics.heatmapHint": "Чем темнее клавиша, тем больше нажатий. Наведите курсор для просмотра числа. Сохраняются суммы без порядка ввода; в старой истории нет данных по клавишам. Некоторые клавиши объединяются платформой.",
+  "pages.preference.statistics.heatmap": "Тепловая карта клавиатуры",
+  "pages.preference.statistics.input": "Клавиатура и мышь",
   "pages.preference.statistics.reset": "Сбросить статистику",
   "pages.preference.statistics.resetConfirm": "Удалить все счётчики ввода, графики и историю использования приложений? Это действие нельзя отменить. Настройки сохранятся.",
   "pages.preference.statistics.resetConfirmButton": "Удалить всю историю",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "Экспорт CSV",
   "pages.preference.statistics.exported": "CSV сохранён в папке данных",
   "pages.preference.statistics.openFolder": "Открыть папку данных",
-  "pages.preference.statistics.applications": "Время использования приложений",
+  "pages.preference.statistics.applications": "Статистика приложений",
   "pages.preference.statistics.trackApplications": "Учитывать время активного приложения",
   "pages.preference.statistics.usageHint": "Активное приложение проверяется каждую секунду. Пауза после 5 минут без ввода, при блокировке и сне. Названия и время хранятся локально.",
   "pages.preference.statistics.usageUnavailable": "В этой сессии нельзя определить активное приложение. Wayland не поддерживается; X11 требует xcb и xcb-screensaver.",

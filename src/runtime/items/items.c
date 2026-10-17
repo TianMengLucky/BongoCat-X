@@ -59,7 +59,10 @@ const BongoCatItemsPlugin *bongo_cat_items_query(SDL_SharedObject *library) {
     const BongoCatItemsPlugin *api = entry.function ? entry.query(BONGO_CAT_ITEMS_ABI) : NULL;
     return api && api->abi_version == BONGO_CAT_ITEMS_ABI && api->struct_size == sizeof(*api) &&
         api->create && api->destroy && api->page && api->snapshot && api->restore &&
-        api->add && api->update && api->remove ? api : NULL;
+        api->add && api->update && api->remove &&
+        bongo_cat_plugin_io_query(library, "bongo_cat_items_io_query_v1") &&
+        bongo_cat_plugin_events_query(library, "bongo_cat_items_events_query_v1") &&
+        bongo_cat_items_render_query(library) ? api : NULL;
 }
 static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
     union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
@@ -97,6 +100,9 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     if (v) {
         atomic_init(&v->unsaved, false); atomic_init(&v->loaded, false);
         v->library = library; v->api = api; v->ui = query_ui(library);
+        v->io = bongo_cat_plugin_io_query(library, "bongo_cat_items_io_query_v1");
+        v->render = bongo_cat_items_render_query(library);
+        v->events = bongo_cat_plugin_events_query(library, "bongo_cat_items_events_query_v1");
         v->instance = api->create();
         v->page.struct_size = sizeof(v->page);
     }

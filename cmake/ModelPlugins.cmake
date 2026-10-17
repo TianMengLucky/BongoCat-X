@@ -88,8 +88,9 @@ if(BONGO_CAT_BUILD_ITEMS)
     add_test(NAME items-rust
       COMMAND "${BONGO_CAT_CARGO}" test --locked --manifest-path
         "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-items/Cargo.toml"
-        --target-dir "${CMAKE_BINARY_DIR}/items-tests")
-    set_tests_properties(items-rust PROPERTIES TIMEOUT 60)
+        --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    set_tests_properties(items-rust PROPERTIES TIMEOUT 60
+      RESOURCE_LOCK cargo-rust-tests)
   endif()
 endif()
 option(BONGO_CAT_BUILD_SOUNDS "Build the keyboard sound effects plugin" ON)
@@ -101,8 +102,9 @@ if(BONGO_CAT_BUILD_SOUNDS)
     add_test(NAME sounds-rust
       COMMAND "${BONGO_CAT_CARGO}" test --locked --manifest-path
         "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-sounds/Cargo.toml"
-        --target-dir "${CMAKE_BINARY_DIR}/sounds-tests")
-    set_tests_properties(sounds-rust PROPERTIES TIMEOUT 60)
+        --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    set_tests_properties(sounds-rust PROPERTIES TIMEOUT 60
+      RESOURCE_LOCK cargo-rust-tests)
     add_executable(bongo_cat_plugin_worker_tests tests/sounds/test_plugin_workers.c src/runtime/plugin_worker.c)
     target_include_directories(bongo_cat_plugin_worker_tests PRIVATE
       "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include src/runtime tests/support)
@@ -111,14 +113,16 @@ if(BONGO_CAT_BUILD_SOUNDS)
     set_tests_properties(plugin-workers PROPERTIES TIMEOUT 30)
   endif()
 endif()
+# Cargo tests share dependencies; RESOURCE_LOCK avoids parallel Cargo lock waits.
 if(BUILD_TESTING)
   # The plugin support crate is a dependency of the plugin cdylibs, so it is
   # not otherwise built; run its unit tests to keep it compiling in CI.
   add_test(NAME plugin-rust
     COMMAND "${BONGO_CAT_CARGO}" test
       --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-plugin/Cargo.toml"
-      --target-dir "${CMAKE_BINARY_DIR}/plugin-tests")
-  set_tests_properties(plugin-rust PROPERTIES TIMEOUT 60)
+      --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+  set_tests_properties(plugin-rust PROPERTIES TIMEOUT 60
+    RESOURCE_LOCK cargo-rust-tests)
 endif()
 function(bongo_cat_stage_model_plugins target)
   if(APPLE)

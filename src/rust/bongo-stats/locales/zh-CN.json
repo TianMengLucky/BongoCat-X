@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "请更新统计插件以显示键盘热力图。",
+  "pages.preference.statistics.heatmapHint": "颜色越深，按键次数越多；悬停查看次数。仅保存各键累计次数，不保存输入顺序；旧历史无各键数据，部分按键按平台键名合并。",
+  "pages.preference.statistics.heatmap": "键盘热力图",
+  "pages.preference.statistics.input": "键鼠统计",
   "pages.preference.statistics.reset": "重置统计",
   "pages.preference.statistics.resetConfirm": "确认清空所有输入次数、图表和应用时长历史？此操作无法撤销，统计开关设置将保留。",
   "pages.preference.statistics.resetConfirmButton": "确认清空历史",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "导出 CSV",
   "pages.preference.statistics.exported": "CSV 已保存到数据目录",
   "pages.preference.statistics.openFolder": "打开数据目录",
-  "pages.preference.statistics.applications": "应用使用时长",
+  "pages.preference.statistics.applications": "应用统计",
   "pages.preference.statistics.trackApplications": "统计前台应用时长",
   "pages.preference.statistics.usageHint": "每秒采样前台应用，空闲 5 分钟、锁屏或休眠时暂停。仅在本地保存应用名称和时长。",
   "pages.preference.statistics.usageUnavailable": "当前桌面会话无法识别前台应用。Wayland 暂不支持；X11 需要 xcb 和 xcb-screensaver。",

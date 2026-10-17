@@ -111,49 +111,43 @@ failed:
     SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE, "[items] Cannot load %s: %s", asset, error.message);
     return slot; /* Remember the failure; do not reopen the file every frame. */
 }
-static void placement(BongoCatApp *app, const BongoCatItem *item, int iw, int ih,
+const BongoCatItemsRenderPlugin *bongo_cat_items_render_query(SDL_SharedObject *library) {
+    union { SDL_FunctionPointer function; BongoCatItemsRenderQuery query; } entry;
+    entry.function = SDL_LoadFunction(library, "bongo_cat_items_render_query_v1");
+    const BongoCatItemsRenderPlugin *api = entry.function ? entry.query(1) : NULL;
+    return api && api->abi_version == 1 && api->struct_size == sizeof(*api) &&
+        api->order && api->placement ? api : NULL;
+}
+static bool placement(BongoCatApp *app, const BongoCatItem *item, int iw, int ih,
     int width, int height, int x, int y, int cw, int ch,
     SDL_FRect *rect, double *angle, SDL_FlipMode *flip) {
-    float vx = item->follow_model ? (float)x : 0;
-    float vy = item->follow_model ? (float)(height - y - ch) : 0;
-    float vw = item->follow_model ? (float)cw : (float)width;
-    float vh = item->follow_model ? (float)ch : (float)height;
-    float px = item->x / 100, py = item->y / 100;
-    bool mirror = item->follow_model && app->settings.model.mirror;
-    bool vertical = item->follow_model && app->settings.model.vertical_flip;
-    if (mirror) px = 1 - px;
-    if (vertical) py = 1 - py;
-    /* Scale means percentage of the shorter viewport edge, with aspect kept. */
-    float scale = fminf(vw, vh) * item->scale / 100 / (float)SDL_max(iw, ih);
-    *rect = (SDL_FRect){vx + px * vw - iw * scale / 2,
-        vy + py * vh - ih * scale / 2, iw * scale, ih * scale};
-    *angle = mirror != vertical ? -item->rotation : item->rotation;
-    *flip = (SDL_FlipMode)((mirror ? SDL_FLIP_HORIZONTAL : 0) | (vertical ? SDL_FLIP_VERTICAL : 0));
-}
-static void order(const BongoCatItemScene *scene, unsigned *indices) {
-    for (unsigned i = 0; i < scene->count; ++i) {
-        unsigned j = i;
-        while (j && scene->items[indices[j - 1]].layer > scene->items[i].layer) {
-            indices[j] = indices[j - 1]; --j;
-        }
-        indices[j] = i;
-    }
+    BongoCatItemViewport viewport = {width, height, x, y, cw, ch,
+        app->settings.model.mirror, app->settings.model.vertical_flip};
+    BongoCatItemPlacement value = {0};
+    if (!app->items->render->placement(item, &viewport, iw, ih, &value)) return false;
+    *rect = (SDL_FRect){value.x, value.y, value.width, value.height};
+    *angle = value.angle; *flip = (SDL_FlipMode)value.flip;
+    return true;
 }
 bool bongo_cat_items_draw_native(void *userdata, SDL_Renderer *renderer, bool front,
     int width, int height, int x, int y, int cw, int ch) {
     BongoCatApp *app = userdata; BongoCatItemScene scene;
     if (!bongo_cat_items_snapshot(app, &scene)) return true;
-    unsigned indices[BONGO_CAT_ITEMS_CAP]; order(&scene, indices);
-    for (unsigned n = 0; n < scene.count; ++n) {
+    uint32_t indices[BONGO_CAT_ITEMS_CAP];
+    uint32_t count = app->items->render->order(&scene, front, indices, BONGO_CAT_ITEMS_CAP);
+    if (count > BONGO_CAT_ITEMS_CAP) return true;
+    for (unsigned n = 0; n < count; ++n) {
+        if (indices[n] >= scene.count) continue;
         const BongoCatItem *item = &scene.items[indices[n]];
-        if (!item->visible || item->opacity <= 0 || (item->layer >= 0) != front) continue;
         int slot = image_slot(app, item->asset, true);
         if (slot < 0 || !app->items->images[slot].image.surface) continue;
         BongoCatImage *image = &app->items->images[slot].image;
         SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, image->surface);
         if (!texture) return false;
         SDL_FRect rect; double angle; SDL_FlipMode flip;
-        placement(app, item, image->width, image->height, width, height, x, y, cw, ch, &rect, &angle, &flip);
+        if (!placement(app, item, image->width, image->height, width, height, x, y, cw, ch, &rect, &angle, &flip)) {
+            SDL_DestroyTexture(texture); continue;
+        }
         bool ok = SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) &&
             SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR) &&
             SDL_SetTextureAlphaModFloat(texture, item->opacity / 100) &&
@@ -169,19 +163,21 @@ void bongo_cat_items_draw_gl(BongoCatApp *app, bool front, int width, int height
     if (width <= 0 || height <= 0 || !bongo_cat_items_snapshot(app, &scene) || !scene.count) return;
     BongoCatItems *v = app->items;
     if (!program(v)) return;
-    unsigned indices[BONGO_CAT_ITEMS_CAP]; order(&scene, indices);
+    uint32_t indices[BONGO_CAT_ITEMS_CAP];
+    uint32_t count = v->render->order(&scene, front, indices, BONGO_CAT_ITEMS_CAP);
+    if (count > BONGO_CAT_ITEMS_CAP) return;
     glViewport(0, 0, width, height);
     glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE); glDisable(GL_STENCIL_TEST);
     glEnable(GL_BLEND); v->gl.blend_equation(GL_FUNC_ADD);
     v->gl.blend_func_separate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    for (unsigned n = 0; n < scene.count; ++n) {
+    for (unsigned n = 0; n < count; ++n) {
+        if (indices[n] >= scene.count) continue;
         const BongoCatItem *item = &scene.items[indices[n]];
-        if (!item->visible || item->opacity <= 0 || (item->layer >= 0) != front) continue;
         int slot = image_slot(app, item->asset, false);
         if (slot < 0 || !v->images[slot].texture) continue;
         SDL_FRect rect; double angle; SDL_FlipMode flip;
-        placement(app, item, v->images[slot].image.width, v->images[slot].image.height,
-            width, height, x, y, cw, ch, &rect, &angle, &flip);
+        if (!placement(app, item, v->images[slot].image.width, v->images[slot].image.height,
+            width, height, x, y, cw, ch, &rect, &angle, &flip)) continue;
         float c = cosf((float)angle * .01745329252f), s = sinf((float)angle * .01745329252f);
         float vertices[4][8];
         for (unsigned j = 0; j < 4; ++j) {

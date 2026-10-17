@@ -1,5 +1,11 @@
 # 统计插件 / Statistics plugin
 
+职责边界及新宿主要求的 companion ABI 见 [附加插件职责边界](plugin-boundaries.md)。
+宿主与随附插件需一起更新；业务实现不在宿主回退。
+See [add-on plugin boundaries](plugin-boundaries.md) for ownership and required companion
+ABIs. Update the host and bundled plugins together; no host business fallback is used.
+
+
 页面正文、交互及 UI 状态由 Rust 插件的 `src/page_ui.rs` 创建；宿主经
 `include/bongo_cat/plugin_ui_page.h` 提供通用控件、绘图和业务服务。
 插件内嵌自身 `locales/*.json` 的十种语言，仅解析当前语言；翻译内存由插件分配并释放。
@@ -16,7 +22,7 @@ page extension to display settings.
 输入次数、每日／小时图表及应用时长历史，并立即刷新已发布缓存。失败时回滚且保留历史；
 统计开关设置、插件启用状态与已导出的 CSV 保留。重置使用可选的版本 1 扩展
 `include/bongo_cat/statistics_reset_plugin.h`，旧插件仍可统计，但需更新后才能重置。
-统计悬浮窗使用淡蓝色背景（约 39% 不透明度）和深蓝文字。
+统计页分为「键鼠统计」和「应用统计」。键鼠页提供概览卡片、键盘热力图及 7／30 天折线趋势；应用页按时长排列图标、时长条和时长文字。悬浮窗采用跟随明暗主题的圆角卡片，底部可切换键鼠／应用两页；应用页仅显示今日前 3 个应用。
 
 The Statistics page offers Reset statistics with inline confirmation. The Rust worker
 clears input counters, daily/hourly charts and application time in one SQLite transaction,
@@ -24,13 +30,13 @@ and publishes fresh snapshots before reporting completion. Failure rolls back an
 history. Collection settings, plugin activation and previously exported CSV files are kept.
 Reset uses the optional version 1 extension in `include/bongo_cat/statistics_reset_plugin.h`;
 older plugins still collect statistics and need updating to offer reset.
-The floating statistics panel uses a pale blue background at about 39% opacity with dark blue text.
+The Statistics page has Keyboard and mouse and Application statistics subpages. Input statistics include summary cards, a keyboard heatmap and 7/30-day line charts. Application rows show an icon, duration bar and duration text. The rounded floating card follows the light/dark theme, with bottom tabs for input statistics and today’s top three applications.
 
 
 Rust crate：`src/rust/bongo-stats`，独立 `cdylib`，不与宿主静态链接。
 键鼠功能参考 [keyStats](https://github.com/debugtheworldbot/keyStats)，前台应用计时参考
 [Work-Review](https://github.com/wm94i/Work-Review) 的应用识别、空闲暂停与本地存储方式。
-仅本地记录键鼠汇总、应用标识／名称和时长；不记录输入文本、按键名称／顺序、坐标、
+仅本地记录键鼠汇总、各键累计次数、应用标识／名称、图标和时长；不记录输入文本、按键顺序、坐标、
 窗口标题、网址或截图，不联网。
 
 ## 显示单位 / Display units
@@ -128,8 +134,8 @@ X11／evdev 滚轮刻度。触摸板与鼠标单位可能不同，不换算物�
 The independent Rust dynamic plugin combines basic input counters inspired by
 [keyStats](https://github.com/debugtheworldbot/keyStats) with foreground app timing
 inspired by [Work-Review](https://github.com/wm94i/Work-Review). Only aggregate
-input values, app IDs/names and durations stay on this device. It collects no
-typed text, key identities/order, coordinates, window titles, URLs or screenshots.
+input values, unordered per-key counts, app IDs/names, icons and durations stay on this device. It collects no
+typed text, key order, coordinates, window titles, URLs or screenshots.
 
 The Statistics page shows today, the last 7/30 calendar days including today,
 lifetime totals, input charts, app rankings and today's hourly app time.
@@ -176,3 +182,20 @@ never unload the plugin earlier. The targeted Rust tests cover ranges, durable
 storage, app switches, idle/lock/suspend/pause, boundaries and nonblocking caches.
 Per-key heatmaps, website/screenshot tracking and multi-device sync are outside
 this plugin's scope.
+
+## 键盘热力图 / Keyboard heatmap
+
+各键计数由 Rust 输入核心以固定大小的原子数组累计，通过可选的
+`include/bongo_cat/statistics_keyboard_plugin.h` 扩展交给统计工作线程。
+SQLite 按日保存无序直方图，并保存累计值；热力图支持今日、7 天、30 天和累计。
+旧历史没有各键次数，无法回填。部分物理键（如主键区和数字键区的 Enter）
+由平台报告为相同键名，会共享计数；不影响既有快捷键和动画映射。
+重置统计会一并清除热力图数据。应用图标在后台缓存于数据目录的 `application-icons`，
+不保存可执行文件完整路径；无法读取图标时显示占位图标。
+
+The Rust input core accumulates a fixed-size atomic histogram through the optional
+keyboard extension. SQLite stores daily and lifetime counts without event order.
+Existing history cannot be backfilled. Keys sharing a platform name, such as Enter
+and keypad Enter, share counts; shortcut and animation mappings are unchanged.
+Reset also clears heatmap history. Application icons are cached locally under
+`application-icons` without storing executable paths. Unavailable icons use a placeholder.

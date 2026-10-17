@@ -31,6 +31,8 @@ jobs:
     name: quality / rust-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust toolchain
@@ -45,6 +47,16 @@ jobs:
             ~/.cargo/git/db
           key: cargo-downloads-v2-${{ runner.os }}-${{ hashFiles('src/rust/**/Cargo.lock') }}
           restore-keys: cargo-downloads-v2-${{ runner.os }}-
+      - name: Identify Rust toolchain
+        id: rust
+        run: echo "version=$(rustc --version | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+      - name: Cache Rust test artifacts
+        uses: actions/cache@v5
+        with:
+          path: build-rust-tests
+          key: rust-tests-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.version }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml') }}-${{ github.sha }}
+          restore-keys: |
+            rust-tests-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.version }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml') }}-
       # Inox2D needs CMake's patched upstream tree; the host build checks it.
       - name: Test host parsers and standalone Rust plugins
         shell: bash
@@ -64,6 +76,17 @@ jobs:
       - uses: actions/checkout@v5
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal --no-self-update
+      # Keep native build trees out of the cache; Cargo validates its own fingerprints.
+      - name: Cache Rust downloads and link artifacts
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git/db
+            build-macos-link/cargo/build
+          key: rust-macos-link-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml') }}-${{ github.sha }}
+          restore-keys: |
+            rust-macos-link-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('src/rust/**/Cargo.lock', 'src/rust/**/Cargo.toml') }}-
       - name: Configure diagnostic host
         run: |
           cmake -S . -B build-macos-link -G Ninja \
@@ -71,6 +94,7 @@ jobs:
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_BUILD_INOX2D=OFF \
+            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
       - name: Verify native Rust dependencies link
         run: cmake --build build-macos-link --target bongo_cat --parallel 2
@@ -127,9 +151,11 @@ jobs:
       - name: Restore compiler cache
         uses: actions/cache@v5
         with:
-          path: ~/.cache/sccache
-          key: sccache-quality-${{ github.sha }}
-          restore-keys: sccache-quality-
+          path: |
+            ~/.cache/sccache
+            build-quality/cargo/build
+          key: compiler-quality-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          restore-keys: compiler-quality-v2-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install quality and build dependencies
         run: |
@@ -142,8 +168,7 @@ jobs:
       - name: Reject legacy product-name references
         run: |
           legacy='l2d''cat'
-          if grep -RIni --exclude-dir=.git --exclude-dir=build \
-              --exclude='*.png' --exclude='*.flac' "$legacy" .; then
+          if git grep -Ini "$legacy" -- .; then
             echo "Legacy product-name reference found"
             exit 1
           fi
@@ -187,6 +212,7 @@ jobs:
             -Isrc/ui/backend -Isrc/ui/preferences -Isrc/ui/rendering \
             -Isrc/ui/theme "${cpp_files[@]}"
 
+      # Translation-unit diagnostics do not need the release job's LTO link.
       - name: Configure warning-clean Linux build
         env:
           CC: gcc
@@ -199,7 +225,7 @@ jobs:
             -DBONGO_CAT_STATIC_ANALYZER=ON \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
-            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=ON \
+            -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON; do
@@ -230,6 +256,15 @@ jobs:
           rustup toolchain install stable --profile minimal --no-self-update
           rustup default stable
 
+      - name: Cache Cargo downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git/db
+          key: cargo-downloads-v2-${{ runner.os }}-${{ hashFiles('src/rust/**/Cargo.lock') }}
+          restore-keys: cargo-downloads-v2-${{ runner.os }}-
+
       - name: Install Clang analysis dependencies
         run: |
           sudo apt-get update
@@ -241,6 +276,7 @@ jobs:
       - name: Validate Clang-Tidy rules
         run: clang-tidy-18 --verify-config
 
+      # Inox2D contains Rust only; it contributes no C/C++ files to Clang-Tidy.
       - name: Generate compilation database
         env:
           CC: clang-18
@@ -253,6 +289,7 @@ jobs:
             -DBONGO_CAT_PCH=OFF \
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
+            -DBONGO_CAT_BUILD_INOX2D=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF; do
             if [ "$attempt" -ge 3 ]; then
@@ -307,9 +344,11 @@ jobs:
       - name: Restore compiler cache
         uses: actions/cache@v5
         with:
-          path: ~/.cache/sccache
-          key: sccache-sanitizers-${{ github.sha }}
-          restore-keys: sccache-sanitizers-
+          path: |
+            ~/.cache/sccache
+            build-sanitizers/cargo/build
+          key: compiler-sanitizers-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          restore-keys: compiler-sanitizers-v2-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install sanitizer and display dependencies
         run: |

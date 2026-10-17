@@ -82,8 +82,13 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/plugin_locale.c
   src/runtime/plugin_page.c
   src/runtime/plugin_worker.c
+  src/runtime/plugin_io.c
+  src/runtime/plugin_events.c
+  src/runtime/plugin_overlay.c
+  src/runtime/plugin_models.c
   src/runtime/store/store.c
   src/runtime/store/store_assets.c
+  src/runtime/store/store_transfer.c
   src/runtime/store/store_models.c
   src/runtime/store/store_install.c
   src/runtime/sounds/sounds_worker.c

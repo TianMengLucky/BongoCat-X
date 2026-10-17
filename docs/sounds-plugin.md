@@ -1,5 +1,11 @@
 # 音效插件 / Keyboard sound effects
 
+职责边界及新宿主要求的 companion ABI 见 [附加插件职责边界](plugin-boundaries.md)。
+宿主与随附插件需一起更新；业务实现不在宿主回退。
+See [add-on plugin boundaries](plugin-boundaries.md) for ownership and required companion
+ABIs. Update the host and bundled plugins together; no host business fallback is used.
+
+
 页面正文、交互及 UI 状态由 Rust 插件的 `src/page_ui.rs` 创建；宿主经
 `include/bongo_cat/plugin_ui_page.h` 提供通用控件、绘图和业务服务。
 插件内嵌自身 `locales/*.json` 的十种语言，仅解析当前语言；翻译内存由插件分配并释放。

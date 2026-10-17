@@ -20,12 +20,14 @@ unsafe impl Send for Source {}
 pub struct Cache {
     pub metrics: crate::metrics::Snapshot,
     pub usage: [usage::Snapshot; 4],
+    pub keyboard: [crate::keyboard::Counts; 4],
 }
 impl Default for Cache {
     fn default() -> Self {
         Self {
             metrics: crate::metrics::Store::default().snapshot(Local::now().date_naive(), false),
             usage: std::array::from_fn(|_| usage::Snapshot::default()),
+            keyboard: [[0; 256]; 4],
         }
     }
 }
@@ -39,6 +41,8 @@ pub fn run(
 ) -> bool {
     let mut opened = None;
     let mut source: Option<Source> = None;
+    let mut keyboard: Option<crate::keyboard::Source> = None;
+    let mut pending_keys = [0u64; 256];
     let start = Instant::now();
     let mut last_sample = Instant::now() - Duration::from_secs(1);
     let mut last_save = Instant::now();
@@ -69,6 +73,21 @@ pub fn run(
                 application: value.application,
             });
         }
+        if let Ok(Command::Keyboard(value)) = &command {
+            keyboard = Some(crate::keyboard::Source {
+                context: value.context,
+                poll: value.poll,
+            });
+        }
+        if let Some(source) = &keyboard {
+            let mut counts = [0; 256];
+            unsafe {
+                (source.poll)(source.context, counts.as_mut_ptr());
+            }
+            for (value, count) in pending_keys.iter_mut().zip(counts) {
+                *value = value.saturating_add(count).min(i64::MAX as u64);
+            }
+        }
         if let Some(source) = &source {
             let mut metrics = Metrics::default();
             unsafe {
@@ -90,6 +109,8 @@ pub fn run(
                 let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
                 store.ingest(now.date_naive(), now.hour(), pending_metrics);
                 pending_metrics = Metrics::default();
+                store.keyboard.ingest(now.date_naive(), pending_keys);
+                pending_keys = [0; 256];
                 if let Some(enabled) = desired_enabled.take() {
                     store.usage.set_enabled(enabled);
                     store.revision = store.revision.wrapping_add(1);
@@ -143,6 +164,9 @@ pub fn run(
                 let store = shared.lock().unwrap_or_else(|e| e.into_inner());
                 let updated = Cache {
                     metrics: store.snapshot(now.date_naive(), failed.load(Ordering::Relaxed)),
+                    keyboard: std::array::from_fn(|period| {
+                        store.keyboard.snapshot(now.date_naive(), period)
+                    }),
                     usage: std::array::from_fn(|period| {
                         store.usage.snapshot(now.date_naive(), period as u32)
                     }),

@@ -59,6 +59,14 @@ uint32_t bongo_cat_preferences_plugin_read(void *context, uint32_t operation,
         }
         break;
     case BONGO_CAT_PLUGIN_UI_STATISTICS:
+        if (operation == BONGO_UI_READ_HEATMAP && size == 256 * sizeof(uint64_t))
+            return bongo_cat_statistics_keyboard_snapshot(app, index, output);
+        if (operation == BONGO_UI_READ_IMAGE && size == BONGO_CAT_PATH_CAP)
+            return bongo_cat_statistics_usage_icon(app, index >> 16, index & 0xffffu, output);
+        if (operation == BONGO_UI_READ_SECTION && size == sizeof(uint32_t)) {
+            *(uint32_t *)output = binding->preferences->page == 9;
+            return 1;
+        }
         if (operation == BONGO_UI_READ_SNAPSHOT && size == sizeof(BongoCatStatisticsSnapshot))
             return bongo_cat_statistics_snapshot(app, output);
         if (operation == BONGO_UI_READ_USAGE && size == sizeof(BongoCatApplicationSnapshot) && index < 4)

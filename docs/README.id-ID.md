@@ -11,6 +11,8 @@
   </h1>
 </div>
 
+Target pengujian dinonaktifkan secara default untuk mempercepat build rutin. Aktifkan dengan `-DBUILD_TESTING=ON`, lalu build ulang sebelum menjalankan CTest.
+
 
 <!-- Deskripsi Proyek + Ikon Roket -->
 <p align="center">

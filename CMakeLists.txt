@@ -3,6 +3,7 @@ set(BONGO_CAT_VERSION "2.2.2")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat-X" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
+option(BUILD_TESTING "Build and register the test suite" OFF)
 include(CTest)
 option(BONGO_CAT_FETCH_DEPS "Download pinned open-source dependencies" ON)
 option(BONGO_CAT_REQUIRE_CUBISM

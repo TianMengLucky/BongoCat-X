@@ -99,15 +99,19 @@ El ejecutable se encuentra en `build/BongoCat` en Linux, en `build/BongoCat.app/
 
 ### 🧪 Pruebas
 
-Los objetivos de CTest están habilitados por defecto. Ejecuta lo siguiente después de compilar:
+Los objetivos de prueba están desactivados por defecto para agilizar la compilación habitual. Actívalos y compílalos cuando sea necesario:
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
 Para un generador de múltiples configuraciones como Visual Studio, especifica explícitamente la configuración de compilación:
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

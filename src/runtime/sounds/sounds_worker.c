@@ -12,16 +12,7 @@ static bool work(void *context, const BongoCatPluginJob *job, BongoCatError *err
         atomic_store_explicit(&app->sounds->loaded, ok, memory_order_release);
         atomic_store_explicit(&app->sounds->worker.changed, true, memory_order_release); return ok;
     }
-    case 1:
-        if (!bongo_cat_sounds_import_audio_now(app, job->key, job->path, error)) return false;
-        for (unsigned i = 0; i < app->sounds->api->key_count(); ++i) {
-            BongoCatSoundKey key;
-            if (bongo_cat_sounds_key(app, i, &key) && !strcmp(key.id, job->key)) {
-                /* Binding is already saved; a device failure is a preview failure. */
-                return bongo_cat_sounds_preview_now(app, i, error);
-            }
-        }
-        return true;
+    case 1: return bongo_cat_sounds_import_audio_now(app, job->key, job->path, error);
     case 2: return bongo_cat_sounds_clear_now(app, job->index, error);
     case 3: return bongo_cat_sounds_preview_now(app, job->index, error);
     case 4: {
@@ -32,11 +23,7 @@ static bool work(void *context, const BongoCatPluginJob *job, BongoCatError *err
     }
     case 254: bongo_cat_audio_reset(app->sounds->audio); return true;
     case 255:
-        for (unsigned i = 0; i < app->sounds->api->key_count(); ++i) {
-            BongoCatSoundKey key; BongoCatSoundBinding binding;
-            if (bongo_cat_sounds_key(app, i, &key)) (void)app->sounds->api->press(app->sounds->instance, key.id, 0, &binding);
-        }
-        return true;
+        return bongo_cat_sounds_execute(app, BONGO_PLUGIN_IO_RELEASE, 0, NULL, NULL, false);
     default: return false;
     }
 }
@@ -77,7 +64,6 @@ void bongo_cat_sounds_tick(BongoCatApp *app) {
         bongo_cat_preferences_invalidate(app->preferences);
     bool failed; BongoCatError error = {0};
     if (bongo_cat_plugin_worker_poll(&app->sounds->worker, &failed, &error))
-        bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
-            failed ? "pages.preference.sounds.failed" : "pages.preference.sounds.saved",
-            failed ? "Unable to update sound effects" : "Sound effect saved"), failed);
+        (void)bongo_cat_plugin_event(app, app->sounds->events, app->sounds->instance,
+            BONGO_PLUGIN_EVENT_COMPLETED, !failed);
 }

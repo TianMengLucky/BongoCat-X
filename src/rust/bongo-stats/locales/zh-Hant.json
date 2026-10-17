@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "請更新統計外掛以顯示鍵盤熱力圖。",
+  "pages.preference.statistics.heatmapHint": "顏色越深，按鍵次數越多；游標停留可查看次數。僅儲存各鍵累計次數，不儲存輸入順序；舊記錄無各鍵資料，部分按鍵依平台鍵名合併。",
+  "pages.preference.statistics.heatmap": "鍵盤熱力圖",
+  "pages.preference.statistics.input": "鍵鼠統計",
   "pages.preference.statistics.reset": "重設統計",
   "pages.preference.statistics.resetConfirm": "確定清除所有輸入次數、圖表與應用程式使用時間歷史？此操作無法復原，統計開關設定將保留。",
   "pages.preference.statistics.resetConfirmButton": "確認清除歷史",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "匯出 CSV",
   "pages.preference.statistics.exported": "CSV 已儲存至資料目錄",
   "pages.preference.statistics.openFolder": "開啟資料目錄",
-  "pages.preference.statistics.applications": "應用程式使用時間",
+  "pages.preference.statistics.applications": "應用程式統計",
   "pages.preference.statistics.trackApplications": "統計前景應用程式時間",
   "pages.preference.statistics.usageHint": "每秒取樣前景應用程式，閒置 5 分鐘、鎖定螢幕或休眠時暫停。僅在本機儲存應用名稱與時間。",
   "pages.preference.statistics.usageUnavailable": "目前桌面工作階段無法辨識前景應用。Wayland 尚不支援；X11 需要 xcb 與 xcb-screensaver。",

@@ -28,6 +28,9 @@ fn populated(directory: &std::path::Path) -> (rusqlite::Connection, Arc<Mutex<St
             scroll: 3.0,
         },
     );
+    let mut key_counts = [0; 256];
+    key_counts[65] = 7;
+    store.keyboard.ingest(now.date_naive(), key_counts);
     store.usage.apps.insert(
         "editor".into(),
         App {
@@ -64,6 +67,7 @@ fn reset_clears_all_history_and_preserves_settings_after_reopen() {
             .days
             .iter()
             .all(|d| d.metrics == Metrics::default()));
+        assert_eq!(store.keyboard.snapshot(today, 3), [0; 256]);
         assert!(!store.usage.enabled);
         assert_eq!(store.usage.snapshot(today, 3).total_ms, 0);
         assert_eq!(store.usage.snapshot(today, 3).count, 0);
@@ -74,6 +78,7 @@ fn reset_clears_all_history_and_preserves_settings_after_reopen() {
     let (connection, store) = storage::open(&directory).unwrap();
     assert_eq!(store.lifetime, Metrics::default());
     assert!(store.hours.is_empty());
+    assert_eq!(store.keyboard.snapshot(today, 3), [0; 256]);
     assert!(store.usage.apps.is_empty());
     assert!(store.usage.hours.is_empty());
     assert!(!store.usage.enabled);

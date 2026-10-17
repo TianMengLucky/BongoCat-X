@@ -69,6 +69,8 @@ void bongo_cat_input_metrics_event(BongoCatInputState *state, const BongoCatInpu
 void bongo_cat_input_metrics_pointer(BongoCatInputState *state, double x, double y);
 void bongo_cat_input_metrics_motion(BongoCatInputState *state, double x, double y);
 void bongo_cat_input_metrics_scroll(BongoCatInputState *state, double x, double y);
+/* output contains 256 unordered virtual-key counters, reset after taking. */
+void bongo_cat_input_heatmap_take(BongoCatInputState *state, uint64_t output[256]);
 void bongo_cat_input_metrics_take(BongoCatInputState *state, BongoCatStatisticsMetrics *metrics);
 
 #ifdef __cplusplus

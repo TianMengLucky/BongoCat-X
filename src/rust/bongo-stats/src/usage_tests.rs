@@ -104,6 +104,9 @@ fn usage_settings_and_totals_survive_database_reopen() {
 #[test]
 fn snapshots_never_wait_for_worker_cache_lock() {
     let instance = crate::Instance {
+        directory: Default::default(),
+        events: std::sync::Mutex::new(bongo_plugin::events::Completion::default()),
+        overlay: std::sync::Mutex::new(crate::overlay::State::default()),
         cache: std::sync::Arc::new(std::sync::Mutex::new(crate::worker::Cache::default())),
         failed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         export_status: std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0)),

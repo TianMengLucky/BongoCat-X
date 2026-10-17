@@ -20,6 +20,7 @@ pub(super) unsafe extern "C" fn reset(instance: *mut c_void) -> u32 {
             instance.reset_status.store(3, Ordering::Release);
             return 0;
         }
+        if let Ok(mut events) = instance.events.lock() { events.reset = 1; }
         1
     })
 }

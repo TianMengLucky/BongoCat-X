@@ -1,5 +1,8 @@
 #include "bongo_cat/statistics_usage_plugin.h"
 #include <SDL3/SDL.h>
+#include "bongo_cat/app.h"
+#include "bongo_cat/statistics.h"
+#include "bongo_cat/path.h"
 #ifdef BONGO_CAT_HAS_STATISTICS_XCB
 #include <xcb/xcb.h>
 #include <xcb/screensaver.h>
@@ -69,5 +72,26 @@ void bongo_cat_statistics_application_poll(void *context, BongoCatApplicationSam
     xcb_connection_t *connection = xcb_connect(NULL, &screen_index);
     if (connection && !xcb_connection_has_error(connection)) sample_connection(connection, screen_index, sample);
     if (connection) xcb_disconnect(connection);
+    BongoCatApp *app = context;
+    char target[BONGO_CAT_PATH_CAP], directory[BONGO_CAT_PATH_CAP];
+    if (app && sample->active && !strchr(sample->id, '/') && !strchr(sample->id, '\\') &&
+        bongo_cat_statistics_icon_path(app->data_root, sample->id, target) &&
+        !bongo_cat_path_is_file(target) &&
+        bongo_cat_path_join(directory, sizeof(directory), app->data_root, "application-icons") &&
+        bongo_cat_path_create_directory(directory)) {
+        const char *roots[] = {"/usr/share/icons/hicolor/48x48/apps", "/usr/share/icons/hicolor/64x64/apps",
+            "/usr/share/icons/hicolor/128x128/apps", "/usr/share/pixmaps", "/usr/local/share/pixmaps"};
+        char name[272], source[BONGO_CAT_PATH_CAP], temporary[BONGO_CAT_PATH_CAP];
+        SDL_snprintf(name, sizeof(name), "%s.png", sample->id);
+        SDL_snprintf(temporary, sizeof(temporary), "%s.tmp", target);
+        for (unsigned i = 0; i < SDL_arraysize(roots); ++i) {
+            if (bongo_cat_path_join(source, sizeof(source), roots[i], name) &&
+                bongo_cat_path_is_file(source) && bongo_cat_path_copy_file(source, temporary)) {
+                bongo_cat_path_rename(temporary, target);
+                break;
+            }
+        }
+        bongo_cat_path_remove(temporary);
+    }
 #endif
 }

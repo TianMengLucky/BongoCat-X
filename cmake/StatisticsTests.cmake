@@ -8,7 +8,8 @@ if(BUILD_TESTING)
     add_test(NAME statistics-rust
       COMMAND "${BONGO_CAT_CARGO}" test --locked --manifest-path
         "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-stats/Cargo.toml"
-        --target-dir "${CMAKE_BINARY_DIR}/statistics-tests")
-    set_tests_properties(statistics-rust PROPERTIES TIMEOUT 180)
+        --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    set_tests_properties(statistics-rust PROPERTIES TIMEOUT 180
+      RESOURCE_LOCK cargo-rust-tests)
   endif()
 endif()

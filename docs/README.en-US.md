@@ -128,9 +128,11 @@ The executable is written to `build/BongoCat` on Linux, to
 
 ### 🧪 Tests
 
-CTest targets are enabled by default. Run them after building:
+Test targets are disabled by default to reduce routine build work. Enable and build them when needed:
 
 ```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
@@ -138,6 +140,8 @@ For a multi-configuration generator such as Visual Studio, select the build
 configuration explicitly:
 
 ```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 

@@ -1,4 +1,8 @@
 {
+  "pages.preference.statistics.heatmapUnavailable": "히트맵을 표시하려면 통계 플러그인을 업데이트하세요.",
+  "pages.preference.statistics.heatmapHint": "색이 진할수록 입력 횟수가 많습니다. 마우스를 올리면 횟수를 표시합니다. 키별 합계만 저장하며 입력 순서는 저장하지 않습니다. 이전 기록에는 키별 데이터가 없으며 일부 키는 플랫폼에 따라 합산됩니다.",
+  "pages.preference.statistics.heatmap": "키보드 히트맵",
+  "pages.preference.statistics.input": "키보드 및 마우스",
   "pages.preference.statistics.reset": "통계 초기화",
   "pages.preference.statistics.resetConfirm": "입력 횟수, 차트 및 앱 사용 시간 기록을 모두 삭제할까요? 되돌릴 수 없습니다. 통계 설정은 유지됩니다.",
   "pages.preference.statistics.resetConfirmButton": "모든 기록 삭제",
@@ -35,7 +39,7 @@
   "pages.preference.statistics.export": "CSV 내보내기",
   "pages.preference.statistics.exported": "데이터 폴더에 CSV를 저장했습니다",
   "pages.preference.statistics.openFolder": "데이터 폴더 열기",
-  "pages.preference.statistics.applications": "앱 사용 시간",
+  "pages.preference.statistics.applications": "앱 통계",
   "pages.preference.statistics.trackApplications": "활성 앱 사용 시간 기록",
   "pages.preference.statistics.usageHint": "활성 앱을 매초 확인합니다. 5분간 입력 없음, 화면 잠금 및 절전 중에는 중지합니다. 앱 이름과 시간은 로컬에 저장합니다.",
   "pages.preference.statistics.usageUnavailable": "현재 데스크톱 세션에서 활성 앱을 확인할 수 없습니다. Wayland는 미지원이며 X11에는 xcb와 xcb-screensaver가 필요합니다.",

@@ -1,4 +1,7 @@
 mod locale;
+mod events;
+mod overlay;
+mod keyboard;
 pub mod ui;
 mod page_ui;
 mod metrics;
@@ -26,6 +29,7 @@ use std::sync::{
 use std::thread::JoinHandle;
 enum Command {
     Configure(worker::Source),
+    Keyboard(keyboard::Source),
     Ingest(Metrics),
     Enable(bool),
     Export(PathBuf, bool),
@@ -34,6 +38,9 @@ enum Command {
     Stop,
 }
 struct Instance {
+    directory: PathBuf,
+    events: Mutex<bongo_plugin::events::Completion>,
+    overlay: Mutex<overlay::State>,
     cache: Arc<Mutex<worker::Cache>>,
     failed: Arc<AtomicBool>,
     export_status: Arc<AtomicU32>,
@@ -60,6 +67,7 @@ unsafe extern "C" fn create(directory: *const c_char) -> *mut c_void {
             return std::ptr::null_mut();
         };
         let directory = directory.to_owned();
+        let instance_directory = directory.clone();
         let cache = Arc::new(Mutex::new(worker::Cache::default()));
         let failed = Arc::new(AtomicBool::new(false));
         let export_status = Arc::new(AtomicU32::new(0));
@@ -84,6 +92,9 @@ unsafe extern "C" fn create(directory: *const c_char) -> *mut c_void {
             return std::ptr::null_mut();
         };
         Box::into_raw(Box::new(Instance {
+            directory: instance_directory,
+            events: Mutex::new(bongo_plugin::events::Completion::default()),
+            overlay: Mutex::new(overlay::State::default()),
             cache,
             failed,
             export_status,
@@ -178,6 +189,7 @@ unsafe fn queue_export(instance: *mut c_void, target: *const c_char, application
         instance.export_status.store(3, Ordering::Release);
         return 0;
     }
+    if let Ok(mut events) = instance.events.lock() { events.export = 1; }
     1
 }
 unsafe extern "C" fn export_csv(instance: *mut c_void, target: *const c_char) -> u32 {

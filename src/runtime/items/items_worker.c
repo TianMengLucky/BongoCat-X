@@ -48,8 +48,7 @@ void bongo_cat_items_tick(BongoCatApp *app) {
     bool failed; BongoCatError error = {0};
     if (bongo_cat_plugin_worker_poll(&app->items->worker, &failed, &error)) {
         bongo_cat_preferences_invalidate(app->preferences);
-        bongo_cat_preferences_notice_show(app, bongo_cat_i18n_get(app->i18n,
-            failed ? "pages.preference.items.failed" : "pages.preference.items.saved",
-            failed ? "Unable to update items" : "Items saved"), failed);
+        (void)bongo_cat_plugin_event(app, app->items->events, app->items->instance,
+            BONGO_PLUGIN_EVENT_COMPLETED, !failed);
     }
 }

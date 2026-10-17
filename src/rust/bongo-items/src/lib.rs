@@ -6,6 +6,8 @@
 //! the C boundary.
 
 mod locale;
+mod io;
+mod render;
 pub mod ui;
 mod page_ui;
 

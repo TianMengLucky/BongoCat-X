@@ -217,8 +217,14 @@ bool bongo_cat_store_entry(BongoCatApp *app, unsigned index, BongoCatStoreEntry 
 void bongo_cat_store_tick(BongoCatApp *app) {
     if (!app || !app->store) return;
     bongo_cat_store_apply_receipt(app, app->store);
-    if (atomic_exchange(&app->store->worker.changed, false))
+    if (atomic_exchange(&app->store->worker.changed, false)) {
+        app->store->names_pending = true;
         bongo_cat_preferences_invalidate(app->preferences);
+    }
+    if (app->store->names_pending && !bongo_cat_store_busy(app)) {
+        app->store->names_pending = false;
+        bongo_cat_store_sync_names(app);
+    }
 }
 const BongoCatPluginUiContribution *bongo_cat_store_ui(BongoCatApp *app) {
     return app && app->store ? app->store->ui : NULL;

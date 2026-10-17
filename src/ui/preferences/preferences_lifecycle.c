@@ -152,14 +152,18 @@ void bongo_cat_preferences_show(BongoCatPreferences *value) {
     if (!value->sdk_notice_shown &&
         !bongo_cat_model_runtime_rendering(value->app->model_runtime) &&
         bongo_cat_model_runtime_engine(value->app->model_runtime) == BONGO_CAT_MODEL_ENGINE_LIVE2D) {
-        value->sdk_notice_shown = true;
         BongoCatModelPluginInfo plugin;
         bongo_cat_model_plugin_info(BONGO_CAT_MODEL_ENGINE_LIVE2D, &plugin);
-        bongo_cat_preferences_notice_show_anchored(value->app,
-            bongo_cat_i18n_get(value->app->i18n,
-                plugin.installed && plugin.enabled ? "native.live2dCoreMissing" : "pages.preference.plugins.live2dMissing",
-                "Install and enable the Live2D renderer on the Plugins page, then supply Cubism Core."),
-            true, SDK_NOTICE_DURATION_MS, true);
+        /* An unloaded model or a renderer failure does not imply missing Core. */
+        bool plugin_missing = !plugin.installed || !plugin.enabled;
+        if (plugin_missing || !bongo_cat_platform_live2d_core_available()) {
+            value->sdk_notice_shown = true;
+            bongo_cat_preferences_notice_show_anchored(value->app,
+                bongo_cat_i18n_get(value->app->i18n,
+                    plugin_missing ? "pages.preference.plugins.live2dMissing" : "native.live2dCoreMissing",
+                    "Install and enable the Live2D renderer on the Plugins page, then supply Cubism Core."),
+                true, SDK_NOTICE_DURATION_MS, true);
+        }
     }
     if (!opening) {
         SDL_StartTextInput(value->window);

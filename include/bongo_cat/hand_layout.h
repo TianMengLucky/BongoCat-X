@@ -11,6 +11,10 @@ extern "C" {
 /* Fills `layout` with the built-in crop defaults. Callers pre-fill this before
    parsing a document, so fields absent from the file keep those values. */
 void bongo_cat_hand_layout_defaults(BongoSafeHandLayout *layout);
+/* Scale the 1000-square artwork defaults for larger square sprites. A right
+   sprite uses reflected crop coordinates; authored layouts stay in pixels. */
+void bongo_cat_hand_layout_defaults_for_image(BongoSafeHandLayout *layout,
+    int width, int height, bool right);
 
 /* Whether `<directory>/resources/<group>` is a key folder. `explicit_side`
    receives whether that folder carries its own hand-layout.json: a side with

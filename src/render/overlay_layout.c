@@ -55,7 +55,7 @@ static bool read_bytes(const char *path, unsigned char **bytes, size_t *size) {
 /* Reads resources/<group>/hand-layout.json when present. False keeps the
    caller's defaults (or the mirrored copy of the other side). */
 static bool load_layout_file(const char *directory, const char *group,
-    OverlayKeyLayout *layout) {
+    OverlayKeyLayout *layout, int canvas_width, int canvas_height) {
     char relative[BONGO_CAT_PATH_CAP], path[BONGO_CAT_PATH_CAP];
     snprintf(relative, sizeof(relative), "resources/%s/hand-layout.json", group);
     if (!bongo_cat_path_join(path, sizeof(path), directory, relative) ||
@@ -86,6 +86,19 @@ static bool load_layout_file(const char *directory, const char *group,
             message[0] ? message : "parse failure");
         return false;
     }
+    /* Older versions seeded 1000-square coordinates even for enlarged
+       sprites. Recognize those default regions; custom pixel crops stay put. */
+    if (canvas_width == canvas_height && canvas_width > 1000 &&
+        parsed.hand.x == 450 && parsed.hand.y == 629 &&
+        parsed.hand.width == 317 && parsed.hand.height == 257 &&
+        parsed.bubble.x == 47 && parsed.bubble.y == 123 &&
+        parsed.bubble.width == 204 && parsed.bubble.height == 174) {
+        int gap = parsed.gap, max_keys = parsed.max_keys;
+        bongo_cat_hand_layout_defaults_for_image(&parsed, canvas_width,
+            canvas_height, false);
+        parsed.gap = (int)(((int64_t)gap * canvas_width + 500) / 1000);
+        parsed.max_keys = max_keys;
+    }
     layout->hand_x = parsed.hand.x;
     layout->hand_y = parsed.hand.y;
     layout->hand_width = parsed.hand.width;
@@ -115,8 +128,10 @@ void bongo_cat_overlay_layout_load(BongoCatOverlay *value) {
        the non-mirrored origin. */
     if (value->multi_key_display && directory[0])
         bongo_cat_hand_layout_file_ensure(directory, "left-keys");
-    bool left = load_layout_file(directory, "left-keys", &value->left_layout);
-    bool right = load_layout_file(directory, "right-keys", &value->right_layout);
+    bool left = load_layout_file(directory, "left-keys", &value->left_layout,
+        value->reference_width, value->reference_height);
+    bool right = load_layout_file(directory, "right-keys", &value->right_layout,
+        value->reference_width, value->reference_height);
     /* The right side defaults to the mirrored left layout; parallel keyboards
        only provide the right folder for gamepad models. */
     value->right_layout.mirrored = true;

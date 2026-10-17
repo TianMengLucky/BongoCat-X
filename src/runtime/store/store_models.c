@@ -90,3 +90,33 @@ void bongo_cat_store_apply_receipt(BongoCatApp *app, BongoCatStore *v) {
         saved ? "pages.preference.store.installed" : "pages.preference.store.failed",
         saved ? "Model installed and SHA-256 verified" : "Unable to update the store"), !saved);
 }
+
+/* Receipts also let an existing installation recover its title after the
+   store catalog loads. Save only changed titles, then update the local cards. */
+void bongo_cat_store_sync_names(BongoCatApp *app) {
+    unsigned count = 0;
+    if (bongo_cat_store_busy(app) || bongo_cat_store_status(app, &count) != 2) return;
+    bool changed = false;
+    for (unsigned index = 0; index < count; ++index) {
+        BongoCatStoreEntry item;
+        BongoCatImportReceipt receipt;
+        if (!bongo_cat_store_entry(app, index, &item) || !item.name[0] ||
+            strlen(item.name) >= BONGO_CAT_ID_CAP ||
+            !read_receipt(app->store, item.sha256, &receipt)) continue;
+        for (size_t i = 0; i < app->models.count; ++i) {
+            BongoCatModelEntry *model = &app->models.entries[i];
+            if (!matches(model, &receipt)) continue;
+            char saved[BONGO_CAT_ID_CAP];
+            if (!bongo_cat_import_store_name_read(model->storage_directory,
+                    saved, sizeof(saved)) || strcmp(saved, item.name)) {
+                if (!bongo_cat_import_store_name_write(model->storage_directory,
+                        item.name)) continue;
+            }
+            if (strcmp(model->display_name, item.name)) {
+                SDL_strlcpy(model->display_name, item.name, sizeof(model->display_name));
+                changed = true;
+            }
+        }
+    }
+    if (changed) bongo_cat_preferences_models_changed(app->preferences);
+}

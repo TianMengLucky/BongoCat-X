@@ -19,6 +19,32 @@ void bongo_cat_hand_layout_defaults(BongoSafeHandLayout *layout) {
     };
 }
 
+static void scale_rect(BongoSafeHandRect *rect, int size, bool right) {
+    rect->x = (int)(((int64_t)rect->x * size + 500) / 1000);
+    rect->y = (int)(((int64_t)rect->y * size + 500) / 1000);
+    rect->width = (int)(((int64_t)rect->width * size + 500) / 1000);
+    rect->height = (int)(((int64_t)rect->height * size + 500) / 1000);
+    if (right) rect->x = size - rect->x - rect->width;
+}
+
+void bongo_cat_hand_layout_defaults_for_image(BongoSafeHandLayout *layout,
+    int width, int height, bool right) {
+    if (!layout) return;
+    bongo_cat_hand_layout_defaults(layout);
+    /* Include tall letters and the complete frame/tail of the square hand
+       artwork. The older character box clipped letters into the border. */
+    if (width == height && width >= 1000) {
+        layout->bubble = (BongoSafeHandRect){38, 92, 195, 217};
+        layout->characters = (BongoSafeHandRect){55, 124, 163, 122};
+    }
+    /* Rectangular bundled sprites use different artwork and retain fallback. */
+    int size = width == height && width >= 1000 ? width : 1000;
+    scale_rect(&layout->hand, size, right);
+    scale_rect(&layout->bubble, size, right);
+    scale_rect(&layout->characters, size, right);
+    layout->gap = (int)(((int64_t)layout->gap * size + 500) / 1000);
+}
+
 static bool side_folder(char *output, size_t capacity, const char *directory,
     const char *group) {
     char relative[BONGO_CAT_PATH_CAP];

@@ -277,9 +277,8 @@ static void settings_frame_timing(void) {
     CHECK(fabsf(bongo_cat_preferences_animation_delta(0,1000000000ull)-1.0f/60)<.00001f);
     free(app);
 }
-/* A model folder may ship an authored hand-layout.json beside its hand sprites,
-   and the runtime seeds one when it is absent. Import must copy the authored
-   file through while leaving a file the runtime generated alone. */
+/* Import seeds missing layouts and preserves target edits on reimport.
+   Authored source layouts take precedence over the generated defaults. */
 static void hand_layout_copy_round_trip(void) {
     char *temporary = SDL_GetCurrentDirectory();
     CHECK(temporary != NULL);
@@ -300,16 +299,22 @@ static void hand_layout_copy_round_trip(void) {
             adapter, &error));
         CHECK(child(target_layout, sizeof(target_layout), adapter,
             "resources/left-keys/hand-layout.json", false));
-        /* A source without a layout leaves the target without one. */
-        CHECK(!bongo_cat_path_is_file(target_layout));
-        /* The runtime seeds the empty left folder with the built-in defaults,
-           and importing the same source again must keep that generated file. */
-        CHECK(bongo_cat_hand_layout_file_ensure(adapter, "left-keys"));
+        /* First import creates it even before multi-key display is enabled. */
         CHECK(bongo_cat_path_is_file(target_layout));
+        CHECK(write_text(target_layout,
+            "{\"schemaVersion\":1,\"gap\":19,\"maxKeys\":4}"));
         error = (BongoCatError){0};
         CHECK(bongo_cat_import_prepare_adapter(&discovery.candidates[0],
             adapter, &error));
         CHECK(bongo_cat_path_is_file(target_layout));
+        char kept[512] = {0};
+        FILE *kept_file = bongo_cat_file_open(target_layout, "rb");
+        CHECK(kept_file != NULL);
+        if (kept_file) {
+            CHECK(fread(kept, 1, sizeof(kept) - 1, kept_file) > 0);
+            fclose(kept_file);
+        }
+        CHECK(strstr(kept, "\"gap\":19") != NULL);
         /* A layout shipped beside the hand sprites is copied to the target. */
         CHECK(child(source_layout, sizeof(source_layout), root,
             "img/standard/hand/hand-layout.json", false));

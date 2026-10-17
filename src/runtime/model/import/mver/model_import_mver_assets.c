@@ -2,6 +2,7 @@
 #include "runtime.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/image.h"
+#include "bongo_cat/hand_layout.h"
 #include "bongo_cat/path.h"
 
 #include <stdio.h>
@@ -71,6 +72,20 @@ static bool copy_layout_file(const BongoCatImportCandidate *candidate,
     return bongo_cat_path_copy_file(source, destination);
 }
 
+/* Seed during import, before the display option is ever enabled. Existing
+   target edits survive reimports; a supplied source layout is copied later. */
+static bool seed_layout(const char *target, const char *group, const char *hand) {
+    bool exists = false;
+    if (!bongo_cat_hand_layout_side_exists(target, group, &exists)) return false;
+    if (exists) return true;
+    int width = 0, height = 0;
+    if (!bongo_cat_image_info(hand, &width, &height)) return false;
+    BongoSafeHandLayout layout;
+    bongo_cat_hand_layout_defaults_for_image(&layout, width, height,
+        strcmp(group, "right-keys") == 0);
+    return bongo_cat_hand_layout_file_write(target, group, &layout);
+}
+
 static void count_modifiers(BongoJsonValue *matrix, size_t counts[3]) {
     size_t row_index, row_count; BongoJsonValue *row;
     bongo_json_arr_foreach(matrix, row_index, row_count, row) {
@@ -129,6 +144,7 @@ static bool process_matrix(const BongoCatImportCandidate *candidate, BongoJsonVa
             }
             continue;
         }
+        if (!seed_layout(target, key_group, hand)) return false;
         size_t key_index, key_count; BongoJsonValue *key;
         bongo_json_arr_foreach(keys, key_index, key_count, key) {
             if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) {

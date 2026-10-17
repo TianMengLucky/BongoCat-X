@@ -40,15 +40,19 @@ void bongo_cat_ui_tabs(struct nk_context *context, const char *const *labels,
         118.0f : 128.0f;
     float room = NK_MAX(1.0f, available_height - header_height);
     if (count <= 0) return;
-    float row_height = NK_CLAMP(40.0f, room / count - 8.0f, 46.0f);
+    /* Distribute the menu over the sidebar even when optional pages are off.
+       Keep the tiles compact within their slots instead of stretching them. */
+    float row_height = NK_MAX(40.0f, room / count - 8.0f);
     float saved_spacing = context->style.window.spacing.y;
     context->style.window.spacing.y = 8.0f;
     for (int i = 0; i < count; ++i) {
         struct nk_rect bounds;
         nk_layout_row_dynamic(context, row_height, 1);
         if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) continue;
-        struct nk_rect hit = nk_rect(bounds.x + 10, bounds.y + 1,
-            bounds.w - 20, bounds.h - 1);
+        float tile_height = NK_MIN(46.0f, bounds.h);
+        struct nk_rect hit = nk_rect(bounds.x + 10,
+            bounds.y + (bounds.h - tile_height) * .5f + 1,
+            bounds.w - 20, tile_height - 1);
         bool hover = interactive &&
             nk_input_is_mouse_hovering_rect(&context->input, hit);
         bool selected = *active == i;

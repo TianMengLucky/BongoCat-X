@@ -155,10 +155,12 @@ static bool add_package(InstalledModelScan *scan, const char *directory,
             return false;
         }
         char display[BONGO_CAT_ID_CAP];
-        if (discovery->count > 1)
-            snprintf(display, sizeof(display), "%s - %s", package_id,
-                variant_name(candidate));
-        else snprintf(display, sizeof(display), "%s", package_id);
+        if (!bongo_cat_import_store_name_read(directory, display, sizeof(display))) {
+            if (discovery->count > 1)
+                snprintf(display, sizeof(display), "%s - %s", package_id,
+                    variant_name(candidate));
+            else snprintf(display, sizeof(display), "%s", package_id);
+        }
         BongoCatModelEntry *entry =
             &scan->app->models.entries[scan->app->models.count++];
         describe_entry(entry, candidate, id, identity, family, directory,

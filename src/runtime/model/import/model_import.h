@@ -115,6 +115,11 @@ bool bongo_cat_import_package_base_id(char *output, size_t capacity,
 uint32_t bongo_cat_import_candidate_capabilities(
     const BongoCatImportCandidate *candidate);
 
+/* Store titles are display metadata; storage ids and package paths stay stable. */
+bool bongo_cat_import_store_name_read(const char *directory, char *name,
+    size_t capacity);
+bool bongo_cat_import_store_name_write(const char *directory, const char *name);
+
 /* Runtime adapter and catalog integration. */
 void bongo_cat_import_describe_nearby_entry(BongoCatModelEntry *entry,
     const BongoCatImportCandidate *candidate, const char *id,

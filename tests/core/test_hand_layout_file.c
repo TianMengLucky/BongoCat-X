@@ -42,6 +42,22 @@ void test_hand_layout_file(void) {
     CHECK(defaults.gap == 12);
     CHECK(defaults.max_keys == 5);
 
+    BongoSafeHandLayout scaled, mirrored;
+    bongo_cat_hand_layout_defaults_for_image(&scaled, 1400, 1400, false);
+    CHECK(scaled.hand.x == 630 && scaled.hand.y == 881);
+    CHECK(scaled.bubble.x == 53 && scaled.bubble.width == 273);
+    CHECK(scaled.characters.x == 77 && scaled.characters.y == 174);
+    CHECK(scaled.characters.width == 228 && scaled.gap == 17);
+    bongo_cat_hand_layout_defaults_for_image(&mirrored, 1400, 1400, true);
+    CHECK(mirrored.hand.x == 1400 - scaled.hand.x - scaled.hand.width);
+    CHECK(mirrored.bubble.x == 1400 - scaled.bubble.x - scaled.bubble.width);
+    CHECK(mirrored.characters.x ==
+        1400 - scaled.characters.x - scaled.characters.width);
+    bongo_cat_hand_layout_defaults_for_image(&scaled, 1000, 1000, false);
+    CHECK(scaled.characters.y == 124 && scaled.bubble.y == 92);
+    bongo_cat_hand_layout_defaults_for_image(&scaled, 612, 354, false);
+    CHECK(!memcmp(&scaled, &defaults, sizeof(defaults)));
+
     bongo_cat_file_remove(HAND_LAYOUT_FILE);
     CHECK(bongo_cat_path_create_directory(HAND_LAYOUT_ROOT));
     char resources[BONGO_CAT_PATH_CAP];

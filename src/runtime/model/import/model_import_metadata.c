@@ -1,6 +1,7 @@
 #include "model_import.h"
 #include "runtime.h"
 #include "bongo_cat/json.h"
+#include "bongo_cat/file.h"
 #include "bongo_cat/path.h"
 
 #include <stdio.h>
@@ -170,4 +171,39 @@ bool bongo_cat_import_render_options(const char *directory,
     }
     bongo_json_doc_free(document);
     return valid;
+}
+
+#define STORE_NAME_FILE ".bongo-cat-store.json"
+
+bool bongo_cat_import_store_name_read(const char *directory, char *name,
+    size_t capacity) {
+    char path[BONGO_CAT_PATH_CAP];
+    if (!name || !capacity) return false;
+    name[0] = '\0';
+    if (!bongo_cat_path_join(path, sizeof(path), directory, STORE_NAME_FILE))
+        return false;
+    BongoJsonDoc *document = bongo_cat_json_read_file(path, 0, NULL);
+    BongoJsonValue *root = document ? bongo_json_doc_get_root(document) : NULL;
+    const char *title = bongo_json_get_str(bongo_json_obj_get(root, "name"));
+    bool ok = title && title[0] && strlen(title) < capacity;
+    if (ok) memcpy(name, title, strlen(title) + 1);
+    bongo_json_doc_free(document);
+    return ok;
+}
+
+bool bongo_cat_import_store_name_write(const char *directory, const char *name) {
+    char path[BONGO_CAT_PATH_CAP], temporary[BONGO_CAT_PATH_CAP];
+    if (!name || !name[0] || strlen(name) >= BONGO_CAT_ID_CAP ||
+        !bongo_cat_path_join(path, sizeof(path), directory, STORE_NAME_FILE) ||
+        !bongo_cat_path_join(temporary, sizeof(temporary), directory,
+            STORE_NAME_FILE ".new")) return false;
+    BongoJsonMutDoc *document = bongo_json_mut_doc_new(NULL);
+    BongoJsonMutValue *root = document ? bongo_json_mut_obj(document) : NULL;
+    if (root) bongo_json_mut_doc_set_root(document, root);
+    bool ok = root && bongo_json_mut_obj_add_strcpy(document, root, "name", name) &&
+        bongo_cat_json_write_file(temporary, document, BONGO_JSON_WRITE_PRETTY, NULL);
+    bongo_json_mut_doc_free(document);
+    if (ok) ok = bongo_cat_file_replace(temporary, path, true);
+    if (!ok) (void)bongo_cat_file_remove(temporary);
+    return ok;
 }

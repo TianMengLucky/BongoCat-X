@@ -158,6 +158,14 @@ int test_model_import_identity(void) {
         BONGO_CAT_OK);
     CHECK(changed.count == 1 && changed.installed_count == 1 &&
         changed.installed[0] && strcmp(changed.ids[0], "source-2") == 0);
+    char store_package[BONGO_CAT_PATH_CAP], store_name[BONGO_CAT_ID_CAP];
+    CHECK(child(store_package, sizeof(store_package), models_root, "source", false));
+    CHECK(!bongo_cat_import_store_name_read(store_package, store_name, sizeof(store_name)));
+    CHECK(bongo_cat_import_store_name_write(store_package, "Selena \"Store\""));
+    CHECK(bongo_cat_import_store_name_read(store_package, store_name, sizeof(store_name)));
+    CHECK(strcmp(store_name, "Selena \"Store\"") == 0);
+    CHECK(!bongo_cat_import_store_name_write(store_package, ""));
+    CHECK(!bongo_cat_import_store_name_read(store_package, store_name, 4));
     char adapter_metadata[BONGO_CAT_PATH_CAP];
     BongoCatApp *app = calloc(1, sizeof(*app));
     CHECK(app != NULL);
@@ -179,6 +187,8 @@ int test_model_import_identity(void) {
             (original->capabilities &
                 BONGO_CAT_MODEL_CAPABILITY_MVER_PROJECTION));
         if (original) {
+            CHECK(strcmp(original->display_name, "Selena \"Store\"") == 0);
+            CHECK(strcmp(original->id, "source") == 0);
             CHECK(child(adapter_metadata, sizeof(adapter_metadata),
                 original->adapter_directory,
                 ".bongo-cat-adapter.json", false));

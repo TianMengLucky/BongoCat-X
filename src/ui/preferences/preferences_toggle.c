@@ -78,30 +78,6 @@ bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
     return toggle_at(context, id, value, cell, available);
 }
 
-/* Color chip shown in the row while the solid background is enabled. */
-static void draw_color_chip(struct nk_context *context, struct nk_rect cell,
-    uint32_t rgb) {
-    struct nk_rect chip = nk_rect(cell.x + cell.w - 64.0f - 7.0f - 26.0f,
-        cell.y + (cell.h - 24.0f) * .5f, 26.0f, 24.0f);
-    BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
-    struct nk_command_buffer *canvas = nk_window_get_canvas(context);
-    nk_fill_rect(canvas, chip, 6, nk_rgb((rgb >> 16) & 255,
-        (rgb >> 8) & 255, rgb & 255));
-    nk_stroke_rect(canvas, chip, 6, 1.0f, p.border);
-    if (nk_input_is_mouse_hovering_rect(&context->input, chip))
-        bongo_cat_ui_cursor_hover_rect(context, chip,
-            BONGO_CAT_UI_CURSOR_POINTER);
-}
-
-bool bongo_cat_pref_control_obs_background(struct nk_context *context,
-    const char *id, bool *enabled, uint32_t *rgb) {
-    struct nk_rect cell;
-    if (nk_widget(&cell, context) == NK_WIDGET_INVALID) return false;
-    bool changed = toggle_at(context, id, enabled, cell, true);
-    if (*enabled) draw_color_chip(context, cell, *rgb);
-    return changed;
-}
-
 static bool color_picker_update(struct nk_context *context,
     BongoCatPrefColorState *state, struct nk_rect square, struct nk_rect bar,
     uint32_t *rgb, bool available) {
@@ -133,7 +109,7 @@ static bool color_picker_update(struct nk_context *context,
 }
 
 /* Shared theme/OBS picker; apply input before painting the gradient and markers. */
-bool bongo_cat_pref_color_picker(struct nk_context *context,
+static bool color_picker_panel(struct nk_context *context,
     BongoCatPrefColorState *state, uint32_t *rgb) {
     nk_layout_row_dynamic(context, 172.0f, 1);
     struct nk_rect cell;
@@ -188,3 +164,17 @@ bool bongo_cat_pref_color_picker(struct nk_context *context,
             BONGO_CAT_UI_CURSOR_POINTER);
     return changed;
 }
+/* All color options use the same swatch button and popup. */
+bool bongo_cat_pref_color_picker(struct nk_context *context,
+    BongoCatPrefColorState *state, uint32_t *rgb) {
+    struct nk_rect bounds = nk_widget_bounds(context);
+    if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
+        bongo_cat_ui_cursor_hover_rect(context, bounds,
+            BONGO_CAT_UI_CURSOR_POINTER);
+    if (!nk_combo_begin_color(context,
+        nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255),
+        nk_vec2(280.0f, 196.0f))) return false;
+    bool changed = color_picker_panel(context, state, rgb);
+    nk_combo_end(context);
+    return changed;
+}

@@ -112,9 +112,13 @@ void bongo_cat_preferences_live2d_setup_accept(BongoCatPreferences *value) {
     if ((phase != BONGO_CAT_SDK_LICENSE_READY && phase != BONGO_CAT_SDK_FAILED) || !job->licenses_ready) return;
     if (job->thread) SDL_WaitThread(job->thread, NULL);
     job->thread = NULL; job->message[0] = 0;
+    atomic_store(&job->received, 0); atomic_store(&job->total, 0);
     atomic_store(&job->cancelled, false); atomic_store(&job->phase, BONGO_CAT_SDK_DOWNLOADING);
     job->thread = SDL_CreateThread(run, "live2d-download", job);
-    if (!job->thread) atomic_store(&job->phase, BONGO_CAT_SDK_FAILED);
+    if (!job->thread) {
+        SDL_strlcpy(job->message, SDL_GetError(), sizeof(job->message));
+        atomic_store(&job->phase, BONGO_CAT_SDK_FAILED);
+    }
     value->render_dirty = true;
 }
 void bongo_cat_preferences_live2d_setup_poll(BongoCatPreferences *value) {

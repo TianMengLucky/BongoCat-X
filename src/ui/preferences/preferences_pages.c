@@ -113,23 +113,26 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
             }
         }
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SOLID_BACKGROUND);
+        bool old_obs_background = window->obs_background;
+        uint32_t old_background_rgb = window->obs_background_rgb;
         if (bongo_cat_pref_obs_background(context, "obs-background", tr(app,
             "pages.preference.cat.labels.obsBackground", "Solid Background"), tr(app,
             "pages.preference.cat.hints.obsBackground", "Add a solid color behind the pet. For a black OBS capture, see the instructions here."), tr(app,
             "pages.preference.cat.hints.obsBackgroundHelp", "OBS: enable this option, use the Windows 7 compatibility method, and remove the background with a color key filter."),
-            &window->obs_background, &window->obs_background_rgb)) {
+            &window->obs_background, &window->obs_background_rgb,
+            &value->obs_color_picker)) {
             if (window->obs_background) window->custom_background = false;
             app->dirty = true;
-            bongo_cat_window_mark_hit_dirty(app);
+            if (old_obs_background != window->obs_background)
+                bongo_cat_window_mark_hit_dirty(app);
         }
-        bongo_cat_preferences_background_row(value, context);
         /* Repaint only after the dragged color settles (present pass); the pet
            itself recolors live. */
-        if (window->obs_background && bongo_cat_pref_color_picker(context,
-            &value->obs_color_picker, &window->obs_background_rgb)) {
+        if (old_background_rgb != window->obs_background_rgb) {
             app->dirty = true;
             value->color_picker_pending_ns = SDL_GetTicksNS();
         }
+        bongo_cat_preferences_background_row(value, context);
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_FRAME_BOUNDS);
         if (bongo_cat_pref_toggle(context, "tight-frame", tr(app,
             "pages.preference.cat.labels.tightFrame", "Tight Frame"), tr(app,

@@ -39,15 +39,13 @@ bool bongo_cat_pref_control_toggle_available(struct nk_context *context,
 /* Draws the toggle inside an explicit cell; used by overlay dialogs. */
 bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
     const char *id, bool *value, struct nk_rect cell, bool available);
-bool bongo_cat_pref_control_obs_background(struct nk_context *context,
-    const char *id, bool *enabled, uint32_t *rgb);
 /* Keep HSV per picker so black and gray retain the selected hue. */
 typedef struct BongoCatPrefColorState {
     float hue, saturation, value;
     uint32_t rgb;
     bool initialized;
 } BongoCatPrefColorState;
-/* Saturation/value square plus hue slider; updates continuously while dragging. */
+/* Current-color button opens a shared HSV popup; updates while dragging. */
 bool bongo_cat_pref_color_picker(struct nk_context *context,
     BongoCatPrefColorState *state, uint32_t *rgb);
 int bongo_cat_pref_control_combo(struct nk_context *context, const char *id,

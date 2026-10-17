@@ -4,6 +4,8 @@
 #include "about/preferences_about_internal.h"
 #include "ui_paint.h"
 #include <stdio.h>
+#define SDK_MIB_BYTES (1024 * 1024) /* Download sizes use binary megabytes. */
+#define SDK_PERCENT_SCALE 100.0 /* Progress is displayed as a percentage. */
 static const char *label(BongoCatPreferences *value, const char *key, const char *fallback) {
     char full[128]; snprintf(full, sizeof(full), "pages.preference.live2dSetup.%s", key);
     return bongo_cat_i18n_get(value->app->i18n, full, fallback);
@@ -60,10 +62,17 @@ void bongo_cat_preferences_live2d_setup_draw(BongoCatPreferences *value, struct 
             label(value, "loading", "Loading official license agreements..."), value->ui.body_font, p.muted);
     } else if (phase == BONGO_CAT_SDK_DOWNLOADING) {
         char number[128];
-        snprintf(number, sizeof(number), "%s %.1f MiB", label(value, "downloading", "Downloading SDK..."),
-            (double)atomic_load(&job->received) / 1048576.0);
-        text(canvas, nk_rect(box.x + 16, box.y + 20, box.w - 32, 28), number, value->ui.body_font, p.accent);
         uint64_t total = atomic_load(&job->total), received = atomic_load(&job->received);
+        if (total) {
+            snprintf(number, sizeof(number), "%s %.1f / %.1f MiB (%.0f%%)",
+                label(value, "downloading", "Downloading SDK..."),
+                (double)received / SDK_MIB_BYTES, (double)total / SDK_MIB_BYTES,
+                NK_MIN(SDK_PERCENT_SCALE, (double)received / (double)total * SDK_PERCENT_SCALE));
+        } else {
+            snprintf(number, sizeof(number), "%s %.1f MiB",
+                label(value, "downloading", "Downloading SDK..."), (double)received / SDK_MIB_BYTES);
+        }
+        text(canvas, nk_rect(box.x + 16, box.y + 20, box.w - 32, 28), number, value->ui.body_font, p.accent);
         if (total) {
             struct nk_rect bar = nk_rect(box.x + 16, box.y + 64, box.w - 32, 6);
             nk_fill_rect(canvas, bar, 3, p.border_subtle);
@@ -97,13 +106,21 @@ void bongo_cat_preferences_live2d_setup_draw(BongoCatPreferences *value, struct 
     struct nk_rect accept = nk_rect(cancel.x + width + gap, cancel.y, width, 36);
     if (button(value, context, cancel, label(value, "cancel", "Cancel and continue"), false, input_ready, p))
         bongo_cat_preferences_live2d_setup_cancel(value);
-    bool ready = input_ready && job->licenses_ready &&
-        (phase == BONGO_CAT_SDK_LICENSE_READY || phase == BONGO_CAT_SDK_FAILED);
+    bool retry = phase == BONGO_CAT_SDK_FAILED;
+    bool ready = input_ready && (retry ||
+        (job->licenses_ready && phase == BONGO_CAT_SDK_LICENSE_READY));
 #ifndef _WIN32
     ready = false;
 #endif
-    if (button(value, context, accept, label(value, "accept", "Agree and download"), true, ready, p))
+    if (button(value, context, accept, retry ? label(value, "retry", "Retry") :
+            label(value, "accept", "Agree and download"), true, ready, p)) {
+        if (retry && !job->licenses_ready) {
+            bongo_cat_preferences_live2d_setup_cancel(value);
+            bongo_cat_preferences_live2d_setup_request(value);
+            return;
+        }
         bongo_cat_preferences_live2d_setup_accept(value);
+    }
     if (frame.visibility < 1.0f || phase == BONGO_CAT_SDK_LICENSE_LOADING || phase == BONGO_CAT_SDK_DOWNLOADING)
         value->render_dirty = true;
 }

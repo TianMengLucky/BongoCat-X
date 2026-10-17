@@ -38,6 +38,10 @@ QQ로 QR 코드를 스캔하거나 그룹 번호 **211957388**을 검색하여 *
 
 <p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
 
+## Live2D SDK 및 색상 설정
+
+SDK 가져오기와 다운로드는 설정 → 플러그인에서 관리하며 모델 페이지는 모델을 관리합니다. Windows에서 Live2D 플러그인을 활성화하고 Live2D SDK 다운로드를 선택한 뒤 두 공식 약관을 읽고 동의하면 호환 Core를 다운로드하여 설치합니다. 받은 용량, 전체 크기와 백분율이 표시되며 실패 시 대화상자에서 재시도할 수 있습니다. 다른 플랫폼에서는 호환 Core를 수동으로 가져오세요. 외관과 단색 배경은 색상 견본을 클릭하여 여는 팔레트 팝업을 공유합니다.
+
 ## 📥 다운로드
 
 - GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))

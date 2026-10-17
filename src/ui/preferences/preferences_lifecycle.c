@@ -248,7 +248,6 @@ static void bongo_cat_preferences_close_finish(BongoCatPreferences *value) {
     value->behavior_dialog_closing_ns = 0;
     value->import_requested = false;
     value->import_drop_active = false;
-    value->sdk_import_requested = false;
     bongo_cat_preferences_live2d_setup_cancel(value);
     if (value->input_active) bongo_cat_preferences_input_end(value);
     if (value->ui_initialized) bongo_cat_ui_input_reset(&value->ui);

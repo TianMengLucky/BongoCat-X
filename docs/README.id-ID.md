@@ -57,6 +57,10 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 
 <p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
 
+## SDK Live2D dan warna
+
+Impor dan unduhan SDK tersedia di Pengaturan → Plugin; halaman Model mengelola model. Di Windows, aktifkan plugin Live2D, pilih Unduh SDK Live2D, lalu baca dan setujui kedua perjanjian resmi untuk memasang Core yang sesuai. Progres menampilkan jumlah unduhan, ukuran total, dan persentase; kegagalan dapat dicoba ulang dalam dialog. Pada platform lain, impor Core yang kompatibel secara manual. Warna tampilan dan latar solid menggunakan popup palet yang sama, dibuka dengan mengeklik contoh warna.
+
 ## 📥 Unduh
 
 

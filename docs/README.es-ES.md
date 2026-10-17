@@ -38,6 +38,10 @@ Escanea el código QR con QQ o busca el grupo **211957388** para unirte a la com
 
 <p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
 
+## SDK de Live2D y colores
+
+La importación y descarga del SDK están en Ajustes → Plugins; la página de modelos administra modelos. En Windows, activa el plugin Live2D, elige Descargar SDK de Live2D y acepta ambos acuerdos oficiales tras leerlos para instalar el Core compatible. Se muestran el tamaño descargado, el total y el porcentaje; puedes reintentar desde el diálogo. En otras plataformas importa un Core compatible manualmente. Los colores de apariencia y fondo sólido comparten una paleta emergente que se abre al pulsar la muestra de color.
+
 ## 📥 Descarga
 
 - GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))

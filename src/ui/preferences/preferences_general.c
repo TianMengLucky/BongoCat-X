@@ -37,7 +37,7 @@ static void theme_palette(BongoCatPreferences *value, struct nk_context *context
         tr(app, "native.textColor", "Text color")};
     value->theme_color_role = bongo_cat_pref_combo(context, "theme-color-role",
         tr(app, "native.colorPalette", "Color palette"),
-        tr(app, "native.colorPaletteHint", "Choose a color to edit with the shared palette below."),
+        tr(app, "native.colorPaletteHint", "Choose a color to edit, then click its swatch to open the palette."),
         labels, (int)(sizeof(labels) / sizeof(labels[0])), value->theme_color_role);
     int role = value->theme_color_role;
     BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
@@ -47,7 +47,7 @@ static void theme_palette(BongoCatPreferences *value, struct nk_context *context
     uint32_t color = value->theme_colors[role];
     uint32_t picked = color <= 0xffffffu ? color :
         ((uint32_t)swatch.r << 16) | ((uint32_t)swatch.g << 8) | swatch.b;
-    nk_layout_row_dynamic(context, 30, 2);
+    nk_layout_row_dynamic(context, 30, 3);
     nk_label(context, labels[role], NK_TEXT_LEFT);
     bool changed = nk_button_label(context, tr(app, "native.defaultColor", "Use default color"));
     if (changed) color = 0x1000000u;

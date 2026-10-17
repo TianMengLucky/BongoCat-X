@@ -56,6 +56,10 @@
 
 <p align="center"><img src="../resources/assets/qq-group.jpg" alt="BongoCat-X QQ · 211957388" width="320"></p>
 
+## Live2D SDK 與顏色設定
+
+SDK 的匯入與下載統一位於「設定 → 外掛」，模型頁僅管理模型。Windows 使用者啟用 Live2D 外掛後，可點選「下載 Live2D SDK」，閱讀並同意兩份官方協議後自動下載並安裝相符的 Core；下載顯示已接收量、總量與百分比，失敗可在對話框內重試。其他平台請手動匯入相容的 Core。外觀與純色背景共用點選色塊開啟的調色盤彈出視窗。
+
 ## 📥 下載
 
 

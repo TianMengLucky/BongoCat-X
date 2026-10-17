@@ -209,11 +209,18 @@ bool bongo_cat_pref_toggle_help(struct nk_context *context, const char *id,
 }
 bool bongo_cat_pref_obs_background(struct nk_context *context, const char *id,
     const char *title, const char *question, const char *reply, bool *enabled,
-    uint32_t *rgb) {
+    uint32_t *rgb, BongoCatPrefColorState *state) {
     int lines = bongo_cat_pref_detail_lines(context, question); FormStyle saved;
     if (!form_begin(context, id, lines, &saved)) return false;
-    bongo_cat_pref_form_title_sized(context, title, 230.0f);
-    bool changed = bongo_cat_pref_control_obs_background(context, id, enabled, rgb);
+    float width = nk_window_get_content_region(context).w;
+    nk_layout_row_begin(context, NK_STATIC, 36, 3);
+    nk_layout_row_push(context, NK_MAX(220.0f, width - 238.0f));
+    bongo_cat_pref_form_label(context, title);
+    nk_layout_row_push(context, 148.0f);
+    bool changed = *enabled ? bongo_cat_pref_color_picker(context, state, rgb) : false;
+    if (!*enabled) nk_spacing(context, 1);
+    nk_layout_row_push(context, 74.0f);
+    if (bongo_cat_pref_control_toggle(context, id, enabled)) changed = true;
     nk_layout_row_end(context);
     bongo_cat_ui_question_tooltip(context, question, reply);
     form_end(context, &saved); return changed;

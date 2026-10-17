@@ -1,22 +1,22 @@
 <div align="center">
 
-2.2.0 ergänzt Plugins für Objekte, Tastaturklänge und den Modell-Shop und verbessert Hintergrundimporte und automatische Updates. Der Rückprall am Bildschirmrand erfordert „Auf dem Bildschirm halten“. Echte Transparenz unter Windows OpenGL verwendet Alpha pro Pixel und kann den Aufwand für das Auslesen von Pixeln erhöhen.
+2.2.2: Plugin-eigene Seiten und Übersetzungen, optimierter Speicherverbrauch beim Rendern und Laden von Bildern sowie Kauflinks im Modellshop.
   <a href="https://bongocat.pet" target="_blank">
-    <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="BongoCat" width="249">
+    <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
   <h1><a href="https://bongocat.pet" target="_blank">BongoCat</a></h1>
 </div>
 
-<p align="center">💘 C/C++ × SDL3 × OpenGL, zusammenrühren, drauflos trommeln! Bong~ Bongo Cat!!!</p>
+<p align="center">💘 C/C++ × Rust × SDL3, zusammenrühren, drauflos trommeln! Bong~ Bongo Cat!!!</p>
 <p align="center">
-  Sprache wählen ❯ <a href="https://github.com/vladelaina/BongoCat/blob/main/README.md">English</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-CN.md">简体中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-Hant.md">繁體中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.fr-FR.md">Français</a> • <strong>Deutsch</strong> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ko-KR.md">한국어</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.pt-BR.md">Português</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ru-RU.md">Русский</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.es-ES.md">Español</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.id-ID.md">Bahasa Indonesia</a>
+  <a href="README.en-US.md">English</a> • <a href="../README.md">简体中文</a> • <a href="README.zh-Hant.md">繁體中文</a> • <a href="README.fr-FR.md">Français</a> • <strong>Deutsch</strong> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
 </p>
+> [!NOTE]
+> Dieses Repository (**BongoCat-X**) ist ein Fork von [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat). Es ist nicht mit Live2D Inc. verbunden und enthält weder Cubism SDK noch Core. Die Live2D-Lizenzbedingungen gelten.
+
 <p align="center">
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
-  <a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2Fvf8jqnattk%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&suffix=%20members&logo=discord&logoColor=white&label=%20&color=7389D8&labelColor=6A7EC2"></a>
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.png"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
-  <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/QQ-%2312B7F5?logo=qq&labelColor=FFFFFF"></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
+  <a href="https://github.com/TianMengLucky/BongoCat-X"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
 </p>
 
 <div align="center"><video src="https://github.com/user-attachments/assets/75719230-9e49-4124-ae5a-8e35592c5d49" autoplay loop style="border-radius: 8px; max-width: 800px;"></video></div>
@@ -32,8 +32,6 @@
   </a>
 </p>
 
-<p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
-
 ## 💬 QQ-Community
 
 Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCat-X**-Community beizutreten.
@@ -42,9 +40,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 ## 📥 Download
 
-<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"></a>
-
-- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
+- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 
@@ -60,7 +56,7 @@ Scanne den QR-Code mit QQ oder suche nach Gruppe **211957388**, um der **BongoCa
 
 ## 🛠️ Aus dem Quellcode erstellen
 
-BongoCat verwendet CMake und benötigt einen C11-Compiler, einen C++17-Compiler, CMake 3.24 oder neuer, die OpenGL-Entwicklungsdateien für den Desktop sowie die Rust-Toolchain (cargo, z. B. über rustup): Die speichersicherheitskritischen Parser (SHA-256, Bilddekodierung, der Contributor-Feed, Audiodekodierung) liegen im Crate `src/rust/bongo-safe`, den Corrosion zur Konfigurationszeit baut. Standardmäßig werden SDL3, stb, miniaudio und Nuklear während der Konfigurationsphase automatisch heruntergeladen, daher ist für die erste Konfiguration eine Internetverbindung erforderlich.
+BongoCat benötigt CMake 3.24 oder neuer, C11- und C++17-Compiler, OpenGL-Entwicklungsdateien und die Rust-Toolchain (cargo, über rustup verfügbar). Corrosion baut die Rust-Module. SDL3, stb, miniaudio, Nuklear und Corrosion werden standardmäßig bei der Konfiguration heruntergeladen; der erste Build benötigt Netzwerkzugang.
 
 Führe die folgenden Befehle im Projektstammverzeichnis aus (dem Verzeichnis, das `CMakeLists.txt` enthält).
 
@@ -73,7 +69,7 @@ Führe die folgenden Befehle im Projektstammverzeichnis aus (dem Verzeichnis, da
   ```bash
   sudo apt-get update
   sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
+    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev libfontconfig1-dev fonts-noto-cjk
   ```
 
 ### 🔧 Konfiguration und Build
@@ -136,23 +132,6 @@ nur dafür, dass die Konfiguration bei fehlendem SDK sofort mit
 Importhinweisen fehlschlägt (die Release-CI verwendet es). Belassen Sie es
 auf dem Standard `OFF`, wenn Sie das nicht benötigen.
 
-> [!TIP]
-> Unter Windows lässt sich das Live2D-Rendering ohne Neubau aktivieren: öffnen
-> Sie in der App „Einstellungen → Modell“, klicken Sie auf „Live2D Core
-> importieren“ und wählen Sie eine `Live2DCubismCore.dll` oder das offizielle
-> Cubism-SDK-Zip. Die Änderung wirkt sofort, ein Neustart ist nicht nötig.
-
-> [!NOTE]
-> Die offiziellen Releases dieses Repositorys sind Runtime-Core-Builds: Sie
-> enthalten den Live2D-Renderer, liefern die Core-Laufzeitbibliothek jedoch
-> **nicht** mit. Beim Start prüft die App den Ordner `live2d` — legen Sie
-> `Live2DCubismCore.dll` oder das offizielle SDK-ZIP dort ab (neben der
-> Anwendung oder im Datenverzeichnis), und sie wird nach einem Neustart
-> automatisch übernommen; unter Einstellungen → Modell können Sie auch auf
-> „Live2D Core importieren“ klicken, um sie sofort zu aktivieren. Wird
-> kein Core gefunden, fällt die App auf das Diagnose-Backend zurück und
-> zeigt in den Einstellungen einen Hinweis.
-
 ### ⚙️ CMake-Optionen
 
 | Option | Standard | Beschreibung |
@@ -191,95 +170,17 @@ Das standardmäßig eingebaute Modell (`standard`) bleibt unter der MIT-Lizenz. 
 
 ## 🧭 Technische Architektur
 
-Die aktuelle native Version basiert auf C/C++, SDL3 und OpenGL. Das folgende Diagramm zeigt den Datenfluss zur Laufzeit; Details zu Build und Packaging findest du in den CMake-Dateien.
+Der C11-Host verwendet SDL3 für Ereignisse, Modellaktualisierung und Darstellung im Hauptthread sowie Nuklear für die Einstellungen. `src/rust/bongo-safe` übernimmt das Parsen nicht vertrauenswürdiger Daten, Eingabewarteschlangen und Messwerte sowie den gemeinsamen Zustand der Plugin-Arbeitsthreads. Die Live2D-Brücke, das Vulkan-Ressourcenbackend und die Windows-COM/WIC-Adapter verwenden C++17.
 
-### 🔄 Runtime-Eigentum und Frame-Planung
+Plattform-Listener übergeben Tasten- und Maustastenereignisse an eine begrenzte Rust-Warteschlange, fassen Zeigerbewegungen separat zusammen und wecken den Hauptthread für Modellparameter und UI. Eine versionierte C-ABI lädt Live2D-/Inox2D-Plugins mit OpenGL, Vulkan oder Metal auf unterstützten Plattformen.
 
-Jeder Prozess besitzt eine `BongoCatApp`-Instanz und eine Ereignis-/Render-Schleife auf dem Hauptthread. Die Plattform-Listener enden an der Eingabegrenze:
-
-```text
-Plattform-Listener (Tastatur/Zeiger)
-            |
-            v
-  C11-Eingabezustand (atomare Flankenwarteschlange + zusammengeführte Zeigerposition)
-            |
-            v
-  Anwendung auf dem Hauptthread <----- SDL3-Ereignisse
-            |
-            v
-  Modellparameter, Overlays und UI-Zustand
-            |
-            v
-  Modell-Update -> OpenGL-Komposition -> Plattform-Präsentation
-```
-
-Der Windows-Raw-Input-Empfänger, der macOS-Quartz-Ereignis-Tap und die Linux-XInput2-Listener laufen außerhalb der Hauptschleife. Tastatur- und Maustastenereignisse gelangen in eine begrenzte atomare Warteschlange; Bewegungen werden separat zusammengefasst und SDL-Ereignisse wecken den Hauptthread. Windows empfängt Hintergrundeingaben über ein Nachrichtenfenster mit `RIDEV_INPUTSINK | RIDEV_DEVNOTIFY`, wobei normale Fensternachrichten erhalten bleiben. Wenn eine andere Anwendung den Cursor ausblendet oder sperrt, nutzt das Modell die Gerätebewegungen; SDL liefert die Cursorposition auf dem Desktop. Beim Entfernen eines Geräts oder Wechsel des Eingabedesktops werden gehaltene Zustände bereinigt. Windows verwendet keine Eingabe-Hooks oder DirectInput mehr. SDL3-Fenster-, Präferenz- und Gamepad-Ereignisse werden auf dem Hauptthread verarbeitet. Kein Plattform-Listener ruft direkt Live2D-, Overlay- oder UI-Code auf.
-
-`bongo_cat_app_run` ist für Update-, Shutdown- und Sekundärprozessparameter verantwortlich, erzwingt den Besitz einer einzelnen Instanz des Hauptprozesses, weist den Anwendungszustand zu, führt die Initialisierung aus, betritt `bongo_cat_app_loop` und aktualisiert anschließend in definierter Reihenfolge den Zustand und gibt Ressourcen frei. Die Initialisierung lädt Konfiguration und Speicherpfade, findet Ressourcen, erstellt das SDL/OpenGL-Pet-Fenster, initialisiert die Plattform-Backends, erstellt Live2D-/Overlay-/Audio-Dienste, scannt eingebaute/installierte/nah gelegene Modellquellen und lädt verfügbare Modelle. `BongoCatApp` hält Einstellungen, Sitzungszustand, Modell- und Verhaltenskataloge, Plattform-Handles sowie Laufzeit-Dienst-Handles.
-
-Installierte Modellpakete verwenden Mver als kanonisches Format. Der Importprozess analysiert die ausgewählte Datei oder das Verzeichnis, findet und validiert Kandidaten, erzeugt einen Paketidentitäts-Fingerabdruck, konvertiert Tauri-Quellen zu Mver, wendet Bild-Patches an und übermittelt das normalisierte Paket an `models_root`. Anschließend werden Laufzeit-Adapter erzeugt und der Katalog aktualisiert. Nahe Quellen werden nur entdeckt, ohne deren Quellverzeichnis zu installieren; ihre Adapter und Prüfergebnisse werden unter `cache_root` außerhalb von `models_root` zwischengespeichert.
-
-Jede Iteration der Hauptschleife wartet auf SDL-/native Aufweckereignisse oder auf die früheste Fälligkeit von Frame-, UI-, Animations- und Zeiger-Treffertests (maximal 250 ms). Die Schleife verteilt gepufferte SDL-Ereignisse, leert die atomare Eingabewarteschlange und führt Freigabe-Wiederherstellung durch, aktualisiert Fenster- und Modell-Aktualisierungsstatus und wendet anschließend Eingabeparameter an. Bei aktiviertem Cubism folgt die Modellfrist `settings.model.max_fps` (Standard 60 FPS); Diagnose-Builds verwenden ein Fallback-Intervall von 100 ms. Die verstrichene Modellzeit wird auf maximal 250 ms begrenzt und in bis zu acht Teilschritte aufgeteilt, die jeweils höchstens 1/30 Sekunde dauern.
-
-Der reguläre Pet-Pfad rendert nur, wenn das Fenster sichtbar, nicht minimiert und als schmutzig markiert ist. Pro Frame wird zunächst der Hintergrund gelöscht, das Modell gezeichnet, dann werden Zeiger-, Tasten- und Effekt-Overlays komponiert und schließlich der Plattform-Präsentator aufgerufen. Vorschauvorgänge können sofortiges Rendern anfordern, Screenshot-Rendering kann die Präsentation überspringen. macOS und Linux tauschen das SDL-OpenGL-Fenster direkt; Windows tauscht direkt, wenn keine geschichtete Darstellung aktiviert ist, andernfalls wird der Framebuffer ausgelesen und `UpdateLayeredWindow` aufgerufen. Die Präferenz-UI besitzt ein eigenes SDL/OpenGL-Fenster und wird separat gerendert und präsentiert.
-
-Die C-Laufzeit ruft die in `include/bongo_cat/model.h` deklarierte ABI auf. Die Live2D-Brücke und die Cubism-Implementierung befinden sich in `src/live2d` und verwenden C++17 nur, wenn das Cubism SDK aktiviert ist; der restliche native Laufzeitcode verwendet C11. Cubism-Typen bleiben hinter undurchsichtigen C-Handles; wenn das SDK nicht verfügbar ist, stellt `src/live2d/live2d_stub.c` das Diagnose-Backend bereit.
-
-```mermaid
-flowchart TB
-  Input(["Tastatur / Maus / Gamepad"])
-  BuiltIn(["Eingebaute Modellressourcen"])
-  Sources(["Externe Modellquellen<br/>Mver, Tauri, .model3.json, Bild-Patches"])
-  Desktop(["Pet-Fenster und Präferenzfenster"])
-  subgraph Runtime["BongoCat Native Runtime"]
-    direction TB
-    Entry["src/main.c<br/>bongo_cat_app_run"]
-    Startup["Start und Initialisierung<br/>Konfiguration, Speicher, Fenster, Plattform"]
-    Loop["SDL3-Hauptschleife<br/>Warten, Verteilen, Aktualisieren, Rendern"]
-    Shutdown["Herunterfahren<br/>Zustand aktualisieren, Dienste stoppen, Ressourcen freigeben"]
-    InputQueue[("Atomarer Eingabezustand<br/>Flankenwarteschlange und zusammengeführte Zeigerposition")]
-    InputDispatch["Eingabeverteilung<br/>Tastenkürzel, Zeigerzuordnung, Modellparameter"]
-    State[("BongoCatApp-Zustand<br/>Einstellungen, Sitzung, Katalog, Laufzeit-Handles")]
-    Import["Modellerkennung und -import<br/>Validierung, Normalisierung zu Mver, Installation/Cache"]
-    Catalog[("Modell- und Verhaltenskatalog")]
-    Live2D["Live2D C ABI<br/>Cubism SDK oder Diagnose-Stub"]
-    Overlay["Overlays und Audio"]
-    Preferences["Präferenzen und Desktop-Shell<br/>Nuklear-UI, Tray, Fensteraktionen"]
-    Compose["OpenGL-Frame-Komposition"]
-    Present["Plattform-Präsentation"]
-    Entry --> Startup --> Loop
-    Loop --> Shutdown
-    Loop --> InputDispatch --> State
-    Loop <--> State
-    State --> Live2D
-    State --> Overlay
-    State <--> Preferences
-    Loop --> Preferences
-    Catalog --> State
-    State --> Compose
-    Live2D --> Compose
-    Overlay --> Compose
-    Compose --> Present
-    Loop --> Compose
-  end
-  subgraph Platform["Plattform-Backends"]
-    direction LR
-    Global["Globale Tastatur/Zeiger-Erfassung<br/>Windows, macOS, Linux"]
-    SDL["SDL3-Ereignisse<br/>Fenster- und Gamepad-Ereignisse"]
-  end
-  Input --> Global --> InputQueue --> InputDispatch
-  Input --> SDL --> Loop
-  BuiltIn --> Catalog
-  Sources --> Import --> Catalog
-  Present --> Desktop
-  Preferences --> Desktop
-```
+Kompatibilität und Build-Details: [Renderer-Plugins](model-plugins.md). Backend-Grenzen und Prüfumfang: [Natives Rendering](live2d-vulkan-metal.md).
 
 ## ❓ Häufig gestellte Fragen
 
 ### 🔒 Zeichnet BongoCat meine Tastatur- oder Mauseingaben auf?
 
-Nein. BongoCat verarbeitet Tastatur- und Mauseingaben lokal, um Animationen und Tastenkürzel anzutreiben. Es zeichnet weder Tastenanschläge, Mausaktionen noch andere Interaktionsdaten auf oder lädt sie hoch. Auch die Konfiguration wird nur lokal gespeichert; die Anwendung enthält keine Werbung, Analyse-Tools oder Code zur Nutzerverfolgung. Bei Update-Checks werden nur öffentliche Versionsmetadaten abgefragt; es werden keine Eingabe-, Konfigurations- oder Nutzungsdaten gesendet.
+BongoCat verarbeitet Eingaben lokal für Animationen und Tastenkürzel und lädt keine Eingabe- oder Nutzungsdaten hoch. Das aktivierte Statistik-Plugin kann Summen, Tages-/Stundenverläufe und die Zeit aktiver Anwendungen lokal speichern. Text, Tastenreihenfolge, Fenstertitel, URLs und Koordinaten werden nicht gespeichert. Auf der Statistikseite lassen sich Erfassung deaktivieren und Daten zurücksetzen oder exportieren. Siehe [Statistik-Plugin](statistics-plugin.md). Updateprüfungen fragen öffentliche Versionsmetadaten ab.
 
 ### 🖼️ Wie weit ist die Vulkan-/Metal-Unterstützung?
 
@@ -294,12 +195,11 @@ SDK-Builds aktivieren `BONGO_CAT_CUBISM_VULKAN=ON` unter Windows / Linux x64 (be
 > Jeder Schritt von BongoCat wird vom Open-Source-Gedanken getragen. Wir danken allen Community-Beitragenden aufrichtig für ihren selbstlosen Beitrag (unten nach Beitragsdatum sortiert aufgeführt). Eure Unterstützung macht die Begleitung auf dem Desktop freier und echten.❤️‍🔥
 
 
-<a href="https://bongocat.pet">
-    <img src="https://bongocat.pet/co" />
+<a href="https://github.com/TianMengLucky/BongoCat-X/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=TianMengLucky/BongoCat-X" />
 </a>
 
 
-[linux.do](https://linux.do/t/topic/2845597)
 ---
 
 <div align="center">
@@ -310,11 +210,13 @@ Made with ❤️ & ⌨️
 
 ### Darstellung der Einstellungen
 
-Die Einstellungen verwenden ein einheitliches Kartenlayout. Fenster, Modell, Anwendung und Darstellung sind standardmäßig geöffnet. Ein Klick auf einen Gruppentitel klappt die Optionen ein oder aus. Es gibt keinen Layout-Umschalter; bestehende Werte bleiben erhalten.
+Die Einstellungen verwenden aufklappbare Gruppenkarten. Fenster, Modell, Anwendung und Darstellung sind standardmäßig geöffnet. Das kompakte Layout unter Darstellung verkleinert Abstände und behält Beschreibungen bei. Die Einstellung wird automatisch gespeichert.
 
 ### Eingabestatistik-Plugin
 
 Das Rust-Statistik-Plugin wird standardmäßig mitgebaut. Auf der Plugin-Seite lässt es sich aktivieren, deaktivieren oder importieren. Die Statistik-Seite bietet Tastatur- und Mauswerte, Tages- und Stundenverläufe, lokale Speicherung und CSV-Export. Siehe [Statistik-Plugin](statistics-plugin.md). Die aktive App-Zeit bietet Ranglisten, Stundenwerte und einen eigenen Schalter. Erfassung, Speicherung und Export laufen in einem separaten Thread. Das Plugin registriert den Statistikeintrag beim Aktivieren und entfernt ihn beim Deaktivieren oder Deinstallieren.
+
+Auf der Statistik-Seite lassen sich Einheitennamen sowie Faktoren für Bewegung und Scrollen speichern und zurücksetzen. Die Darstellung verwendet eine gemeinsame Palette für Haupt-, Sekundär-, Text- und Seitenhintergrundfarben.
 
 ### Dynamische Renderer-Plugins
 
@@ -366,4 +268,6 @@ Tastenkombinationen sind jetzt unter Einstellungen über Einstellungen / Tastenk
 
 Beim Aktivieren von Live2D ohne Cubism Core erscheinen beide offiziellen Lizenzverträge. Unter Windows lädt Zustimmen und herunterladen das Native-R5-SDK per offiziellem HTTPS, entpackt nur den passenden dynamischen Core und aktiviert das Rendering lokal. Abbrechen und fortfahren lässt das Plugin ohne Rendering aktiviert. Downloads können erneut versucht werden; manueller Import bleibt möglich. Anwendung und Pakete enthalten weder SDK noch Core.
 
-Windows: DirectComposition-Darstellung. Experimentelle DXGI-Alpha-Komposition. Sofort wirksam; bei Fehlern Rückfall auf den bisherigen Presenter. Pixel-Rücklesen bleibt; Independent Flip für Spiele ist nicht garantiert.
+Windows mit AMD-Grafik bietet eine experimentelle DirectComposition-Darstellung, standardmäßig aus. DXGI-Alpha-Komposition wirkt sofort, begrenzt Expose-Ereignisse auf 50 ms und deaktiviert VSync; bei Fehlern wird die bisherige Darstellung wiederhergestellt. Pixel werden weiterhin ausgelesen; Independent Flip bei Spielen ist nicht garantiert.
+
+Die Renderer-Plugin-ABI ist jetzt v2: Anwendung und Live2D-/Inox2D-Plugins gemeinsam aktualisieren oder neu bauen; ältere Plugins sind inkompatibel. Live2D Vulkan unterstützt bedarfsgerechte Offscreen-Ressourcen, PNG-Skalierung per Rust-Streaming und BC7-Caching mit RGBA8-Rückfall; Plattformgrenzen stehen in den [Rendering-Hinweisen](live2d-vulkan-metal.md).

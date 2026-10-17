@@ -1,4 +1,6 @@
 #include "image_texture_cache.h"
+#include "image_rows_bridge.h"
+#include "bongo_cat/file.h"
 #include "test.h"
 
 #include <SDL3/SDL.h>
@@ -8,37 +10,10 @@
 #include <string.h>
 
 int bongo_cat_test_failures;
-static size_t allocated_bytes, read_bytes;
-static unsigned seeks;
-
-static void *counted_malloc(size_t size) {
-    allocated_bytes += size;
-    return malloc(size);
+static char fixture_path[BONGO_CAT_PATH_CAP];
+static void put32(unsigned char *p, uint32_t value) {
+    for (unsigned i = 0; i < 4; ++i) p[i] = (unsigned char)(value >> (8 * i));
 }
-
-static size_t counted_read(void *buffer, size_t size, size_t count, FILE *file) {
-    size_t result = fread(buffer, size, count, file);
-    read_bytes += size * result;
-    return result;
-}
-
-static int counted_seek(FILE *file, long offset, int origin) {
-    ++seeks;
-    return fseek(file, offset, origin);
-}
-
-/* Exercise the actual reader with file-backed fixtures. Count its allocation
-   and I/O so a small entry cannot regress to a fixed buffer or second pass. */
-#define malloc counted_malloc
-#define fread counted_read
-#define fseek counted_seek
-#define bongo_cat_image_decode_cached_scaled_rows test_decode_cached_scaled_rows
-#include "../../src/media/image_texture_cache.c"
-#undef bongo_cat_image_decode_cached_scaled_rows
-#undef fseek
-#undef fread
-#undef malloc
-
 static const char fixture_digest[] =
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
@@ -49,7 +24,7 @@ static unsigned char fixture_byte(size_t offset) {
 }
 
 static FILE *cache_fixture(int width, int height, CacheFault fault) {
-    FILE *file = tmpfile();
+    FILE *file = bongo_cat_file_open(fixture_path, "wb+");
     CHECK(file != NULL);
     if (!file) return NULL;
     unsigned char header[96] = {'B', 'C', 'R', 'G', 'B', 'A', '0', '1'};
@@ -118,31 +93,29 @@ static void check_cache(int width, int height, CacheFault fault, bool cancel, bo
     if (!file) return;
     CacheConsumer state = {.width = width, .height = height,
         .cancel_after_validation = cancel, .reject = reject};
-    allocated_bytes = read_bytes = 0; seeks = 0;
-    BongoCatResult result = read_cache(file, fixture_digest, width, height,
-        consume_cache, &state, cache_progress, &state, cache_cancelled, &state);
     fclose(file);
+    BongoCatRowBridge bridge = {consume_cache, &state};
+    BongoSafeRowCallbacks callbacks = {bongo_cat_image_rows_bridge, &bridge,
+        cache_progress, &state, cache_cancelled, &state};
+    BongoCatResult result = (BongoCatResult)bongo_safe_rgba_cache_read(fixture_path,
+        fixture_digest, width, height, callbacks);
     if (fault != CACHE_VALID) {
         CHECK(result == BONGO_CAT_ERROR_FORMAT && state.calls == 0);
         return;
     }
-    size_t bytes = (size_t)width * height * 4;
-    size_t stride = (size_t)width * 4;
-    CHECK(allocated_bytes <= bytes);
-    CHECK(allocated_bytes <= SDL_max((size_t)(1024 * 1024), stride));
     if (cancel || reject) {
         CHECK(result == BONGO_CAT_ERROR_PLATFORM);
         CHECK(state.calls == (reject ? 1 : 0));
     } else {
         CHECK(result == BONGO_CAT_OK && state.row == height && state.progress == 1.0f);
-        bool single_strip = bytes <= 1024u * 1024u || height == 1;
-        CHECK(read_bytes == 96u + bytes * (single_strip ? 1u : 2u));
-        CHECK(seeks == (single_strip ? 0u : 1u));
-        if (single_strip) CHECK(allocated_bytes == bytes && state.calls == 1);
+        bool single_strip = (size_t)width * height * 4 <= 1024u * 1024u || height == 1;
+        if (single_strip) CHECK(state.calls == 1);
     }
 }
 
 int main(void) {
+    SDL_snprintf(fixture_path, sizeof(fixture_path), "%sbongocat-cache-%llu.rgba",
+        SDL_GetBasePath(), (unsigned long long)SDL_GetTicksNS());
     const int sizes[][2] = {{1, 1}, {130, 65}, {512, 512}, {513, 513},
         {8192, 1}, {1, 257}, {300000, 1}};
     for (size_t i = 0; i < SDL_arraysize(sizes); ++i) {
@@ -154,9 +127,10 @@ int main(void) {
         check_cache(130, 65, (CacheFault)fault, false, false);
         check_cache(513, 513, (CacheFault)fault, false, false);
     }
-    CHECK(test_decode_cached_scaled_rows(NULL, fixture_digest, 1, 1,
+    CHECK(bongo_cat_image_decode_cached_scaled_rows(NULL, fixture_digest, 1, 1,
         consume_cache, NULL, NULL, NULL, NULL, NULL, NULL) == BONGO_CAT_ERROR_ARGUMENT);
-    CHECK(test_decode_cached_scaled_rows("unused", fixture_digest, 1, 1,
+    CHECK(bongo_cat_image_decode_cached_scaled_rows("unused", fixture_digest, 1, 1,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL) == BONGO_CAT_ERROR_ARGUMENT);
+    CHECK(SDL_RemovePath(fixture_path));
     return bongo_cat_test_failures ? 1 : 0;
 }

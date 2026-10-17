@@ -1,3 +1,4 @@
+#include "plugin_locale.h"
 #include "items_internal.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/file.h"
@@ -60,6 +61,15 @@ const BongoCatItemsPlugin *bongo_cat_items_query(SDL_SharedObject *library) {
         api->create && api->destroy && api->page && api->snapshot && api->restore &&
         api->add && api->update && api->remove ? api : NULL;
 }
+static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
+    union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
+    entry.function = SDL_LoadFunction(library, BONGO_CAT_ITEMS_UI_SYMBOL);
+    if (!entry.function) return NULL;
+    const BongoCatPluginUiContribution *contribution = entry.query(BONGO_CAT_PLUGIN_UI_ABI);
+    return contribution && contribution->abi_version == BONGO_CAT_PLUGIN_UI_ABI &&
+        contribution->struct_size == sizeof(*contribution) && contribution->draw ?
+        contribution : NULL;
+}
 static void detach(BongoCatApp *app) {
     if (!app->items) return;
     bongo_cat_plugin_worker_stop(&app->items->worker);
@@ -68,6 +78,8 @@ static void detach(BongoCatApp *app) {
     BongoCatItems *v = app->items;
     app->items = NULL; /* Page disappears before library unload. */
     v->api->destroy(v->instance);
+    bongo_cat_i18n_unregister_plugin(app->i18n, "items");
+    bongo_cat_plugin_page_stop(&v->page_ui);
     SDL_UnloadObject(v->library);
     SDL_free(v);
     bongo_cat_preferences_invalidate(app->preferences);
@@ -84,7 +96,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     BongoCatItems *v = api ? SDL_calloc(1, sizeof(*v)) : NULL;
     if (v) {
         atomic_init(&v->unsaved, false); atomic_init(&v->loaded, false);
-        v->library = library; v->api = api; v->instance = api->create();
+        v->library = library; v->api = api; v->ui = query_ui(library);
+        v->instance = api->create();
         v->page.struct_size = sizeof(v->page);
     }
     bool valid = v && v->instance && api->page(v->instance, &v->page) &&
@@ -102,6 +115,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     }
     app->items = v;
     if (!bongo_cat_items_worker_start(app)) { detach(app); return false; }
+    bongo_cat_plugin_locale_load(app->i18n, library, "items");
+    bongo_cat_preferences_plugin_fonts_changed(app->preferences);
     bongo_cat_preferences_invalidate(app->preferences);
     return true;
 }
@@ -144,10 +159,13 @@ bool bongo_cat_items_set_enabled(BongoCatApp *app, bool enabled, BongoCatError *
 const BongoCatItemsPage *bongo_cat_items_page(BongoCatApp *app) {
     return app && app->items ? &app->items->page : NULL;
 }
+const BongoCatPluginUiContribution *bongo_cat_items_ui(BongoCatApp *app) {
+    return app && app->items ? app->items->ui : NULL;
+}
 bool bongo_cat_items_snapshot(BongoCatApp *app, BongoCatItemScene *scene) {
     if (!app || !app->items || !scene) return false;
     if (!atomic_load_explicit(&app->items->loaded, memory_order_acquire) &&
-        app->items->worker.thread && SDL_GetCurrentThreadID() != SDL_GetThreadID(app->items->worker.thread)) return false;
+        app->items->worker.core && !bongo_cat_plugin_worker_current(&app->items->worker)) return false;
     *scene = (BongoCatItemScene){0}; scene->struct_size = sizeof(*scene);
     if (app->items->worker.state_mutex) SDL_LockMutex(app->items->worker.state_mutex);
     bool ok = app->items->api->snapshot(app->items->instance, scene) != 0 &&
@@ -158,12 +176,13 @@ bool bongo_cat_items_snapshot(BongoCatApp *app, BongoCatItemScene *scene) {
 void bongo_cat_items_changed(BongoCatApp *app) {
     if (!app || !app->items) return;
     app->items->unsaved = true;
-    if (app->items->worker.thread && SDL_GetCurrentThreadID() == SDL_GetThreadID(app->items->worker.thread)) {
+    if (bongo_cat_plugin_worker_current(&app->items->worker)) {
         atomic_store_explicit(&app->items->worker.changed, true, memory_order_release); return;
     }
     bongo_cat_items_publish(app);
 }
 void bongo_cat_items_publish(BongoCatApp *app) {
+    bongo_cat_items_prune_graphics(app);
     ++app->items->revision;
     bongo_cat_overlay_set_items(app->overlay, bongo_cat_items_revision(app) ?
         bongo_cat_items_draw_native : NULL, app, app->items->revision);
@@ -201,7 +220,12 @@ bool bongo_cat_items_remove(BongoCatApp *app, uint32_t index) {
     bool ok = app->items->api->remove(app->items->instance, index) != 0;
     SDL_UnlockMutex(app->items->worker.state_mutex);
     if (!ok) return false;
-    bongo_cat_items_release_graphics(app);
     bongo_cat_items_changed(app);
     return true;
+}
+
+const BongoCatPluginPageUiContribution *bongo_cat_items_page_ui(BongoCatApp *app, void **instance) {
+    if (!app || !app->items) return NULL;
+    return bongo_cat_plugin_page_query(&app->items->page_ui, app->items->library,
+        "bongo_cat_items_page_ui_query_v1", instance);
 }

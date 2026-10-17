@@ -2,7 +2,9 @@
 #define BONGO_CAT_INPUT_H
 
 #include "bongo_cat/common.h"
+#ifndef __cplusplus
 #include <stdatomic.h>
+#endif
 #include "bongo_cat/statistics_plugin.h"
 
 #define BONGO_CAT_INPUT_QUEUE_CAP 256u
@@ -37,30 +39,17 @@ typedef struct BongoCatScheduledRelease {
     char name[BONGO_CAT_ID_CAP];
 } BongoCatScheduledRelease;
 
-typedef struct BongoCatInputState {
-    atomic_bool metrics_busy, metrics_enabled, metrics_reset;
-    atomic_uint_fast64_t metrics_keys, metrics_buttons[5], metrics_movement, metrics_scroll;
-    bool metrics_pointer_known;
-    double metrics_x, metrics_y;
-    atomic_bool queue_busy;
-    BongoCatInputEvent queue[BONGO_CAT_INPUT_QUEUE_CAP];
-    atomic_uint_fast16_t head;
-    atomic_uint_fast16_t tail;
-    _Atomic double mouse_x;
-    _Atomic double mouse_y;
-    atomic_bool mouse_dirty;
-    atomic_uint_fast8_t control;
-    atomic_uint_fast8_t shift;
-    atomic_uint_fast64_t dropped;
-    atomic_uint_fast64_t next_sequence;
-    BongoCatInputEvent recovery[BONGO_CAT_INPUT_RECOVERY_CAP];
-    atomic_uint_fast8_t recovery_head;
-    atomic_uint_fast8_t recovery_tail;
-    BongoCatScheduledRelease scheduled_releases[
-        BONGO_CAT_SCHEDULED_RELEASE_CAP];
-    size_t scheduled_release_count;
-} BongoCatInputState;
+/* Zero-initialize before first init. Rust owns the queues and synchronization.
+   Destroy only after every platform producer/consumer has stopped. */
+typedef struct BongoCatInputState { void *core; } BongoCatInputState;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void bongo_cat_input_destroy(BongoCatInputState *state);
+uint64_t bongo_cat_input_dropped(const BongoCatInputState *state);
+bool bongo_cat_input_metrics_enabled(const BongoCatInputState *state);
 void bongo_cat_input_init(BongoCatInputState *state);
 bool bongo_cat_input_edge(bool states[BONGO_CAT_INPUT_KEY_STATE_CAP],
     unsigned code, bool down);
@@ -81,5 +70,9 @@ void bongo_cat_input_metrics_pointer(BongoCatInputState *state, double x, double
 void bongo_cat_input_metrics_motion(BongoCatInputState *state, double x, double y);
 void bongo_cat_input_metrics_scroll(BongoCatInputState *state, double x, double y);
 void bongo_cat_input_metrics_take(BongoCatInputState *state, BongoCatStatisticsMetrics *metrics);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

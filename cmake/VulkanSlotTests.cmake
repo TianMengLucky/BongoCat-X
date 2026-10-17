@@ -1,7 +1,7 @@
 # Delayed/failing dispatch exercises production slot ownership without a GPU.
 if(BONGO_CAT_PLATFORM_VULKAN AND BONGO_CAT_VULKAN_INCLUDE_DIR)
   add_executable(bongo_cat_vk_slot_tests tests/platform/test_vk_slots.c
-    src/render/rhi/rhi_vk_sync.c src/render/rhi/rhi_vk_upload.c)
+    src/render/rhi/rhi_vk_sync.cpp src/render/rhi/rhi_vk_upload.cpp)
   target_compile_definitions(bongo_cat_vk_slot_tests PRIVATE BONGO_CAT_HAS_VULKAN_RHI=1)
   target_include_directories(bongo_cat_vk_slot_tests PRIVATE
     include src/render/rhi tests/support "${BONGO_CAT_GENERATED_INCLUDE_DIR}")

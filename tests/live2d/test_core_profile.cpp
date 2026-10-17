@@ -64,6 +64,8 @@ int main() {
     for (int iteration = 0; iteration < 32; ++iteration) {
         bongo_cat::CoreProfileBuffers outer, inner;
         GLuint retained_vao = 0, retained_buffer = 0;
+        GLfloat animated_triangle[6];
+        std::memcpy(animated_triangle, triangle, sizeof(triangle));
         for (int frame = 0; frame < 8; ++frame) {
             bongo_cat::CoreProfileBinding binding(outer);
             if (frame) {
@@ -73,12 +75,18 @@ int main() {
             retained_vao = outer.vao;
             retained_buffer = outer.buffers[0];
             bongo_cat::CoreProfileBinding::prepare_begin(7, 9);
-            bongo_cat::CoreProfileBinding::prepare_mesh(triangle, triangle_uv, 3, triangle_indices, 3);
+            animated_triangle[2] = 3.0f + (float)frame * 0.25f;
+            bongo_cat::CoreProfileBinding::prepare_mesh(animated_triangle, triangle_uv, 3, triangle_indices, 3);
             bongo_cat::CoreProfileBinding::prepare_mesh(quad, quad_uv, 4, quad_indices, 6);
             bongo_cat::CoreProfileBinding::prepare_end();
+            CHECK(outer.arena_sizes[0] == (GLsizeiptr)(sizeof(triangle) + sizeof(quad)));
+            GLfloat uploaded[6];
+            glBindBuffer(GL_ARRAY_BUFFER, outer.arena[0]);
+            glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uploaded), uploaded);
+            CHECK(std::memcmp(uploaded, animated_triangle, sizeof(uploaded)) == 0);
             glEnableVertexAttribArray(3);
             glEnableVertexAttribArray(7);
-            bongo_cat::CoreProfileBinding::attribute(0, 3, triangle, sizeof(triangle));
+            bongo_cat::CoreProfileBinding::attribute(0, 3, animated_triangle, sizeof(animated_triangle));
             bongo_cat::CoreProfileBinding::attribute(1, 7, triangle_uv, sizeof(triangle_uv));
             bongo_cat::CoreProfileBinding::draw(3, triangle_indices);
             {

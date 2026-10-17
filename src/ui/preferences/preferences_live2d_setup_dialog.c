@@ -23,7 +23,7 @@ static bool button(BongoCatPreferences *value, struct nk_context *context, struc
     float width = font->width(font->userdata, font->height, label, nk_strlen(label));
     text(canvas, nk_rect(bounds.x + NK_MAX(8.0f, (bounds.w - width) * .5f),
         bounds.y + (bounds.h - font->height) * .5f, bounds.w - 16, font->height), label, font,
-        !enabled ? p.muted : primary ? nk_rgb(255, 255, 255) : p.text);
+        !enabled ? p.muted : primary ? p.on_accent : p.text);
     if (hover) bongo_cat_ui_cursor_hover_rect(context, bounds, BONGO_CAT_UI_CURSOR_POINTER);
     return hover && nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, bounds);
 }

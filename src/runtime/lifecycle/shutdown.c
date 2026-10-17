@@ -51,6 +51,7 @@ void bongo_cat_app_shutdown(BongoCatApp *app, const char *stage,
     bongo_cat_behaviors_clear(app->behavior_cache); free(app->behavior_cache);
     app->behavior_cache = NULL;
     bongo_cat_platform_shutdown(&app->platform);
+    bongo_cat_input_destroy(&app->input);
     bongo_cat_runtime_log_stop();
     bongo_cat_window_destroy(app);
     bongo_cat_runtime_clean_shutdown(app, exit_code);

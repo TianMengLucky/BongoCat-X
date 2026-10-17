@@ -1,6 +1,6 @@
 [package]
 name = "bongo-inox2d"
-version = "2.2.0"
+version = "2.2.2"
 edition = "2021"
 publish = false
 
@@ -9,7 +9,8 @@ name = "bongo_inox2d"
 crate-type = ["cdylib"]
 
 [dependencies]
-bongo-safe = { path = "../bongo-safe" }
+bongo-plugin = { path = "../bongo-plugin" }
+bongo-safe = { path = "../bongo-safe", default-features = false }
 inox2d = { git = "https://github.com/Inochi2D/inox2d", rev = "d4dd9dd7f16b775042cbda44370570abf9a8cf81" }
 inox2d-opengl = { git = "https://github.com/Inochi2D/inox2d", rev = "d4dd9dd7f16b775042cbda44370570abf9a8cf81" }
 glam = "0.29"
@@ -37,4 +38,4 @@ naga = { version = "0.19", features = ["wgsl-in", "spv-out", "msl-out"] }
 opt-level = "s"
 lto = "thin"
 codegen-units = 1
-strip = "debuginfo"
+strip = "symbols"

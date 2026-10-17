@@ -1,5 +1,6 @@
 #include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
+#include "cubism_native_texture.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "cubism_texture_resolution.hpp"
 #include <SDL3/SDL_log.h>
@@ -12,6 +13,33 @@
 #endif
 
 namespace bongo_cat {
+namespace {
+struct NativeTextureLoad {
+    NativeTexturePixels *atlas = nullptr;
+    const char *file = nullptr;
+    TextureResolution bound{};
+    bool bc7 = false, success = false;
+    BongoCatError *error = nullptr;
+    SDL_Thread *thread = nullptr;
+    ~NativeTextureLoad() { if (thread) SDL_WaitThread(thread, nullptr); }
+    void run(BongoCatModelRuntimeLoadProgress progress, void *userdata, float fraction) {
+        const auto worker = [](void *userdata) -> int {
+            auto &job = *static_cast<NativeTextureLoad *>(userdata);
+            job.success = job.atlas->load(job.file, job.bound.max_width,
+                job.bound.max_height, job.bc7, job.error);
+            return job.success ? 0 : -1;
+        };
+        if (progress) thread = SDL_CreateThread(worker, BONGO_CAT_SLUG "-native-load", this);
+        if (!thread) { worker(this); return; }
+        while (SDL_GetThreadState(thread) == SDL_THREAD_ALIVE) {
+            progress(userdata, fraction);
+            SDL_Delay(2);
+        }
+        SDL_WaitThread(thread, nullptr);
+        thread = nullptr;
+    }
+};
+}
 void NativeModel::set_rhi_info(const BongoCatRhiDeviceInfo &info) {
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
     bool rebuild = GetRenderer<Csm::Rendering::CubismRenderer>() &&
@@ -85,59 +113,49 @@ bool NativeModel::load_textures_native(BongoCatError *error,
     texture_limit_ = limit;
     for (int i = 0; i < count; ++i) {
         int width = 0, height = 0;
-        auto *decoded = [this, i, &width, &height] {
-            auto bytes = read(path(setting_->GetTextureFileName(i)));
-            return bongo_safe_image_decode(bytes.data(), bytes.size(), &width, &height);
-        }();
-        size_t texels = width > 0 && height > 0 ? (size_t)width * (size_t)height : 0;
-        const auto free_pixels = [texels](unsigned char *pixels) {
-            if (pixels) bongo_safe_free_pixels(pixels, texels * 4);
-        };
-        std::unique_ptr<unsigned char, decltype(free_pixels)> owned(decoded, free_pixels);
-        if (!decoded || !texels || texels > SIZE_MAX / 4) {
-            bongo_cat_error_set(error, BONGO_CAT_ERROR_IO,
-                "Cannot decode Live2D texture %d", i);
-            release_render_resources();
-            return false;
-        }
-        BongoCatImage image{};
-        image.pixels = decoded; image.width = width; image.height = height;
-        bongo_cat_image_make_alpha_mask(&image, &native_alpha_[(size_t)i]);
-        auto bound = texture_resolution_for(dynamic_texture_resolution_, display_width, display_height,
-            reference_width, reference_height, width, height, limit, render_quality_percent_);
-        auto &metadata = native_texture_info_[(size_t)i];
-        metadata.source_width = width; metadata.source_height = height;
-        BongoCatImage resized{};
-        const auto free_image = [](BongoCatImage *value) { bongo_cat_image_free(value); };
-        std::unique_ptr<BongoCatImage, decltype(free_image)> resized_owner(&resized, free_image);
-        image.pixels_ffi = true;
-        image.pixels = owned.release();
-        if (!bongo_cat_image_resize_rgba_take(&image, bound.max_width, bound.max_height, &resized, error)) {
-            bongo_cat_image_free(&image);
+        const auto file = path(setting_->GetTextureFileName(i));
+        if (!bongo_cat_image_info(file.c_str(), &width, &height) || width <= 0 || height <= 0) {
+            bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot read native texture dimensions");
             release_render_resources(); return false;
         }
-        width = resized.width; height = resized.height;
-        const size_t pixel_bytes = (size_t)width * (size_t)height * 4;
-        // CPU pixels are copied into staging; only the GPU staging survives async submission.
-        auto *pixels = resized.pixels;
-        for (size_t p = 0; p < pixel_bytes; p += 4) {
-            unsigned alpha = pixels[p + 3];
-            for (size_t c = 0; c < 3; ++c)
-                pixels[p + c] = (unsigned char)(pixels[p + c] * alpha / 255);
+        auto bound = texture_resolution_for(dynamic_texture_resolution_, display_width, display_height,
+            reference_width, reference_height, width, height, limit, render_quality_percent_);
+        auto atlas = std::make_unique<NativeTexturePixels>();
+        const bool bc7 = rhi_info_.backend == BONGO_CAT_RHI_VULKAN &&
+            (native_vulkan_features_ & BONGO_CAT_VULKAN_TEXTURE_COMPRESSION_BC) != 0;
+        NativeTextureLoad loading{atlas.get(), file.c_str(), bound, bc7, false, error};
+        loading.run(progress, userdata, .50f + .45f * (float)i / (float)(count > 0 ? count : 1));
+        if (!loading.success) {
+            release_render_resources(); return false;
         }
+        auto &metadata = native_texture_info_[(size_t)i];
+        width = (int)atlas->data.width; height = (int)atlas->data.height;
         bool uploaded = false;
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
         if (rhi_info_.backend == BONGO_CAT_RHI_VULKAN)
-            uploaded = upload_texture_vulkan(i, pixels, width, height, error);
+            uploaded = upload_texture_vulkan(i, atlas->data.pixels, width, height, error,
+                atlas->data.format, atlas->data.size);
+        if (!uploaded && rhi_info_.backend == BONGO_CAT_RHI_VULKAN && atlas->data.format == 1) {
+            if (atlas->load(file.c_str(), bound.max_width, bound.max_height, false, error))
+                uploaded = upload_texture_vulkan(i, atlas->data.pixels,
+                    (int)atlas->data.width, (int)atlas->data.height, error,
+                    atlas->data.format, atlas->data.size);
+        }
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
         if (rhi_info_.backend == BONGO_CAT_RHI_METAL) {
-            uploaded = upload_texture_metal(i, pixels, width, height, error);
+            uploaded = upload_texture_metal(i, atlas->data.pixels, width, height, error);
         }
 #endif
         if (!uploaded) { release_render_resources(); return false; }
-        resized_owner.reset();
-        native_texture_bytes_ += pixel_bytes;
+        if (error) *error = {};
+        width = (int)atlas->data.width; height = (int)atlas->data.height;
+        metadata.source_width = (int)atlas->data.source_width;
+        metadata.source_height = (int)atlas->data.source_height;
+        atlas->alpha(native_alpha_[(size_t)i]);
+        metadata.bytes = atlas->data.size;
+        native_texture_bytes_ += metadata.bytes;
+        atlas.reset();
         metadata.width = width; metadata.height = height;
         if (progress) progress(userdata, .50f + .45f * (float)(i + 1) /
             (float)(count > 0 ? count : 1));

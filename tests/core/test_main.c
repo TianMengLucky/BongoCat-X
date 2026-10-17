@@ -8,6 +8,7 @@ int main(void) {
     test_input();
     test_models();
     test_mver_pointer();
+    test_hand_layout_file();
     test_shortcut();
     test_sound_shortcut();
     test_update();

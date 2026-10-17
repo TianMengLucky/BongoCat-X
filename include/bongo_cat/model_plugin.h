@@ -6,9 +6,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define BONGO_CAT_MODEL_PLUGIN_ABI 1u
+#define BONGO_CAT_MODEL_PLUGIN_ABI 2u
 #define BONGO_CAT_MODEL_PLUGIN_SYMBOL "bongo_cat_model_plugin_query"
-/* Optional, additive extension: legacy plugin descriptor/host ABI stays v1.
+/* Optional optimization extension, independent of the host ABI version.
    Called on the owning thread, after set_rhi_info and before load. A plugin
    returns ONLY requested features it actually enables. Missing = none. */
 #define BONGO_CAT_PLUGIN_OPTIMIZE_SYMBOL "bongo_cat_model_plugin_optimize_v1"
@@ -24,6 +24,8 @@ extern "C" {
    from physical-device support alone. Called before optimize_v1. */
 #define BONGO_CAT_PLUGIN_VULKAN_FEATURES_SYMBOL "bongo_cat_model_plugin_vulkan_features_v1"
 #define BONGO_CAT_VULKAN_SAMPLED_IMAGE_DYNAMIC_INDEXING (1u << 0)
+#define BONGO_CAT_VULKAN_TEXTURE_COMPRESSION_BC (1u << 1)
+#define BONGO_CAT_VULKAN_MEMORY_BUDGET (1u << 2)
 typedef void (*BongoCatModelPluginVulkanFeatures)(BongoCatModelRuntime *instance,
     uint32_t enabled_features);
 typedef uint32_t (*BongoCatModelPluginOptimize)(BongoCatModelRuntime *instance,

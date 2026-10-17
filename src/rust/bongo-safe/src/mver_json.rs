@@ -161,6 +161,37 @@ fn label(node: &CstNode) -> Option<String> {
     }
     None
 }
+pub(crate) fn labels(
+    data: &str,
+    mode: &str,
+) -> Option<std::collections::HashMap<(String, usize), String>> {
+    let root = parse(data).ok()?;
+    let obj = root.object_value()?;
+    obj.object_value(mode)?;
+    let mut labels = std::collections::HashMap::new();
+    for field in [
+        "l2d_expression",
+        "l2d_motion",
+        "l2d_motion_lockhand",
+        "sounds",
+    ] {
+        let source = if field == "l2d_motion_lockhand"
+            || (mode == "gamepad" && matches!(field, "l2d_expression" | "l2d_motion"))
+        {
+            "standard"
+        } else {
+            mode
+        };
+        if let Some(array) = obj.object_value(source).and_then(|s| s.array_value(field)) {
+            for (index, row) in array.elements().into_iter().enumerate().take(5120) {
+                if let Some(label) = label(&row) {
+                    labels.insert((field.to_owned(), index), label);
+                }
+            }
+        }
+    }
+    Some(labels)
+}
 /// # Safety
 /// The callback must remain valid and must copy the borrowed label before returning.
 #[no_mangle]
@@ -184,40 +215,15 @@ pub unsafe extern "C" fn bongo_safe_mver_labels(
         ) else {
             return false;
         };
-        let Ok(root) = parse(data) else {
+        let Some(labels) = labels(data, mode) else {
             return false;
         };
-        let Some(obj) = root.object_value() else {
-            return false;
-        };
-        if obj.object_value(mode).is_none() {
-            return false;
-        }
-        for field in [
-            "l2d_expression",
-            "l2d_motion",
-            "l2d_motion_lockhand",
-            "sounds",
-        ] {
-            let source = if field == "l2d_motion_lockhand"
-                || (mode == "gamepad" && matches!(field, "l2d_expression" | "l2d_motion"))
-            {
-                "standard"
-            } else {
-                mode
+        for ((field, index), label) in labels {
+            let (Ok(field), Ok(label)) = (CString::new(field), CString::new(label)) else {
+                continue;
             };
-            if let Some(array) = obj.object_value(source).and_then(|s| s.array_value(field)) {
-                for (index, row) in array.elements().into_iter().enumerate().take(5120) {
-                    if let Some(label) = label(&row) {
-                        let (Ok(field), Ok(label)) = (CString::new(field), CString::new(label))
-                        else {
-                            continue;
-                        };
-                        if !callback(userdata, field.as_ptr(), index, label.as_ptr()) {
-                            return false;
-                        }
-                    }
-                }
+            if !callback(userdata, field.as_ptr(), index, label.as_ptr()) {
+                return false;
             }
         }
         true

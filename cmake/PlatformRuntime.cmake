@@ -4,7 +4,7 @@ if(WIN32)
     src/platform/windows/windows.c
     src/platform/windows/windows_directory.c
     src/platform/windows/windows_package.c
-    src/platform/windows/windows_package_shortcut.c
+    src/platform/windows/windows_package_shortcut.cpp
     src/platform/windows/windows_startup.c
     src/platform/windows/windows_autostart.cpp
     src/platform/windows/windows_live2d_sdk.c
@@ -13,12 +13,15 @@ if(WIN32)
     src/platform/windows/windows_update_handoff.c
     src/platform/windows/windows_borderless.c
     src/platform/windows/windows_capture.c
+    src/platform/windows/windows_taskbar.cpp
+    src/media/image_wic_decode.cpp
+    src/media/image_wic_stream.cpp
     src/platform/windows/windows_transparency.c
     src/platform/windows/windows_pointer.c
     src/platform/windows/windows_snapshot.c
     src/platform/windows/windows_snapshot_image.c
     src/platform/windows/windows_snapshot_input.c
-    src/platform/windows/windows_dialog.c
+    src/platform/windows/windows_dialog.cpp
     src/platform/windows/windows_statistics.c
     src/platform/windows/windows_input.c
     src/platform/windows/windows_input_receiver.c
@@ -45,6 +48,12 @@ if(WIN32)
   set_source_files_properties(src/platform/windows/windows_composition.cpp PROPERTIES
     SKIP_PRECOMPILE_HEADERS ON
     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:/EHsc>")
+  set_source_files_properties(
+    src/platform/windows/windows_dialog.cpp
+    src/platform/windows/windows_package_shortcut.cpp
+    src/platform/windows/windows_taskbar.cpp
+    src/media/image_wic_decode.cpp src/media/image_wic_stream.cpp
+    PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
   target_compile_features(bongo_cat_runtime PRIVATE cxx_std_17)
   target_include_directories(bongo_cat_runtime PRIVATE
     src/platform/windows)
@@ -113,7 +122,6 @@ else()
   endif()
   # X11/XWayland always use XFixes. Native Wayland needs the core input-region
   # protocol, which the pinned SDL does not implement for SetWindowShape.
-  find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
     pkg_check_modules(BONGO_CAT_WAYLAND QUIET IMPORTED_TARGET wayland-client>=1.11)
   endif()

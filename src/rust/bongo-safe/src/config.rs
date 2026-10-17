@@ -1702,7 +1702,6 @@ mod tests {
         assert!(read_app(&serde_json::json!({"largeRenderOptimization": false}).as_object().unwrap(), &mut app).is_ok());
         assert!(!app.large_render_optimization);
         assert!(read_app(&serde_json::json!({"largeRenderOptimization": "true"}).as_object().unwrap(), &mut app).is_err());
-        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 20);
     }
 
     #[test]
@@ -1842,10 +1841,11 @@ mod tests {
             let input = serde_json::json!({"githubDownloadAcceleration": invalid});
             assert!(read_app(input.as_object().unwrap(), &mut app).is_err());
         }
-        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 20);
-        assert_eq!(std::mem::offset_of!(ApplicationPreferences, theme), 8);
-        assert_eq!(std::mem::offset_of!(ApplicationPreferences, language), 12);
-        assert_eq!(std::mem::offset_of!(ApplicationPreferences, render_backend), 16);
+        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 24);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, github_download_acceleration), 8);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, theme), 12);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, language), 16);
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, render_backend), 20);
     }
 
     #[test]

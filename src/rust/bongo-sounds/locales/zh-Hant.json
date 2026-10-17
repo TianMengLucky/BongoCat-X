@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "音效",
+  "pages.preference.sounds.help": "點擊按鍵試聽既有音效並開啟視窗選擇音訊；懸浮顯示音訊名稱。實際按下鍵盤會播放對應音效，綁定自動儲存。",
+  "pages.preference.sounds.unassigned": "未設定音效",
+  "pages.preference.sounds.choose": "選擇音訊",
+  "pages.preference.sounds.preview": "試聽",
+  "pages.preference.sounds.clear": "清除綁定",
+  "pages.preference.sounds.formats": "支援 WAV、MP3、Ogg Vorbis、FLAC，最大 64 MB。獨立於目前模型；可監聽按鍵取決於輸入權限與鍵盤配置。",
+  "pages.preference.sounds.pluginHint": "為每個按鍵綁定音效。獨立工作執行緒處理匯入、解碼、播放和儲存；停用後保留綁定與音訊檔案。",
+  "pages.preference.sounds.saved": "音效已儲存",
+  "pages.preference.sounds.failed": "無法更新音效",
+  "pages.preference.sounds.queued": "音訊匯入已排入佇列",
+  "pages.preference.sounds.busy": "工作執行緒正在處理音訊"
+}

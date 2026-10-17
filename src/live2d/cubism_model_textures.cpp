@@ -114,9 +114,9 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
                 texture->max_height == resolution.max_height &&
                 std::strcmp(texture->digest, digest) == 0) {
                 bongo_cat_model_memory_log("texture-ready",
-                    "cache=hit actual=%dx%d rgba8_est_mib=%.1f",
+                    "cache=hit actual=%dx%d stored_payload_mib=%.1f",
                     texture->width, texture->height,
-                    bongo_cat_model_texture_mib(texture->width, texture->height, true));
+                    (double)texture->bytes / (1024.0 * 1024.0));
                 SDL_Log("Live2D texture shared: %s", path.c_str());
                 return texture;
             }
@@ -131,7 +131,10 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
     texture->max_width = resolution.max_width;
     texture->max_height = resolution.max_height;
     int loaded_width = 0, loaded_height = 0;
-    texture->id = (dynamic_resolution || render_quality_percent < 100) &&
+    texture->id = bongo_cat_image_texture_model_bc7(path.c_str(), resolution.max_width,
+        resolution.max_height, &loaded_width, &loaded_height, &texture->alpha,
+        progress, userdata, error);
+    if (!texture->id) texture->id = (dynamic_resolution || render_quality_percent < 100) &&
         resolution.max_width > 0 &&
         resolution.max_height > 0 ?
         bongo_cat_image_texture_model_scaled_cached(path.c_str(), reusable ? digest : nullptr, direct,
@@ -144,15 +147,17 @@ static std::shared_ptr<ModelTexture> acquire_texture(const std::string &path,
             error ? error->message : "unknown");
         return {};
     }
+    if (error) *error = {};
     texture->width = loaded_width;
     texture->height = loaded_height;
     texture->source_width = source_width > 0 ? source_width : loaded_width;
     texture->source_height = source_height > 0 ? source_height : loaded_height;
     bool mipmaps = full_sampling(texture->id);
+    texture->bytes = gl_texture_payload_bytes(texture->id);
     bongo_cat_model_memory_log("texture-ready",
-        "cache=miss actual=%dx%d mipmaps=%d rgba8_est_mib=%.1f cpu_pixels=freed",
+        "cache=miss actual=%dx%d mipmaps=%d stored_payload_mib=%.1f cpu_pixels=freed",
         loaded_width, loaded_height, mipmaps ? 1 : 0,
-        bongo_cat_model_texture_mib(loaded_width, loaded_height, mipmaps));
+        (double)texture->bytes / (1024.0 * 1024.0));
     bool unchanged = !reusable || same_source(path, before);
     if (!unchanged)
         bongo_cat_image_forget_texture_cache(digest,

@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "Loja",
+  "pages.preference.store.help": "Explore modelos da comunidade. O SHA-256 é verificado antes de cada instalação.",
+  "pages.preference.store.refresh": "Atualizar",
+  "pages.preference.store.repository": "Repositório da comunidade",
+  "pages.preference.store.repositoryUrl": "URL do repositório GitHub (branch main; vazio restaura o padrão)",
+  "pages.preference.store.applyRepository": "Aplicar repositório",
+  "pages.preference.store.invalidRepository": "Insira uma URL de repositório GitHub: https://github.com/owner/repository",
+  "pages.preference.store.loading": "Carregando catálogo…",
+  "pages.preference.store.unpublished": "O catálogo de modelos ainda não foi publicado.",
+  "pages.preference.store.networkError": "Não foi possível carregar o catálogo. Verifique a conexão ou o formato e tente novamente.",
+  "pages.preference.store.empty": "Ainda não há modelos disponíveis.",
+  "pages.preference.store.pluginHint": "Plugin Rust para o catálogo de modelos. A loja aparece quando o plugin está ativado.",
+  "pages.preference.store.failed": "Falha na operação da loja",
+  "pages.preference.store.preview": "Prévia do modelo",
+  "pages.preference.store.download": "Baixar",
+  "pages.preference.store.uninstall": "Desinstalar",
+  "pages.preference.store.downloading": "Baixando…",
+  "pages.preference.store.installing": "Instalando…",
+  "pages.preference.store.hashMismatch": "SHA-256 não confere; instalação recusada",
+  "pages.preference.store.installed": "Modelo instalado e SHA-256 verificado",
+  "pages.preference.store.buyFull": "Comprar versão completa"
+}

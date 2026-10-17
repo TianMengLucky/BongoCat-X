@@ -94,11 +94,11 @@ void bongo_cat_preferences_model_card_draw_selection_badge(
     struct nk_rect preview, BongoCatUIPalette palette, float amount) {
     if (amount <= .001f) return;
     float size = 25.0f * (.85f + .15f * amount);
-    struct nk_rect badge = nk_rect(preview.x + preview.w - size - 8,
+    struct nk_rect badge = nk_rect(preview.x + 8,
         preview.y + 8, size, size);
     nk_fill_circle(canvas, badge,
-        bongo_cat_ui_color_alpha(palette.pink, amount));
+        bongo_cat_ui_color_alpha(palette.accent, amount));
     bongo_cat_preferences_icon_draw(value, canvas, BONGO_CAT_UI_ICON_CHECK,
         nk_rect(badge.x + 5, badge.y + 5, badge.w - 10, badge.h - 10),
-        bongo_cat_ui_color_alpha(nk_rgb(255, 255, 255), amount));
+        bongo_cat_ui_color_alpha(palette.on_accent, amount));
 }

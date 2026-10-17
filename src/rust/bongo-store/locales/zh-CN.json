@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "商店",
+  "pages.preference.store.help": "浏览社区模型，下载完成后校验 SHA-256，通过后才安装。",
+  "pages.preference.store.refresh": "刷新",
+  "pages.preference.store.repository": "社区模型仓库",
+  "pages.preference.store.repositoryUrl": "GitHub 仓库 URL（main 分支；留空恢复默认）",
+  "pages.preference.store.applyRepository": "应用仓库",
+  "pages.preference.store.invalidRepository": "请输入 GitHub 仓库 URL：https://github.com/owner/repository",
+  "pages.preference.store.loading": "正在加载目录…",
+  "pages.preference.store.unpublished": "社区模型目录尚未发布，敬请期待。",
+  "pages.preference.store.networkError": "无法加载目录，请检查网络或目录格式后重试。",
+  "pages.preference.store.empty": "暂时没有上架的模型。",
+  "pages.preference.store.pluginHint": "以 Rust 插件提供社区模型商店，启用后显示商店页面。",
+  "pages.preference.store.failed": "商店操作失败",
+  "pages.preference.store.preview": "模型预览",
+  "pages.preference.store.download": "下载",
+  "pages.preference.store.uninstall": "卸载",
+  "pages.preference.store.downloading": "正在下载…",
+  "pages.preference.store.installing": "正在安装…",
+  "pages.preference.store.hashMismatch": "SHA-256 校验失败，已拒绝安装",
+  "pages.preference.store.installed": "模型已安装，SHA-256 校验通过",
+  "pages.preference.store.buyFull": "购买完整版"
+}

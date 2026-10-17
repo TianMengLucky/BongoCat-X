@@ -107,15 +107,10 @@ void bongo_cat_pref_controls_reset(struct nk_context *context) {
     slider_drag_stop(context);
 }
 
-static double stepper(struct nk_context *context, const char *id,
+static double stepper_at(struct nk_context *context, const char *id,
     double minimum, double value, double maximum, double step,
-    double default_value, bool integer, bool *changed) {
-    struct nk_rect bounds;
-    *changed = false;
-    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return value;
+    double default_value, bool integer, bool *changed, struct nk_rect bounds) {
     const float effect_margin = 2.0f;
-    bounds = nk_rect(bounds.x + bounds.w - 122.0f - effect_margin,
-        bounds.y, 122.0f, bounds.h);
     struct nk_rect interaction = nk_rect(bounds.x, bounds.y,
         bounds.w + effect_margin, bounds.h);
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
@@ -143,15 +138,15 @@ static double stepper(struct nk_context *context, const char *id,
         BONGO_CAT_UI_EASE_STANDARD);
     nk_fill_rect(canvas, bounds, 11, p.field);
     if (minus_amount > 0) nk_fill_rect(canvas, minus, 10,
-        bongo_cat_ui_color_mix(p.field, p.accent, minus_amount));
+        bongo_cat_ui_color_mix(p.field, p.selection, minus_amount));
     if (plus_amount > 0) nk_fill_rect(canvas, plus, 10,
-        bongo_cat_ui_color_mix(p.field, p.accent, plus_amount));
+        bongo_cat_ui_color_mix(p.field, p.selection, plus_amount));
     nk_stroke_rect(canvas, bounds, 11, 1.0f,
         bongo_cat_ui_color_mix(p.border_subtle, p.accent, hover_amount));
     struct nk_color minus_color = value <= minimum ? p.border_subtle :
-        bongo_cat_ui_color_mix(p.muted, nk_rgb(255, 255, 255), minus_amount);
+        bongo_cat_ui_color_mix(p.muted, p.on_selection, minus_amount);
     struct nk_color plus_color = value >= maximum ? p.border_subtle :
-        bongo_cat_ui_color_mix(p.muted, nk_rgb(255, 255, 255), plus_amount);
+        bongo_cat_ui_color_mix(p.muted, p.on_selection, plus_amount);
     float cy = bounds.y + bounds.h * .5f;
     nk_stroke_line(canvas, minus.x + 13, cy, minus.x + 27, cy, 2, minus_color);
     nk_stroke_line(canvas, plus.x + 13, cy, plus.x + 27, cy, 2, plus_color);
@@ -188,6 +183,18 @@ static double stepper(struct nk_context *context, const char *id,
     return value;
 }
 
+static double stepper(struct nk_context *context, const char *id,
+    double minimum, double value, double maximum, double step,
+    double default_value, bool integer, bool *changed) {
+    struct nk_rect bounds;
+    *changed = false;
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return value;
+    bounds = nk_rect(bounds.x + bounds.w - 122.0f - 2.0f, bounds.y, 122.0f,
+        bounds.h);
+    return stepper_at(context, id, minimum, value, maximum, step, default_value,
+        integer, changed, bounds);
+}
+
 bool bongo_cat_pref_control_float(struct nk_context *context, const char *id,
     float minimum, float *value, float maximum, float step,
     float default_value) {
@@ -204,6 +211,16 @@ bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
     bool changed;
     double result = stepper(context, id, minimum, *value, maximum, step,
         default_value, true, &changed);
+    if (changed) *value = (int)result;
+    return changed;
+}
+
+bool bongo_cat_pref_control_int_rect(struct nk_context *context, const char *id,
+    int minimum, int *value, int maximum, int step, int default_value,
+    struct nk_rect bounds) {
+    bool changed;
+    double result = stepper_at(context, id, minimum, *value, maximum, step,
+        default_value, true, &changed, bounds);
     if (changed) *value = (int)result;
     return changed;
 }

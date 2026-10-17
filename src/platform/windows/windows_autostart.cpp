@@ -7,7 +7,7 @@ extern "C" {
 #include "bongo_cat/common.h"
 #include "bongo_cat/platform.h"
 }
-#include <windows.h>
+#include "windows_com.hpp"
 #include <sddl.h>
 #include <shlobj.h>
 #include <taskschd.h>
@@ -15,15 +15,6 @@ extern "C" {
 
 namespace {
 
-/* Minimal RAII for the one Task Scheduler query the migration still needs. */
-template<class T> struct Com {
-    T *p = nullptr;
-    Com() = default;
-    Com(const Com &) = delete;
-    Com &operator=(const Com &) = delete;
-    ~Com() { if (p) p->Release(); }
-    T *operator->() const { return p; }
-};
 struct Bstr {
     BSTR p = nullptr;
     Bstr() = default;
@@ -33,14 +24,6 @@ struct Bstr {
     ~Bstr() { SysFreeString(p); }
     operator BSTR() const { return p; }
 };
-struct Apartment {
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    Apartment() = default;
-    Apartment(const Apartment &) = delete;
-    Apartment &operator=(const Apartment &) = delete;
-    ~Apartment() { if (SUCCEEDED(hr)) CoUninitialize(); }
-};
-
 constexpr wchar_t run_path[] =
     L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 constexpr wchar_t run_approval_path[] =
@@ -106,11 +89,12 @@ void clear_run_approval(void) {
 }
 
 void delete_legacy_shortcut(void) {
-    PWSTR directory = nullptr;
-    if (FAILED(SHGetKnownFolderPath(FOLDERID_Startup, KF_FLAG_DONT_VERIFY,
-            nullptr, &directory))) return;
-    std::wstring path = std::wstring(directory) + L"\\" BONGO_CAT_STORAGE_NAME_W L".lnk";
-    CoTaskMemFree(directory);
+    PWSTR raw_directory = nullptr;
+    HRESULT result = SHGetKnownFolderPath(FOLDERID_Startup, KF_FLAG_DONT_VERIFY,
+        nullptr, &raw_directory);
+    bongo_cat::TaskMemory<wchar_t> directory(raw_directory);
+    if (FAILED(result)) return;
+    std::wstring path = std::wstring(directory.get()) + L"\\" BONGO_CAT_STORAGE_NAME_W L".lnk";
     DeleteFileW(path.c_str());
     HKEY key = nullptr;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, shortcut_approval_path, 0,
@@ -122,17 +106,16 @@ void delete_legacy_shortcut(void) {
 void delete_legacy_task(void) {
     std::wstring sid = user_sid();
     if (sid.empty()) return;
-    Apartment apartment;
-    if (FAILED(apartment.hr) && apartment.hr != RPC_E_CHANGED_MODE) return;
-    Com<ITaskService> service;
+    bongo_cat::ComApartment apartment(COINIT_APARTMENTTHREADED);
+    if (FAILED(apartment.status()) && apartment.status() != RPC_E_CHANGED_MODE) return;
+    bongo_cat::ComPtr<ITaskService> service;
     if (FAILED(CoCreateInstance(CLSID_TaskScheduler, nullptr,
-            CLSCTX_INPROC_SERVER, IID_ITaskService,
-            reinterpret_cast<void **>(&service.p)))) return;
+            CLSCTX_INPROC_SERVER, IID_PPV_ARGS(service.GetAddressOf())))) return;
     VARIANT empty;
     VariantInit(&empty);
     if (FAILED(service->Connect(empty, empty, empty, empty))) return;
-    Com<ITaskFolder> folder;
-    if (FAILED(service->GetFolder(Bstr(L"\\"), &folder.p))) return;
+    bongo_cat::ComPtr<ITaskFolder> folder;
+    if (FAILED(service->GetFolder(Bstr(L"\\"), folder.GetAddressOf()))) return;
     /* A leftover only risks a duplicate launch; its removal must never be
        able to fail the update itself. */
     (void)folder->DeleteTask(

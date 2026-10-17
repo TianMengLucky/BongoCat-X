@@ -271,6 +271,7 @@ if ($SkipConfigure) {
     $configureArgs = @(
         '-S', $root, '-B', $BuildDir,
         '-G', $generator,
+        "-DCMAKE_BUILD_TYPE=$Configuration",
         '-DBONGO_CAT_WARNINGS_AS_ERRORS=ON',
         "-DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=$($OptimizeReleaseSize.ToString().ToUpperInvariant())",
         "-DBONGO_CAT_OPTIMIZE_RELEASE_IPO=$($OptimizeReleaseIpo.ToString().ToUpperInvariant())"

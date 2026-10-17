@@ -5,6 +5,11 @@
 #include "bongo_cat/statistics_plugin.h"
 #include "bongo_cat/statistics_page_plugin.h"
 #include "bongo_cat/statistics_usage_plugin.h"
+#include "bongo_cat/plugin_ui.h"
+#include "bongo_cat/plugin_ui_page.h"
+/* Optional UI contribution the plugin may export so it can draw its own
+   management card. */
+#define BONGO_CAT_STATISTICS_UI_SYMBOL "bongo_cat_statistics_ui_query_v1"
 
 typedef struct BongoCatApp BongoCatApp;
 typedef struct BongoCatStatistics BongoCatStatistics;
@@ -22,6 +27,10 @@ void bongo_cat_statistics_overlay_destroy(BongoCatApp *app);
 void bongo_cat_statistics_info(BongoCatApp *app, BongoCatStatisticsInfo *info);
 /* Borrowed host copy; NULL when the plugin has no active registration. */
 const BongoCatStatisticsPage *bongo_cat_statistics_page(const BongoCatApp *app);
+/* The active plugin's optional UI contribution, or NULL when it exports none.
+   Call it after every load/unload instead of caching the pointer. */
+const BongoCatPluginUiContribution *bongo_cat_statistics_ui(BongoCatApp *app);
+const BongoCatPluginPageUiContribution *bongo_cat_statistics_page_ui(BongoCatApp *app, void **instance);
 bool bongo_cat_statistics_set_enabled(BongoCatApp *app, bool enabled, BongoCatError *error);
 /* matched distinguishes a statistics import from a renderer import. */
 bool bongo_cat_statistics_import(BongoCatApp *app, const char *source,

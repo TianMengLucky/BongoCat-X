@@ -6,7 +6,7 @@
 int bongo_cat_test_failures;
 
 int main(void) {
-    BongoCatInputState state;
+    BongoCatInputState state = {0};
     bongo_cat_input_init(&state);
     BongoCatInputEvent key = {.kind = BONGO_CAT_INPUT_KEY_DOWN};
     memcpy(key.name, "KeyA", sizeof("KeyA"));
@@ -43,12 +43,6 @@ int main(void) {
     bongo_cat_input_metrics_motion(&state, 3, 4);
     bongo_cat_input_metrics_take(&state, &metrics);
     CHECK(metrics.movement == 5);
-    /* A pointer producer cannot stall keyboard counts or the consumer. */
-    atomic_store(&state.metrics_busy, true);
-    key.kind = BONGO_CAT_INPUT_KEY_DOWN;
-    bongo_cat_input_push(&state, &key);
-    bongo_cat_input_metrics_take(&state, &metrics);
-    CHECK(metrics.keys == 1);
-    atomic_store(&state.metrics_busy, false);
+    bongo_cat_input_destroy(&state);
     return bongo_cat_test_failures ? 1 : 0;
 }

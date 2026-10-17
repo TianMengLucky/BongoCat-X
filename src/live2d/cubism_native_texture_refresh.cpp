@@ -1,5 +1,6 @@
 #include "cubism_plugin_services.hpp"
 #include "cubism_model.hpp"
+#include "cubism_native_texture.hpp"
 #include "cubism_texture_resolution.hpp"
 #include "bongo_cat/safe_ffi.h"
 #include "bongo_cat/log.h"
@@ -11,22 +12,19 @@
 
 namespace bongo_cat {
 struct NativeTextureRefresh {
-    NativeModel *owner = nullptr;
     SDL_Thread *thread = nullptr;
     std::string file;
     TextureResolution bound{};
-    BongoCatImage image{};
-    BongoCatImageAlphaMask alpha{};
+    NativeTexturePixels atlas;
+    bool bc7 = false;
     BongoCatError error{};
     size_t index = 0;
-    int source_width = 0, source_height = 0;
     uint64_t paused_ns = 0;
     std::atomic<bool> cancelled{false}, done{false};
     bool success = false;
     ~NativeTextureRefresh() {
         cancelled.store(true);
         if (thread) SDL_WaitThread(thread, nullptr);
-        bongo_cat_image_free(&image);
     }
 };
 
@@ -71,18 +69,23 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
         }
         if (!job.done.load()) return false;
         bool changed = false;
-        const int width = job.image.width, height = job.image.height;
         if (!job.cancelled.load() && job.success && active) {
             try {
 #ifdef BONGO_CAT_HAS_CUBISM_VULKAN
                 if (rhi_info_.backend == BONGO_CAT_RHI_VULKAN)
-                    changed = upload_texture_vulkan((int)job.index, job.image.pixels,
-                        job.image.width, job.image.height, &job.error);
+                    changed = upload_texture_vulkan((int)job.index, job.atlas.data.pixels,
+                        (int)job.atlas.data.width, (int)job.atlas.data.height, &job.error,
+                        job.atlas.data.format, job.atlas.data.size);
+                if (!changed && rhi_info_.backend == BONGO_CAT_RHI_VULKAN && job.atlas.data.format == 1 &&
+                    job.atlas.load(job.file.c_str(), job.bound.max_width, job.bound.max_height, false, &job.error))
+                    changed = upload_texture_vulkan((int)job.index, job.atlas.data.pixels,
+                        (int)job.atlas.data.width, (int)job.atlas.data.height, &job.error,
+                        job.atlas.data.format, job.atlas.data.size);
 #endif
 #ifdef BONGO_CAT_HAS_CUBISM_METAL
                 if (rhi_info_.backend == BONGO_CAT_RHI_METAL) {
-                    changed = upload_texture_metal((int)job.index, job.image.pixels,
-                        width, height, &job.error);
+                    changed = upload_texture_metal((int)job.index, job.atlas.data.pixels,
+                        (int)job.atlas.data.width, (int)job.atlas.data.height, &job.error);
                 }
 #endif
             } catch (const std::exception &exception) {
@@ -90,12 +93,13 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
             }
             if (changed) {
                 auto &metadata = native_texture_info_[job.index];
-                native_texture_bytes_ -= (size_t)metadata.width * (size_t)metadata.height * 4;
-                metadata.width = width; metadata.height = height;
-                metadata.source_width = job.source_width;
-                metadata.source_height = job.source_height;
-                native_texture_bytes_ += (size_t)metadata.width * (size_t)metadata.height * 4;
-                native_alpha_[job.index] = job.alpha;
+                native_texture_bytes_ -= metadata.bytes;
+                metadata.width = (int)job.atlas.data.width; metadata.height = (int)job.atlas.data.height;
+                metadata.source_width = (int)job.atlas.data.source_width;
+                metadata.source_height = (int)job.atlas.data.source_height;
+                metadata.bytes = job.atlas.data.size;
+                native_texture_bytes_ += metadata.bytes;
+                job.atlas.alpha(native_alpha_[job.index]);
                 triangle_alpha_.clear();
                 try { prepare_frame_bounds(); }
                 catch (const std::bad_alloc &) { frame_drawables_.clear(); }
@@ -125,7 +129,9 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
         std::unique_ptr<NativeTextureRefresh> job;
         try {
             job = std::make_unique<NativeTextureRefresh>();
-            job->owner = this; job->index = texture_refresh_index_; job->bound = bound;
+            job->index = texture_refresh_index_; job->bound = bound;
+            job->bc7 = rhi_info_.backend == BONGO_CAT_RHI_VULKAN &&
+                (native_vulkan_features_ & BONGO_CAT_VULKAN_TEXTURE_COMPRESSION_BC) != 0;
             job->file = path(setting_->GetTextureFileName((int)job->index));
         } catch (const std::bad_alloc &) {
             texture_refresh_pending_ = false;
@@ -133,34 +139,16 @@ bool NativeModel::refresh_native_texture_resolution(bool active, bool allow_star
         }
         job->thread = SDL_CreateThread([](void *userdata) -> int {
             auto &work = *static_cast<NativeTextureRefresh *>(userdata);
-            BongoCatImage source{};
             try {
-                {
-                    auto bytes = work.owner->read(work.file);
-                    if (!work.cancelled.load()) source.pixels = bongo_safe_image_decode(
-                        bytes.data(), bytes.size(), &source.width, &source.height);
-                }
-                source.pixels_ffi = true;
-                if (source.pixels && !work.cancelled.load()) {
-                    work.source_width = source.width; work.source_height = source.height;
-                    bongo_cat_image_make_alpha_mask(&source, &work.alpha);
-                    work.success = bongo_cat_image_resize_rgba_take(&source,
-                        work.bound.max_width, work.bound.max_height, &work.image, &work.error);
-                    if (work.success && !work.cancelled.load()) {
-                        const size_t count = (size_t)work.image.width * (size_t)work.image.height * 4;
-                        for (size_t p = 0; p < count; p += 4) {
-                            if ((p & 65535u) == 0 && work.cancelled.load()) break;
-                            const unsigned alpha = work.image.pixels[p + 3];
-                            for (size_t c = 0; c < 3; ++c)
-                                work.image.pixels[p + c] = (unsigned char)(work.image.pixels[p + c] * alpha / 255);
-                        }
-                    }
-                } else if (!work.cancelled.load())
-                    bongo_cat_error_set(&work.error, BONGO_CAT_ERROR_IO, "Cannot decode native texture");
+                if (!work.cancelled.load())
+                    work.success = work.atlas.load(work.file.c_str(), work.bound.max_width,
+                        work.bound.max_height, work.bc7, &work.error,
+                        [](void *data) -> bool {
+                            return static_cast<NativeTextureRefresh *>(data)->cancelled.load();
+                        }, &work);
             } catch (const std::exception &exception) {
                 bongo_cat_error_set(&work.error, BONGO_CAT_ERROR_MEMORY, "%s", exception.what());
             }
-            bongo_cat_image_free(&source);
             work.done.store(true);
             return 0;
         }, BONGO_CAT_SLUG "-native-texture", job.get());

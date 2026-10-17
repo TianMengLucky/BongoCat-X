@@ -116,7 +116,8 @@ double NativeModel::texture_storage_mib() const {
         bool shared = false;
         for (size_t j = 0; j < i; ++j)
             if (textures_[j] == texture) { shared = true; break; }
-        if (!shared) result += bongo_cat_model_texture_mib(texture->width, texture->height, true);
+        if (!shared) result += texture->bytes ? (double)texture->bytes / (1024.0 * 1024.0) :
+            bongo_cat_model_texture_mib(texture->width, texture->height, true);
     }
     return result;
 }
@@ -226,6 +227,7 @@ bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
                 &next.id, &next.width, &next.height, &next.alpha, &error);
             if (!result) return false;
             if (result > 0 && !refresh.cancelled && refresh.index < textures_.size()) {
+                next.bytes = gl_texture_payload_bytes(next.id);
                 auto previous = std::move(textures_[refresh.index]);
                 SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
                     "[texture-refresh] result=ready texture=%u from=%dx%d to=%dx%d elapsed_ms=%.1f",
@@ -256,8 +258,9 @@ bool NativeModel::refresh_texture_resolution(bool active, bool allow_start) {
                 }
                 visual_state_cached_ = false;
                 if (previous && previous.use_count() == 1)
-                    refresh.delete_requested_mib = bongo_cat_model_texture_mib(
-                        previous->width, previous->height, true);
+                    refresh.delete_requested_mib = previous->bytes ?
+                        (double)previous->bytes / (1024.0 * 1024.0) :
+                        bongo_cat_model_texture_mib(previous->width, previous->height, true);
                 previous.reset();
                 refresh.committed = changed = true;
             } else if (!refresh.cancelled) {

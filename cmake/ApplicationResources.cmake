@@ -37,22 +37,13 @@ if(WIN32)
     _CRT_SECURE_NO_WARNINGS)
   target_include_directories(bongo_cat_asset_packer PRIVATE include)
   target_link_libraries(bongo_cat_asset_packer PRIVATE bongo_cat_warnings bongo_safe)
-  set(BONGO_CAT_ASSET_STAGE "${CMAKE_CURRENT_BINARY_DIR}/embedded-assets")
   set(BONGO_CAT_ASSET_PACK "${CMAKE_CURRENT_BINARY_DIR}/bongocat-assets.pak")
   file(GLOB_RECURSE BONGO_CAT_ASSET_INPUTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/assets/*")
   add_custom_command(OUTPUT "${BONGO_CAT_ASSET_PACK}"
-    COMMAND ${CMAKE_COMMAND} -E rm -rf "${BONGO_CAT_ASSET_STAGE}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-      "${BONGO_CAT_ASSET_STAGE}/assets"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${CMAKE_CURRENT_SOURCE_DIR}/resources/assets"
-      "${BONGO_CAT_ASSET_STAGE}/assets"
-    COMMAND ${CMAKE_COMMAND} -E copy
-      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
-      "${BONGO_CAT_ASSET_STAGE}/assets/LICENSE"
     COMMAND "$<TARGET_FILE:bongo_cat_asset_packer>"
-      "${BONGO_CAT_ASSET_STAGE}/assets" "${BONGO_CAT_ASSET_PACK}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/resources/assets" "${BONGO_CAT_ASSET_PACK}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
     DEPENDS ${BONGO_CAT_ASSET_INPUTS} "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
       bongo_cat_asset_packer
     VERBATIM)

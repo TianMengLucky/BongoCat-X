@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "Store",
+  "pages.preference.store.help": "Browse community models. Downloads are verified with SHA-256 before installation.",
+  "pages.preference.store.refresh": "Refresh",
+  "pages.preference.store.repository": "Community repository",
+  "pages.preference.store.repositoryUrl": "GitHub repository URL (main branch; empty restores default)",
+  "pages.preference.store.applyRepository": "Apply repository",
+  "pages.preference.store.invalidRepository": "Enter a GitHub repository URL: https://github.com/owner/repository",
+  "pages.preference.store.loading": "Loading catalog...",
+  "pages.preference.store.unpublished": "The community catalog has not been published yet.",
+  "pages.preference.store.networkError": "Unable to load the catalog. Check your connection or catalog format and retry.",
+  "pages.preference.store.empty": "No models are listed yet.",
+  "pages.preference.store.pluginHint": "Rust plugin for the community model catalog. The Store page appears while the plugin is enabled.",
+  "pages.preference.store.failed": "Unable to update the store",
+  "pages.preference.store.preview": "Model preview",
+  "pages.preference.store.download": "Download",
+  "pages.preference.store.uninstall": "Uninstall",
+  "pages.preference.store.downloading": "Downloading...",
+  "pages.preference.store.installing": "Installing...",
+  "pages.preference.store.hashMismatch": "SHA-256 mismatch; download rejected",
+  "pages.preference.store.installed": "Model installed and SHA-256 verified",
+  "pages.preference.store.buyFull": "Buy full version"
+}

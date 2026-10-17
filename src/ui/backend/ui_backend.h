@@ -72,6 +72,7 @@ typedef struct BongoCatUIBackend {
     bool font_path_found;
     bool font_file_loaded;
     bool dark_theme;
+    bool compact_preferences;
     bool live_resize_fast;
     bool frame_building;
     bool double_click_down;

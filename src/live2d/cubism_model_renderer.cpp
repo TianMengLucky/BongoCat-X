@@ -1,4 +1,5 @@
 #include "cubism_plugin_services.hpp"
+#include "cubism_native_masks.hpp"
 #include "cubism_model.hpp"
 #include "cubism_gl_state.hpp"
 #include <algorithm>
@@ -451,6 +452,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
     }
     CoreProfileBinding binding(core_buffers_);
     const int buffer_count = prepare_mask_layout();
+    NativeMaskCountScope mask_counts(drawable_masks_.count, offscreen_masks_.count);
     TargetBindings bindings;
     CreateRenderer((Csm::csmUint32)width_, (Csm::csmUint32)height_,
         buffer_count);
@@ -466,7 +468,7 @@ bool NativeModel::create_renderer(BongoCatError *error) {
             release_renderer();
             return false;
         }
-        mask_texture_limit_ = (int)texture_limit;
+        mask_texture_limit_ = std::min((int)texture_limit, 2048);
         bind_textures();
         if (!update_mask_buffers()) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_CUBISM,

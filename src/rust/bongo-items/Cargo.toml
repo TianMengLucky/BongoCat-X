@@ -1,0 +1,20 @@
+[package]
+name = "bongo-items"
+version = "2.2.2"
+edition = "2021"
+publish = false
+description = "Image items plugin for BongoCat"
+
+[lib]
+name = "bongo_items"
+crate-type = ["cdylib"]
+
+[dependencies]
+bongo-plugin = { path = "../bongo-plugin" }
+
+# Keep release code compact without changing unwinding across the FFI boundary.
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

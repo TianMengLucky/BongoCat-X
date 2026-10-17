@@ -14,6 +14,11 @@ bool bongo_cat_pref_control_float(struct nk_context *context, const char *id,
     float default_value);
 bool bongo_cat_pref_control_int(struct nk_context *context, const char *id,
     int minimum, int *value, int maximum, int step, int default_value);
+/* Same stepper placed in an explicit rectangle, for overlay dialogs that draw
+   on the canvas instead of laying out widgets with nk_layout. */
+bool bongo_cat_pref_control_int_rect(struct nk_context *context, const char *id,
+    int minimum, int *value, int maximum, int step, int default_value,
+    struct nk_rect bounds);
 /* Slider with a value box on the right. The box is editable: click it to
  * type a number, double-click to restore the default. #suffix is drawn
  * inside the box while not editing (for example "%"). #edit_maximum lets
@@ -36,11 +41,17 @@ bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
     const char *id, bool *value, struct nk_rect cell, bool available);
 bool bongo_cat_pref_control_obs_background(struct nk_context *context,
     const char *id, bool *enabled, uint32_t *rgb);
-/* Saturation/value square plus hue slider for the solid background color. */
-bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
-    uint32_t *rgb);
+/* Keep HSV per picker so black and gray retain the selected hue. */
+typedef struct BongoCatPrefColorState {
+    float hue, saturation, value;
+    uint32_t rgb;
+    bool initialized;
+} BongoCatPrefColorState;
+/* Saturation/value square plus hue slider; updates continuously while dragging. */
+bool bongo_cat_pref_color_picker(struct nk_context *context,
+    BongoCatPrefColorState *state, uint32_t *rgb);
 int bongo_cat_pref_control_combo(struct nk_context *context, const char *id,
-    const char *const *items, int count, int selected);
+    const char *const *items, int count, int selected, bool fill_width);
 bool bongo_cat_pref_controls_animating(struct nk_context *context);
 void bongo_cat_pref_controls_reset(struct nk_context *context);
 

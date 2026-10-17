@@ -31,6 +31,7 @@ bool bongo_cat_preferences_shortcuts_blocked(
     const BongoCatPreferences *preferences);
 void bongo_cat_preferences_render(BongoCatPreferences *preferences);
 void bongo_cat_preferences_invalidate(BongoCatPreferences *preferences);
+void bongo_cat_preferences_plugin_fonts_changed(BongoCatPreferences *value);
 void bongo_cat_preferences_statistics_invalidate(BongoCatPreferences *preferences);
 void bongo_cat_preferences_process_model_selection(
     BongoCatPreferences *preferences);

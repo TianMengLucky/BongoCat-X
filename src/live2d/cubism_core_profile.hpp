@@ -14,6 +14,8 @@ struct CoreProfileBuffers {
     GLuint vao = 0;
     GLuint buffers[3] = {};
     GLuint arena[3] = {};
+    std::array<GLsizeiptr, 3> arena_sizes{};
+    GLsizeiptr stream_size = 0;
     struct Range { size_t offset, size; uint64_t epoch; };
     uint64_t epoch = 0;
     std::array<std::unordered_map<const void *, Range>, 3> ranges;
@@ -41,6 +43,7 @@ struct CoreProfileBuffers {
         std::vector<float>().swap(uv);
         std::vector<GLushort>().swap(indices);
         valid = {};
+        arena_sizes = {}; stream_size = 0;
         vao = 0;
         for (auto &buffer : buffers) buffer = 0;
         for (auto &source : static_sources) source = nullptr;
@@ -90,7 +93,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, active_->resources_.buffers[slot]);
         // Core mesh UVs and SDK quad UVs are immutable. Positions still stream.
         if (slot == 1) upload_static(GL_ARRAY_BUFFER, 0, data, size);
-        else upload_stream(GL_ARRAY_BUFFER, size, data);
+        else upload_stream(GL_ARRAY_BUFFER, size, data, active_->resources_.stream_size);
         glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE,
             sizeof(GLfloat) * 2, nullptr);
     }
@@ -159,7 +162,7 @@ public:
             if (!r.dirty[i] || !sizes[i]) continue;
             const GLenum target = i == 2 ? GL_ELEMENT_ARRAY_BUFFER : GL_ARRAY_BUFFER;
             glBindBuffer(target, r.arena[i]);
-            upload_stream(target, (GLsizeiptr)sizes[i], data[i]);
+            upload_stream(target, (GLsizeiptr)sizes[i], data[i], r.arena_sizes[i]);
             if (glGetError() != GL_NO_ERROR) {
                 r.valid = {};
                 throw std::runtime_error("Cannot upload OpenGL frame geometry");
@@ -168,18 +171,19 @@ public:
         }
     }
 private:
-    static void upload_stream(GLenum target, GLsizeiptr size, const void *data) {
-        // Orphan before writing so earlier draws keep their old storage.
-        glBufferData(target, size, nullptr, GL_STREAM_DRAW);
-        if (size <= 0) return;
-        void *mapped = nullptr;
-        if (GLEW_VERSION_3_0 || GLEW_ARB_map_buffer_range)
-            mapped = glMapBufferRange(target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-        if (mapped) {
-            std::memcpy(mapped, data, (size_t)size);
-            if (glUnmapBuffer(target)) return;
+    static void upload_stream(GLenum target, GLsizeiptr size, const void *data, GLsizeiptr &allocated) {
+        if (allocated != size) {
+            glBufferData(target, size, data, GL_DYNAMIC_DRAW);
+            if (glGetError() != GL_NO_ERROR) {
+                allocated = 0;
+                throw std::runtime_error("Cannot allocate OpenGL geometry storage");
+            }
+            allocated = size;
+        } else if (size > 0) {
+            // GL synchronizes prior readers; avoid asking the driver to retain
+            // another orphaned allocation every time animated positions change.
+            glBufferSubData(target, 0, size, data);
         }
-        glBufferSubData(target, 0, size, data);
     }
     static void upload_static(GLenum target, unsigned slot,
         const void *source, GLsizeiptr size) {
@@ -188,9 +192,8 @@ private:
         // of mesh buffers. Rebinding after SDK PreDraw is still mandatory.
         if (resources.static_sources[slot] == source &&
             resources.static_sizes[slot] == size) return;
-        glBufferData(target, size, source, GL_STREAM_DRAW);
+        upload_stream(target, size, source, resources.static_sizes[slot]);
         resources.static_sources[slot] = source;
-        resources.static_sizes[slot] = size;
     }
 
     CoreProfileBuffers &resources_;

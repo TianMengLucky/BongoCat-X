@@ -1,5 +1,34 @@
 #include "ui_catime.h"
 #include "ui_backend.h"
+#include "ui_paint.h"
+#include <math.h>
+
+/* The app owns a single settings palette shared by its popup contexts. */
+#define DEFAULT_COLOR 0x1000000u
+static unsigned background_color = DEFAULT_COLOR;
+static unsigned text_color = DEFAULT_COLOR;
+static unsigned primary_color = DEFAULT_COLOR;
+static unsigned secondary_color = DEFAULT_COLOR;
+static BongoCatUIPalette cached_palette[2];
+static bool palette_valid[2];
+
+void bongo_cat_ui_palette_background(unsigned color) {
+    if (background_color == color) return;
+    background_color = color;
+    palette_valid[0] = palette_valid[1] = false;
+}
+
+void bongo_cat_ui_palette_text(unsigned color) {
+    if (text_color == color) return;
+    text_color = color;
+    palette_valid[0] = palette_valid[1] = false;
+}
+
+void bongo_cat_ui_palette_colors(unsigned primary, unsigned secondary) {
+    primary_color = primary;
+    secondary_color = secondary;
+    palette_valid[0] = palette_valid[1] = false;
+}
 
 #ifdef _WIN32
 #include <windows.h>
@@ -7,6 +36,26 @@
 
 static struct nk_color rgb(int value) {
     return nk_rgba((value >> 16) & 255, (value >> 8) & 255, value & 255, 255);
+}
+
+static float luminance(struct nk_color color) {
+    float channels[] = {color.r / 255.0f, color.g / 255.0f, color.b / 255.0f};
+    for (unsigned i = 0; i < 3; ++i)
+        channels[i] = channels[i] <= .04045f ? channels[i] / 12.92f :
+            powf((channels[i] + .055f) / 1.055f, 2.4f);
+    return .2126f * channels[0] + .7152f * channels[1] + .0722f * channels[2];
+}
+
+static struct nk_color readable_color(unsigned color, struct nk_color surface) {
+    struct nk_color result = rgb((int)color);
+    struct nk_color target = luminance(surface) < .179f ?
+        nk_rgb(255, 255, 255) : nk_rgb(0, 0, 0);
+    for (unsigned i = 0; i < 32; ++i) {
+        float a = luminance(result), b = luminance(surface);
+        if ((NK_MAX(a, b) + .05f) / (NK_MIN(a, b) + .05f) >= 4.5f) break;
+        result = bongo_cat_ui_color_mix(result, target, .12f);
+    }
+    return result;
 }
 
 #ifdef _WIN32
@@ -22,6 +71,8 @@ static bool high_contrast(BongoCatUIPalette *value) {
         value->field = NK_SYS(window);
     value->border = value->border_subtle = value->text = value->muted =
         NK_SYS(text);
+    value->link = value->link_hover = NK_SYS(text);
+    value->on_accent = value->on_selection = NK_SYS(GetSysColor(COLOR_HIGHLIGHTTEXT));
     value->accent = value->accent_hover = value->accent_pressed = NK_SYS(accent);
     value->pink = value->pink_hover = NK_SYS(accent);
     value->hover = value->selection = NK_SYS(accent);
@@ -39,25 +90,68 @@ BongoCatUIPalette bongo_cat_ui_palette(bool dark) {
 #ifdef _WIN32
     if (high_contrast(&value)) return value;
 #endif
-    value.background = rgb(dark ? 0x111824 : 0xF5F8FD);
-    value.surface = rgb(dark ? 0x182231 : 0xFFFFFF);
-    value.surface_glass = rgb(dark ? 0x182231 : 0xFBFDFF);
-    value.field = rgb(dark ? 0x222F41 : 0xF0F5FB);
-    value.border = rgb(dark ? 0x3B5572 : 0xD7E6F5);
-    value.border_subtle = rgb(dark ? 0x2E4056 : 0xE2EAF4);
-    value.text = rgb(dark ? 0xEDF4FD : 0x25354B);
-    value.muted = rgb(dark ? 0xA5B7CE : 0x708198);
-    value.accent = rgb(0x4C9DE9);
-    value.accent_hover = rgb(0x3B8EDB);
-    value.accent_pressed = rgb(0x2C7CC8);
-    value.pink = rgb(0xF77DAA);
-    value.pink_hover = rgb(0xED6F9D);
-    value.hover = rgb(dark ? 0x213449 : 0xEFF6FD);
-    value.hover_pink = rgb(dark ? 0x3B2933 : 0xFBEFF6);
-    value.selection = rgb(dark ? 0x263F5A : 0xE3F0FC);
-    value.danger = rgb(dark ? 0xFFA4A4 : 0xFF4D6D);
-    value.danger_background = rgb(dark ? 0x4B2B31 : 0xFFECF0);
-    value.effects = true;
+    const unsigned index = dark ? 1 : 0;
+    if (palette_valid[index]) return cached_palette[index];
+    bool custom_background = background_color <= 0xffffffu;
+    if (custom_background) dark = luminance(rgb((int)background_color)) < .179f;
+    value.background = rgb(dark ? 0x131722 : 0xF2F4F8);
+    value.surface = rgb(dark ? 0x1C2230 : 0xFFFFFF);
+    value.surface_glass = rgb(dark ? 0x161C28 : 0xF8F9FC);
+    value.field = rgb(dark ? 0x252D3E : 0xEDF0F6);
+    value.border = rgb(dark ? 0x52617A : 0xC5CDDC);
+    value.border_subtle = rgb(dark ? 0x37435A : 0xDDE2EB);
+    value.text = rgb(dark ? 0xEEF1FA : 0x202A40);
+    value.muted = rgb(dark ? 0xA7B3CA : 0x596780);
+    value.accent = rgb(dark ? 0xA0B5FF : 0x415DC2);
+    value.on_accent = rgb(dark ? 0x131722 : 0xFFFFFF);
+    value.accent_hover = rgb(dark ? 0xB6C6FF : 0x3C55B4);
+    value.accent_pressed = rgb(dark ? 0x8FA5EF : 0x33499D);
+    value.pink = rgb(dark ? 0xE8A5C1 : 0xA83D68);
+    value.pink_hover = rgb(dark ? 0xF0B9CF : 0x913253);
+    value.hover = rgb(dark ? 0x2A3348 : 0xE9EDF8);
+    value.hover_pink = rgb(dark ? 0x3A2A39 : 0xF9EDF2);
+    value.selection = rgb(dark ? 0x303C59 : 0xE1E7FA);
+    value.on_selection = value.accent;
+    value.danger = rgb(dark ? 0xFFABAB : 0xBD3049);
+    value.danger_background = rgb(dark ? 0x472B35 : 0xFCECEF);
+    if (custom_background) {
+        value.surface_glass = rgb((int)background_color);
+        struct nk_color edge = rgb(dark ? 0xFFFFFF : 0x000000);
+        value.background = bongo_cat_ui_color_mix(value.surface_glass, edge, .04f);
+        value.surface = bongo_cat_ui_color_mix(value.surface_glass, edge, .06f);
+        value.field = bongo_cat_ui_color_mix(value.surface_glass, edge, .10f);
+        value.border = bongo_cat_ui_color_mix(value.surface_glass, edge, .32f);
+        value.border_subtle = bongo_cat_ui_color_mix(value.surface_glass, edge, .18f);
+    }
+    if (text_color <= 0xffffffu) value.text = rgb((int)text_color);
+    if (text_color <= 0xffffffu || custom_background)
+        value.muted = bongo_cat_ui_color_mix(value.text, value.surface_glass, .20f);
+    if (primary_color <= 0xffffffu || custom_background) {
+        unsigned accent = primary_color <= 0xffffffu ? primary_color :
+            ((unsigned)value.accent.r << 16) | ((unsigned)value.accent.g << 8) | value.accent.b;
+        value.accent = readable_color(accent, value.surface);
+        value.accent_hover = bongo_cat_ui_color_mix(value.accent, value.text, .12f);
+        value.accent_pressed = bongo_cat_ui_color_mix(value.accent, value.text, .24f);
+        value.on_accent = luminance(value.accent) > .179f ?
+            nk_rgb(0, 0, 0) : nk_rgb(255, 255, 255);
+        value.selection = bongo_cat_ui_color_mix(value.surface, value.accent, .12f);
+        value.hover = bongo_cat_ui_color_mix(value.surface, value.accent, .07f);
+        value.on_selection = readable_color(accent, value.selection);
+    }
+    if (secondary_color <= 0xffffffu || custom_background) {
+        unsigned secondary = secondary_color <= 0xffffffu ? secondary_color :
+            ((unsigned)value.pink.r << 16) | ((unsigned)value.pink.g << 8) | value.pink.b;
+        value.pink = readable_color(secondary, value.surface);
+        value.pink_hover = bongo_cat_ui_color_mix(value.pink, value.text, .12f);
+        value.hover_pink = bongo_cat_ui_color_mix(value.surface, value.pink, .08f);
+    }
+    /* Links retain their blue affordance independently of the editable accent. */
+    value.link = readable_color(dark ? 0x93C5FDu : 0x1D4ED8u, value.surface);
+    value.link_hover = readable_color(dark ? 0xBFDBFEu : 0x1E40AFu, value.surface);
+    /* Flat surfaces avoid full-window glow and animated shadow textures. */
+    value.effects = false;
+    cached_palette[index] = value;
+    palette_valid[index] = true;
     return value;
 }
 
@@ -130,9 +224,9 @@ void bongo_cat_ui_apply_theme(struct nk_context *context, bool dark) {
     table[NK_COLOR_KNOB_CURSOR_ACTIVE] = p.accent_pressed;
     nk_style_from_table(context, table);
     geometry(&context->style);
-    context->style.button.text_normal = nk_rgb(255, 255, 255);
-    context->style.button.text_hover = nk_rgb(255, 255, 255);
-    context->style.button.text_active = nk_rgb(255, 255, 255);
+    context->style.button.text_normal = p.on_accent;
+    context->style.button.text_hover = p.on_accent;
+    context->style.button.text_active = p.on_accent;
     context->style.window.fixed_background = nk_style_item_color(p.background);
     context->style.window.group_border_color = p.border_subtle;
     context->style.text.color = p.text;

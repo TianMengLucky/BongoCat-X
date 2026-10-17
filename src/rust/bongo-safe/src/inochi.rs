@@ -1,5 +1,7 @@
 //! Bounded INP/INX parsing shared by import discovery and the renderer plugin.
-use std::{ffi::CStr, io::Read, os::raw::c_char, path::Path};
+use std::{io::Read, path::Path};
+#[cfg(feature = "c-api")]
+use std::{ffi::CStr, os::raw::c_char};
 
 use image::{ImageFormat, ImageReader};
 use inox2d::{formats::inp::parse_inp, model::Model};
@@ -13,6 +15,7 @@ pub const FILE_LIMIT: u64 = 256 * 1024 * 1024;
 /// Returns 1 for Cubism model3 JSON, 2 for an INP/INX container, 0 otherwise.
 /// # Safety
 /// `path` must be a valid NUL-terminated UTF-8 string.
+#[cfg(feature = "c-api")]
 #[no_mangle]
 pub unsafe extern "C" fn bongo_safe_model_kind_file(path: *const c_char) -> i32 {
     crate::guard(0, || {
@@ -169,6 +172,7 @@ pub fn parse(bytes: &[u8]) -> Result<(Model, Value), String> {
 
 /// # Safety
 /// Strings/buffers must be valid for their stated lengths. `message` is optional.
+#[cfg(feature = "c-api")]
 #[no_mangle]
 pub unsafe extern "C" fn bongo_safe_inochi_validate_file(
     path: *const c_char,

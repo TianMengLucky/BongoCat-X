@@ -1,3 +1,9 @@
+#[cfg(not(feature = "c-api"))]
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+}
+
+#[cfg(feature = "c-api")]
 fn main() {
     println!("cargo:rerun-if-changed=src/corners.wgsl");
     let source = std::fs::read_to_string("src/corners.wgsl").expect("corner shader");

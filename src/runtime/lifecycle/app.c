@@ -93,6 +93,10 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_settings_defaults(&app->settings);
     bongo_cat_session_defaults(&app->session);
     bongo_cat_input_init(&app->input);
+    if (!app->input.core) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_MEMORY, "Cannot initialize Rust input state");
+        return false;
+    }
     bongo_cat_shortcut_init(&app->shortcut_state);
     bongo_cat_models_init(&app->models);
     if (!bongo_cat_startup_prepare(app, argc, argv, error)) return false;

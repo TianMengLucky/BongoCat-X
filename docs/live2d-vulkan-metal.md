@@ -87,7 +87,9 @@ OpenGL 不使用这些可选请求；Live2D Metal 的自动共享顶点路径不
 
 可选插件入口为 `bongo_cat_model_plugin_optimize_v1(instance, requested, backend)`，
 在 `set_rhi_info` 之后、模型加载之前调用。返回值仅包含已启用的请求位。
-既有插件描述符、宿主函数表和 ABI v1 保持不变，旧插件仍可加载。
+宿主函数表新增 Rust 原生纹理加载服务，模型插件 ABI 升为 v2。
+程序、Live2D 和 Inox2D 插件需要一起重新构建；ABI v1 插件会被明确拒绝。
+优化和设备特性扩展入口保留独立的 `_v1` 后缀。
 
 ## 实验性限制
 
@@ -124,3 +126,18 @@ Metal Rust 代码完成 `aarch64-apple-darwin` 类型检查，Naga 的 MSL 生�
 后续优化将 Vulkan staging 的顶点传输范围限制到变化网格覆盖的连续区间（首帧与失败恢复完整上传），移除 Metal 纹理上传的中间 RGBA 副本，并在 OpenGL 渲染器释放时回收 CPU 几何缓存容量。此后续改动未构建或运行，实际内存和 GPU 收益待测量。
 
 Vulkan VMA 路径进一步复用已有 coherent 映射整理顶点，省去额外交错 CPU 数组与复制；非池化路径继续使用 CPU 打包缓冲。上传将相邻变化网格合并，跳过未变化间隔，源偏移分别适配映射缓冲和从零开始的 staging。顶点准备失败会使缓存失效。本轮新增区段回归用例未执行，未构建或测量性能。
+
+## Vulkan 内存管理
+
+- SDK 生成副本仅在模型启用扩展混合时创建模型离屏颜色／深度目标；复制顶点、索引、UBO 和描述符池仅在扩展混合或 offscreen 存在时分配。共享管线所需的布局仍保留。
+- 普通遮罩与离屏遮罩分别使用各自的缓冲数量和布局，保留 SDK 的 RGBA 通道打包、容量上限及动态尺寸迟滞。深度附件保留，尚未更改深度测试语义。
+- 非交错 PNG 使用 Rust png 库逐行解码并进行预乘 Alpha 面积缩放，额外工作区随行宽增长，不保留完整源图。交错 PNG 及其他格式使用有分配上限的 image 解码回退。原图的 Alpha 覆盖数据独立保留，用于命中测试。
+- Windows/Linux x64 使用 intel_tex_2 的带 Alpha BC7 编码器，按四行条带补齐边缘块。支持并已启用 BC 压缩、且支持 BC7 线性采样及上传的 Vulkan 设备使用 BC7 UNORM；编码或上传失败尝试 RGBA8。Metal 保留 RGBA8。
+- 缓存位于现有缓存根目录的 textures-native-v1，键包含源文件 SHA-256、请求尺寸和格式；内容及元数据校验失败时重新解码。使用临时文件原子替换、约 1 GiB / 64 条目的进程内写入预算；跨进程同时写入时可能短暂超额。缓存失败不阻止纹理加载。首次 BC7 编码会增加 CPU 时间，缓存命中后直接上传压缩数据。
+- 加载时只启用一个解码／编码工作线程，主线程继续处理已有进度回调；刷新、哈希、PNG 行解码和 BC7 条带编码检查取消状态。通用 image 解码调用本身不可中断。
+- 设备支持时启用 VK_EXT_memory_budget 并告知 VMA；缓冲与图像分配使用 WITHIN_BUDGET。预算耗尽作为正常加载失败传播，替换纹理时保留旧图；该机制不能保证其他进程变化时永不分配失败，也不会自动降低用户画质。
+- runtime-diagnostics.log 的 [vulkan-memory] 记录 VMA 实用字节、保留块、设备本地堆预算及图集／目标／几何／UBO／暂存分类；[vulkan-atlas] 记录实际上传格式与字节；[vulkan-readback] 单独记录宿主回读分配和释放。驱动对象与宿主分配不包含在 VMA 分类内，堆 usage/budget 在扩展不可用时为 VMA 估计。
+
+验证时可在启动前设置 BONGOCAT_VULKAN_VALIDATION=1。已安装的 VK_LAYER_KHRONOS_validation 会启用，debug-utils 警告和错误进入诊断日志；缺少验证层时保留正常启动。BONGOCAT_VULKAN_BC7=0 可禁用 BC7，便于画质和内存对比。这些是开发环境变量，不修改用户设置。
+
+建议在同一模型、窗口像素尺寸和画质下用 RenderDoc 或 Nsight Graphics 检查图集格式、遮罩／离屏目标数量，并比较首次加载、缓存命中、缩放刷新、切换模型及隐藏后的日志。BC7 为有损压缩，应特别检查发丝、半透明边缘、反向遮罩和扩展混合。当前代码检查不替代真实设备上的画面、Validation Layers 和内存峰值验证。

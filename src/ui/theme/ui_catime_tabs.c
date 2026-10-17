@@ -37,7 +37,7 @@ void bongo_cat_ui_tabs(struct nk_context *context, const char *const *labels,
     BongoCatUIPalette p = bongo_cat_ui_palette(dark);
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     float header_height = nk_window_get_content_region(context).w < 100.0f ?
-        118.0f : 148.0f;
+        118.0f : 128.0f;
     float room = NK_MAX(1.0f, available_height - header_height);
     if (count <= 0) return;
     float row_height = NK_CLAMP(40.0f, room / count - 8.0f, 46.0f);
@@ -60,8 +60,8 @@ void bongo_cat_ui_tabs(struct nk_context *context, const char *const *labels,
         float hover_weight = bongo_cat_ui_animate_eased(context, hover_id,
             hover ? 1.0f : 0.0f, 200.0f, BONGO_CAT_UI_EASE_SWIFT);
         struct nk_rect tile = hit;
-        tile.y -= hover_weight;
-        if (hover) nk_fill_rect(canvas, tile, 10, p.hover);
+        if (hover_weight > 0.0f) nk_fill_rect(canvas, tile, 10,
+            bongo_cat_ui_color_alpha(p.hover, hover_weight));
         if (selected && p.effects) bongo_cat_ui_paint_shadow(context,
             tile, 8, 0, 5, 14, 0,
             nk_rgba(p.accent.r, p.accent.g, p.accent.b, 45));
@@ -71,8 +71,7 @@ void bongo_cat_ui_tabs(struct nk_context *context, const char *const *labels,
             nk_fill_rect(canvas, nk_rect(tile.x + 5, tile.y + 12, 3, tile.h - 24), 1.5f,
                 nk_rgba(p.accent.r, p.accent.g, p.accent.b, (nk_byte)(255 * weight)));
         }
-        struct nk_color color = selected ? p.accent :
-            (hover ? p.accent : p.muted);
+        struct nk_color color = selected ? p.on_selection : hover ? p.text : p.muted;
         tab_content(canvas, context, tile, labels[i], icons ? icons[i] : i, color,
             draw_icon, icon_userdata);
         if (about_badge && i == count - 1) {

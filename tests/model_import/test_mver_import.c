@@ -1,3 +1,5 @@
+#include "model_import.h"
+#include "model_import_mver.h"
 #include "model_import_mver_internal.h"
 #include "model_storage.h"
 #include "preferences_model_glyphs.h"
@@ -8,6 +10,8 @@
 #include "runtime.h"
 #include "test_mver_support.h"
 #include "test_mver_import_internal.h"
+#include "bongo_cat/file.h"
+#include "bongo_cat/hand_layout.h"
 #include "bongo_cat/image.h"
 #include "bongo_cat/json.h"
 #include "bongo_cat/path.h"
@@ -273,6 +277,57 @@ static void settings_frame_timing(void) {
     CHECK(fabsf(bongo_cat_preferences_animation_delta(0,1000000000ull)-1.0f/60)<.00001f);
     free(app);
 }
+/* A model folder may ship an authored hand-layout.json beside its hand sprites,
+   and the runtime seeds one when it is absent. Import must copy the authored
+   file through while leaving a file the runtime generated alone. */
+static void hand_layout_copy_round_trip(void) {
+    char *temporary = SDL_GetCurrentDirectory();
+    CHECK(temporary != NULL);
+    if (!temporary) return;
+    char root[BONGO_CAT_PATH_CAP], adapter[BONGO_CAT_PATH_CAP];
+    char source_layout[BONGO_CAT_PATH_CAP], target_layout[BONGO_CAT_PATH_CAP];
+    BongoCatError error = {0};
+    snprintf(root, sizeof(root), "%s/bongocat-layout-%llu", temporary,
+        (unsigned long long)SDL_GetTicksNS());
+    SDL_free(temporary);
+    CHECK(mver_fixture(root));
+    CHECK(child(adapter, sizeof(adapter), root, "adapter", true));
+    BongoCatImportDiscovery discovery = {0};
+    CHECK(bongo_cat_import_mver_discover(root, &discovery, &error) == 1);
+    CHECK(discovery.count == 1);
+    if (discovery.count == 1) {
+        CHECK(bongo_cat_import_prepare_adapter(&discovery.candidates[0],
+            adapter, &error));
+        CHECK(child(target_layout, sizeof(target_layout), adapter,
+            "resources/left-keys/hand-layout.json", false));
+        /* A source without a layout leaves the target without one. */
+        CHECK(!bongo_cat_path_is_file(target_layout));
+        /* The runtime seeds the empty left folder with the built-in defaults,
+           and importing the same source again must keep that generated file. */
+        CHECK(bongo_cat_hand_layout_file_ensure(adapter, "left-keys"));
+        CHECK(bongo_cat_path_is_file(target_layout));
+        error = (BongoCatError){0};
+        CHECK(bongo_cat_import_prepare_adapter(&discovery.candidates[0],
+            adapter, &error));
+        CHECK(bongo_cat_path_is_file(target_layout));
+        /* A layout shipped beside the hand sprites is copied to the target. */
+        CHECK(child(source_layout, sizeof(source_layout), root,
+            "img/standard/hand/hand-layout.json", false));
+        CHECK(write_text(source_layout,
+            "{\"schemaVersion\":1,\"gap\":21,\"maxKeys\":3}"));
+        error = (BongoCatError){0};
+        CHECK(bongo_cat_import_prepare_adapter(&discovery.candidates[0],
+            adapter, &error));
+        CHECK(bongo_cat_path_is_file(target_layout));
+        char text[512] = {0};
+        FILE *file = bongo_cat_file_open(target_layout, "rb");
+        size_t length = file ? fread(text, 1, sizeof(text) - 1, file) : 0;
+        if (file) fclose(file);
+        CHECK(length > 0 && strstr(text, "\"gap\":21") != NULL);
+    }
+    CHECK(bongo_cat_model_remove_tree(root, NULL));
+}
+
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "--import-notice"))
         return test_preferences_import() ? 1 : 0;
@@ -314,6 +369,7 @@ int main(int argc, char **argv) {
     failures += test_model_import_identity();
     test_mver_container_discovery();
     test_model_import_source();
+    hand_layout_copy_round_trip();
     test_model_import_archive();
     test_mver_manifest();
     test_tauri_portable();

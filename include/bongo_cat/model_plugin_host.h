@@ -97,6 +97,12 @@ typedef struct BongoCatModelPluginHost {
     BongoJsonDoc * (*bongo_json_read)(const char *data, size_t size, BongoJsonReadFlags flags);
     BongoJsonDoc * (*bongo_json_read_opts)(const char *data, size_t size, BongoJsonReadFlags flags, const void *allocator, BongoJsonReadError *error);
     char * (*bongo_json_write)(const BongoJsonDoc *doc, BongoJsonWriteFlags flags, size_t *length);
+    bool (*bongo_safe_native_texture_load)(const char *path, uint32_t max_width,
+        uint32_t max_height, bool bc7, BongoSafeNativeTexture *texture,
+        bongo_safe_cancelled cancelled, void *userdata);
+    unsigned int (*bongo_cat_image_texture_model_bc7)(const char *path, int max_width,
+        int max_height, int *width, int *height, BongoCatImageAlphaMask *alpha,
+        BongoCatImageProgress progress, void *userdata, BongoCatError *error);
 } BongoCatModelPluginHost;
 #ifdef __cplusplus
 extern "C" {

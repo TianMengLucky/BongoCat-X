@@ -81,39 +81,44 @@ if(BONGO_CAT_BUILD_STORE)
 endif()
 option(BONGO_CAT_BUILD_ITEMS "Build the image items plugin" ON)
 if(BONGO_CAT_BUILD_ITEMS)
-  add_library(bongo_items SHARED src/plugins/items/items_plugin.c)
-  target_include_directories(bongo_items PRIVATE include)
-  target_link_libraries(bongo_items PRIVATE bongo_cat_warnings)
-  if(UNIX)
-    target_link_libraries(bongo_items PRIVATE m)
-  endif()
-  set_target_properties(bongo_items PROPERTIES C_VISIBILITY_PRESET hidden)
+  corrosion_import_crate(MANIFEST_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-items/Cargo.toml"
+    CRATE_TYPES cdylib LOCKED)
   if(BUILD_TESTING)
-    add_executable(bongo_cat_items_plugin_tests tests/items/test_items_plugin.c)
-    target_include_directories(bongo_cat_items_plugin_tests PRIVATE include tests/support)
-    target_link_libraries(bongo_cat_items_plugin_tests PRIVATE bongo_items bongo_cat_warnings)
-    add_test(NAME items-plugin COMMAND bongo_cat_items_plugin_tests)
-    set_tests_properties(items-plugin PROPERTIES TIMEOUT 30)
+    add_test(NAME items-rust
+      COMMAND "${BONGO_CAT_CARGO}" test --locked --manifest-path
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-items/Cargo.toml"
+        --target-dir "${CMAKE_BINARY_DIR}/items-tests")
+    set_tests_properties(items-rust PROPERTIES TIMEOUT 60)
   endif()
 endif()
 option(BONGO_CAT_BUILD_SOUNDS "Build the keyboard sound effects plugin" ON)
 if(BONGO_CAT_BUILD_SOUNDS)
-  add_library(bongo_sounds SHARED src/plugins/sounds/sounds_plugin.c)
-  target_include_directories(bongo_sounds PRIVATE include)
-  target_link_libraries(bongo_sounds PRIVATE bongo_cat_warnings)
-  set_target_properties(bongo_sounds PROPERTIES C_VISIBILITY_PRESET hidden)
+  corrosion_import_crate(MANIFEST_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-sounds/Cargo.toml"
+    CRATE_TYPES cdylib LOCKED)
   if(BUILD_TESTING)
-    add_executable(bongo_cat_sounds_plugin_tests tests/sounds/test_sounds_plugin.c)
-    target_include_directories(bongo_cat_sounds_plugin_tests PRIVATE include tests/support)
-    target_link_libraries(bongo_cat_sounds_plugin_tests PRIVATE bongo_sounds bongo_cat_warnings)
-    add_test(NAME sounds-plugin COMMAND bongo_cat_sounds_plugin_tests)
+    add_test(NAME sounds-rust
+      COMMAND "${BONGO_CAT_CARGO}" test --locked --manifest-path
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-sounds/Cargo.toml"
+        --target-dir "${CMAKE_BINARY_DIR}/sounds-tests")
+    set_tests_properties(sounds-rust PROPERTIES TIMEOUT 60)
     add_executable(bongo_cat_plugin_worker_tests tests/sounds/test_plugin_workers.c src/runtime/plugin_worker.c)
     target_include_directories(bongo_cat_plugin_worker_tests PRIVATE
       "${BONGO_CAT_GENERATED_INCLUDE_DIR}" include src/runtime tests/support)
-    target_link_libraries(bongo_cat_plugin_worker_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
+    target_link_libraries(bongo_cat_plugin_worker_tests PRIVATE SDL3::SDL3-static bongo_safe bongo_cat_warnings)
     add_test(NAME plugin-workers COMMAND bongo_cat_plugin_worker_tests)
-    set_tests_properties(sounds-plugin plugin-workers PROPERTIES TIMEOUT 30)
+    set_tests_properties(plugin-workers PROPERTIES TIMEOUT 30)
   endif()
+endif()
+if(BUILD_TESTING)
+  # The plugin support crate is a dependency of the plugin cdylibs, so it is
+  # not otherwise built; run its unit tests to keep it compiling in CI.
+  add_test(NAME plugin-rust
+    COMMAND "${BONGO_CAT_CARGO}" test
+      --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-plugin/Cargo.toml"
+      --target-dir "${CMAKE_BINARY_DIR}/plugin-tests")
+  set_tests_properties(plugin-rust PROPERTIES TIMEOUT 60)
 endif()
 function(bongo_cat_stage_model_plugins target)
   if(APPLE)
@@ -121,7 +126,7 @@ function(bongo_cat_stage_model_plugins target)
   else()
     set(destination "$<TARGET_FILE_DIR:${target}>/plugins")
   endif()
-  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared bongo_stats-shared bongo_items bongo_sounds bongo_store-shared)
+  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared bongo_stats-shared bongo_items-shared bongo_sounds-shared bongo_store-shared)
     if(TARGET ${plugin})
       # Restage changed DLLs even when the executable needs no relink.
       add_custom_target(${target}_stage_${plugin}

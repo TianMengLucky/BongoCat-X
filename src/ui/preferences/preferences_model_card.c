@@ -3,6 +3,7 @@
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
 #include "preferences_state.h"
+#include "preferences_widgets_internal.h"
 #include "ui_animation.h"
 #include "ui_backend.h"
 #include "ui_icons.h"
@@ -22,19 +23,10 @@ static const char *tr(BongoCatApp *app, const char *key,
     return bongo_cat_i18n_get(app->i18n, key, fallback);
 }
 
-static void text(struct nk_context *context, struct nk_command_buffer *canvas,
-    struct nk_rect bounds, const char *value, struct nk_color color,
-    const struct nk_user_font *font) {
-    if (!font) font = context->style.font;
-    nk_draw_text(canvas, bounds, value, nk_strlen(value), font,
-        nk_rgba(0, 0, 0, 0), color);
-}
-
 bool bongo_cat_preferences_model_import_card(BongoCatPreferences *value,
     struct nk_context *context) {
     struct nk_rect bounds;
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
-    bounds.y += 5.0f; bounds.h += 1.0f;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     bool pointer_hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
     bool hover = pointer_hover || value->import_drop_active;
@@ -57,21 +49,21 @@ bool bongo_cat_preferences_model_import_card(BongoCatPreferences *value,
         struct nk_rect outline =
             bongo_cat_preferences_model_card_outline_bounds(bounds, 2.0f);
         bongo_cat_preferences_model_card_draw_progress(canvas, outline,
-            13.0f, 2.0f, progress, p.pink);
+            13.0f, 2.0f, progress, p.accent);
         value->render_dirty = true;
     }
-    float cx = bounds.x + bounds.w * .5f, cy = bounds.y + 91;
     bongo_cat_preferences_icon_draw(value, canvas,
-        BONGO_CAT_UI_ICON_UPLOAD, nk_rect(cx - 20, cy - 20, 40, 40), p.pink);
+        BONGO_CAT_UI_ICON_UPLOAD, nk_rect(bounds.x + 20,
+            bounds.y + (bounds.h - 36) * .5f, 36, 36), p.pink);
     const char *label = importing ? tr(value->app,
         "pages.preference.model.hints.importingBackground", "Importing in background...") :
         tr(value->app, "pages.preference.model.hints.clickOrDragToImport",
             "Click or drag a model folder or ZIP");
-    float width = value->ui.caption_font->width(value->ui.caption_font->userdata,
-        value->ui.caption_font->height, label, nk_strlen(label));
-    text(context, canvas, nk_rect(cx - NK_MIN(width, bounds.w - 20) * .5f, cy + 25,
-        NK_MIN(width + 1, bounds.w - 20), 24), label, p.accent,
-        value->ui.caption_font);
+    struct nk_rect text_bounds = nk_rect(bounds.x + 72, bounds.y,
+        bounds.w - 96, bounds.h);
+    int lines = bongo_cat_pref_detail_text(context, label, text_bounds, false);
+    text_bounds.y += (bounds.h - lines * 19.0f) * .5f;
+    bongo_cat_pref_detail_text(context, label, text_bounds, true);
     if (pointer_hover) bongo_cat_ui_cursor_hover_rect(context, bounds,
         BONGO_CAT_UI_CURSOR_POINTER);
     return pointer_hover && !(context->current->layout->flags & NK_WINDOW_ROM) &&
@@ -325,7 +317,6 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
     bool selected_visual = selected && !visual_target;
     struct nk_rect bounds;
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
-    bounds.y += 5.0f; bounds.h += 1.0f;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
     char animation_id[BONGO_CAT_ID_CAP + 24];
@@ -353,16 +344,15 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
         bounds.w - 2, preview_height);
     nk_fill_rect(canvas, preview, 12, p.surface);
     draw_cover(value, canvas, preview, entry);
-    if (app->settings.model.multiple_pets)
-        bongo_cat_preferences_model_card_draw_selection_badge(
-            value, canvas, preview, p, selection_amount);
+    bongo_cat_preferences_model_card_draw_selection_badge(
+        value, canvas, preview, p, selection_amount);
     float info_y = preview.y + preview.h + 8;
-    struct nk_rect name_bounds = nk_rect(bounds.x + 9, info_y + 1,
-        bounds.w - 18, 30);
+    struct nk_rect name_bounds = nk_rect(bounds.x + 12, info_y,
+        bounds.w - 24, 30);
     bool name_hover = bongo_cat_preferences_model_name_draw(value,
         context, canvas, entry, name_bounds, p);
     bool mode_hover = bongo_cat_preferences_model_mode_selector(value, context,
-        entry, nk_rect(bounds.x + 9, bounds.y + bounds.h - 79, bounds.w - 18, 38));
+        entry, nk_rect(bounds.x + 12, bounds.y + bounds.h - 82, bounds.w - 24, 38));
     bool action_hover = false;
     draw_actions(value, context, canvas, bounds, entry, p,
         storage_busy, &action_hover);
@@ -372,10 +362,10 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
     float progress = visual_target ?
         bongo_cat_preferences_model_visual_progress(value, entry->id) :
         selected_visual ? 1.0f : 0.0f;
-    struct nk_color outline_color = progress >= .999f ? p.pink :
+    struct nk_color outline_color = progress >= .999f ? p.accent :
         bongo_cat_ui_color_mix(
             bongo_cat_ui_color_mix(p.border_subtle, p.accent, lift),
-            p.pink, selection_amount);
+            p.accent, selection_amount);
     /* The pocket is drawn before the outline so the border line stays
        visible along its flush edges. */
     bool tab_hover = draw_hide_tab(value, context, canvas, bounds, entry, p,
@@ -383,7 +373,7 @@ void bongo_cat_preferences_model_card(BongoCatPreferences *value,
     nk_stroke_rect(canvas, outline, 14.0f - outline_width * .5f,
         outline_width, outline_color);
     bongo_cat_preferences_model_card_draw_progress(canvas, outline,
-        14.0f - outline_width * .5f, 2.0f, progress, p.pink);
+        14.0f - outline_width * .5f, 2.0f, progress, p.accent);
     if (!name_hover && (action_hover || hover))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);

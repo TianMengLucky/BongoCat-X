@@ -22,7 +22,9 @@ def main():
     parser.add_argument("--source", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    upstream, source, output = map(pathlib.Path, (args.upstream, args.source, args.output))
+    upstream, source, output = (
+        pathlib.Path(path).resolve() for path in (args.upstream, args.source, args.output)
+    )
     output.mkdir(parents=True, exist_ok=True)
     # Patch in a private staging tree so unchanged Cargo inputs keep their mtimes.
     with tempfile.TemporaryDirectory(prefix="prepare-", dir=output) as temporary:
@@ -95,7 +97,9 @@ impl OpenglRenderer {
                     ignore=shutil.ignore_patterns("target"))
     manifest = plugin / "Cargo.toml"
     text = manifest.read_text(encoding="utf-8")
-    text = text.replace('path = "../bongo-safe"', 'path = "' + (source / "src/rust/bongo-safe").as_posix() + '"')
+    for name in ("bongo-safe", "bongo-plugin"):
+        text = text.replace(f'path = "../{name}"',
+                            f'path = "{(source / "src/rust" / name).as_posix()}"')
     text = re.sub(r'^inox2d-opengl\s*=.*$', 'inox2d-opengl = { path = "../inox2d-opengl" }', text, flags=re.MULTILINE)
     manifest.write_text(text, encoding="utf-8", newline="\n")
     lock = plugin / "Cargo.lock"

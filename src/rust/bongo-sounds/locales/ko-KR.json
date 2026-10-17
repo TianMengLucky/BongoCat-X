@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "효과음",
+  "pages.preference.sounds.help": "키를 클릭하면 기존 소리를 미리 듣고 오디오 파일을 선택합니다. 마우스를 올리면 파일명을 표시합니다. 실제 키 입력으로 재생하며 설정은 자동 저장됩니다.",
+  "pages.preference.sounds.unassigned": "설정된 효과음 없음",
+  "pages.preference.sounds.choose": "오디오 선택",
+  "pages.preference.sounds.preview": "미리 듣기",
+  "pages.preference.sounds.clear": "연결 해제",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis, FLAC, 최대 64 MB. 모델과 독립적이며 감지 가능한 키는 입력 권한과 키보드 배열에 따라 다릅니다.",
+  "pages.preference.sounds.pluginHint": "키마다 효과음을 지정합니다. 전용 스레드에서 가져오기, 디코딩, 재생, 저장을 처리합니다. 비활성화해도 설정과 파일은 유지됩니다.",
+  "pages.preference.sounds.saved": "효과음 저장됨",
+  "pages.preference.sounds.failed": "효과음을 업데이트할 수 없습니다",
+  "pages.preference.sounds.queued": "오디오 가져오기 대기 중",
+  "pages.preference.sounds.busy": "오디오 처리 중"
+}

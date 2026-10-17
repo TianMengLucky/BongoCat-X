@@ -68,12 +68,18 @@ int main(int argc, char **argv) {
     SDL_SharedObject *library = SDL_LoadObject(info.path);
     CHECK(library != NULL);
     if (library) {
+        /* Host parsers must not become exported roots in the renderer DLL. */
+        CHECK(SDL_LoadFunction(library, "bongo_safe_http_new") == NULL);
+        CHECK(SDL_LoadFunction(library, "bongo_safe_audio_decode_file") == NULL);
+        CHECK(SDL_LoadFunction(library, "bongo_json_read") == NULL);
+        SDL_ClearError();
         union { SDL_FunctionPointer function; BongoCatModelPluginQuery query; } entry;
         entry.function = SDL_LoadFunction(library, BONGO_CAT_MODEL_PLUGIN_SYMBOL);
         CHECK(entry.function != NULL);
         if (entry.function) {
             const BongoCatModelPluginHost *host = bongo_cat_model_plugin_host();
             CHECK(entry.query(BONGO_CAT_MODEL_PLUGIN_ABI + 1, host) == NULL);
+            CHECK(entry.query(1, host) == NULL); /* Texture services require ABI v2. */
             const BongoCatModelPlugin *plugin = entry.query(BONGO_CAT_MODEL_PLUGIN_ABI, host);
             CHECK(bongo_cat_model_plugin_descriptor_valid(plugin, inox));
             CHECK(!bongo_cat_model_plugin_descriptor_valid(plugin, BONGO_CAT_MODEL_ENGINE_LIVE2D));

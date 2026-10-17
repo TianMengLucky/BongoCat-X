@@ -1,8 +1,21 @@
 # 物品插件 / Items plugin
 
+页面正文、交互及 UI 状态由 Rust 插件的 `src/page_ui.rs` 创建；宿主经
+`include/bongo_cat/plugin_ui_page.h` 提供通用控件、绘图和业务服务。
+插件内嵌自身 `locales/*.json` 的十种语言，仅解析当前语言；翻译内存由插件分配并释放。
+语言加载接口为 `bongo_cat_items_locale_query_v1`（`load/text/visit/release`），
+宿主 `bongo_cat_i18n_get` 转发查询，不缓存插件字符串。旧插件缺少页面扩展时需更新。
+
+The Rust plugin owns page layout, interactions, UI state and its ten embedded locale files.
+The host supplies generic drawing and application services. The versioned locale interface
+loads the active language, lends strings for drawing/font baking, and releases allocations
+before unload; the host never caches plugin translation pointers. Older plugins need the
+page extension to display settings.
+
 参考 [VTube Studio Item System](https://github.com/DenchiSoft/VTubeStudio/wiki/Item-System)，
 为桌宠添加图片装饰。独立动态库 `bongo_items` 通过版本 1 ABI 注册「物品」页面，
-不依赖 Cubism SDK，不修改模型渲染插件的 ABI。
+不依赖 Cubism SDK，不修改模型渲染插件的 ABI。实现为 `src/rust/bongo-items/`
+下的 Rust cdylib crate（`[lib] name = "bongo_items"`），导出 `bongo_cat_items_query`。
 
 ## 使用
 
@@ -29,6 +42,8 @@
 移除实例不删除图片；停用或卸载插件保留整个物品目录。重新启用会恢复上次保存的场景。
 模型封面截图不包含物品。OpenGL 直接绘制四边形；Vulkan／Metal 复用宿主的缓存背景／前景层，
 呈现及像素命中测试使用同一合成结果。图片缓存每张最长边最多 1024 像素。
+只有可见且不透明度大于 0 的实例保留图片缓存；隐藏、完全透明或移除最后一个使用者后回收，
+恢复显示时按需重载。同一图片的可见副本继续共用缓存，移动或删除其他物品不触发整场重载。
 
 ## 构建与插件接口
 
@@ -38,16 +53,19 @@
 - 查找路径沿用渲染插件：显式 `BONGO_CAT_PLUGIN_DIRECTORY`、`<data>/plugins`、
   可执行文件旁的 `plugins`、macOS `Contents/PlugIns`。停用标记在数据目录的 `plugins` 中。
 - ABI：[`items_plugin.h`](../include/bongo_cat/items_plugin.h)。实例拥有场景、校验和增删改接口；
-  宿主负责 Rust JSON／图片解析、导入、安全落盘、UI 和各渲染后端。
+  宿主负责 Rust JSON／图片解析、导入、安全落盘和各渲染后端；插件负责页面 UI。
 - 插件状态调用由实例状态锁串行保护；图片导入与场景保存使用独立工作线程。
   插件分配的实例由插件自身释放，无 SDL 对象、
   C 运行库分配或图形句柄跨越 ABI。任务进行期间不能停用／卸载；退出先排空并等待独立工作线程，再撤销回调和页面、销毁实例、卸载动态库。
-- CTest `items-plugin` 覆盖 ABI、路径及非有限数拒绝、容量、失败恢复原子性、删除、
-  场景往返和实例隔离。运行该测试需要用户明确要求构建后生成的测试程序。
+- CTest `items-rust` 覆盖 ABI、路径及非有限数拒绝、容量、失败恢复原子性、删除、
+  场景往返和实例隔离；`items-memory` 覆盖隐藏／透明、可见副本共享、空场景及清理失败保留。
+  `items-rust` 运行 Rust crate 的单元测试，`items-memory` 需用户明确要求构建后生成的测试程序。
 
 ## English
 
-The optional `bongo_items` dynamic plugin contributes an Items page while active.
+The optional `bongo_items` dynamic plugin contributes an Items page while active. It is a Rust
+cdylib crate under `src/rust/bongo-items/` (`[lib] name = "bongo_items"`) exporting
+`bongo_cat_items_query`.
 Enable it on Plugins, then add or drop PNG/JPEG/WebP/BMP/GIF images, including multiple files.
 GIF displays its first frame. Manage up to 16 instances, including duplicates, visibility,
 placement locks, position, aspect-preserving scale, rotation, opacity and layers.
@@ -66,13 +84,20 @@ on write failure. Invalid scenes remain untouched and prevent editing until repa
 Removing instances preserves source images; disabling/uninstalling preserves all scene data.
 Model cover captures exclude props. GL draws quads; Vulkan and Metal reuse cached background
 and foreground composition. Image rendering caches fit within 1024 pixels per edge.
+Caches are retained only while a visible instance with nonzero opacity uses the image.
+Hiding, making fully transparent or removing its last visible user releases the cache;
+showing it again reloads on demand. Visible duplicates keep sharing the same image,
+and moving or removing other items preserves their caches.
 
 `BONGO_CAT_BUILD_ITEMS=ON` builds and stages the library by default; `OFF` keeps host loading
-support without bundling it. Import a platform library or a ZIP containing one plugin on Plugins.
+support without bundling it. The cdylib is produced from `src/rust/bongo-items/` and keeps the
+`bongo_items.dll`/`libbongo_items.so` filenames. Import a platform library or a ZIP containing one plugin on Plugins.
 Resolution uses `BONGO_CAT_PLUGIN_DIRECTORY`, user plugins, bundled plugins and macOS PlugIns.
 The v1 ABI keeps scene ownership and validation in the plugin; the host reuses bongo-safe
 for all JSON/image decoding. State calls are serialized by an instance mutex; imports and saves run on a dedicated worker.
 Allocator ownership stays within each binary,
 and callbacks/page registration are removed before destruction and unload.
-The `items-plugin` CTest covers malformed records, bounded capacity, atomic rejected restores,
-round trips and instance isolation.
+The `items-rust` CTest covers malformed records, bounded capacity, atomic rejected restores,
+round trips and instance isolation by running the Rust crate's unit tests; the `items-memory`
+CTest covers hidden/transparent images, shared visible duplicates, empty scenes and cleanup
+failure retention.

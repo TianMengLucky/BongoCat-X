@@ -34,9 +34,6 @@ static void surface(Dial *d, const DialPath *p, int tint, float opacity) {
     DialPoint closed[DIAL_PATH_POINTS+1];
     for (int i = 0; i < p->count; ++i) closed[i]=p->points[i];
     closed[p->count]=p->points[0];
-    uint32_t glow = tint ? (colors[1]&0xffffff)|0x06000000 : 0x03000000;
-    for (int i = 6; i > 0; --i)
-        dial_stroke(d,closed,p->count+1,(float)i*5,alpha(glow,opacity),false);
     /* Shared polygon vertices only need their gradient calculated once. */
     uint32_t vertex_colors[DIAL_PATH_POINTS];
     for (int i = 0; i < p->count; ++i)

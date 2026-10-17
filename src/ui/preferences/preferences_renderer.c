@@ -66,20 +66,23 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
             "Switching the render backend"), false);
     }
 #ifdef _WIN32
-    bool composition = bongo_safe_direct_composition_get(app->settings.extensions_json,
-        sizeof(app->settings.extensions_json));
-    bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
-    if (bongo_cat_pref_toggle(context, "direct-composition", tr(app,
-            "pages.preference.general.labels.directComposition", "DirectComposition presentation"),
-            tr(app, "pages.preference.general.hints.directComposition",
-                "Experimental DXGI alpha presentation. Applies immediately; falls back on failure. Pixel readback remains; game Independent Flip is not guaranteed."),
-            &composition)) {
-        if (bongo_safe_direct_composition_set(app->settings.extensions_json,
-                sizeof(app->settings.extensions_json), composition))
-            app->render_backend_swap_pending = true;
-        else bongo_cat_preferences_notice_show(app, tr(app,
-            "pages.preference.general.hints.glTrueTransparencySaveFailed",
-            "Unable to save the transparency preference"), true);
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
+            "BongoCat.AmdCompositionAdapter", false)) {
+        bool composition = bongo_safe_direct_composition_get(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json));
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
+        if (bongo_cat_pref_toggle(context, "direct-composition", tr(app,
+                "pages.preference.general.labels.directComposition", "DirectComposition presentation"),
+                tr(app, "pages.preference.general.hints.directComposition",
+                    "Experimental DXGI alpha presentation. Applies immediately; falls back on failure. Pixel readback remains; game Independent Flip is not guaranteed. AMD only. Enables 50 ms expose throttling and disables VSync."),
+                &composition)) {
+            if (bongo_safe_direct_composition_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), composition))
+                app->render_backend_swap_pending = true;
+            else bongo_cat_preferences_notice_show(app, tr(app,
+                "pages.preference.general.hints.glTrueTransparencySaveFailed",
+                "Unable to save the transparency preference"), true);
+        }
     }
     if (bongo_cat_rhi_is_gl(&app->rhi)) {
         bool enabled = bongo_safe_gl_true_transparency_get(app->settings.extensions_json,

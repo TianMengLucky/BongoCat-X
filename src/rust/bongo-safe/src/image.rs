@@ -4,8 +4,9 @@
 
 use crate::{guard, reclaim_exact, release_exact};
 use image::ImageReader;
-use std::io::Cursor;
-use std::os::raw::c_int;
+use std::ffi::CStr;
+use std::io::{BufRead, BufReader, Cursor, Seek};
+use std::os::raw::{c_char, c_int};
 
 /// Hard bounds for hostile files. The dimension cap sits far above every
 /// legitimate GPU texture limit the app checks after decoding (up to
@@ -14,8 +15,8 @@ use std::os::raw::c_int;
 const MAX_DIMENSION: u32 = 1 << 18;
 const MAX_ALLOC_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
-fn reader(data: &[u8]) -> Option<ImageReader<Cursor<&[u8]>>> {
-    let mut reader = ImageReader::new(Cursor::new(data));
+fn reader<R: BufRead + Seek>(input: R) -> Option<ImageReader<R>> {
+    let mut reader = ImageReader::new(input);
     reader = reader.with_guessed_format().ok()?;
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(MAX_DIMENSION);
@@ -53,7 +54,7 @@ pub unsafe extern "C" fn bongo_safe_image_decode(
         } else {
             std::slice::from_raw_parts(data, size)
         };
-        let rgba = reader(bytes)?.decode().ok()?.into_rgba8();
+        let rgba = reader(Cursor::new(bytes))?.decode().ok()?.into_rgba8();
         let (decoded_width, decoded_height) = rgba.dimensions();
         if decoded_width == 0 || decoded_height == 0 {
             return None;
@@ -94,7 +95,7 @@ pub unsafe extern "C" fn bongo_safe_image_info(
         } else {
             std::slice::from_raw_parts(data, size)
         };
-        let dimensions = match reader(bytes) {
+        let dimensions = match reader(Cursor::new(bytes)) {
             Some(reader) => match reader.into_dimensions() {
                 Ok(dimensions) => dimensions,
                 Err(_) => return false,
@@ -110,9 +111,45 @@ pub unsafe extern "C" fn bongo_safe_image_info(
     })
 }
 
+/// Header-only dimensions without an allocation proportional to the file size.
+///
 /// # Safety
-/// `pointer` must come from `bongo_safe_image_decode` with the same
-/// byte count (`width * height * 4`) and must not have been freed yet.
+/// `path` is NUL-terminated UTF-8; `width` and `height` are writable.
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_image_info_file(
+    path: *const c_char,
+    width: *mut c_int,
+    height: *mut c_int,
+) -> bool {
+    if !width.is_null() {
+        *width = 0;
+    }
+    if !height.is_null() {
+        *height = 0;
+    }
+    if path.is_null() || width.is_null() || height.is_null() {
+        return false;
+    }
+    let dimensions = guard(None, || {
+        let path = CStr::from_ptr(path).to_str().ok()?;
+        let file = std::fs::File::open(path).ok()?;
+        reader(BufReader::new(file))?.into_dimensions().ok()
+    });
+    let Some((w, h)) = dimensions else {
+        return false;
+    };
+    if w == 0 || h == 0 {
+        return false;
+    }
+    *width = w as c_int;
+    *height = h as c_int;
+    true
+}
+
+/// # Safety
+/// `pointer` must come from `bongo_safe_image_decode` or native texture loading
+/// with the same byte count (the native payload size may be compressed).
+/// It must not have been freed yet.
 #[no_mangle]
 pub unsafe extern "C" fn bongo_safe_free_pixels(pointer: *mut u8, count: usize) {
     guard((), || {
@@ -177,6 +214,54 @@ mod tests {
         });
         assert_eq!(width, 1);
         assert_eq!(height, 1);
+    }
+
+    #[test]
+    fn file_info_guesses_content_and_accepts_unicode_paths() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("\u{7eb9}\u{7406}.img");
+        std::fs::write(&path, RED_PNG).unwrap();
+        // Trailing bytes must not turn a header query into a full-file buffer.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_len(64 * 1024 * 1024)
+            .unwrap();
+        let mut file = std::fs::File::open(&path).unwrap();
+        assert_eq!(
+            reader(BufReader::new(&mut file))
+                .unwrap()
+                .into_dimensions()
+                .unwrap(),
+            (1, 1)
+        );
+        assert!(file.stream_position().unwrap() < 64 * 1024);
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let (mut width, mut height) = (0, 0);
+        assert!(unsafe { bongo_safe_image_info_file(path.as_ptr(), &mut width, &mut height) });
+        assert_eq!((width, height), (1, 1));
+    }
+
+    #[test]
+    fn file_info_resets_dimensions_on_invalid_input() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("invalid.img");
+        std::fs::write(&path, b"not an image").unwrap();
+        let filename = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let (mut width, mut height) = (99, 88);
+        assert!(!unsafe { bongo_safe_image_info_file(filename.as_ptr(), &mut width, &mut height) });
+        assert_eq!((width, height), (0, 0));
+        std::fs::remove_file(path).unwrap();
+        width = 99;
+        height = 88;
+        assert!(!unsafe { bongo_safe_image_info_file(filename.as_ptr(), &mut width, &mut height) });
+        assert_eq!((width, height), (0, 0));
+        height = 88;
+        assert!(!unsafe {
+            bongo_safe_image_info_file(filename.as_ptr(), std::ptr::null_mut(), &mut height)
+        });
+        assert_eq!(height, 0);
     }
 
     #[test]

@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 int bongo_cat_test_failures;
-static BongoCatInputState input;
+static BongoCatInputState input = {0};
 static LinuxPlatformState native;
 static BongoCatPlatform platform = {.input = &input, .native = &native};
 static LinuxEvdevState state;
@@ -185,5 +185,6 @@ int main(void) {
     expect_empty();
     SDL_DestroyMutex(state.motion_lock);
     SDL_Quit();
+    bongo_cat_input_destroy(&input);
     return bongo_cat_test_failures ? 1 : 0;
 }

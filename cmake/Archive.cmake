@@ -9,17 +9,23 @@ if(BONGO_CAT_FETCH_DEPS)
   bongo_cat_write_if_different("${miniz_BINARY_DIR}/miniz_export.h"
     "#pragma once\n#define MINIZ_EXPORT\n")
   add_library(bongo_cat_archive STATIC
-    "${miniz_SOURCE_DIR}/miniz.c" "${miniz_SOURCE_DIR}/miniz_zip.c"
+    "${miniz_SOURCE_DIR}/miniz.c"
     "${miniz_SOURCE_DIR}/miniz_tinfl.c" "${miniz_SOURCE_DIR}/miniz_tdef.c")
   target_include_directories(bongo_cat_archive SYSTEM PUBLIC
     "${miniz_SOURCE_DIR}" "${miniz_BINARY_DIR}")
-  # Archive callers supply SDL stream callbacks or in-memory data. Removing
-  # stdio also prunes file branches retained by the shared ZIP cleanup code.
+  # PNG encoding and ZIP test fixtures use memory buffers, not stdio.
   # Keep this PUBLIC so every header consumer sees the same available APIs;
   # system packages below retain their original compile-time configuration.
   target_compile_definitions(bongo_cat_archive PUBLIC MINIZ_NO_STDIO)
+  # Only import-test fixtures write ZIPs; the host reads them through Rust.
+  if(BUILD_TESTING)
+    add_library(bongo_cat_test_archive STATIC EXCLUDE_FROM_ALL
+      "${miniz_SOURCE_DIR}/miniz_zip.c")
+    target_link_libraries(bongo_cat_test_archive PUBLIC bongo_cat_archive)
+  endif()
 else()
   find_package(miniz CONFIG REQUIRED)
   add_library(bongo_cat_archive INTERFACE)
   target_link_libraries(bongo_cat_archive INTERFACE miniz::miniz)
+  add_library(bongo_cat_test_archive ALIAS bongo_cat_archive)
 endif()

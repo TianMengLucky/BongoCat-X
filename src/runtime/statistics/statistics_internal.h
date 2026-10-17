@@ -1,5 +1,6 @@
 #ifndef BONGO_CAT_STATISTICS_INTERNAL_H
 #define BONGO_CAT_STATISTICS_INTERNAL_H
+#include "plugin_page.h"
 #include "bongo_cat/app.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/statistics_reset_plugin.h"
@@ -7,7 +8,9 @@
 
 struct BongoCatStatistics {
     SDL_SharedObject *library;
+    BongoCatPluginPageSession page_ui;
     const BongoCatStatisticsPlugin *plugin;
+    const BongoCatPluginUiContribution *ui;
     void *instance;
     uint64_t refresh_ms;
     const BongoCatStatisticsUsagePlugin *usage;

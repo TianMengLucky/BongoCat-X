@@ -87,7 +87,7 @@ bool bongo_cat_preferences_model_mode_selector(BongoCatPreferences *value,
     struct nk_vec2 local = nk_layout_space_to_local(context, nk_vec2(bounds.x, bounds.y));
     nk_layout_space_push(context, nk_rect(local.x, local.y, bounds.w, bounds.h));
     int choice = bongo_cat_pref_control_combo(context, entry->family_id[0] ?
-        entry->family_id : "builtin-modes", labels, count, selected);
+        entry->family_id : "builtin-modes", labels, count, selected, true);
     nk_layout_space_end(context);
     panel->at_x = saved.at_x;
     panel->at_y = saved.at_y;

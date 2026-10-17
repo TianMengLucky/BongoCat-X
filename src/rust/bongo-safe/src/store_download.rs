@@ -25,9 +25,11 @@ pub unsafe extern "C" fn bongo_safe_store_download(
     guard(4, || {
         let result = (|| {
             let url = http::text(url)?;
-            if !url.starts_with(
-                "https://raw.githubusercontent.com/TianMengLucky/Awesome-BongoCat/main/",
-            ) {
+            let parsed = reqwest::Url::parse(url)
+                .map_err(|_| Failure(3, "Invalid model download URL".into()))?;
+            if parsed.scheme() != "https" || parsed.host_str() != Some("raw.githubusercontent.com")
+                || !parsed.username().is_empty() || parsed.password().is_some()
+                || parsed.port().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
                 return Err(Failure(3, "Untrusted model download URL".into()));
             }
             let hash = http::text(hash)?;

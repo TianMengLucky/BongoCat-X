@@ -1,5 +1,6 @@
 #ifndef BONGO_CAT_SOUNDS_INTERNAL_H
 #define BONGO_CAT_SOUNDS_INTERNAL_H
+#include "plugin_page.h"
 #include "bongo_cat/app.h"
 #include "bongo_cat/sounds.h"
 #include "bongo_cat/audio.h"
@@ -7,7 +8,9 @@
 #include "plugin_worker.h"
 typedef struct BongoCatSounds {
     SDL_SharedObject *library;
+    BongoCatPluginPageSession page_ui;
     const BongoCatSoundsPlugin *api;
+    const BongoCatPluginUiContribution *ui;
     void *instance;
     BongoCatSoundsPage page;
     BongoCatAudio *audio;

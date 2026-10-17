@@ -1,5 +1,6 @@
 #ifndef BONGO_CAT_ITEMS_INTERNAL_H
 #define BONGO_CAT_ITEMS_INTERNAL_H
+#include "plugin_page.h"
 #include "bongo_cat/app.h"
 #include "bongo_cat/items.h"
 #include "bongo_cat/image.h"
@@ -8,7 +9,9 @@
 #include "plugin_worker.h"
 struct BongoCatItems {
     SDL_SharedObject *library;
+    BongoCatPluginPageSession page_ui;
     const BongoCatItemsPlugin *api;
+    const BongoCatPluginUiContribution *ui;
     void *instance;
     BongoCatItemsPage page;
     uint64_t revision;
@@ -23,5 +26,6 @@ const BongoCatItemsPlugin *bongo_cat_items_query(SDL_SharedObject *library);
 bool bongo_cat_items_load_scene(BongoCatApp *app, BongoCatError *error);
 void bongo_cat_items_changed(BongoCatApp *app);
 void bongo_cat_items_publish(BongoCatApp *app);
+void bongo_cat_items_prune_graphics(BongoCatApp *app);
 bool bongo_cat_items_worker_start(BongoCatApp *app);
 #endif

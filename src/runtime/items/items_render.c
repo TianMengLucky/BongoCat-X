@@ -1,6 +1,7 @@
 #include "items_internal.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/log.h"
+#include "bongo_cat/memory_policy.h"
 #include <SDL3/SDL_opengl.h>
 #include <math.h>
 #include <string.h>
@@ -28,25 +29,50 @@ static bool program(BongoCatItems *v) {
     v->gl.bind_vertex_array(0);
     return true;
 }
-void bongo_cat_items_release_graphics(BongoCatApp *app) {
+static void release_graphics(BongoCatApp *app, const BongoCatItemScene *scene) {
     if (!app || !app->items) return;
     BongoCatItems *v = app->items;
+    bool keep[BONGO_CAT_ITEMS_CAP] = {0};
+    for (unsigned i = 0; scene && i < BONGO_CAT_ITEMS_CAP; ++i)
+        for (unsigned j = 0; j < scene->count; ++j)
+            if (scene->items[j].visible && scene->items[j].opacity > 0 &&
+                !strcmp(v->images[i].asset, scene->items[j].asset)) keep[i] = true;
     SDL_Window *previous_window = SDL_GL_GetCurrentWindow();
     SDL_GLContext previous_context = SDL_GL_GetCurrentContext();
-    bool has_gl = v->program != 0;
-    for (unsigned i = 0; i < BONGO_CAT_ITEMS_CAP; ++i) has_gl = has_gl || v->images[i].texture != 0;
-    bool gl_ready = !has_gl || SDL_GL_MakeCurrent(app->window, app->gl_context);
-    if (!gl_ready) SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE, "[items] GL cleanup skipped: %s", SDL_GetError());
+    bool has_gl = !scene && (v->program || v->vao || v->vbo);
+    for (unsigned i = 0; i < BONGO_CAT_ITEMS_CAP; ++i)
+        has_gl = has_gl || (!keep[i] && v->images[i].texture != 0);
+    if (has_gl && (!app->window || !app->gl_context ||
+        !SDL_GL_MakeCurrent(app->window, app->gl_context))) {
+        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE, "[items] GL cleanup skipped: %s", SDL_GetError());
+        return; /* Keep owned handles so a later cleanup can retry. */
+    }
+    bool released = false;
     for (unsigned i = 0; i < BONGO_CAT_ITEMS_CAP; ++i) {
-        if (gl_ready && v->images[i].texture) glDeleteTextures(1, &v->images[i].texture);
+        if (keep[i]) continue;
+        released = released || v->images[i].image.pixels || v->images[i].texture;
+        if (v->images[i].texture) glDeleteTextures(1, &v->images[i].texture);
         bongo_cat_image_free(&v->images[i].image);
         memset(&v->images[i], 0, sizeof(v->images[i]));
     }
-    if (gl_ready && v->vbo) v->gl.delete_buffers(1, &v->vbo);
-    if (gl_ready && v->vao) v->gl.delete_vertex_arrays(1, &v->vao);
-    if (gl_ready && v->program) v->gl.delete_program(v->program);
-    v->vbo = v->vao = v->program = 0;
-    if (has_gl && gl_ready) (void)SDL_GL_MakeCurrent(previous_window, previous_context);
+    if (!scene) {
+        if (v->vbo) v->gl.delete_buffers(1, &v->vbo);
+        if (v->vao) v->gl.delete_vertex_arrays(1, &v->vao);
+        if (v->program) v->gl.delete_program(v->program);
+        v->vbo = v->vao = v->program = 0;
+    }
+    if (has_gl) (void)SDL_GL_MakeCurrent(previous_window, previous_context);
+    if (released) bongo_cat_memory_policy_temporary_released();
+}
+void bongo_cat_items_release_graphics(BongoCatApp *app) {
+    release_graphics(app, NULL);
+}
+void bongo_cat_items_prune_graphics(BongoCatApp *app) {
+    BongoCatItemScene scene;
+    /* Runs on the main thread when a new scene is published, including empty
+       scenes that will not invoke either draw callback again. */
+    if (bongo_cat_items_snapshot(app, &scene))
+        release_graphics(app, scene.count ? &scene : NULL);
 }
 static int image_slot(BongoCatApp *app, const char *asset, bool native) {
     BongoCatItems *v = app->items;

@@ -83,10 +83,10 @@ bool bongo_cat_pref_number_edit(struct nk_context *context, const char *id,
     context->style.edit.text_normal = p.text;
     context->style.edit.text_hover = p.text;
     context->style.edit.text_active = p.text;
-    context->style.edit.selected_normal = nk_rgb(83, 172, 252);
-    context->style.edit.selected_hover = nk_rgb(83, 172, 252);
-    context->style.edit.selected_text_normal = nk_rgb(255, 255, 255);
-    context->style.edit.selected_text_hover = nk_rgb(255, 255, 255);
+    context->style.edit.selected_normal = p.accent;
+    context->style.edit.selected_hover = p.accent;
+    context->style.edit.selected_text_normal = p.on_accent;
+    context->style.edit.selected_text_hover = p.on_accent;
     context->style.edit.cursor_normal = p.text;
     context->style.edit.cursor_hover = p.text;
     context->style.edit.border = 0;

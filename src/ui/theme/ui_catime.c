@@ -38,7 +38,7 @@ static void centered(struct nk_command_buffer *canvas, struct nk_rect bounds,
 }
 
 float bongo_cat_ui_sidebar_width(float window_width) {
-    return window_width <= 780.0f ? BONGO_CAT_UI_SIDEBAR_NARROW :
+    return window_width <= 640.0f ? BONGO_CAT_UI_SIDEBAR_NARROW :
         BONGO_CAT_UI_SIDEBAR_WIDTH;
 }
 
@@ -60,11 +60,11 @@ void bongo_cat_ui_shell_draw(struct nk_context *context, float width,
     if (native_frame) {
         nk_fill_rect(canvas, surface, 0, p.surface_glass);
         nk_fill_rect(canvas, nk_rect(0, 0, sidebar_right, height), 0,
-            p.surface);
+            p.background);
     } else {
         bongo_cat_ui_paint_rounded_surface(context, surface, rounding, p.surface_glass);
         nk_push_scissor(canvas, nk_rect(0, 0, sidebar_right, height));
-        bongo_cat_ui_paint_rounded_surface(context, surface, rounding, p.surface);
+        bongo_cat_ui_paint_rounded_surface(context, surface, rounding, p.background);
         nk_push_scissor(canvas, surface);
     }
     if (p.effects && !fast && !dark)
@@ -82,14 +82,14 @@ bool bongo_cat_ui_header(struct nk_context *context, const char *title,
     struct nk_rect bounds;
     bool compact = nk_window_get_content_region(context).w < 100;
     float height = compact ? (native_chrome ? 148.0f : 118.0f) :
-        (native_chrome ? 176.0f : 148.0f);
+        (native_chrome ? 156.0f : 128.0f);
     nk_layout_row_dynamic(context, height, 1);
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
     BongoCatUIPalette p = bongo_cat_ui_palette(dark);
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     /* The current logo asset already contains its own rounded brand mark.
        Give it room to read at a glance instead of framing it a second time. */
-    float base_size = compact ? 68.0f : 84.0f;
+    float base_size = compact ? 60.0f : 64.0f;
     float top = native_chrome ? 34.0f : (compact ? 6.0f : 8.0f);
     struct nk_rect base_logo = nk_rect(bounds.x + (bounds.w - base_size) * .5f,
         bounds.y + top, base_size, base_size);
@@ -112,8 +112,8 @@ bool bongo_cat_ui_header(struct nk_context *context, const char *title,
     }
     if (bounds.w >= 100) {
         if (!font) font = bongo_cat_ui_caption_font(context);
-        float title_y = native_chrome ? 124.0f : 94.0f;
-        struct nk_color title_color = logo_hover ? nk_rgb(84, 174, 255) : p.pink;
+        float title_y = native_chrome ? 104.0f : 78.0f;
+        struct nk_color title_color = logo_hover ? p.accent : p.text;
         centered(canvas, nk_rect(bounds.x, bounds.y + title_y, bounds.w, 28), title,
             font, title_color);
     }
@@ -141,7 +141,7 @@ bool bongo_cat_ui_content_header(struct nk_context *context,
     struct nk_rect text = nk_rect(bounds.x + 52,
         bounds.y + (bounds.h - font->height) * .5f, bounds.w - 110, font->height);
     nk_draw_text(canvas, text, title, nk_strlen(title), font,
-        nk_rgba(0, 0, 0, 0), p.accent);
+        nk_rgba(0, 0, 0, 0), p.text);
     if (native_chrome) return false;
     struct nk_rect close = nk_rect(bounds.x + bounds.w - 48, bounds.y + 11, 34, 34);
     return bongo_cat_ui_close_button(context, canvas, close, p.muted,
@@ -176,7 +176,7 @@ bool bongo_cat_ui_close_hit(float x, float y, float width) {
 
 bool bongo_cat_ui_title_link_hit(float x, float y, float width) {
     return x >= 8.0f && x <= 8.0f + bongo_cat_ui_sidebar_width(width) &&
-        y >= 8.0f && y <= 156.0f;
+        y >= 8.0f && y <= (width <= 640.0f ? 126.0f : 136.0f);
 }
 
 bool bongo_cat_ui_title_drag_hit(float x, float y, float width) {

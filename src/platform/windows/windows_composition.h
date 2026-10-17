@@ -6,6 +6,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+bool bongo_cat_windows_composition_is_amd(void);
 bool bongo_cat_windows_composition_present(void **state, HWND window,
     const RECT *bounds, const unsigned char *pixels, int width, int height, float opacity);
 void bongo_cat_windows_composition_destroy(void *state);

@@ -31,8 +31,11 @@ int NativeModel::prepare_mask_layout() {
     size_t offscreens = combination_count(_model->GetOffscreenCount(),
         _model->GetOffscreenMaskCounts(), _model->GetOffscreenMasks());
     int count = std::max(mask_buffer_count(drawables), mask_buffer_count(offscreens));
-    drawable_masks_.layout = mask_layout(drawables, count);
-    offscreen_masks_.layout = mask_layout(offscreens, count);
+    drawable_masks_.count = mask_buffer_count(drawables);
+    offscreen_masks_.count = mask_buffer_count(offscreens);
+    const bool separate = rhi_info_.backend != BONGO_CAT_RHI_METAL;
+    drawable_masks_.layout = mask_layout(drawables, separate ? drawable_masks_.count : count);
+    offscreen_masks_.layout = mask_layout(offscreens, separate ? offscreen_masks_.count : count);
     mask_buffer_count_ = count;
     return count;
 }
@@ -52,7 +55,7 @@ bool NativeModel::update_mask_buffers() {
         if ((int64_t)width_ * 11 * state.layout.width > (int64_t)mask_texture_limit_ * 10 ||
             (int64_t)height_ * 11 * state.layout.height > (int64_t)mask_texture_limit_ * 10)
             SDL_LogWarn(SDL_LOG_CATEGORY_RENDER,
-                "Live2D clipping precision limited by GPU maximum %d at %dx%d",
+                "Live2D clipping precision limited by mask budget %d at %dx%d",
                 mask_texture_limit_, width_, height_);
         const int count = offscreen ? renderer->GetOffscreenRenderTextureCount() :
             renderer->GetDrawableRenderTextureCount();

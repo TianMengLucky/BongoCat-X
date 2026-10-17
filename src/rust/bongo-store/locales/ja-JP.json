@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "ストア",
+  "pages.preference.store.help": "コミュニティモデルを表示します。ダウンロード後、SHA-256 検証に成功したモデルのみインストールします。",
+  "pages.preference.store.refresh": "更新",
+  "pages.preference.store.repository": "コミュニティリポジトリ",
+  "pages.preference.store.repositoryUrl": "GitHub リポジトリ URL（main ブランチ・空欄で既定に戻す）",
+  "pages.preference.store.applyRepository": "リポジトリを適用",
+  "pages.preference.store.invalidRepository": "GitHub リポジトリ URL を入力してください：https://github.com/owner/repository",
+  "pages.preference.store.loading": "カタログを読み込み中…",
+  "pages.preference.store.unpublished": "モデルカタログはまだ公開されていません。",
+  "pages.preference.store.networkError": "カタログを読み込めません。接続または形式を確認して再試行してください。",
+  "pages.preference.store.empty": "モデルはまだ登録されていません。",
+  "pages.preference.store.pluginHint": "コミュニティモデル用の Rust プラグインです。有効にするとストアページが表示されます。",
+  "pages.preference.store.failed": "ストア操作に失敗しました",
+  "pages.preference.store.preview": "モデルプレビュー",
+  "pages.preference.store.download": "ダウンロード",
+  "pages.preference.store.uninstall": "アンインストール",
+  "pages.preference.store.downloading": "ダウンロード中…",
+  "pages.preference.store.installing": "インストール中…",
+  "pages.preference.store.hashMismatch": "SHA-256 不一致のためインストールを拒否しました",
+  "pages.preference.store.installed": "モデルをインストールしました。SHA-256 検証済み",
+  "pages.preference.store.buyFull": "フル版を購入"
+}

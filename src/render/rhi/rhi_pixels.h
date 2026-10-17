@@ -20,7 +20,7 @@ static inline bool bongo_cat_rhi_copy_pixels(const uint8_t *source,
         stride < (size_t)source_width * 4 ||
         stride > SIZE_MAX / (size_t)source_height ||
         (size_t)width * 4 > SIZE_MAX / (size_t)height) return false;
-    uint8_t *output = pixels;
+    uint8_t *output = (uint8_t *)pixels;
     for (int row = 0; row < height; ++row) {
         const uint8_t *input = source +
             (size_t)(source_height - 1 - y - row) * stride + (size_t)x * 4;

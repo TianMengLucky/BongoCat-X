@@ -159,7 +159,7 @@ static void test_wheel_selection_persists(void) {
     setup();
     select_then_scroll(SIZE_ROOT, 2);
     CHECK(dial.child == 1);
-    CHECK(dial.child_focus);
+    CHECK(!dial.child_focus);
     hover_root(SIZE_ROOT);
     CHECK(dial.child == 1);
     CHECK(!dial.child_focus);
@@ -187,6 +187,7 @@ static void test_left_click_confirms_child(void) {
     select_then_scroll(SIZE_ROOT, 2);
     hover_child(1);
     CHECK(dial.child == 1);
+    CHECK(dial.child_focus);
     float x, y;
     to_screen(&dial, dial_child_angle(&dial, 1), RING_CHILD, &x, &y);
     press(SDL_BUTTON_LEFT, x, y);
@@ -272,6 +273,74 @@ static void test_escape_clears_then_closes(void) {
     CHECK(dial.done);
 }
 
+static void send_key(SDL_Keycode key, SDL_Keymod mod, bool repeat) {
+    SDL_Event e = {0};
+    e.type = SDL_EVENT_KEY_DOWN;
+    e.key.key = key;
+    e.key.mod = mod;
+    e.key.repeat = repeat;
+    dial_event(&dial, &e);
+}
+
+/* Keyboard confirmation pins the preview just like a click; holding the key
+   must not repeatedly commit the action. Leaf commands still close. */
+static void test_keyboard_confirms_in_place(void) {
+    const SDL_Keycode keys[] = {SDLK_RETURN, SDLK_KP_ENTER, SDLK_SPACE};
+    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
+        setup();
+        select_then_scroll(SIZE_ROOT, 2);
+        send_key(keys[i], 0, false);
+        CHECK(!dial.done);
+        CHECK(restore_calls == 1);
+        CHECK(last_restore == BONGO_CAT_MENU_SCALE_60);
+        send_key(keys[i], 0, true);
+        CHECK(restore_calls == 1);
+    }
+    setup();
+    hover_root(MIRROR_ROOT);
+    send_key(SDLK_RETURN, 0, false);
+    CHECK(dial.done);
+    CHECK(dial.result == BONGO_CAT_MENU_MIRROR);
+}
+
+/* Clockwise navigation follows screen order and crosses catalog pages. */
+static void test_keyboard_navigation(void) {
+    setup();
+    hover_root(SIZE_ROOT);
+    send_key(SDLK_RIGHT, 0, false);
+    CHECK(dial.active == SIZE_ROOT + 1);
+    send_key(SDLK_LEFT, 0, false);
+    CHECK(dial.active == SIZE_ROOT);
+    send_key(SDLK_TAB, 0, false);
+    CHECK(dial.active == SIZE_ROOT + 1);
+    send_key(SDLK_TAB, SDL_KMOD_SHIFT, false);
+    CHECK(dial.active == SIZE_ROOT);
+    select_then_scroll(MOTION_ROOT, 16);
+    send_key(SDLK_RIGHT, 0, false);
+    CHECK(dial.page == 1);
+    CHECK(dial.child == 0);
+    CHECK(last_preview == BONGO_CAT_MENU_MOTION_FIRST + 16);
+    send_key(SDLK_LEFT, 0, false);
+    CHECK(dial.page == 0);
+    CHECK(dial.child == 15);
+}
+
+/* A pending child must not turn the transparent hub or gaps into a button. */
+static void test_pending_child_click_bounds(void) {
+    setup();
+    select_then_scroll(SIZE_ROOT, 2);
+    press(SDL_BUTTON_LEFT, dial.width * .5f, dial.height * .5f);
+    CHECK(dial.done);
+    CHECK(restore_calls == 0);
+    setup();
+    select_then_scroll(SIZE_ROOT, 2);
+    float x, y;
+    to_screen(&dial, dial_child_angle(&dial, 0), 280, &x, &y);
+    press(SDL_BUTTON_LEFT, x, y);
+    CHECK(dial.done);
+    CHECK(restore_calls == 0);
+}
+
 int main(void) {
     test_wheel_selects_children();
     test_wheel_wraps_backwards();
@@ -284,6 +353,9 @@ int main(void) {
     test_click_away_dismisses();
     test_wheel_crosses_pages();
     test_escape_clears_then_closes();
+    test_keyboard_confirms_in_place();
+    test_keyboard_navigation();
+    test_pending_child_click_bounds();
     if (bongo_cat_test_failures) {
         fprintf(stderr, "dial-input: %d check(s) failed\n", bongo_cat_test_failures);
         return 1;

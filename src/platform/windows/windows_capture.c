@@ -3,8 +3,7 @@
 #ifdef _WIN32
 #include <SDL3/SDL.h>
 #include <dwmapi.h>
-#include <objbase.h>
-#include <shobjidl.h>
+#include "windows_taskbar.h"
 
 static UINT taskbar_created_message;
 static UINT taskbar_button_created_message;
@@ -49,20 +48,6 @@ static void register_messages(void) {
             L"BongoCat.CaptureWindow.RefreshTaskbar");
 }
 
-static HRESULT remove_taskbar_tab(HWND window) {
-    HRESULT initialized = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    if (FAILED(initialized) && initialized != RPC_E_CHANGED_MODE)
-        return initialized;
-    ITaskbarList *taskbar = NULL;
-    HRESULT result = CoCreateInstance(&CLSID_TaskbarList, NULL,
-        CLSCTX_INPROC_SERVER, &IID_ITaskbarList, (void **)&taskbar);
-    if (SUCCEEDED(result)) result = taskbar->lpVtbl->HrInit(taskbar);
-    if (SUCCEEDED(result)) result = taskbar->lpVtbl->DeleteTab(taskbar, window);
-    if (taskbar) taskbar->lpVtbl->Release(taskbar);
-    if (SUCCEEDED(initialized)) CoUninitialize();
-    return result;
-}
-
 void bongo_cat_windows_capture_log(HWND window, const char *stage) {
     if (!window || !IsWindow(window)) return;
     if (SDL_GetLogPriority(SDL_LOG_CATEGORY_VIDEO) > SDL_LOG_PRIORITY_DEBUG) return;
@@ -91,7 +76,7 @@ void bongo_cat_windows_capture_log(HWND window, const char *stage) {
 
 static void refresh_taskbar(HWND window) {
     if (!window) return;
-    HRESULT result = remove_taskbar_tab(window);
+    HRESULT result = bongo_cat_windows_taskbar_remove(window);
     if (FAILED(result) && IsWindowVisible(window) && !removal_warning_emitted) {
         removal_warning_emitted = true;
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,

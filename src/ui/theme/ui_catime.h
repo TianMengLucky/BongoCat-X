@@ -18,7 +18,10 @@ typedef struct BongoCatUIPalette {
     struct nk_color border_subtle;
     struct nk_color text;
     struct nk_color muted;
+    struct nk_color link;
+    struct nk_color link_hover;
     struct nk_color accent;
+    struct nk_color on_accent;
     struct nk_color accent_hover;
     struct nk_color accent_pressed;
     struct nk_color pink;
@@ -26,11 +29,15 @@ typedef struct BongoCatUIPalette {
     struct nk_color hover;
     struct nk_color hover_pink;
     struct nk_color selection;
+    struct nk_color on_selection;
     struct nk_color danger;
     struct nk_color danger_background;
     bool effects;
 } BongoCatUIPalette;
 
+void bongo_cat_ui_palette_background(unsigned color);
+void bongo_cat_ui_palette_text(unsigned color);
+void bongo_cat_ui_palette_colors(unsigned primary, unsigned secondary);
 BongoCatUIPalette bongo_cat_ui_palette(bool dark);
 bool bongo_cat_ui_dark(const struct nk_context *context);
 void bongo_cat_ui_apply_theme(struct nk_context *context, bool dark);

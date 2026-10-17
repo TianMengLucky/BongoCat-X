@@ -86,7 +86,7 @@ static bool button(BongoCatApp *app, struct nk_context *context,
     bool hover = enabled && nk_input_is_mouse_hovering_rect(&context->input, bounds);
     struct nk_color background = danger ? p.danger :
         (hover ? p.hover : p.field);
-    struct nk_color foreground = danger ? nk_rgb(255, 255, 255) :
+    struct nk_color foreground = danger ? p.on_accent :
         (hover ? p.accent : p.text);
     nk_fill_rect(canvas, bounds, 10, alpha(background, opacity));
     if (danger) nk_stroke_rect(canvas, bounds, 10, 1,

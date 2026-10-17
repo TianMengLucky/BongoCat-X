@@ -102,47 +102,43 @@ bool bongo_cat_pref_control_obs_background(struct nk_context *context,
     return changed;
 }
 
-static struct nk_color hsv_to_rgb(float h, float s, float v) {
-    float i = h * 6.0f;
-    int sector = (int)i;
-    float f = i - (float)sector;
-    float e = v * (1.0f - s);
-    float q = v * (1.0f - f * s);
-    float t = v * (1.0f - (1.0f - f) * s);
-    float r, g, b;
-    switch (sector % 6) {
-    case 0: r = v; g = t; b = e; break;
-    case 1: r = q; g = v; b = e; break;
-    case 2: r = e; g = v; b = t; break;
-    case 3: r = e; g = q; b = v; break;
-    case 4: r = t; g = e; b = v; break;
-    default: r = v; g = e; b = q; break;
+static bool color_picker_update(struct nk_context *context,
+    BongoCatPrefColorState *state, struct nk_rect square, struct nk_rect bar,
+    uint32_t *rgb, bool available) {
+    if (!state->initialized || state->rgb != *rgb) {
+        nk_color_hsv_f(&state->hue, &state->saturation, &state->value,
+            nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255));
+        state->initialized = true;
+        state->rgb = *rgb;
     }
-    return nk_rgb((nk_byte)(r * 255.0f + 0.5f),
-        (nk_byte)(g * 255.0f + 0.5f), (nk_byte)(b * 255.0f + 0.5f));
+    struct nk_input *input = &context->input;
+    if (!available || !nk_input_has_mouse_click_down_in_rect(input,
+        NK_BUTTON_LEFT, context->current->layout->clip, nk_true)) return false;
+    if (nk_input_has_mouse_click_down_in_rect(input, NK_BUTTON_LEFT,
+        square, nk_true)) {
+        state->saturation = NK_CLAMP(0.0f,
+            (input->mouse.pos.x - square.x) / square.w, 1.0f);
+        state->value = NK_CLAMP(0.0f,
+            1.0f - (input->mouse.pos.y - square.y) / square.h, 1.0f);
+    } else if (nk_input_has_mouse_click_down_in_rect(input, NK_BUTTON_LEFT,
+        bar, nk_true)) {
+        state->hue = NK_CLAMP(0.0f,
+            (input->mouse.pos.y - bar.y) / bar.h, 1.0f);
+    } else return false;
+    struct nk_color color = nk_hsv_f(state->hue, state->saturation, state->value);
+    state->rgb = ((uint32_t)color.r << 16) | ((uint32_t)color.g << 8) | color.b;
+    bool changed = *rgb != state->rgb;
+    *rgb = state->rgb;
+    return changed;
 }
 
-static void rgb_to_hsv(struct nk_color color, float *h, float *s, float *v) {
-    float r = color.r / 255.0f, g = color.g / 255.0f, b = color.b / 255.0f;
-    float maximum = NK_MAX(r, NK_MAX(g, b));
-    float minimum = NK_MIN(r, NK_MIN(g, b));
-    float delta = maximum - minimum;
-    *v = maximum;
-    *s = maximum > 0.0f ? delta / maximum : 0.0f;
-    if (delta <= 0.0f) *h = 0.0f;
-    else if (maximum == r) *h = (g - b) / delta / 6.0f + (g < b ? 1.0f : 0.0f);
-    else if (maximum == g) *h = (b - r) / delta / 6.0f + 1.0f / 3.0f;
-    else *h = (r - g) / delta / 6.0f + 2.0f / 3.0f;
-}
-
-/* Palette for the OBS solid background: a saturation/value square plus a
-   hue slider. Hold the left button to adjust continuously. */
-bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
-    uint32_t *rgb) {
-    (void)id;
+/* Shared theme/OBS picker; apply input before painting the gradient and markers. */
+bool bongo_cat_pref_color_picker(struct nk_context *context,
+    BongoCatPrefColorState *state, uint32_t *rgb) {
     nk_layout_row_dynamic(context, 172.0f, 1);
     struct nk_rect cell;
-    if (nk_widget(&cell, context) == NK_WIDGET_INVALID) return false;
+    enum nk_widget_layout_states widget = nk_widget(&cell, context);
+    if (widget == NK_WIDGET_INVALID) return false;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     nk_fill_rect(canvas, cell, 12, p.field);
@@ -151,10 +147,12 @@ bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
         cell.w - 2.0f * pad - bar_width - gap, cell.h - 2.0f * pad);
     struct nk_rect bar = nk_rect(square.x + square.w + gap, cell.y + pad,
         bar_width, cell.h - 2.0f * pad);
-    float hue, saturation, value;
-    rgb_to_hsv(nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255),
-        &hue, &saturation, &value);
-    struct nk_color hue_color = hsv_to_rgb(hue, 1.0f, 1.0f);
+    if (square.w <= 0.0f || square.h <= 0.0f) return false;
+    bool changed = color_picker_update(context, state, square, bar, rgb,
+        widget != NK_WIDGET_DISABLED &&
+        !(context->current->layout->flags & NK_WINDOW_ROM));
+    float hue = state->hue, saturation = state->saturation, value = state->value;
+    struct nk_color hue_color = nk_hsv_f(hue, 1.0f, 1.0f);
     nk_fill_rect_multi_color(canvas, square, nk_rgb(255, 255, 255),
         hue_color, nk_rgb(0, 0, 0), nk_rgb(0, 0, 0));
     nk_stroke_rect(canvas, square, 4, 1.0f, p.border);
@@ -162,35 +160,15 @@ bool bongo_cat_pref_color_picker(struct nk_context *context, const char *id,
        red, so the slider covers the full circle. */
     const float segment_height = bar.h / 6.0f;
     for (int i = 0; i < 6; ++i) {
-        struct nk_color start = hsv_to_rgb(i / 6.0f, 1.0f, 1.0f);
-        struct nk_color end = hsv_to_rgb((i + 1) / 6.0f, 1.0f, 1.0f);
+        struct nk_color start = nk_hsv_f(i / 6.0f, 1.0f, 1.0f);
+        struct nk_color end = nk_hsv_f((i + 1) / 6.0f, 1.0f, 1.0f);
         nk_fill_rect_multi_color(canvas,
             nk_rect(bar.x, bar.y + segment_height * i, bar.w,
                 segment_height + 1.0f),
-            start, end, start, end);
+            start, start, end, end);
     }
     nk_stroke_rect(canvas, bar, 4, 1.0f, p.border);
     struct nk_input *input = &context->input;
-    bool grab_square =
-        nk_input_is_mouse_click_in_rect(input, NK_BUTTON_LEFT, square);
-    bool grab_bar = nk_input_is_mouse_click_in_rect(input, NK_BUTTON_LEFT, bar);
-    bool changed = false;
-    if (grab_square) {
-        saturation = NK_CLAMP(0.0f,
-            (input->mouse.pos.x - square.x) / square.w, 1.0f);
-        value = NK_CLAMP(0.0f,
-            1.0f - (input->mouse.pos.y - square.y) / square.h, 1.0f);
-        changed = true;
-    } else if (grab_bar) {
-        hue = NK_CLAMP(0.0f,
-            (input->mouse.pos.y - bar.y) / bar.h, 0.9999f);
-        changed = true;
-    }
-    if (changed) {
-        struct nk_color color = hsv_to_rgb(hue, saturation, value);
-        *rgb = ((uint32_t)color.r << 16) | ((uint32_t)color.g << 8) |
-            color.b;
-    }
     /* Saturation/value crosshair marker. */
     float marker_x = square.x + saturation * square.w;
     float marker_y = square.y + (1.0f - value) * square.h;

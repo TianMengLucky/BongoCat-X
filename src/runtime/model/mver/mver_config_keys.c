@@ -1,4 +1,5 @@
 #include "mver_config_keys.h"
+#include "bongo_cat/safe_import.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -103,41 +104,7 @@ static const char *shortcut_key(int code, char generated[16]) {
 }
 
 bool bongo_cat_mver_keyboard_chord(void *raw, char *output, size_t capacity) {
-    BongoJsonValue *row = raw;
-    if (!output || !capacity) return false;
-    output[0] = '\0';
-    if (!bongo_json_is_arr(row)) return false;
-    bool modifiers[3] = {false}, primary = false, meta = false;
-    size_t index, count; BongoJsonValue *key;
-    bongo_json_arr_foreach(row, index, count, key) {
-        if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) return false;
-        int64_t raw_code = bongo_json_get_sint(key);
-        if (raw_code < 0 || raw_code > 255) return false;
-        int code = (int)raw_code;
-        /* Mouse buttons, sided modifiers and disabled rows share the same
-           Windows-key representation as audio bindings. */
-        if (code == 0 || code == 255 || code < 8 ||
-                (code >= 160 && code <= 165))
-            return bongo_cat_mver_sound_chord(raw, output, capacity);
-        if (code == 91 || code == 92) { meta = true; continue; }
-        int modifier = bongo_cat_mver_modifier_index(code);
-        if (modifier >= 0) { modifiers[modifier] = true; continue; }
-        char generated[16]; const char *name = shortcut_key(code, generated);
-        if (!name) return false;
-        /* Mver permits several ordinary keys, e.g. F13 + BracketLeft.
-           Keep the authored chord instead of rejecting the entire model. */
-        if (primary) return bongo_cat_mver_sound_chord(raw, output, capacity);
-        if (!append(output, capacity, name)) return false;
-        primary = true;
-    }
-    if (!primary) return bongo_cat_mver_sound_chord(raw, output, capacity);
-    char key_name[BONGO_CAT_SHORTCUT_CAP];
-    snprintf(key_name, sizeof(key_name), "%s", output); output[0] = '\0';
-    return (!modifiers[1] || append(output, capacity, "Control+")) &&
-        (!modifiers[0] || append(output, capacity, "Shift+")) &&
-        (!modifiers[2] || append(output, capacity, "Alt+")) &&
-        (!meta || append(output, capacity, "Meta+")) &&
-        append(output, capacity, key_name);
+    return bongo_safe_mver_chord(raw, false, output, capacity);
 }
 
 static bool gamepad_chord(BongoJsonValue *row, char *output, size_t capacity) {
@@ -203,35 +170,5 @@ bool bongo_cat_mver_shortcut_codes(const char *shortcut, char *output, size_t ca
 /* Mver's audio uses Windows keys even when its visual mode uses a gamepad.
    Preserve arbitrary chords, modifier-only keys, and mouse buttons. */
 bool bongo_cat_mver_sound_chord(void *raw, char *output, size_t capacity) {
-    BongoJsonValue *row = raw;
-    if (!output || !capacity || !bongo_json_is_arr(row) || !bongo_json_arr_size(row)) return false;
-    output[0] = '\0';
-    size_t index, count; BongoJsonValue *key;
-    bongo_json_arr_foreach(row, index, count, key) {
-        if (!bongo_json_is_int(key) && !bongo_json_is_uint(key)) return false;
-        int64_t raw_code = bongo_json_get_sint(key);
-        if (count == 1 && (raw_code == 0 || raw_code == 255)) return true;
-        if (raw_code <= 0 || raw_code >= 255) return false;
-        int code = (int)raw_code;
-        const char *name = NULL;
-        if (code == 1) name = "Left";
-        else if (code == 2) name = "Right";
-        else if (code == 4) name = "Middle";
-        else if (code == 5) name = "Back";
-        else if (code == 6) name = "Forward";
-        else if (code == 16) name = "Shift";
-        else if (code == 17) name = "Control";
-        else if (code == 18) name = "Alt";
-        else if (code == 160) name = "ShiftLeft";
-        else if (code == 161) name = "ShiftRight";
-        else if (code == 162) name = "ControlLeft";
-        else if (code == 163) name = "ControlRight";
-        else if (code == 164) name = "Alt";
-        else if (code == 165) name = "AltGr";
-        char generated[16];
-        if (!name) name = shortcut_key(code, generated);
-        if (!name || (index && !append(output, capacity, "+")) ||
-            !append(output, capacity, name)) return false;
-    }
-    return true;
+    return bongo_safe_mver_chord(raw, true, output, capacity);
 }

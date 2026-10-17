@@ -15,24 +15,29 @@ VkDevice allocator_device;
 bool use_pool;
 bool allocator_large_allocation;
 bool allocator_system_memory;
+bool allocator_memory_budget;
+uint32_t allocator_frame;
 uint32_t host_memory_types;
 struct BufferAllocation {
     VmaAllocation allocation;
     unsigned maps = 0;
     void *mapped = nullptr;
+    VkBufferUsageFlags usage = 0;
 };
+struct ImageAllocation { VmaAllocation allocation = nullptr; bool target = false; };
 std::map<VkBuffer, BufferAllocation> buffers;
-std::map<VkImage, VmaAllocation> images;
+std::map<VkImage, ImageAllocation> images;
 void check(VkResult result) {
     if (result != VK_SUCCESS) throw std::runtime_error("Live2D Vulkan pooled allocation failed");
 }
 }
 bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
-    VkDevice device, bool enabled, bool large_allocation, bool system_memory) {
+    VkDevice device, bool enabled, bool large_allocation, bool system_memory, bool memory_budget) {
     // Policy changes occur before loading, after the previous model is released.
     if (!buffers.empty() || !images.empty()) return false;
     if (allocator && (allocator_device != device || !enabled ||
-        allocator_large_allocation != large_allocation || allocator_system_memory != system_memory)) vulkan_memory_release();
+        allocator_large_allocation != large_allocation || allocator_system_memory != system_memory ||
+        allocator_memory_budget != memory_budget)) vulkan_memory_release();
     use_pool = false;
     if (!enabled) return true;
     if (!instance || !physical || !device) return false;
@@ -45,6 +50,7 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         info.physicalDevice = physical;
         info.device = device;
         info.vulkanApiVersion = VK_API_VERSION_1_3;
+        if (memory_budget) info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
         // Keep small models from reserving large mostly empty blocks per memory type.
         // VMA still grows the pool and dedicates oversized resources as needed.
         info.preferredLargeHeapBlockSize = large_allocation ? 16ull * 1024 * 1024 : 1ull * 1024 * 1024;
@@ -53,6 +59,7 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
         allocator_device = device;
         allocator_large_allocation = large_allocation;
         allocator_system_memory = system_memory;
+        allocator_memory_budget = memory_budget;
         host_memory_types = 0;
         VkPhysicalDeviceMemoryProperties memory_properties{};
         vkGetPhysicalDeviceMemoryProperties(physical, &memory_properties);
@@ -67,6 +74,44 @@ bool vulkan_memory_configure(VkInstance instance, VkPhysicalDevice physical,
 }
 bool vulkan_memory_prefers_device() {
     return use_pool && !allocator_system_memory;
+}
+VulkanMemoryUsage vulkan_memory_usage() {
+    VulkanMemoryUsage usage;
+    if (!allocator) return usage;
+    VmaBudget budgets[VK_MAX_MEMORY_HEAPS]{};
+    vmaGetHeapBudgets(allocator, budgets);
+    const VkPhysicalDeviceMemoryProperties *properties = nullptr;
+    vmaGetMemoryProperties(allocator, &properties);
+    for (uint32_t i = 0; i < properties->memoryHeapCount; ++i) {
+        usage.used += budgets[i].statistics.allocationBytes;
+        usage.reserved += budgets[i].statistics.blockBytes;
+        usage.heap_usage += budgets[i].usage;
+        usage.heap_budget += budgets[i].budget;
+        if (properties->memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+            usage.device_usage += budgets[i].usage;
+            usage.device_budget += budgets[i].budget;
+        }
+    }
+    for (const auto &entry : images) {
+        VmaAllocationInfo info{};
+        vmaGetAllocationInfo(allocator, entry.second.allocation, &info);
+        if (entry.second.target) usage.target_bytes += info.size;
+        else usage.atlas_bytes += info.size;
+    }
+    for (const auto &entry : buffers) {
+        VmaAllocationInfo info{};
+        vmaGetAllocationInfo(allocator, entry.second.allocation, &info);
+        const auto flags = entry.second.usage;
+        if (flags & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) usage.uniform_bytes += info.size;
+        else if (flags & (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
+            usage.geometry_bytes += info.size;
+        else if (flags & VK_BUFFER_USAGE_TRANSFER_SRC_BIT) usage.staging_bytes += info.size;
+    }
+    usage.buffers = buffers.size(); usage.images = images.size();
+    return usage;
+}
+void vulkan_memory_next_frame() {
+    if (allocator) vmaSetCurrentFrameIndex(allocator, ++allocator_frame);
 }
 void vulkan_memory_release() {
     // Resources must be destroyed before the SDK's final device release.
@@ -89,16 +134,18 @@ bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
     // Uploads must not expand pools retained by long-lived mesh/uniform buffers.
     allocation_info.flags = transient ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT :
         VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
+    allocation_info.flags |= VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
     allocation_info.requiredFlags = properties;
-    // Prefer device-local heaps even for CPU-visible buffers (BAR/UMA), while
-    // preserving required host access/coherence and allowing compatible fallback.
-    if (!allocator_system_memory)
-        allocation_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    if (allocator_system_memory && !transient) {
+    // Short-lived uploads should not duplicate atlases in scarce BAR/VRAM.
+    // UMA and resources incompatible with a system heap retain their fallback.
+    if (transient) {
+        allocation_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocation_info.memoryTypeBits = host_memory_types;
+    } else if (allocator_system_memory) {
         allocation_info.requiredFlags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         allocation_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         allocation_info.memoryTypeBits = host_memory_types;
-    }
+    } else allocation_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     VmaAllocation allocation{};
     VmaAllocationInfo details{};
     VkBuffer raw{};
@@ -109,7 +156,7 @@ bool vulkan_buffer_create(VkDevice device, VkDeviceSize size,
         result = vmaCreateBuffer(allocator, &info, &allocation_info, &raw, &allocation, &details);
     }
     check(result);
-    try { buffers.emplace(raw, BufferAllocation{allocation, 0}); }
+    try { buffers.emplace(raw, BufferAllocation{allocation, 0, nullptr, usage}); }
     catch (...) { vmaDestroyBuffer(allocator, raw, allocation); throw; }
     *buffer = raw;
     *memory = details.deviceMemory;
@@ -120,6 +167,7 @@ bool vulkan_image_create(VkDevice device, const VkImageCreateInfo &info,
     if (!use_pool || device != allocator_device) return false;
     VmaAllocationCreateInfo allocation_info{};
     allocation_info.flags = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
+    allocation_info.flags |= VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
     if (allocator_system_memory) {
         allocation_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         allocation_info.memoryTypeBits = host_memory_types;
@@ -134,7 +182,9 @@ bool vulkan_image_create(VkDevice device, const VkImageCreateInfo &info,
         result = vmaCreateImage(allocator, &info, &allocation_info, &raw, &allocation, &details);
     }
     check(result);
-    try { images.emplace(raw, allocation); }
+    const bool target = (info.usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
+    try { images.emplace(raw, ImageAllocation{allocation, target}); }
     catch (...) { vmaDestroyImage(allocator, raw, allocation); throw; }
     *image = raw;
     *memory = details.deviceMemory;
@@ -174,7 +224,7 @@ bool vulkan_buffer_destroy(VkBuffer buffer) {
 bool vulkan_image_destroy(VkImage image) {
     auto found = images.find(image);
     if (found == images.end()) return false;
-    vmaDestroyImage(allocator, image, found->second);
+    vmaDestroyImage(allocator, image, found->second.allocation);
     images.erase(found);
     return true;
 }

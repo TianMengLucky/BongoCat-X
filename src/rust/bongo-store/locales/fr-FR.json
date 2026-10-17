@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "Boutique",
+  "pages.preference.store.help": "Parcourez les modèles de la communauté. SHA-256 est vérifié avant chaque installation.",
+  "pages.preference.store.refresh": "Actualiser",
+  "pages.preference.store.repository": "Dépôt communautaire",
+  "pages.preference.store.repositoryUrl": "URL du dépôt GitHub (branche main ; vide pour rétablir la valeur par défaut)",
+  "pages.preference.store.applyRepository": "Appliquer le dépôt",
+  "pages.preference.store.invalidRepository": "Saisissez une URL de dépôt GitHub : https://github.com/owner/repository",
+  "pages.preference.store.loading": "Chargement du catalogue…",
+  "pages.preference.store.unpublished": "Le catalogue de modèles n’a pas encore été publié.",
+  "pages.preference.store.networkError": "Impossible de charger le catalogue. Vérifiez la connexion ou le format et réessayez.",
+  "pages.preference.store.empty": "Aucun modèle disponible pour le moment.",
+  "pages.preference.store.pluginHint": "Extension Rust pour le catalogue de modèles. La boutique apparaît lorsque l’extension est activée.",
+  "pages.preference.store.failed": "Échec de l’opération de la boutique",
+  "pages.preference.store.preview": "Aperçu du modèle",
+  "pages.preference.store.download": "Télécharger",
+  "pages.preference.store.uninstall": "Désinstaller",
+  "pages.preference.store.downloading": "Téléchargement…",
+  "pages.preference.store.installing": "Installation…",
+  "pages.preference.store.hashMismatch": "SHA-256 incorrect ; installation refusée",
+  "pages.preference.store.installed": "Modèle installé et SHA-256 vérifié",
+  "pages.preference.store.buyFull": "Acheter la version complète"
+}

@@ -14,6 +14,7 @@ void test_language(void);
 void test_input(void);
 void test_models(void);
 void test_mver_pointer(void);
+void test_hand_layout_file(void);
 void test_shortcut(void);
 void test_sound_shortcut(void);
 void test_update(void);

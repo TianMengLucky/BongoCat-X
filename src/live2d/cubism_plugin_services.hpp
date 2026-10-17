@@ -198,6 +198,8 @@
 #undef bongo_safe_image_decode
 #endif
 #define bongo_safe_image_decode (bongo_cat_model_plugin_host()->bongo_safe_image_decode)
+#define bongo_safe_native_texture_load (bongo_cat_model_plugin_host()->bongo_safe_native_texture_load)
+#define bongo_cat_image_texture_model_bc7 (bongo_cat_model_plugin_host()->bongo_cat_image_texture_model_bc7)
 #define bongo_json_arr_get (bongo_cat_model_plugin_host()->bongo_json_arr_get)
 #define bongo_json_arr_size (bongo_cat_model_plugin_host()->bongo_json_arr_size)
 #define bongo_json_doc_free (bongo_cat_model_plugin_host()->bongo_json_doc_free)

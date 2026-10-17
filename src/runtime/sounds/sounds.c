@@ -1,3 +1,4 @@
+#include "plugin_locale.h"
 #include "sounds_internal.h"
 #include "bongo_cat/path.h"
 #include "bongo_cat/file.h"
@@ -59,6 +60,15 @@ const BongoCatSoundsPlugin *bongo_cat_sounds_query(SDL_SharedObject *library) {
         api->create && api->destroy && api->page && api->snapshot && api->restore &&
         api->key_count && api->key && api->bind && api->press && api->key_count() > 0 && api->key_count() <= BONGO_CAT_SOUNDS_CAP ? api : NULL;
 }
+static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
+    union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
+    entry.function = SDL_LoadFunction(library, BONGO_CAT_SOUNDS_UI_SYMBOL);
+    if (!entry.function) return NULL;
+    const BongoCatPluginUiContribution *contribution = entry.query(BONGO_CAT_PLUGIN_UI_ABI);
+    return contribution && contribution->abi_version == BONGO_CAT_PLUGIN_UI_ABI &&
+        contribution->struct_size == sizeof(*contribution) && contribution->draw ?
+        contribution : NULL;
+}
 static void detach(BongoCatApp *app) {
     if (!app->sounds) return;
     bongo_cat_plugin_worker_stop(&app->sounds->worker);
@@ -66,6 +76,8 @@ static void detach(BongoCatApp *app) {
     BongoCatSounds *v = app->sounds;
     app->sounds = NULL; /* Page disappears before library unload. */
     v->api->destroy(v->instance);
+    bongo_cat_i18n_unregister_plugin(app->i18n, "sounds");
+    bongo_cat_plugin_page_stop(&v->page_ui);
     SDL_UnloadObject(v->library);
     SDL_free(v);
     bongo_cat_preferences_invalidate(app->preferences);
@@ -82,7 +94,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     BongoCatSounds *v = api ? SDL_calloc(1, sizeof(*v)) : NULL;
     if (v) {
         atomic_init(&v->loaded, false);
-        v->library = library; v->api = api; v->instance = api->create();
+        v->library = library; v->api = api; v->ui = query_ui(library);
+        v->instance = api->create();
         v->page.struct_size = sizeof(v->page);
     }
     bool valid = v && v->instance && api->page(v->instance, &v->page) &&
@@ -101,6 +114,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     app->sounds = v;
     v->audio = bongo_cat_audio_create(error);
     if (!v->audio || !bongo_cat_sounds_worker_start(app)) { detach(app); return false; }
+    bongo_cat_plugin_locale_load(app->i18n, library, "sounds");
+    bongo_cat_preferences_plugin_fonts_changed(app->preferences);
     bongo_cat_preferences_invalidate(app->preferences);
     return true;
 }
@@ -139,14 +154,23 @@ bool bongo_cat_sounds_set_enabled(BongoCatApp *app, bool enabled, BongoCatError 
 const BongoCatSoundsPage *bongo_cat_sounds_page(BongoCatApp *app) {
     return app && app->sounds ? &app->sounds->page : NULL;
 }
+const BongoCatPluginUiContribution *bongo_cat_sounds_ui(BongoCatApp *app) {
+    return app && app->sounds ? app->sounds->ui : NULL;
+}
 bool bongo_cat_sounds_snapshot(BongoCatApp *app, BongoCatSoundScene *scene) {
     if (!app || !app->sounds || !scene) return false;
     if (!atomic_load_explicit(&app->sounds->loaded, memory_order_acquire) &&
-        app->sounds->worker.thread && SDL_GetCurrentThreadID() != SDL_GetThreadID(app->sounds->worker.thread)) return false;
+        app->sounds->worker.core && !bongo_cat_plugin_worker_current(&app->sounds->worker)) return false;
     *scene = (BongoCatSoundScene){0}; scene->struct_size = sizeof(*scene);
     if (app->sounds->worker.state_mutex) SDL_LockMutex(app->sounds->worker.state_mutex);
     bool ok = app->sounds->api->snapshot(app->sounds->instance, scene) != 0 &&
         scene->struct_size == sizeof(*scene) && scene->count == app->sounds->api->key_count();
     if (app->sounds->worker.state_mutex) SDL_UnlockMutex(app->sounds->worker.state_mutex);
     return ok;
+}
+
+const BongoCatPluginPageUiContribution *bongo_cat_sounds_page_ui(BongoCatApp *app, void **instance) {
+    if (!app || !app->sounds) return NULL;
+    return bongo_cat_plugin_page_query(&app->sounds->page_ui, app->sounds->library,
+        "bongo_cat_sounds_page_ui_query_v1", instance);
 }

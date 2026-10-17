@@ -12,7 +12,15 @@ endif()
 file(SHA256 "${renderer}" original_hash)
 file(READ "${renderer}" source)
 string(REPLACE "\r\n" "\n" source "${source}")
-if(MUTATION STREQUAL "missing_pipeline")
+if(MUTATION STREQUAL "missing_targets")
+  string(REPLACE "csmInt32 createSize = 1;" "csmInt32 createSize = 2;" source "${source}")
+elseif(MUTATION STREQUAL "missing_descriptors")
+  string(REPLACE "descriptorSetCountPerBuffer = drawableCount * drawModeCount"
+    "descriptorSetCountPerBuffer = drawableCount * 4" source "${source}")
+elseif(MUTATION STREQUAL "missing_descriptor_slots")
+  string(REPLACE "descriptorSets[drawAssign * 3 + 2]"
+    "descriptorSets[drawAssign * 4 + 2]" source "${source}")
+elseif(MUTATION STREQUAL "missing_pipeline")
   string(REPLACE "_pipelineResource[shaderName]->CreateGraphicsPipeline" "changed_pipeline_creation" source "${source}")
 elseif(MUTATION STREQUAL "missing_binding")
   string(REPLACE "_textures.PushBack(image);" "changed_texture_binding();" source "${source}")
@@ -29,6 +37,26 @@ elseif(MUTATION STREQUAL "ambiguous")
   string(APPEND source "\n        vertices.PushBack(vertex);\n")
 endif()
 bongo_cat_vulkan_vertex_upload_patch(source)
+foreach(required IN ITEMS "_copyVertexBuffer[buffer] = copyVertexBuffer;\n        }"
+    "stagingBuffer.Destroy(s_device);\n        }"
+    "descriptorSetCountPerBuffer = drawableCount;"
+    "csmInt32 createSize = model->IsBlendModeEnabled() ? 1 : 0;"
+    "if (GetModel()->IsBlendModeEnabled() || GetModel()->GetOffscreenCount() > 0)"
+    "if (!GetModel()->IsBlendModeEnabled() && offscreenCount == 0) continue;"
+    "_copyVertexBuffer[buffer] = copyVertexBuffer;\n        }"
+    "_copyIndexBuffer[buffer] = copyIndexBuffer;\n        stagingBuffer.Destroy(s_device);\n        }"
+    "_drawableMaskBuffers[buffer].Resize(drawableMaskCount);"
+    "_offscreenMaskBuffers[buffer].Resize(offscreenMaskCount);"
+    "GetModel()->GetOffscreenMaskCounts()" "GetModel()->GetOffscreenMasks()"
+    "if (!maskSources[source])" "if (source < 0 || source >= drawableCount)"
+    "descriptor.descriptorSetMasked = descriptor.descriptorSet;"
+    "if (maskSources[drawAssign])"
+    "descriptor.descriptorSetForMask = descriptorSets[nextDescriptor++];")
+  string(FIND "${source}" "${required}" found)
+  if(found EQUAL -1)
+    message(FATAL_ERROR "Compact drawable descriptors missing: ${required}")
+  endif()
+endforeach()
 foreach(required IN ITEMS "if (!descriptor.uniformBuffer.GetBuffer())" "if (!descriptor.uniformBufferMask.GetBuffer())" "descriptor.uniformBuffer = CubismBufferVulkan();" "descriptor.uniformBufferMask = CubismBufferVulkan();" "_textures[slot] = image;"
     "isDescriptorSetUpdated = false;" "isDescriptorSetMaskedUpdated = false;"
     "isDescriptorSetForMaskUpdated = false;" "s_bufferSetNum = 1;" "vulkan_buffer_mapped_data(" "if (!mapped) vertices.PrepareCapacity(vcount);"
@@ -54,7 +82,7 @@ foreach(required IN ITEMS "bongoPipelineDescriptions.emplace" "variant.committed
     message(FATAL_ERROR "Lazy pipeline ownership behavior missing: ${required}")
   endif()
 endforeach()
-foreach(mutation IN ITEMS missing ambiguous missing_pass missing_wait missing_slots missing_binding missing_pipeline)
+foreach(mutation IN ITEMS missing ambiguous missing_pass missing_wait missing_slots missing_binding missing_pipeline missing_descriptors missing_descriptor_slots missing_targets)
   execute_process(COMMAND "${CMAKE_COMMAND}" "-DSDK=${SDK}" "-DMUTATION=${mutation}"
     -P "${CMAKE_CURRENT_LIST_FILE}"
     RESULT_VARIABLE result OUTPUT_QUIET ERROR_VARIABLE error)

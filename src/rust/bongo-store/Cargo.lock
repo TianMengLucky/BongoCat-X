@@ -3,9 +3,17 @@
 version = 4
 
 [[package]]
-name = "bongo-store"
-version = "2.2.0"
+name = "bongo-plugin"
+version = "0.1.0"
 dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "bongo-store"
+version = "2.2.2"
+dependencies = [
+ "bongo-plugin",
  "serde",
  "serde_json",
  "url",

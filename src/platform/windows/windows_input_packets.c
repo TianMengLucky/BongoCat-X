@@ -49,7 +49,7 @@ void bongo_cat_windows_input_packet(WindowsInputState *state,
         bongo_cat_input_metrics_scroll(state->platform->input, 0, (SHORT)mouse->usButtonData / (double)WHEEL_DELTA);
     if (mouse->usButtonFlags & RI_MOUSE_HWHEEL)
         bongo_cat_input_metrics_scroll(state->platform->input, (SHORT)mouse->usButtonData / (double)WHEEL_DELTA, 0);
-    if (atomic_load_explicit(&state->platform->input->metrics_enabled, memory_order_relaxed) &&
+    if (bongo_cat_input_metrics_enabled(state->platform->input) &&
         (mouse->lLastX || mouse->lLastY)) {
         POINT point;
         if (GetCursorPos(&point)) bongo_cat_input_metrics_pointer(state->platform->input, point.x, point.y);

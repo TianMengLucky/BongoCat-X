@@ -7,6 +7,7 @@
 #include "preferences_widgets.h"
 #include "preferences_controls.h"
 #include "preferences_notice.h"
+#include "plugin_ui_internal.h"
 #include "bongo_cat/model_plugins.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/preferences.h"
@@ -136,13 +137,15 @@ void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_co
     int columns = nk_window_get_content_region(context).w >= 620 ? 2 : 1;
     nk_layout_row_dynamic(context, bongo_cat_platform_live2d_core_available() ? 220.0f : 310.0f, columns);
     plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_LIVE2D);
-    plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_INOX2D);
+    if (!bongo_cat_preferences_plugin_card(value, context, BONGO_CAT_PLUGIN_UI_INOX2D))
+        plugin_card(value, context, BONGO_CAT_MODEL_ENGINE_INOX2D);
     nk_layout_row_dynamic(context, 280, columns);
-    bongo_cat_preferences_statistics_plugin_card(value, context);
-    bongo_cat_preferences_items_plugin_card(value, context);
+    (void)bongo_cat_preferences_plugin_card(value, context, BONGO_CAT_PLUGIN_UI_STATISTICS);
+    /* Inactive add-ons use the generic provisioning card. */
+    (void)bongo_cat_preferences_plugin_card(value, context, BONGO_CAT_PLUGIN_UI_ITEMS);
     nk_layout_row_dynamic(context, 280, columns);
-    bongo_cat_preferences_sounds_plugin_card(value, context);
-    bongo_cat_preferences_store_plugin_card(value, context);
+    (void)bongo_cat_preferences_plugin_card(value, context, BONGO_CAT_PLUGIN_UI_SOUNDS);
+    (void)bongo_cat_preferences_plugin_card(value, context, BONGO_CAT_PLUGIN_UI_STORE);
     nk_layout_row_dynamic(context, 54, 1);
     nk_label_wrap(context, tr(value->app, "pages.preference.plugins.activeHint",
         "Click a selected model to deselect it before changing its active plugin."));

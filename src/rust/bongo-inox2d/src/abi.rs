@@ -1,4 +1,4 @@
-//! ABI v1 mirrors include/bongo_cat/model_plugin.h. Nullable slots advertise unsupported features.
+//! ABI v2 mirrors include/bongo_cat/model_plugin.h. Nullable slots advertise unsupported features.
 use std::ffi::{c_char, c_void};
 pub type RuntimeHandle = c_void;
 pub type Progress = Option<unsafe extern "C" fn(*mut c_void, f32)>;

@@ -1,8 +1,8 @@
 <div align="center">
 
-2.2.0：新增物品、鍵盤音效和模型商店插件，改善背景匯入與自動更新。螢幕邊緣反彈需開啟「保持在螢幕內」；Windows OpenGL 的真透明開關使用逐像素 Alpha 合成，可能增加像素讀回開銷。
+2.2.2：外掛頁面與多語言資源獨立管理，最佳化渲染記憶體、圖片載入和資源回收，支援商店付費模型連結。
   <a href="https://bongocat.pet" target="_blank">
-    <img src="https://github.com/user-attachments/assets/dd693432-8342-440b-8a92-c9f57a96ffb4" alt="Catime" width="249">
+    <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
   
   <h1>
@@ -13,17 +13,17 @@
 
 <!-- 專案描述 + 火箭圖示 -->
 <p align="center"> 
- 💘C/C++ × SDL3 × OpenGL，攪拌均勻，搗碎融合！Bong~ Bongo Cat！！！ 
+ 💘C/C++ × Rust × SDL3，攪拌均勻，搗碎融合！Bong~ Bongo Cat！！！
 </p>
 <p align="center">
-<a href="https://github.com/vladelaina/BongoCat/blob/main/README.md"><strong>English</strong></a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-CN.md">简体中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.zh-Hant.md">繁體中文</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.fr-FR.md">Français</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.de-DE.md">Deutsch</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ko-KR.md">한국어</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.pt-BR.md">Português</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.ru-RU.md">Русский</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.es-ES.md">Español</a> • <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/README.id-ID.md">Bahasa Indonesia</a>
+  <a href="README.en-US.md">English</a> • <a href="../README.md">简体中文</a> • <strong>繁體中文</strong> • <a href="README.fr-FR.md">Français</a> • <a href="README.de-DE.md">Deutsch</a> • <a href="README.ko-KR.md">한국어</a> • <a href="README.pt-BR.md">Português</a> • <a href="README.ru-RU.md">Русский</a> • <a href="README.es-ES.md">Español</a> • <a href="README.id-ID.md">Bahasa Indonesia</a>
 </p>
+> [!NOTE]
+> 本倉庫（**BongoCat-X**）是 [vladelaina/BongoCat](https://github.com/vladelaina/BongoCat) 的 fork，與 Live2D Inc. 無關，不附帶 Cubism SDK 或 Core；使用者須遵守 Live2D 授權。
+
 <p align="center">
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
-  <a href="https://github.com/vladelaina/BongoCat"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
-  <a href="https://discord.gg/vf8jqnattk"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2Fvf8jqnattk%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&suffix=%20%E6%9C%83%E5%93%A1&logo=discord&logoColor=white&label=%20&color=7389D8&labelColor=6A7EC2"></a>
-  <a href="https://github.com/vladelaina/BongoCat/blob/main/docs/wechat.png"><img src="https://img.shields.io/badge/WeChat-%2307C160?logo=wechat&logoColor=%2307C160&labelColor=FFFFFF"></a>
-  <a href="https://qm.qq.com/q/cYlRBbvuda"><img src="https://img.shields.io/badge/QQ-%2312B7F5?logo=qq&labelColor=FFFFFF"></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-1fa669?style=flat&logo=gnu&logoColor=white"></a>
+  <a href="https://github.com/TianMengLucky/BongoCat-X"><img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white"></a>
 </p>
 
 
@@ -58,263 +58,7 @@
 
 ## 📥 下載
 
-<a href="https://apps.microsoft.com/detail/9p41mlsx72xw?referrer=appbadge" target="_self" >
-	<img src="https://get.microsoft.com/images/en-us%20light.svg" width="600"/>
-</a>
 
-- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
-
-  從 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下載最新版本。
-
-  > [!IMPORTANT]
-  > 官方 Release 為 **runtime-Core 建置**：內建 Live2D 渲染支援，但**不附帶** Live2D Cubism Core 執行階段程式庫（專有授權，不隨套件散布），**並非**無 Live2D 能力的診斷建置。未偵測到 Core 時會回退到診斷後端並在設定視窗提示。
-
-  **啟用 Live2D 渲染（任選其一）：**
-
-  1. **應用內匯入（推薦）**：開啟「設定 → 外掛」頁，點擊「匯入 Live2D Core」，選擇 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 壓縮包，匯入後立即生效（無需重新啟動）。
-  2. **live2d 資料夾投放**：從 [Cubism SDK 下載頁面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 授權協議）下載 **Cubism SDK for Native**，將 zip 或解壓縮出的 `Live2DCubismCore.dll` 放入應用目錄/資料目錄下的 `live2d` 資料夾，重新啟動應用後自動識別啟用。
-
-  從原始碼建置時 SDK 的完整匯入步驟見下方「Live2D / Cubism SDK」章節。
-
-## 🛠️ 從原始碼建置
-
-BongoCat 使用 CMake，需要 C11 編譯器、C++17 編譯器、CMake 3.24 或更新版本、桌面 OpenGL 開發檔案，以及 Rust 工具鏈（透過 rustup 安裝 cargo）：記憶體安全關鍵的解析器（SHA-256、圖像解碼、貢獻者資訊流、音訊解碼）位於 `src/rust/bongo-safe` crate 中，由 Corrosion 在配置階段自動建置。SDL3、stb、miniaudio 和 Nuklear 預設在建置配置時下載，因此首次配置需要網路連線。
-
-請在專案根目錄（包含 `CMakeLists.txt` 的目錄）執行以下命令。
-
-### 📋 平台先決條件
-
-- **Windows：** Visual Studio 2022 並包含「桌面 C++」工作負載和 CMake。請使用 MSVC 產生器；MinGW 可建置診斷後端，但不支援 Cubism SDK。
-- **macOS：** Xcode Command Line Tools、CMake 和 Ninja。若目標架構與主機預設不同，請以 `CMAKE_OSX_ARCHITECTURES` 指定。
-- **Linux（Debian/Ubuntu）：** GCC 或 Clang、Ninja，以及 OpenGL/X11 標頭檔：
-
-  ```bash
-  sudo apt-get update
-  sudo apt-get install -y build-essential cmake ninja-build \
-    libgl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev
-  ```
-
-### 🔧 配置與建置
-
-在 Linux 和 macOS 上，使用單一配置產生器（如 Ninja）：
-
-```bash
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_FETCH_DEPS=ON
-cmake --build build --parallel
-```
-
-在 Windows 上，請從 Visual Studio 2022 開發人員命令提示字元（或任何可使用 MSVC 的 Shell）執行：
-
-```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-  -DBONGO_CAT_FETCH_DEPS=ON
-cmake --build build --config Release --parallel
-```
-
-執行檔產出位置：
-- Linux：`build/BongoCat`
-- macOS：`build/BongoCat.app/Contents/MacOS/BongoCat`
-- Visual Studio 建置：`build/Release/BongoCat.exe`
-
-### 🧪 測試
-
-CTest 目標預設啟用。建置完成後執行：
-
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-若使用多配置產生器（如 Visual Studio），請明確指定建置配置：
-
-```powershell
-ctest --test-dir build -C Release --output-on-failure
-```
-
-### 🎭 Live2D / Cubism SDK（可選，不安裝也能建置）
-
-Cubism SDK 仍為可選的專有建置依賴。沒有 SDK 時仍可建置主程式和 Inox2D 外掛；安裝相容的 Live2D 動態外掛並提供 Cubism Core 後即可啟用 Live2D，無須重新編譯主程式。有 SDK 時會產生獨立的 C++ 外掛。
-
-1. 開啟 [Cubism SDK 下載頁面](https://www.live2d.com/en/sdk/download/native/)，同意 Live2D 專有軟體授權協議，下載 **Cubism SDK for Native**（專案以 `5-r.5` 版本建置與測試）。
-2. 解壓縮封存檔。若解壓出的資料夾名為 `CubismSdkForNative-5-r.5`，請將其重新命名為 `CubismSdkForNative` 並放到 `vendor/` 目錄下，使目錄樹包含 `Core/` 與 `Framework/`。
-3. 較新的 SDK 封存檔不再內建 GLEW。請下載 [GLEW 2.2.0](https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.zip) 並解壓到 `vendor/CubismSdkForNative/Samples/OpenGL/thirdParty/glew`（該目錄下應直接包含 `include/GL/glew.h` 與 `src/glew.c`）。
-
-也可以將 SDK 保存在任意位置，並透過參數明確指定路徑：
-
-```bash
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_CUBISM_SDK=/path/to/CubismSdkForNative
-```
-
-SDK 必須包含 Core 函式庫、Framework 原始碼，以及 `cmake/Cubism.cmake` 所預期的 OpenGL GLEW 第三方目錄結構。Windows 上的 Cubism 建置需要 Visual Studio 2022。SDK 就位後，照一般方式配置即可得到含 Live2D 渲染的建置；`BONGO_CAT_REQUIRE_CUBISM=ON` 現在僅在缺少 SDK 時讓配置快速失敗並提示匯入步驟（release CI 使用）。不需要時請維持預設的 `OFF`。
-
-> [!TIP]
-> Windows 使用者無需重新建置即可啟用 Live2D 渲染：在應用內開啟「設定 → 外掛」頁，點擊「匯入 Live2D Core」，選擇 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 壓縮檔，匯入後立即生效（無需重新啟動）。
-
-> [!NOTE]
-> 本倉庫官方 Release 提供的安裝包為 runtime-Core 建置：內含 Live2D 渲染器，但**不附帶 Core 執行庫**。啟動時應用程式會檢查 `live2d` 資料夾——將 `Live2DCubismCore.dll` 或官方 SDK zip 放入其中（應用程式旁或資料目錄內），重新啟動後即自動啟用；也可在「設定 → 外掛」頁點擊「匯入 Live2D Core」立即啟用。找不到 Core 時，應用程式會退回診斷後端並在設定視窗顯示提示。
-
-### ⚙️ CMake 選項
-
-| 選項 | 預設值 | 說明 |
-| --- | --- | --- |
-| `BONGO_CAT_FETCH_DEPS` | `ON` | 使用 CMake `FetchContent` 下載固定的第三方依賴項（含 Corrosion 與 Rust crate 依賴）。僅在 SDL3、stb、miniaudio、Nuklear 和 Corrosion 已可被 CMake 找到時設為 `OFF`。 |
-| `BONGO_CAT_CUBISM_SDK` | `vendor/CubismSdkForNative` | Cubism SDK for Native 的路徑。 |
-| `BONGO_CAT_REQUIRE_CUBISM` | `OFF` | 缺少 SDK 時是否讓配置失敗。預設 `OFF`：沒有 SDK 時建置不含 Live2D 渲染的診斷後端；設為 `ON` 則要求必須有 SDK（release CI 使用）。 |
-| `BONGO_CAT_WARNINGS_AS_ERRORS` | `OFF` | 將原生編譯器警告視為錯誤。 |
-
-若要進行離線建置，設定 `BONGO_CAT_FETCH_DEPS=OFF`，並提供 SDL3（含 `SDL3-static`） 的 CMake 套件配置，以及 stb、Nuklear、miniaudio 的包含路徑（若無法自動找到）：
-
-```bash
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBONGO_CAT_FETCH_DEPS=OFF \
-  -DBONGO_CAT_STB_INCLUDE_DIR=/path/to/stb \
-  -DBONGO_CAT_NUKLEAR_INCLUDE_DIR=/path/to/nuklear \
-  -DBONGO_CAT_MINIAUDIO_INCLUDE_DIR=/path/to/miniaudio
-```
-
-## 📌 專案狀態
-
-![Commit activity](https://img.shields.io/github/commit-activity/m/TianMengLucky/BongoCat-X?style=flat)
-![Contributors](https://img.shields.io/github/contributors/TianMengLucky/BongoCat-X?style=flat)
-![Stars](https://img.shields.io/github/stars/TianMengLucky/BongoCat-X?style=flat)
-![Issues](https://img.shields.io/github/issues/TianMengLucky/BongoCat-X?style=flat)
-![Release](https://img.shields.io/github/v/release/TianMengLucky/BongoCat-X?style=flat)
-
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
-
-## 📜 授權條款
-
-BongoCat 原始碼和原生執行時期採用 [AGPL-3.0-only](LICENSE) 授權。
-
-預設內建模型模式（`standard`）仍以 MIT 授權釋出。`resources/assets/models/standard`、`keyboard` 和 `gamepad` 中的模型資產，則受個別的 [MIT 授權聲明](LICENSE-MIT) 規範。該 MIT 授權僅適用於模型資產及其附屬藝術作品，不適用於 BongoCat 原始碼或原生執行時期。
-
-
-## 🧭 技術架構
-
-> 目前原生版本基於 C/C++、SDL3 和 OpenGL 建構。下圖著重於執行時期資料流；建置與打包細節請參閱 CMake。
-
-### 🔄 執行時期所有權與影格排程
-
-每個行程擁有一個 `BongoCatApp` 和一個主執行緒事件與渲染迴圈。平台監聽器僅作用於輸入邊界：
-
-```text
-平台監聽器
-（鍵盤／指標）
-            |
-            v
-  C11 輸入狀態
-（原子邊緣佇列 + 合併指標位置）
-            |
-            v
-  主執行緒應用程式 <----- SDL3 事件
-            |
-            v
-  模型參數、覆疊層與 UI 狀態
-            |
-            v
-  模型更新 -> OpenGL 合成 -> 平台呈現
-```
-
-Windows Raw Input 接收器、macOS Quartz 事件監聽，以及 Linux XInput2 監聽器均執行於主迴圈之外。按鍵和滑鼠按鈕邊緣事件進入有界原子佇列，移動量獨立合併，並透過 SDL 事件喚醒主執行緒。Windows 使用訊息專用視窗，以 `RIDEV_INPUTSINK | RIDEV_DEVNOTIFY` 訂閱背景鍵鼠輸入並保留一般視窗訊息；其他程式隱藏或鎖定游標時，模型使用裝置回報的移動量，桌面跟隨則讀取 SDL 提供的系統游標位置。裝置拔除或輸入桌面切換時會清理按下狀態。Windows 不再安裝輸入鉤子或使用 DirectInput，也不向遊戲傳送輸入。SDL3 視窗、偏好設定和遊戲控制器事件仍在主執行緒處理，平台監聽器不會直接呼叫 Live2D、覆疊層或 UI 程式碼。
-
-`bongo_cat_app_run` 負責處理更新、關閉和輔助行程參數，為主要行程強制執行單一實例所有權，分配應用程式狀態，執行初始化，進入 `bongo_cat_app_loop`，然後依序清除狀態並釋放資源。初始化會載入配置和儲存路徑、定位資產、建立 SDL/OpenGL 寵物視窗、初始化平台後端、建立 Live2D、覆疊層和音訊服務、掃描內建／已安裝／鄰近模型來源，並載入可用的模型。`BongoCatApp` 擁有設定、工作階段狀態、模型與行為目錄、平台控制代碼，以及執行時期服務控制代碼。
-
-已安裝的模型套件使用 Mver 作為標準格式。匯入流程會解析選取的檔案或目錄、探索並驗證候選項目、指紋辨識套件識別、將 Tauri 來源轉換為 Mver、套用影像修補，並將標準化套件提交至 `models_root`，接著產生執行時期轉接器並重新整理目錄。鄰近來源則在不安裝其原始碼樹的情況下被探索；其轉接器和檢查結果會快取在 `models_root` 之外的 `cache_root` 下。
-
-每次主迴圈迭代會等待 SDL／原生喚醒事件，或最早待處理的影格、UI、動畫或指標點擊期限（最長等待 250 毫秒）。它會分派佇列中的 SDL 事件、清空原子輸入佇列與釋放復原、更新視窗與模型重新整理狀態，並套用輸入衍生參數。啟用 Cubism 時，模型期限遵循 `settings.model.max_fps`（預設 60 FPS）；診斷版本則使用 100 毫秒的備用間隔。模型經過時間上限為 250 毫秒，並分割為最多八個子步驟，每個子步驟不超過 1/30 秒。
-
-一般寵物路徑僅在視窗可見、未最小化且標記為髒污時才進行渲染。每個影格會清除背景、繪製模型，並合成指標、按鍵與特效覆疊層，最後呼叫平台呈現器。預覽操作可要求立即渲染，而擷取渲染則可能略過呈現。macOS 和 Linux 直接交換 SDL OpenGL 視窗。Windows 在圖層呈現未啟用時直接交換，否則會讀回影格供 `UpdateLayeredWindow` 使用。偏好設定 UI 擁有獨立的 SDL/OpenGL 視窗，且獨立於寵物視窗進行渲染和呈現。
-
-C 執行時期會呼叫 `include/bongo_cat/model.h` 中宣告的 ABI。Live2D 橋接與 Cubism 實作位於 `src/live2d`，且僅在啟用 Cubism SDK 時使用 C++17；其餘原生執行時期則使用 C11。Cubism 類型保留在不透明的 C 控制代碼之後，而 `src/live2d/live2d_stub.c` 則在 SDK 不可用時提供診斷後端。
-
-
-```mermaid
-flowchart TB
-  Input(["鍵盤 / 滑鼠 / 遊戲控制器"])
-  BuiltIn(["內建模型資產"])
-  Sources(["外部模型來源<br/>Mver、Tauri、.model3.json、影像修補"])
-  Desktop(["寵物視窗與偏好設定視窗"])
-
-  subgraph Runtime["BongoCat 原生執行時期"]
-    direction TB
-    Entry["src/main.c<br/>bongo_cat_app_run"]
-    Startup["啟動與初始化<br/>配置、儲存、視窗、平台"]
-    Loop["SDL3 主迴圈<br/>等待、分派、更新、渲染"]
-    Shutdown["關閉<br/>清除狀態、停止服務、釋放資源"]
-    InputQueue[("原子輸入狀態<br/>邊緣佇列與合併指標位置")]
-    InputDispatch["輸入分派<br/>快捷鍵、指標對應、模型參數"]
-    State[("BongoCatApp 狀態<br/>設定、工作階段、目錄、執行時期控制代碼")]
-    Import["模型探索與匯入<br/>驗證、正規化為 Mver、安裝／快取"]
-    Catalog[("模型與行為目錄")]
-    Live2D["Live2D C ABI<br/>Cubism SDK 或診斷存根"]
-    Overlay["覆疊層與音訊"]
-    Preferences["偏好設定與桌面殼層<br/>Nuklear UI、系統匣、視窗動作"]
-    Compose["OpenGL 影格合成"]
-    Present["平台呈現"]
-
-    Entry --> Startup --> Loop
-    Loop --> Shutdown
-    Loop --> InputDispatch --> State
-    Loop <--> State
-    State --> Live2D
-    State --> Overlay
-    State <--> Preferences
-    Loop --> Preferences
-    Catalog --> State
-    State --> Compose
-    Live2D --> Compose
-    Overlay --> Compose
-    Compose --> Present
-    Loop --> Compose
-  end
-
-  subgraph Platform["平台後端"]
-    direction LR
-    Global["全域鍵盤／指標擷取<br/>Windows、macOS、Linux"]
-    SDL["SDL3 事件<br/>視窗與遊戲控制器事件"]
-  end
-
-  Input --> Global --> InputQueue --> InputDispatch
-  Input --> SDL --> Loop
-  BuiltIn --> Catalog
-  Sources --> Import --> Catalog
-  Present --> Desktop
-  Preferences --> Desktop
-```
-
-## ❓ 常見問答
-
-### 🔒 BongoCat 會記錄我的鍵盤或滑鼠輸入嗎？
-
-不會。BongoCat 僅在本地處理鍵盤和滑鼠輸入，以驅動動畫和快捷鍵。它不會記錄或上傳您的按鍵、滑鼠動作或其他互動資料。配置也僅儲存在本地，且應用程式不含廣告、分析工具或使用者追蹤程式碼。執行更新檢查時，僅會請求公開的發行版本元資料；不會傳送輸入、配置或使用資料。
-
-### 🖼️ Vulkan / Metal 支援進度如何？
-
-設定 → 應用 → 渲染後端可即時切換：Windows / Linux x64 支援 OpenGL ↔ Vulkan，macOS 支援 OpenGL ↔ Metal；「系統」預設使用 OpenGL。已接通原生 Live2D 紋理上傳、SDK 繪製、像素回讀和模型重載，保留模型及已選動作 / 表情，初始化或重載失敗時恢復 OpenGL。Vulkan/Metal 仍屬實驗性：按鍵 / 特效 / 指標覆蓋層已支援所有後端；Live2D 的 OpenGL / Vulkan / Metal 均支援動態紋理解析度，原生後端在背景解碼和縮放、主執行緒同步上傳。關閉後按畫質比例重新載入紋理。 原生後端快取靜態桌面背景，並將它納入緊貼邊緣範圍；GPU 圓角只繪製四角，無額外整幀紋理。 覆蓋層複用 SDL 軟體繪製並按輸入變化快取，在原生幀完成後合成並傳回 GPU；效能仍待實測。
-
-「大型算繪最佳化」在 Vulkan / Metal 後端顯示，預設關閉；Vulkan 提供三個獨立子項，Metal 僅提供大塊記憶體配置。Inox2D Metal 啟用後合併整幀頂點，Live2D Metal 顯示不可用。Inox2D Vulkan 支援多執行緒命令錄製與大區塊記憶體配置；Live2D Vulkan 支援 VMA 配置，以及一般混合、無離屏節點、非高精度遮罩模型的多執行緒錄製。Live2D 至少 128 個 Drawable 才使用次級緩衝，至少 128 筆可繪製快照才使用最多 4 個工作執行緒；其他模型保留 SDK 循序路徑。Live2D Vulkan 的 Bindless 使用最多 64 張圖集的紋理表，適用於一般混合且無離屏節點的模型；裝置特性或容量不足時回退。Inox2D Bindless 尚未實作。較大的池可能增加記憶體用量，效能收益待實測。
-
-含 SDK 的 Windows / Linux x64 建置預設 `BONGO_CAT_CUBISM_VULKAN=ON`，需要 `glslangValidator` 或 `glslang`（Linux 安裝 `glslang-tools`），執行需要 Vulkan 1.3；macOS 預設 `BONGO_CAT_CUBISM_METAL=ON`，需要 Xcode Metal 工具。設為 `OFF` 可建置 OpenGL 版本。Metal 原始碼與 `.metallib` 僅進入 macOS，Vulkan 原始碼與 `.spv` 僅進入 Windows / Linux x64，包含混合模式變體；無 SDK 的診斷建置不打包原生 Live2D 資源。GitHub Actions 按平台準備工具並檢查資源。本輪完成靜態檢查，尚未建置或進行 GPU 實測，詳見 [整合進度與驗證](live2d-vulkan-metal.md)。
-
-## 專案狀態
-![Alt](https://repobeats.axiom.co/api/embed/74334755a589dea40c5d31f8d2bcdc6c2bd39d87.svg "Repobeats analytics image")
-
-
-## 🙏 特別感謝
-> [!TIP]
-> BongoCat 的每一步都得益於開源精神。我們衷心感謝所有社群貢獻者的無私奉獻（按貢獻日期先後排序列於下方）。正是你們的支持，讓桌面陪伴更加自由與真誠。❤️‍🔥
-
-
-<a href="https://bongocat.pet">
-    <img src="https://bongocat.pet/co" />
-</a>
-
-
-[linux.do](https://linux.do/t/topic/2845597)
 ---
 
 <div align="center">
@@ -349,7 +93,6 @@ Vulkan 自動管理記憶體：Live2D 預設採用 1 MiB VMA 配置區塊，明�
 
 設定 → 桌寵 → 自訂滑鼠跟隨範圍提供水平/垂直 25–400%，預設關閉，100% 保持原範圍。Mver 繪製貓爪與滑鼠可擴大移動範圍，Live2D 保留作者參數邊界。視線與視窗位置不變。
 
-Windows 低記憶體設定視窗對 OpenGL/Vulkan 均使用分塊 SDL 軟體繪製及不透明背景。字型保留實際字號、螢幕 DPI 和抗鋸齒取樣，軟體字型圖集保存單通道遮罩，僅轉換當前字形。其他平台的 OpenGL 繼續重用桌寵上下文。
 ### 多按鍵顯示與字元裁剪
 
 Mver (OpenGL/Vulkan/Metal) 可分別裁剪手部、氣泡外框和字元，將按住的按鍵以加號連接在同一個氣泡中。外框和尾巴隨模型鏡像，字元保持可讀，單鍵模式也生效。在手部圖片資料夾的 `hand-layout.json` 中設定三個裁剪區域、加號兩側間距和每側顯示數量，修改後重新啟動應用程式。詳見[設定說明與範例](hand-layout.md)。
@@ -358,11 +101,13 @@ Mver (OpenGL/Vulkan/Metal) 可分別裁剪手部、氣泡外框和字元，將�
 
 ### 偏好選項選單樣式
 
-「偏好」頁統一使用可摺疊的分組卡片，視窗、模型、應用和外觀選項預設全部展開。點擊分組標題即可收起或展開該組選項，不再提供樣式切換按鈕，既有設定值保持不變。
+「偏好」頁使用可摺疊的分組卡片，視窗、模型、應用和外觀選項預設展開。在「外觀」開啟「緊湊版面」可縮小選項間距並保留說明，設定自動儲存。
 
 ### 輸入統計外掛
 
 Rust 統計外掛預設隨程式建置，可在「外掛」頁啟停或匯入。「統計」頁提供鍵鼠總量、每日與每小時趨勢、本機儲存及 CSV 匯出。詳見[統計外掛說明](statistics-plugin.md)。 前景應用使用時間提供排行、每小時分布及獨立開關；取樣、儲存與匯出由獨立執行緒處理。 統計入口由外掛在啟用時註冊，停用或解除安裝後自動移除。
+
+統計頁支援自訂單位名稱及移動／滾輪換算倍率，顯示設定可儲存並還原預設值。外觀設定共用一個調色盤，可調整主色、副色、文字顏色和頁面背景顏色。
 
 ### 物品外掛
 
@@ -384,4 +129,6 @@ Rust 模型商店外掛提供預覽圖卡片、作者連結及下載／解除安
 
 啟用 Live2D 外掛而缺少 Cubism Core 時，會顯示兩份官方協議。Windows 使用者點擊「同意並繼續下載」後，應用程式從官方 HTTPS 位址下載 Native R5 SDK，僅提取對應架構的動態 Core 並在本機啟用渲染；「取消並繼續」保留外掛啟用但不渲染。下載失敗可重試，也可手動匯入。應用程式及發行套件不包含 SDK 或 Core。
 
-Windows: DirectComposition 呈現. 實驗性 DXGI Alpha 合成。立即生效，失敗時退回原呈現器；仍有像素讀回，無法保證遊戲維持 Independent Flip。
+Windows AMD 顯示卡提供預設關閉的實驗性「DirectComposition 呈現」。DXGI Alpha 合成立即生效，啟用後將 expose 事件節流至 50 毫秒並關閉 VSync，失敗時退回原呈現器。仍使用像素讀回，無法保證遊戲維持 Independent Flip。
+
+模型渲染外掛 ABI 已升級為 v2，請同步更新或重新建置程式與 Live2D／Inox2D 外掛；舊版外掛不相容。Live2D Vulkan 支援按需離屏資源、Rust 串流 PNG 縮放及具備 RGBA8 備援的 BC7 快取，平台限制請見 [原生渲染說明](live2d-vulkan-metal.md)。

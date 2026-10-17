@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "Магазин",
+  "pages.preference.store.help": "Просматривайте модели сообщества. Перед установкой загрузки проверяются по SHA-256.",
+  "pages.preference.store.refresh": "Обновить",
+  "pages.preference.store.repository": "Репозиторий сообщества",
+  "pages.preference.store.repositoryUrl": "URL репозитория GitHub (ветка main; пустое поле — по умолчанию)",
+  "pages.preference.store.applyRepository": "Применить репозиторий",
+  "pages.preference.store.invalidRepository": "Введите URL репозитория GitHub: https://github.com/owner/repository",
+  "pages.preference.store.loading": "Загрузка каталога…",
+  "pages.preference.store.unpublished": "Каталог моделей ещё не опубликован.",
+  "pages.preference.store.networkError": "Не удалось загрузить каталог. Проверьте подключение или формат и повторите попытку.",
+  "pages.preference.store.empty": "Доступных моделей пока нет.",
+  "pages.preference.store.pluginHint": "Плагин Rust для каталога моделей. Страница магазина появляется после включения плагина.",
+  "pages.preference.store.failed": "Ошибка операции магазина",
+  "pages.preference.store.preview": "Предпросмотр модели",
+  "pages.preference.store.download": "Скачать",
+  "pages.preference.store.uninstall": "Удалить",
+  "pages.preference.store.downloading": "Загрузка…",
+  "pages.preference.store.installing": "Установка…",
+  "pages.preference.store.hashMismatch": "SHA-256 не совпадает; установка отклонена",
+  "pages.preference.store.installed": "Модель установлена, SHA-256 проверен",
+  "pages.preference.store.buyFull": "Купить полную версию"
+}

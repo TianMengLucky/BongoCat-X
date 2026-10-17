@@ -74,6 +74,7 @@ fn reject_invalid_indices_and_recursive_masks() {
         .contains("recursively"));
 }
 
+#[cfg(feature = "c-api")]
 #[test]
 fn detects_model_kind_without_changing_json_semantics() {
     let directory = tempfile::tempdir().unwrap();

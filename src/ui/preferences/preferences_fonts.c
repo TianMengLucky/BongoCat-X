@@ -70,15 +70,27 @@ void bongo_cat_preferences_fonts_resolve(BongoCatPreferences *value,
     if (bongo_cat_sounds_snapshot(value->app, &sounds))
         for (unsigned i = 0; i < sounds.count; ++i)
             bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, sounds.bindings[i].name);
+    BongoSafeStatisticsUnits units;
+    (void)bongo_safe_statistics_units_get(value->app->settings.extensions_json,
+        sizeof(value->app->settings.extensions_json), &units);
+    const char *unit_labels[] = {units.count, units.movement, units.scroll};
+    for (size_t i = 0; i < sizeof(unit_labels) / sizeof(unit_labels[0]); ++i)
+        bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, unit_labels[i]);
+    for (size_t i = 0; i < SDL_arraysize(value->plugin_edit_texts); ++i)
+        bongo_cat_preferences_text_glyphs(value->glyph_ranges, range_capacity, value->plugin_edit_texts[i]);
     fonts->ranges = value->glyph_ranges;
     // Large text has a small, known vocabulary; bake it at its real size.
     value->heading_glyph_ranges[0] = 0x20; value->heading_glyph_ranges[1] = 0x7e;
     value->heading_glyph_ranges[2] = 0;
-    const char *keys[] = {"native.about.contributorsTitle", "native.about.joinTitle"};
+    const char *keys[] = {"native.about.contributorsTitle", "native.about.joinTitle",
+        "native.statsCountUnit", "native.statsInputUnit", "native.statsWheelUnit"};
     for (size_t i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i)
         bongo_cat_preferences_text_glyphs(value->heading_glyph_ranges,
             sizeof(value->heading_glyph_ranges)/sizeof(value->heading_glyph_ranges[0]),
             bongo_cat_i18n_get(value->app->i18n, keys[i], ""));
+    for (size_t i = 0; i < sizeof(unit_labels) / sizeof(unit_labels[0]); ++i)
+        bongo_cat_preferences_text_glyphs(value->heading_glyph_ranges,
+            sizeof(value->heading_glyph_ranges) / sizeof(value->heading_glyph_ranges[0]), unit_labels[i]);
     fonts->heading_ranges = value->heading_glyph_ranges;
 }
 

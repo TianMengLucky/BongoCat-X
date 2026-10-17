@@ -1,5 +1,17 @@
 # 统计插件 / Statistics plugin
 
+页面正文、交互及 UI 状态由 Rust 插件的 `src/page_ui.rs` 创建；宿主经
+`include/bongo_cat/plugin_ui_page.h` 提供通用控件、绘图和业务服务。
+插件内嵌自身 `locales/*.json` 的十种语言，仅解析当前语言；翻译内存由插件分配并释放。
+语言加载接口为 `bongo_cat_statistics_locale_query_v1`（`load/text/visit/release`），
+宿主 `bongo_cat_i18n_get` 转发查询，不缓存插件字符串。旧插件缺少页面扩展时需更新。
+
+The Rust plugin owns page layout, interactions, UI state and its ten embedded locale files.
+The host supplies generic drawing and application services. The versioned locale interface
+loads the active language, lends strings for drawing/font baking, and releases allocations
+before unload; the host never caches plugin translation pointers. Older plugins need the
+page extension to display settings.
+
 统计页支持「重置统计」，经页面内确认后，在 Rust 工作线程用 SQLite 事务清空
 输入次数、每日／小时图表及应用时长历史，并立即刷新已发布缓存。失败时回滚且保留历史；
 统计开关设置、插件启用状态与已导出的 CSV 保留。重置使用可选的版本 1 扩展
@@ -20,6 +32,21 @@ Rust crate：`src/rust/bongo-stats`，独立 `cdylib`，不与宿主静态链接
 [Work-Review](https://github.com/wm94i/Work-Review) 的应用识别、空闲暂停与本地存储方式。
 仅本地记录键鼠汇总、应用标识／名称和时长；不记录输入文本、按键名称／顺序、坐标、
 窗口标题、网址或截图，不联网。
+
+## 显示单位 / Display units
+
+展开统计页的「显示单位」，可分别设置键盘／鼠标计数、指针移动和滚轮的单位名称
+（最多 16 个 Unicode 字符，留空跟随当前语言），并为移动量和滚轮量设置换算倍率。
+显示值 = 原始值 × 倍率，倍率范围为 0.000000001 至 1000000000；点击「应用单位」保存，
+也可恢复默认。倍率由用户校准，不会自动将设备输入换算为实际物理距离。
+设置随应用配置保留，重置统计时不清除；仅影响统计页，数据库、CSV 和悬浮窗仍使用原始单位。
+
+Expand **Display units** on the Statistics page to customize the count, pointer travel and
+scroll labels (up to 16 Unicode characters; empty follows the current language), and separate
+travel/scroll multipliers. Display = raw value × multiplier; valid multipliers range from
+0.000000001 to 1000000000. Apply to save or restore defaults. Calibration is manual;
+this does not infer physical distance. Settings survive statistics resets and affect only
+this page; the database, CSV exports and floating panel retain raw units.
 
 ## 使用
 

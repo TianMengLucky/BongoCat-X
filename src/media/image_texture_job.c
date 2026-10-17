@@ -1,6 +1,7 @@
 #include "bongo_cat/image_texture_job.h"
 #include "image_texture_cache.h"
 #include "image_upload_sync.h"
+#include "image_bc7.h"
 #include "bongo_cat/gl_api.h"
 #include "bongo_cat/sha256.h"
 #include "bongo_cat/log.h"
@@ -21,6 +22,8 @@ struct BongoCatImageTextureJob {
     /* Worker owns the batch until ready is published under mutex; the GL
        thread owns it until ready is cleared. No copying/filtering under lock. */
     BongoCatImage pending;
+    BongoSafeNativeTexture compressed;
+    bool try_bc7, compressed_uploaded;
     int capacity, height, produced;
     bool ready, done;
     BongoCatResult result;
@@ -138,6 +141,24 @@ static BongoCatResult decode_fallback(BongoCatImageTextureJob *job) {
 static int SDLCALL decode_worker(void *userdata) {
     BongoCatImageTextureJob *job = userdata;
     SDL_SetCurrentThreadPriority(SDL_THREAD_PRIORITY_LOW);
+    if (job->try_bc7) {
+        bool decoded = bongo_safe_native_texture_load(job->path, (uint32_t)job->max_width,
+            (uint32_t)job->max_height, true, &job->compressed, cancelled, job);
+        if (decoded && job->compressed.format == 1 && !cancelled(job)) {
+            job->pending.width = (int)job->compressed.width;
+            job->height = (int)job->compressed.height;
+            memcpy(job->alpha.pixels, job->compressed.alpha, sizeof(job->alpha.pixels));
+            job->alpha.width = (int)SDL_min(job->compressed.source_width, 128u);
+            job->alpha.height = (int)SDL_min(job->compressed.source_height, 128u);
+            SDL_LockMutex(job->mutex);
+            job->result = BONGO_CAT_OK; job->done = true;
+            SDL_SetAtomicInt(&job->poll_ready, 1);
+            SDL_UnlockMutex(job->mutex);
+            return 0;
+        }
+        bongo_safe_free_pixels(job->compressed.pixels, job->compressed.size);
+        SDL_zero(job->compressed);
+    }
     uint64_t before_size = 0, before_time = 0, after_size = 0, after_time = 0;
     bool source_known = bongo_cat_path_file_info(job->path, &before_size, &before_time);
     char digest[65] = {0};
@@ -189,6 +210,7 @@ BongoCatImageTextureJob *bongo_cat_image_texture_job_start(const char *path,
     }
     memcpy(job->path, path, strlen(path) + 1);
     job->max_width = max_width; job->max_height = max_height;
+    job->try_bc7 = bongo_cat_image_bc7_supported();
     job->mutex = SDL_CreateMutex();
     job->condition = SDL_CreateCondition();
     if (job->mutex && job->condition)
@@ -280,11 +302,33 @@ int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
     }
     SDL_UnlockMutex(job->mutex);
     if (!done) return 0;
+    if (ok && result == BONGO_CAT_OK && job->compressed.pixels) {
+        job->texture = bongo_cat_image_upload_bc7(&job->compressed, NULL);
+        bongo_safe_free_pixels(job->compressed.pixels, job->compressed.size);
+        SDL_zero(job->compressed);
+        if (!job->texture) {
+            // The worker is done. Retry the existing bounded RGBA row pipeline.
+            SDL_WaitThread(job->thread, NULL); job->thread = NULL;
+            job->try_bc7 = false; job->done = false;
+            job->pending.width = job->height = 0;
+            SDL_SetAtomicInt(&job->poll_ready, 0);
+            job->thread = SDL_CreateThread(decode_worker, BONGO_CAT_SLUG "-rgba-retry", job);
+            if (!job->thread) {
+                job->done = true; job->result = BONGO_CAT_ERROR_PLATFORM;
+                bongo_cat_error_set(error, job->result, "Cannot start RGBA texture fallback");
+                return -1;
+            }
+            return 0;
+        }
+        job->compressed_uploaded = true;
+        job->uploaded = job->height;
+        ++job->uploads;
+    }
     if (!ok || result != BONGO_CAT_OK || job->uploaded != job->height || !job->texture)
         return -1;
     if (!job->mip_submitted) {
         uint64_t started = SDL_GetTicksNS();
-        if (!bongo_cat_image_finish_model_texture(job->texture, error)) return -1;
+        if (!job->compressed_uploaded && !bongo_cat_image_finish_model_texture(job->texture, error)) return -1;
         GLenum status = bongo_cat_image_upload_sync_submit(&job->sync);
         if (status != GL_NO_ERROR) {
             bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM,
@@ -319,6 +363,8 @@ int bongo_cat_image_texture_job_poll(BongoCatImageTextureJob *job,
 static void release_job_storage(BongoCatImageTextureJob *job) {
     release_job_gpu(job);
     bongo_cat_image_free(&job->pending);
+    bongo_safe_free_pixels(job->compressed.pixels, job->compressed.size);
+    SDL_zero(job->compressed);
 }
 
 static int poll_cleanup_completion(BongoCatImageTextureJob *job,

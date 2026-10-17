@@ -125,6 +125,7 @@ int main(void) {
         key(app, "KeyJ", false, true);
         CHECK(bongo_cat_app_shortcut_conflicts(app, "K+J", app->settings.shortcuts.mirror));
         bongo_cat_behaviors_clear(&app->behaviors);
+        bongo_cat_input_destroy(&app->input);
     }
     free(pets);
     return bongo_cat_test_failures ? 1 : 0;

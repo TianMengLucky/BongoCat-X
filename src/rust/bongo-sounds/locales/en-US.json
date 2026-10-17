@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "Sound effects",
+  "pages.preference.sounds.help": "Click a key to preview its sound and choose an audio file. Hover to see the filename. Physical key presses play the assigned sound; bindings save automatically.",
+  "pages.preference.sounds.unassigned": "No sound assigned",
+  "pages.preference.sounds.choose": "Choose audio",
+  "pages.preference.sounds.preview": "Preview",
+  "pages.preference.sounds.clear": "Clear binding",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis and FLAC, up to 64 MB. Independent of the selected model; key availability depends on input permission and keyboard layout.",
+  "pages.preference.sounds.pluginHint": "Assign sounds to keyboard keys. A dedicated worker handles import, decoding, playback and saving. Disabling preserves bindings and audio files.",
+  "pages.preference.sounds.saved": "Sound effect saved",
+  "pages.preference.sounds.failed": "Unable to update sound effects",
+  "pages.preference.sounds.queued": "Audio import queued",
+  "pages.preference.sounds.busy": "Worker is processing audio"
+}

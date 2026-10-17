@@ -26,6 +26,19 @@ void bongo_cat_preferences_apply_theme(BongoCatPreferences *value) {
     int dark = bongo_cat_preferences_resolved_theme(value);
     if (dark == value->style_theme) return;
     value->style_theme = dark;
+    value->theme_colors[0] = bongo_safe_preferences_color_get(
+        value->app->settings.extensions_json, sizeof(value->app->settings.extensions_json), false);
+    value->theme_colors[1] = bongo_safe_preferences_color_get(
+        value->app->settings.extensions_json, sizeof(value->app->settings.extensions_json), true);
+    value->theme_colors[2] = bongo_safe_preferences_background_get(
+        value->app->settings.extensions_json, sizeof(value->app->settings.extensions_json));
+    value->theme_colors[3] = bongo_safe_preferences_text_get(
+        value->app->settings.extensions_json, sizeof(value->app->settings.extensions_json));
+    bongo_cat_ui_palette_text(value->theme_colors[3]);
+    bongo_cat_ui_palette_colors(value->theme_colors[0], value->theme_colors[1]);
+    bongo_cat_ui_palette_background(value->theme_colors[2]);
+    value->ui.compact_preferences = bongo_safe_preferences_compact_get(
+        value->app->settings.extensions_json, sizeof(value->app->settings.extensions_json));
     bongo_cat_ui_apply_theme(&value->ui.context, dark != 0);
     SDL_SetBooleanProperty(SDL_GetWindowProperties(value->window),
         "BongoCat.SquareCorners", !value->rounded_window);
@@ -255,6 +268,7 @@ bool bongo_cat_preferences_chrome_drag_allowed(
     return value && value->app && !value->native_drag &&
         !bongo_cat_preferences_behavior_dialog_active(value) &&
         !bongo_cat_preferences_random_dialog_active(value) &&
+        !bongo_cat_preferences_layout_dialog_active(value) &&
         !bongo_cat_preferences_remove_dialog_active(value->app) &&
         !bongo_cat_preferences_live2d_setup_active(value);
 }
@@ -292,6 +306,11 @@ static bool chrome_event(BongoCatPreferences *value, const SDL_Event *event) {
         }
         if (bongo_cat_preferences_random_dialog_active(value)) {
             bongo_cat_preferences_random_dialog_close(value);
+            value->render_dirty = true;
+            return true;
+        }
+        if (bongo_cat_preferences_layout_dialog_active(value)) {
+            bongo_cat_preferences_layout_dialog_close(value);
             value->render_dirty = true;
             return true;
         }

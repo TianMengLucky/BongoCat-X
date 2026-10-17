@@ -1,0 +1,256 @@
+use crate::metrics::{Metrics, Snapshot};
+use bongo_plugin::page::{action, color, read, Page, PageState, Rect};
+
+#[path = "page_ui_charts.rs"]
+mod charts;
+#[path = "page_ui_units.rs"]
+mod units;
+#[derive(Default)]
+struct State {
+    period: u32,
+    reset_confirm: bool,
+    units_open: u32,
+    units: Option<units::Units>,
+    draft: units::Units,
+    glyph_hash: u64,
+    unit_glyph_hash: u64,
+}
+fn tr(p: &Page<'_>, key: &str, fallback: &str) -> String {
+    p.tr(&format!("pages.preference.statistics.{key}"), fallback)
+}
+fn act(p: &Page<'_>, op: u32, index: u32) -> bool {
+    let ok = p.act(op, index);
+    if !ok {
+        p.notice(&tr(p, "failed", "Unable to update statistics"), true);
+    }
+    ok
+}
+fn clicks(m: &Metrics) -> u64 {
+    m.buttons.iter().fold(0u64, |a, &b| a.saturating_add(b))
+}
+fn grouped(raw: &str, unit: &str) -> String {
+    let whole = raw.find('.').unwrap_or(raw.len());
+    let mut result = String::with_capacity(raw.len() + unit.len() + whole / 3 + 1);
+    for (i, c) in raw.chars().enumerate() {
+        if i != 0 && i < whole && (whole - i) % 3 == 0 {
+            result.push(',');
+        }
+        result.push(c);
+    }
+    result.push(' ');
+    result.push_str(unit);
+    result
+}
+fn scaled(amount: f64, scale: f64, precision: usize) -> String {
+    let result = format!(
+        "{:.*}",
+        if scale == 1.0 { precision } else { 9 },
+        amount * scale
+    );
+    if scale == 1.0 || !result.contains('.') {
+        result
+    } else {
+        result
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_owned()
+    }
+}
+fn metric_card(p: &Page<'_>, title: &str, number: &str) {
+    let Some((r, _)) = p.region() else {
+        return;
+    };
+    p.fill(r, 12.0, color::SURFACE);
+    p.stroke(r, 12.0, 1.0, color::BORDER_SUBTLE);
+    let content = r.inset(14.0);
+    p.paint_text(
+        Rect::new(content.x, content.y, content.w, 32.0),
+        title,
+        1,
+        color::TEXT,
+        0,
+    );
+    let font = if p.measure(number, 3) <= content.w {
+        3
+    } else {
+        0
+    };
+    p.paint_text(
+        Rect::new(content.x, content.y + 36.0, content.w, 48.0),
+        number,
+        font,
+        color::ACCENT,
+        0,
+    );
+    if p.measure(number, font) > content.w && p.input(r, 0) {
+        p.tooltip(number);
+    }
+}
+impl State {
+    fn reset(&mut self, p: &Page<'_>) {
+        let status = p.status();
+        if status.reset_available == 0 {
+            self.reset_confirm = false;
+            p.wrapped(
+                &tr(
+                    p,
+                    "resetUnavailable",
+                    "Update the Statistics plugin to enable reset.",
+                ),
+                40.0,
+            );
+            return;
+        }
+        if status.reset_busy != 0 {
+            self.reset_confirm = false;
+            p.label(&tr(p, "resetting", "Resetting statistics..."));
+            return;
+        }
+        if self.reset_confirm {
+            p.wrapped(&tr(p, "resetConfirm", "Clear all input counts, charts and application time history? This cannot be undone. Settings are kept."), 56.0);
+            p.row(2, 36.0);
+            if p.button("reset-cancel", &tr(p, "resetCancel", "Cancel"), 0) {
+                self.reset_confirm = false;
+            }
+            if p.button(
+                "reset-confirm",
+                &tr(p, "resetConfirmButton", "Clear all history"),
+                1,
+            ) {
+                act(p, action::RESET_STATS, 0);
+                self.reset_confirm = false;
+            }
+        } else {
+            p.row(1, 36.0);
+            if p.button("reset", &tr(p, "reset", "Reset statistics"), 1) {
+                self.reset_confirm = true;
+                p.invalidate();
+            }
+        }
+    }
+}
+impl PageState for State {
+    fn draw(&mut self, p: &Page<'_>) {
+        if self.units.is_none() {
+            if let Some(units) = unsafe { p.read::<units::Units>(read::UNITS, 0) } {
+                self.draft = units;
+                self.units = Some(units);
+            }
+        }
+        p.intro(&tr(p, "privacy", "Local input totals, app names and durations. No typed text, key order, coordinates, window titles, URLs or screenshots."));
+        let mut overlay = p.status().overlay;
+        if p.toggle(
+            "statistics-overlay",
+            &tr(p, "showOverlay", "Show statistics overlay"),
+            &mut overlay,
+        ) {
+            act(p, action::OVERLAY, overlay);
+        }
+        let Some(data) = (unsafe { p.read::<Snapshot>(read::SNAPSHOT, 0) }) else {
+            p.wrapped(&tr(p, "inactive", "Install or enable the Statistics plugin on the Plugins page to start counting."), 64.0);
+            return;
+        };
+        if data.storage_error != 0 {
+            p.wrapped(&tr(p, "storageError", "Statistics could not be saved. Check disk space and data directory permissions."), 48.0);
+        }
+        self.reset(p);
+        p.row(1, 40.0);
+        self.period = p
+            .segments(
+                "statistics-period",
+                &[
+                    tr(p, "today", "Today"),
+                    tr(p, "week", "7 days"),
+                    tr(p, "month", "30 days"),
+                    tr(p, "lifetime", "All time"),
+                ],
+                self.period,
+            )
+            .min(3);
+        let metrics = [&data.today, &data.week, &data.month, &data.lifetime];
+        let m = metrics[self.period as usize];
+        let units = self.units.unwrap_or_default();
+        let unit = |bytes: &[u8], key: &str, fallback: &str| {
+            let label = bongo_plugin::page::text(bytes);
+            if label.is_empty() {
+                p.tr(key, fallback)
+            } else {
+                label.to_owned()
+            }
+        };
+        let count_unit = unit(&units.count, "native.statsCountUnit", "counts");
+        let movement_unit = unit(&units.movement, "native.statsInputUnit", "input units");
+        let scroll_unit = unit(&units.scroll, "native.statsWheelUnit", "wheel units");
+        p.row(if p.width() >= 540.0 { 2 } else { 1 }, 128.0);
+        metric_card(
+            p,
+            &tr(p, "keys", "Key presses"),
+            &grouped(&m.keys.to_string(), &count_unit),
+        );
+        metric_card(
+            p,
+            &tr(p, "clicks", "Mouse clicks"),
+            &grouped(&clicks(m).to_string(), &count_unit),
+        );
+        metric_card(
+            p,
+            &tr(p, "overlayMovement", "Pointer travel"),
+            &grouped(&scaled(m.movement, units.movement_scale, 0), &movement_unit),
+        );
+        metric_card(
+            p,
+            &tr(p, "overlayScroll", "Scroll"),
+            &grouped(&scaled(m.scroll, units.scroll_scale, 1), &scroll_unit),
+        );
+        for (i, (key, fallback)) in [
+            ("left", "Left button"),
+            ("right", "Right button"),
+            ("middle", "Middle button"),
+            ("back", "Back button"),
+            ("forward", "Forward button"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            p.status_row(
+                key,
+                &tr(p, key, fallback),
+                &grouped(&m.buttons[i].to_string(), &count_unit),
+            );
+        }
+        units::draw(self, p);
+        p.wrapped(&tr(p, "unitsHint", "Movement uses desktop pixels/points, or raw device units with Linux evdev. Wheel units vary by device; neither value is a physical distance."), 96.0);
+        charts::usage(self, p);
+        charts::activity(p, &data, false);
+        charts::activity(p, &data, true);
+        p.row(2, 36.0);
+        if p.button("export", &tr(p, "export", "Export CSV"), 0) && act(p, action::EXPORT_STATS, 0)
+        {
+            p.notice(
+                &tr(p, "exportQueued", "Export queued in the background"),
+                false,
+            );
+        }
+        if p.button("folder", &tr(p, "openFolder", "Open data folder"), 0) {
+            act(p, action::OPEN_FOLDER, 0);
+        }
+    }
+}
+bongo_plugin::export_page!(bongo_cat_statistics_page_ui_query_v1, State);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn display_units_keep_grouping_precision_and_raw_values() {
+        assert_eq!(grouped("1234567.5", "units"), "1,234,567.5 units");
+        assert_eq!(scaled(123.0, 0.01, 0), "1.23");
+        assert_eq!(scaled(0.0, 0.01, 0), "0");
+        assert_eq!(scaled(12.0, 1.0, 1), "12.0");
+        let m = Metrics {
+            buttons: [u64::MAX; 5],
+            ..Metrics::default()
+        };
+        assert_eq!(clicks(&m), u64::MAX);
+    }
+}

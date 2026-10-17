@@ -30,7 +30,8 @@ bool bongo_cat_preferences_model_name_draw(BongoCatPreferences *value,
             bongo_cat_i18n_get(value->app->i18n, "native.importing",
                 "Importing...") : "...";
     struct nk_rect text_bounds = nk_rect(bounds.x + 5,
-        bounds.y + 3, bounds.w - 10, 22);
+        bounds.y + (bounds.h - value->ui.label_font->height) * .5f,
+        bounds.w - 10, value->ui.label_font->height);
     if (renaming && session->select_all)
         nk_fill_rect(canvas, text_bounds, 4, p.selection);
     nk_draw_text(canvas, text_bounds, shown, nk_strlen(shown),

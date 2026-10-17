@@ -83,6 +83,7 @@ public:
     void set_tight_overlay_rect(const float *rect);
     void set_render_options(const BongoCatModelRuntimeRenderOptions &options);
     void set_rhi_info(const BongoCatRhiDeviceInfo &info);
+    void set_vulkan_features(uint32_t features) { native_vulkan_features_ = features; }
     const BongoCatRhiDeviceInfo &rhi_info() const;
     void set_dragging(float x, float y, bool angle_z = false);
     void prepare_viewer_audit();
@@ -196,7 +197,7 @@ private:
     /* Cubism Vulkan renderer paths (see docs/live2d-vulkan-metal.md). */
     bool create_renderer_vulkan(BongoCatError *error);
     bool upload_texture_vulkan(int index, const unsigned char *pixels,
-        int width, int height, BongoCatError *error);
+        int width, int height, BongoCatError *error, uint32_t format = 0, size_t bytes = 0);
     void release_textures_vulkan();
     std::vector<Csm::CubismImageVulkan> vulkan_textures_;
     std::shared_ptr<VulkanGeometry> vulkan_geometry_;
@@ -217,6 +218,7 @@ private:
     void native_projection(Csm::CubismMatrix44 &projection);
     void native_visual_state(Csm::CubismMatrix44 &projection);
     BongoCatRhiDeviceInfo rhi_info_ = {};
+    uint32_t native_vulkan_features_ = 0;
     std::vector<BongoCatImageAlphaMask> native_alpha_;
     size_t native_texture_bytes_ = 0;
     std::vector<TextureDimensions> native_texture_info_;
@@ -262,7 +264,7 @@ private:
     int renderer_height_ = 0;
     int mask_texture_limit_ = 0;
     int mask_buffer_count_ = 0;
-    struct MaskBuffers { MaskSize layout; MaskSize size; };
+    struct MaskBuffers { MaskSize layout; MaskSize size; int count = 1; };
     MaskBuffers drawable_masks_, offscreen_masks_;
     bool mask_update_failed_ = false;
     int mask_last_width_ = 0;

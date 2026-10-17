@@ -94,8 +94,13 @@ BongoCatResult bongo_cat_rhi_gl_create_window(const char *title, int width, int 
                 vendor ? (const char *)vendor : "unknown",
                 renderer ? (const char *)renderer : "unknown",
                 version ? (const char *)version : "unknown");
-            if (!SDL_GL_SetSwapInterval(1)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
-                "Vertical sync unavailable: %s", SDL_GetError());
+            int swap_interval = 1;
+#ifdef _WIN32
+            if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
+                    "BongoCat.DirectComposition", false)) swap_interval = 0;
+#endif
+            if (!SDL_GL_SetSwapInterval(swap_interval)) SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
+                "Cannot set vertical sync interval %d: %s", swap_interval, SDL_GetError());
             BongoCatRhiGl *impl = calloc(1, sizeof(*impl));
             if (!impl) {
                 SDL_GL_DestroyContext(rhi->context);

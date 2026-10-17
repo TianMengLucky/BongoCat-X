@@ -62,6 +62,7 @@ bool bongo_cat_store_asset_work(BongoCatStore *v, const BongoCatPluginJob *job, 
         !memchr(entry.download_url, 0, sizeof(entry.download_url)) ||
         !memchr(entry.sha256, 0, sizeof(entry.sha256)) ||
         !memchr(entry.repository_path, 0, sizeof(entry.repository_path))) return false;
+    if (!bongo_cat_store_rebase(v, &entry)) return false;
     if (job->kind == 2) { (void)preview(v, job->index, &entry); atomic_store(&v->worker.changed, true); return true; }
     char path[BONGO_CAT_PATH_CAP] = {0}, directory[BONGO_CAT_PATH_CAP] = {0};
     ok = bongo_cat_store_cache_path(v, entry.sha256, ".download", directory) &&

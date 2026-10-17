@@ -148,7 +148,7 @@ static int capsule(struct nk_context *context, const char *id,
         bounds.y + 3, segment - 6, bounds.h - 6);
     if (p.effects) bongo_cat_ui_paint_shadow(context, active, 11,
         0, 2, 7, 0, nk_rgba(p.accent.r, p.accent.g, p.accent.b, 76));
-    nk_fill_rect(canvas, active, 11, p.accent);
+    nk_fill_rect(canvas, active, 11, p.selection);
     nk_stroke_rect(canvas, bounds, 14, 1,
         bongo_cat_ui_color_mix(p.border_subtle, p.accent, outer_hover));
     for (int i = 0; i < count; ++i) {
@@ -160,11 +160,11 @@ static int capsule(struct nk_context *context, const char *id,
             (distance - .28f) / .20f, 1.0f);
         struct nk_color base = bongo_cat_ui_color_mix(p.muted, p.accent, amount);
         struct nk_color color = bongo_cat_ui_color_mix(base,
-            nk_rgb(255, 255, 255), active_weight);
+            p.on_selection, active_weight);
         struct nk_color segment_background = bongo_cat_ui_color_mix(
             p.field, p.selection, amount);
         segment_background = bongo_cat_ui_color_mix(segment_background,
-            p.accent, active_weight);
+            p.selection, active_weight);
         float size = 20.0f + amount;
         struct nk_rect icon = nk_rect(bounds.x + segment * (i + .5f) - size * .5f,
             bounds.y + (bounds.h - size) * .5f, size, size);

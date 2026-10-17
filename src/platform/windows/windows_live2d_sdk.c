@@ -9,7 +9,7 @@
 #include <SDL3/SDL.h>
 #include <windows.h>
 #ifdef BONGO_CAT_LIVE2D_CORE_RUNTIME
-#include <miniz.h>
+#include "bongo_cat/safe_archive.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,174 +80,12 @@ static wchar_t *registry_path(void) {
     return copy;
 }
 
-/* Pick the Core DLL entry inside an SDK zip: matching architecture only;
-   the archive-relative path of the choice lands in entry_name. */
-static int select_core_entry(mz_zip_archive *zip, char *entry_name,
-    size_t entry_cap) {
-    bool want_x64 = sizeof(void *) >= 8;
-    int chosen = -1;
-    unsigned count = mz_zip_reader_get_num_files(zip);
-    unsigned i;
-    entry_name[0] = '\0';
-    for (i = 0; i < count; ++i) {
-        mz_zip_archive_file_stat stat;
-        const char *name;
-        size_t length;
-        bool x64, x86;
-        memset(&stat, 0, sizeof(stat));
-        if (!mz_zip_reader_file_stat(zip, i, &stat)) continue;
-        if (stat.m_is_directory) continue;
-        /* Small floor only: the Core DLL itself can weigh well under 1 MB. */
-        if (stat.m_uncomp_size < 64 * 1024) continue;
-        name = stat.m_filename;
-        length = strlen(name);
-        if (length < sizeof("live2dcubismcore.dll") - 1 ||
-            _stricmp(name + length - (sizeof("live2dcubismcore.dll") - 1),
-                "live2dcubismcore.dll") != 0) continue;
-        x64 = strstr(name, "x86_64") != NULL;
-        x86 = strstr(name, "x86") != NULL && !x64;
-        if (strstr(name, "arm") || (x64 && !want_x64) || (x86 && want_x64))
-            continue;
-        if (x64 || chosen < 0) {
-            chosen = (int)i;
-            snprintf(entry_name, entry_cap, "%s", name);
-            if (x64 == want_x64) break;
-        }
-    }
-    if (chosen < 0)
-        SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
-            "[live2d] No Cubism Core for this architecture inside the zip");
-    return chosen;
-}
-
-/* Length of the single top-level folder every entry shares (including its
-   separator), or 0 when the entries have no common root. Unpacking the
-   contents of that shared folder straight into out_dir (live2d/<zip name>/)
-   keeps the SDK browsable without nesting a duplicate directory. */
-static size_t common_top_level(mz_zip_archive *zip) {
-    char common[BONGO_CAT_PATH_CAP];
-    size_t common_length = 0;
-    unsigned count = mz_zip_reader_get_num_files(zip);
-    unsigned i;
-    for (i = 0; i < count; ++i) {
-        mz_zip_archive_file_stat stat;
-        const char *separator;
-        if (!mz_zip_reader_file_stat(zip, i, &stat) || stat.m_is_directory)
-            continue;
-        separator = strchr(stat.m_filename, '/');
-        if (!separator) return 0;
-        if (!common_length) {
-            common_length = (size_t)(separator - stat.m_filename) + 1;
-            if (common_length >= sizeof(common)) return 0;
-            memcpy(common, stat.m_filename, common_length);
-        } else if (strncmp(common, stat.m_filename, common_length) != 0) {
-            return 0;
-        }
-    }
-    return common_length;
-}
-
 static bool extract_sdk_zip(const wchar_t *zip_path, const char *out_dir,
     char *dll_target, size_t target_cap) {
-    FILE *file = _wfopen(zip_path, L"rb");
-    long size;
-    uint8_t *bytes;
-    mz_zip_archive zip;
-    bool extracted = true;
-    unsigned written = 0, count, i;
-    size_t strip;
-    char core_name[BONGO_CAT_PATH_CAP];
-    int core_index;
-    dll_target[0] = '\0';
-    if (!file) return false;
-    fseek(file, 0, SEEK_END);
-    size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    if (size <= 0) { fclose(file); return false; }
-    bytes = (uint8_t *)malloc((size_t)size);
-    if (!bytes || fread(bytes, 1, (size_t)size, file) != (size_t)size) {
-        free(bytes);
-        fclose(file);
-        return false;
-    }
-    fclose(file);
-    memset(&zip, 0, sizeof(zip));
-    if (!mz_zip_reader_init_mem(&zip, bytes, (size_t)size, 0)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
-            "[live2d] Cannot read the SDK zip archive");
-        free(bytes);
-        return false;
-    }
-    core_index = select_core_entry(&zip, core_name, sizeof(core_name));
-    /* Entries usually share one top-level folder named after the zip; unpack its contents straight into out_dir. */
-    strip = common_top_level(&zip);
-    {
-        const char *core_relative = core_name + strip;
-        if (core_index >= 0 &&
-            bongo_cat_path_join(dll_target, target_cap, out_dir,
-                core_relative) &&
-            bongo_cat_path_is_file(dll_target)) {
-            /* The Core from an earlier run is already in place. */
-            mz_zip_reader_end(&zip);
-            free(bytes);
-            return true;
-        }
-    }
-    dll_target[0] = '\0';
-    count = mz_zip_reader_get_num_files(&zip);
-    for (i = 0; i < count; ++i) {
-        mz_zip_archive_file_stat stat;
-        const char *name;
-        char target[BONGO_CAT_PATH_CAP];
-        char parent[BONGO_CAT_PATH_CAP];
-        size_t parent_length;
-        size_t file_size = 0;
-        void *data;
-        FILE *out;
-        if (!mz_zip_reader_file_stat(&zip, i, &stat)) continue;
-        name = stat.m_filename;
-        if (stat.m_is_directory || !name[0] || strlen(name) <= strip) continue;
-        name += strip;
-        /* Zip-slip guard: only plain relative paths land below out_dir. */
-        if (name[0] == '/' || name[0] == '\\' || name[1] == ':' ||
-            strstr(name, "..")) continue;
-        if (!bongo_cat_path_join(target, sizeof(target), out_dir, name))
-            continue;
-        parent_length = strlen(target);
-        while (parent_length && target[parent_length - 1] != '/' &&
-            target[parent_length - 1] != '\\')
-            parent_length--;
-        if (parent_length >= sizeof(parent)) continue;
-        memcpy(parent, target, parent_length);
-        parent[parent_length] = '\0';
-        if (!bongo_cat_path_create_directory(parent)) continue;
-        data = mz_zip_reader_extract_to_heap(&zip, i, &file_size, 0);
-        if (!data) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
-                "[live2d] Cannot extract %s from the SDK zip", name);
-            extracted = false;
-            continue;
-        }
-        out = bongo_cat_file_open(target, "wb");
-        if (!out || fwrite(data, 1, file_size, out) != file_size ||
-            fclose(out) != 0) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
-                "[live2d] Cannot write %s", target);
-            extracted = false;
-        } else {
-            written++;
-        }
-        mz_free(data);
-    }
-    if (core_index >= 0)
-        (void)bongo_cat_path_join(dll_target, target_cap, out_dir,
-            core_name + strip);
-    mz_zip_reader_end(&zip);
-    free(bytes);
-    SDL_LogInfo(SDL_LOG_CATEGORY_CUSTOM,
-        "[live2d] Extracted %u files from the SDK zip below %s", written,
-        out_dir);
-    return extracted;
+    char *source = utf8_from_wide(zip_path);
+    bool result = source && bongo_safe_sdk_extract(source, out_dir, dll_target, target_cap);
+    free(source);
+    return result;
 }
 
 /* Keep a copy of the confirmed Core inside the data directory and point the

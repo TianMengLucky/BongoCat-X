@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-set(BONGO_CAT_VERSION "2.2.0")
+set(BONGO_CAT_VERSION "2.2.2")
 project(BongoCat VERSION ${BONGO_CAT_VERSION} DESCRIPTION "BongoCat-X" HOMEPAGE_URL "https://github.com/TianMengLucky/BongoCat-X" LANGUAGES C CXX)
 include(cmake/Version.cmake)
 include(FetchContent)
@@ -131,8 +131,8 @@ add_library(bongo_cat_core STATIC
   src/core/config_defaults.c src/core/config_model_state.c src/core/config_session_defaults.c src/core/config_names.c src/core/config_io.c
   src/core/config_file.c src/core/config_motion_volume.c
   src/core/error.c
-  src/core/file.c src/core/i18n.c src/core/json_dom_io.c
-  src/core/input_state.c src/core/input_metrics.c src/core/mver_pointer.c
+  src/core/file.c src/core/hand_layout.c src/core/i18n.c src/core/json_dom_io.c
+  src/core/input_state.c src/core/mver_pointer.c
   src/core/mouse_tracking.c src/core/sha256.c src/core/utf8.c
   src/core/model_catalog.c
   src/core/model_behavior.c src/core/model_json.c
@@ -248,7 +248,8 @@ set_target_properties(bongo_cat PROPERTIES OUTPUT_NAME "BongoCat")
 # Include locally compiled static dependencies so unused implementation
 # details can be removed across the final executable link.
 bongo_cat_enable_release_ipo(Framework bongo_cat_core bongo_cat_runtime bongo_cat
-  SDL3-static ${BONGO_CAT_MINIAUDIO_TARGET} bongo_cat_archive bongo_cat_host_volk)
+  SDL3-static ${BONGO_CAT_MINIAUDIO_TARGET} bongo_cat_archive bongo_cat_host_volk
+  bongo_live2d bongo_cubism_plugin_shaders bongo_items-shared bongo_sounds-shared)
 
 include(cmake/ValidationTools.cmake)
 include(cmake/ApplicationResources.cmake)
@@ -311,4 +312,5 @@ add_custom_target(check-cubism-user-model-safety ${BONGO_CAT_CHECK_ALL}
   VERBATIM)
 include(cmake/Tests.cmake)
 include(cmake/StatisticsTests.cmake)
+include(cmake/ItemsTests.cmake)
 include(cmake/Packaging.cmake)

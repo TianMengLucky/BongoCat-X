@@ -1,10 +1,13 @@
 # Renderer plugins
 
 The host dispatches a versioned C ABI from `include/bongo_cat/model_plugin.h`.
-ABI version 1 checks descriptor sizes, engine, required callbacks and supported
+ABI version 2 checks descriptor sizes, engine, required callbacks and supported
 GPU backends before creating an instance. Jobs, models and GPU resources are
 released before unloading a library. Cubism Framework is linked only into the
 C++ Live2D plugin. There are no wrappers for the previous renderer API.
+Version 2 adds the host's Rust native texture loader. Rebuild both the host and
+renderer plugins; version 1 plugins are rejected. Optimization and Vulkan feature
+extension entry points retain their independent `_v1` suffix.
 
 Preferences → Plugins accepts a shared library or a dragged ZIP containing exactly
 one renderer library for the current platform, including nested folders. It saves
@@ -96,3 +99,13 @@ unreadable covers or a newer model descriptor/container schedule a new capture;
 capture and PNG encoding happen after selection completes. Imported models use
 their existing adapter cache identity. Native Inox2D SPIR-V and MSL shaders are
 translated with Naga at build time and embedded in the plugin.
+
+## Plugin settings and translations
+
+Rust add-ons construct their settings pages through `plugin_ui_page.h`; the host
+provides widgets, clipped drawing, image/font resources and application actions.
+Each Rust plugin embeds ten locale files and owns its active translation cache.
+`plugin_locale.h` exposes `load/text/visit/release`; the host delegates lookups and
+never caches plugin string pointers. UI state and locale allocations are released
+before unloading the library. Older add-ons need the page extension to display
+settings. Live2D keeps its C++ bridge. See [the migration contract](plugin-refactor-plan.md).

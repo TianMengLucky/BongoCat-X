@@ -57,6 +57,12 @@ bool bongo_cat_model_plugin_open(BongoCatModelRuntime *target,
             SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
                 "BongoCat.VulkanSampledImageDynamicIndexing", false) ?
             BONGO_CAT_VULKAN_SAMPLED_IMAGE_DYNAMIC_INDEXING : 0;
+        if (target->rhi.backend == BONGO_CAT_RHI_VULKAN) {
+            if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.VulkanTextureCompressionBC", false))
+                enabled |= BONGO_CAT_VULKAN_TEXTURE_COMPRESSION_BC;
+            if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.VulkanMemoryBudget", false))
+                enabled |= BONGO_CAT_VULKAN_MEMORY_BUDGET;
+        }
         device_extension.features(instance, enabled);
     } else SDL_ClearError();
     uint32_t supported = target->rhi.backend == BONGO_CAT_RHI_VULKAN ? BONGO_CAT_OPTIMIZE_ALL :

@@ -37,7 +37,7 @@ static void draw_hidden_segments(BongoCatPreferences *value,
             (value->model_show_hidden ? 1 : 0) == i ? 1.0f : 0.0f, 200.0f,
             BONGO_CAT_UI_EASE_STANDARD);
         struct nk_color background = bongo_cat_ui_color_mix(
-            hover ? p.hover : p.field, p.accent, active);
+            hover ? p.hover : p.field, p.selection, active);
         if (active > .01f && p.effects) bongo_cat_ui_paint_shadow(context,
             button, 8, 0, 2, 10, 0, nk_rgba(p.accent.r, p.accent.g,
             p.accent.b, (nk_byte)(89.0f * active)));
@@ -50,7 +50,7 @@ static void draw_hidden_segments(BongoCatPreferences *value,
             text_width + 1.0f, value->ui.caption_font->height), labels[i],
             nk_strlen(labels[i]), value->ui.caption_font,
             nk_rgba(0, 0, 0, 0), bongo_cat_ui_color_mix(p.muted,
-            nk_rgb(255, 255, 255), active));
+            p.on_selection, active));
         if (hover) bongo_cat_ui_cursor_hover_rect(context, button,
             BONGO_CAT_UI_CURSOR_POINTER);
         if (hover && nk_input_is_mouse_click_in_rect(&context->input,
@@ -82,7 +82,7 @@ bool bongo_cat_preferences_model_section(BongoCatPreferences *value,
     float hover_amount = bongo_cat_ui_animate_eased(context,
         "model-more-link-hover", action_hover ? 1.0f : 0.0f, 180.0f,
         BONGO_CAT_UI_EASE_STANDARD);
-    struct nk_color action_color = p.danger;
+    struct nk_color action_color = p.pink;
     nk_draw_text(canvas, nk_rect(action.x, action.y +
         (action.h - action_font->height) * .5f, label_width + 1,
         action_font->height), label, nk_strlen(label), action_font,

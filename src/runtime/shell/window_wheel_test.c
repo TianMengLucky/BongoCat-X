@@ -10,8 +10,13 @@ bool bongo_cat_window_wheel_self_test(BongoCatApp *app) {
     SDL_GetWindowPosition(app->window, &original_x, &original_y);
     SDL_GetWindowSize(app->window, &original_width, &original_height);
     SDL_Keymod modifiers = SDL_GetModState();
-    uint_fast8_t original_control = atomic_load(&app->input.control);
-    atomic_store(&app->input.control, 1);
+    BongoCatInputState original_input = app->input;
+    app->input = (BongoCatInputState){0};
+    bongo_cat_input_init(&app->input);
+    if (!app->input.core) { app->input = original_input; return false; }
+    BongoCatInputEvent control = {
+        .kind = BONGO_CAT_INPUT_KEY_DOWN, .name = "ControlLeft"};
+    bongo_cat_input_push(&app->input, &control);
     SDL_SetModState(modifiers | SDL_KMOD_CTRL);
     app->session.window.opacity_percent = 80.0f;
     app->session.window.scale_percent = 100.0f;
@@ -33,7 +38,8 @@ bool bongo_cat_window_wheel_self_test(BongoCatApp *app) {
         bongo_cat_window_update_wheel_animation(app, started + i * 16666667ull);
     bool opacity = SDL_fabsf(
         app->session.window.opacity_percent - 75.0f) < 0.1f;
-    atomic_store(&app->input.control, 0);
+    control.kind = BONGO_CAT_INPUT_KEY_UP;
+    bongo_cat_input_push(&app->input, &control);
 #ifndef _WIN32
     SDL_SetModState(modifiers & ~SDL_KMOD_CTRL);
 #endif
@@ -106,7 +112,9 @@ bool bongo_cat_window_wheel_self_test(BongoCatApp *app) {
     bool minimum = !app->wheel_animation_active;
     bongo_cat_window_cancel_wheel_animation(app);
     /* Right Ctrl must work even when SDL has not received the key press. */
-    atomic_store(&app->input.control, 2);
+    control.kind = BONGO_CAT_INPUT_KEY_DOWN;
+    SDL_strlcpy(control.name, "ControlRight", sizeof(control.name));
+    bongo_cat_input_push(&app->input, &control);
     app->session.window.opacity_percent = 100.0f;
     wheel.y = 1.0f;
     bongo_cat_window_wheel(app, &wheel);
@@ -119,7 +127,8 @@ bool bongo_cat_window_wheel_self_test(BongoCatApp *app) {
     bool rounding = bongo_cat_window_wheel_round_position(-10.6f) == -11 &&
         bongo_cat_window_wheel_round_position(10.6f) == 11;
     SDL_SetModState(modifiers);
-    atomic_store(&app->input.control, original_control);
+    bongo_cat_input_destroy(&app->input);
+    app->input = original_input;
     app->session.window = backup;
     bongo_cat_window_cancel_wheel_animation(app);
     bongo_cat_platform_set_opacity(&app->platform,

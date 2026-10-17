@@ -15,7 +15,7 @@ bool bongo_cat_pref_card_begin(struct nk_context *context, const char *id,
     context->style.window.background = p.surface;
     context->style.window.group_border = 1;
     context->style.window.group_border_color = p.border_subtle;
-    context->style.window.rounding = 14;
+    context->style.window.rounding = 12;
     context->style.window.group_padding = nk_vec2(18, 14);
     context->style.window.spacing = nk_vec2(10, 8);
     if (nk_group_begin(context, id, NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) return true;
@@ -35,7 +35,6 @@ void bongo_cat_pref_intro(struct nk_context *context, const char *text) {
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     nk_fill_rect(canvas, bounds, 12, p.hover);
-    nk_stroke_rect(canvas, bounds, 12, 1, p.border);
     bounds.x += 16; bounds.y += 14; bounds.w -= 32; bounds.h -= 28;
     (void)bongo_cat_pref_detail_text(context, text, bounds, true);
 }
@@ -72,13 +71,15 @@ bool bongo_cat_pref_form_begin(struct nk_context *context, const char *id,
     context->style.window.fixed_background = nk_style_item_color(clear);
     context->style.window.background = clear;
     context->style.window.group_border_color = clear;
-    context->style.window.group_padding = nk_vec2(13, 11);
+    const BongoCatUIBackend *ui = bongo_cat_ui_backend_for_context(context);
+    bool compact = ui && ui->compact_preferences;
+    context->style.window.group_padding = nk_vec2(13.0f, compact ? 7.0f : 11.0f);
     context->style.window.spacing = nk_vec2(8, 3);
     context->style.window.group_border = 0;
     float height = lines ? 66.0f + description_line_height * lines : 68.0f;
     if (section_context == context && section_first && !lines) height = 68.0f;
     if (section_context == context) section_first = false;
-    nk_layout_row_dynamic(context, height, 1);
+    nk_layout_row_dynamic(context, compact ? height - 8.0f : height, 1);
     if (!nk_group_begin(context, id, NK_WINDOW_NO_SCROLLBAR)) {
         bongo_cat_pref_row_icon_clear(context);
         restore_style(context, saved);
@@ -128,7 +129,7 @@ void bongo_cat_pref_section(struct nk_context *context, const char *title) {
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
-    nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.pink);
+    nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.accent);
     const struct nk_user_font *font = bongo_cat_ui_label_font(context);
     struct nk_rect text = nk_rect(bounds.x + 14,
         bounds.y + (bounds.h - font->height) * .5f, bounds.w - 14, font->height);
@@ -157,7 +158,7 @@ void bongo_cat_pref_section_icon(struct nk_context *context,
         if (nk_widget(&bounds, context) != NK_WIDGET_INVALID) {
             BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
             struct nk_command_buffer *canvas = nk_window_get_canvas(context);
-            nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.pink);
+            nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.accent);
             bongo_cat_pref_icon_draw(canvas,
                 nk_rect(bounds.x + 14, bounds.y + 2, 18, 18), icon, p.accent);
         }
@@ -175,7 +176,7 @@ void bongo_cat_pref_section_icon(struct nk_context *context,
     if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
-    nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.pink);
+    nk_fill_rect(canvas, nk_rect(bounds.x, bounds.y + 2, 4, 18), 2, p.accent);
     struct nk_rect icon_bounds = nk_rect(bounds.x + 14,
         bounds.y + 2, 18, 18);
     bongo_cat_pref_icon_draw(canvas, icon_bounds, icon, p.accent);
@@ -362,7 +363,7 @@ int bongo_cat_pref_combo(struct nk_context *context, const char *id,
     if (!form_begin(context, id, lines, &saved)) return selected;
     bongo_cat_pref_form_title_sized(context, title, 176.0f);
     selected = bongo_cat_pref_control_combo(context, id,
-        items, count, selected);
+        items, count, selected, false);
     nk_layout_row_end(context); bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved); return selected;
 }

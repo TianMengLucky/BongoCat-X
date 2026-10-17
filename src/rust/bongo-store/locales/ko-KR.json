@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "스토어",
+  "pages.preference.store.help": "커뮤니티 모델을 둘러보세요. 다운로드 후 SHA-256 검증을 통과한 모델만 설치합니다.",
+  "pages.preference.store.refresh": "새로고침",
+  "pages.preference.store.repository": "커뮤니티 저장소",
+  "pages.preference.store.repositoryUrl": "GitHub 저장소 URL (main 브랜치, 비우면 기본값 복원)",
+  "pages.preference.store.applyRepository": "저장소 적용",
+  "pages.preference.store.invalidRepository": "GitHub 저장소 URL을 입력하세요: https://github.com/owner/repository",
+  "pages.preference.store.loading": "목록을 불러오는 중…",
+  "pages.preference.store.unpublished": "커뮤니티 모델 목록이 아직 공개되지 않았습니다.",
+  "pages.preference.store.networkError": "목록을 불러올 수 없습니다. 연결 또는 목록 형식을 확인하고 다시 시도하세요.",
+  "pages.preference.store.empty": "등록된 모델이 없습니다.",
+  "pages.preference.store.pluginHint": "커뮤니티 모델 목록을 제공하는 Rust 플러그인입니다. 활성화하면 스토어 페이지가 표시됩니다.",
+  "pages.preference.store.failed": "스토어 작업 실패",
+  "pages.preference.store.preview": "모델 미리보기",
+  "pages.preference.store.download": "다운로드",
+  "pages.preference.store.uninstall": "제거",
+  "pages.preference.store.downloading": "다운로드 중…",
+  "pages.preference.store.installing": "설치 중…",
+  "pages.preference.store.hashMismatch": "SHA-256 불일치로 설치가 거부되었습니다",
+  "pages.preference.store.installed": "모델 설치 및 SHA-256 검증 완료",
+  "pages.preference.store.buyFull": "전체 버전 구매"
+}

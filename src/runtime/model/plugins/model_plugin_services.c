@@ -93,6 +93,8 @@ const BongoCatModelPluginHost *bongo_cat_model_plugin_host(void) {
         .bongo_json_read = bongo_json_read,
         .bongo_json_read_opts = bongo_json_read_opts,
         .bongo_json_write = bongo_json_write,
+        .bongo_safe_native_texture_load = bongo_safe_native_texture_load,
+        .bongo_cat_image_texture_model_bc7 = bongo_cat_image_texture_model_bc7,
     };
     return &host;
 }

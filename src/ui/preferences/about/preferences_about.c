@@ -112,12 +112,12 @@ static void star_button(BongoCatPreferences *value,
     nk_stroke_rect(canvas, bounds, 24, 1, nk_rgba(255, 255, 255, 133));
     bongo_cat_preferences_icon_draw(value, canvas,
         BONGO_CAT_UI_ICON_GITHUB,
-        nk_rect(bounds.x + 22, bounds.y + 14.5f, 19, 19), nk_rgb(255, 255, 255));
+        nk_rect(bounds.x + 22, bounds.y + 14.5f, 19, 19), p.on_accent);
     text(canvas, nk_rect(bounds.x + 50, bounds.y +
         (bounds.h - value->ui.label_font->height) * .5f,
         bounds.w - 62, value->ui.label_font->height), tr(value,
         "native.support.starOnGitHub", "Star on GitHub!"),
-        value->ui.label_font, nk_rgb(255, 255, 255));
+        value->ui.label_font, p.on_accent);
     link_cursor(context, bounds);
     if (hit(context, bounds))
         open_url("https://github.com/TianMengLucky/BongoCat-X");

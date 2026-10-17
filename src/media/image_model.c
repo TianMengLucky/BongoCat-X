@@ -115,9 +115,9 @@ static bool upload_rows(void *userdata, BongoCatImage *rows, int height, int y) 
         if (!upload->texture) upload->upload_failed = true;
         if (upload->upload_failed) return false;
         /* Decode in small strips, but amortize GL copies/completion checks
-           over a bounded 16 MiB upload. Never queue extra staging surfaces. */
+           over a bounded 2 MiB upload, matching background refresh storage. */
         size_t stride = (size_t)rows->width * 4u;
-        size_t capacity = 16u * 1024u * 1024u / stride;
+        size_t capacity = 2u * 1024u * 1024u / stride;
         upload->capacity = (int)SDL_min((size_t)height, SDL_max((size_t)1, capacity));
         upload->pending.width = rows->width;
         if ((size_t)upload->capacity <= SIZE_MAX / stride)

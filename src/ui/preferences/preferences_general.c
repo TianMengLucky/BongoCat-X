@@ -26,6 +26,54 @@ static const char *tr(BongoCatApp *app, const char *key, const char *fallback) {
     return bongo_cat_i18n_get(app->i18n, key, fallback);
 }
 
+enum { THEME_PRIMARY, THEME_SECONDARY, THEME_BACKGROUND, THEME_TEXT };
+
+static void theme_palette(BongoCatPreferences *value, struct nk_context *context) {
+    BongoCatApp *app = value->app;
+    const char *labels[] = {
+        tr(app, "native.primaryColor", "Primary color"),
+        tr(app, "native.secondaryColor", "Secondary color"),
+        tr(app, "native.backgroundColor", "Page background color"),
+        tr(app, "native.textColor", "Text color")};
+    value->theme_color_role = bongo_cat_pref_combo(context, "theme-color-role",
+        tr(app, "native.colorPalette", "Color palette"),
+        tr(app, "native.colorPaletteHint", "Choose a color to edit with the shared palette below."),
+        labels, (int)(sizeof(labels) / sizeof(labels[0])), value->theme_color_role);
+    int role = value->theme_color_role;
+    BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_color swatches[] = {palette.accent, palette.pink,
+        palette.surface_glass, palette.text};
+    struct nk_color swatch = swatches[role];
+    uint32_t color = value->theme_colors[role];
+    uint32_t picked = color <= 0xffffffu ? color :
+        ((uint32_t)swatch.r << 16) | ((uint32_t)swatch.g << 8) | swatch.b;
+    nk_layout_row_dynamic(context, 30, 2);
+    nk_label(context, labels[role], NK_TEXT_LEFT);
+    bool changed = nk_button_label(context, tr(app, "native.defaultColor", "Use default color"));
+    if (changed) color = 0x1000000u;
+    if (bongo_cat_pref_color_picker(context, &value->theme_color_picker, &picked)) {
+        color = picked;
+        changed = true;
+    }
+    if (changed) {
+        bool saved;
+        if (role == THEME_BACKGROUND)
+            saved = bongo_safe_preferences_background_set(app->settings.extensions_json,
+                sizeof(app->settings.extensions_json), color);
+        else if (role == THEME_TEXT)
+            saved = bongo_safe_preferences_text_set(app->settings.extensions_json,
+                sizeof(app->settings.extensions_json), color);
+        else saved = bongo_safe_preferences_color_set(app->settings.extensions_json,
+            sizeof(app->settings.extensions_json), role == THEME_SECONDARY, color);
+        if (saved) {
+            value->theme_colors[role] = color;
+            value->style_theme = -1;
+            value->render_dirty = true;
+        } else bongo_cat_preferences_notice_show(app, tr(app,
+            "native.themeColorSaveFailed", "Unable to save theme color"), true);
+    }
+}
+
 static void section_gap(struct nk_context *context, float pixels) {
     context->current->layout->at_y += pixels;
 }
@@ -241,6 +289,20 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
             "theme", tr(app, "pages.preference.general.labels.themeMode",
             "Theme"), tr(app, "pages.preference.general.hints.themeMode",
                 "Follow the system appearance or choose a light or dark settings window."), themes, options->theme);
+        theme_palette(value, context);
+        bool compact = value->ui.compact_preferences;
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPEARANCE);
+        if (bongo_cat_pref_toggle(context, "settings-compact", tr(app,
+            "native.compactLayout", "Compact layout"), tr(app,
+            "native.compactLayoutHint", "Reduce spacing between settings while keeping descriptions visible."),
+            &compact)) {
+            if (bongo_safe_preferences_compact_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), compact)) {
+                value->style_theme = -1;
+                value->render_dirty = true;
+            } else bongo_cat_preferences_notice_show(app, tr(app,
+                "native.layoutSaveFailed", "Unable to save the layout setting"), true);
+        }
         bool rounded = value->rounded_window;
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_WINDOW_CORNERS);
         if (bongo_cat_pref_toggle(context, "settings-corners", tr(app,

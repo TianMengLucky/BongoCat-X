@@ -72,6 +72,7 @@ static void test_key_devices(void) {
     expect(&test, BONGO_CAT_INPUT_KEY_UP, "ControlRight");
     CHECK(!bongo_cat_input_control_down(&test.input));
     CHECK(test.state.device_count == 0);
+    bongo_cat_input_destroy(&test.input);
 }
 
 static void test_key_sequences(void) {
@@ -99,6 +100,7 @@ static void test_key_sequences(void) {
     CHECK(!bongo_cat_input_control_down(&test.input));
     bongo_cat_windows_input_clear_devices(&test.state);
     expect_empty(&test);
+    bongo_cat_input_destroy(&test.input);
 }
 
 static void test_buttons(void) {
@@ -124,6 +126,7 @@ static void test_buttons(void) {
     expect(&test, BONGO_CAT_INPUT_MOUSE_DOWN, "Right");
     expect(&test, BONGO_CAT_INPUT_MOUSE_UP, "Right");
     bongo_cat_windows_input_clear_devices(&test.state);
+    bongo_cat_input_destroy(&test.input);
 }
 
 static void fill_queue(RawFixture *test, bool recovery) {
@@ -157,6 +160,7 @@ static void test_backpressure(void) {
     bongo_cat_windows_input_flush(&test.state);
     expect(&test, BONGO_CAT_INPUT_KEY_UP, "KeyA");
     expect_empty(&test);
+    bongo_cat_input_destroy(&test.input);
 }
 
 static void test_packets(void) {
@@ -188,6 +192,7 @@ static void test_packets(void) {
     expect(&test, BONGO_CAT_INPUT_KEY_DOWN, "KeyA");
     bongo_cat_windows_input_clear_devices(&test.state);
     expect(&test, BONGO_CAT_INPUT_KEY_UP, "KeyA");
+    bongo_cat_input_destroy(&test.input);
 }
 
 static void test_motion_keeps_key_and_button_edges(void) {
@@ -214,6 +219,7 @@ static void test_motion_keeps_key_and_button_edges(void) {
     CHECK(test.state.observed_x == 8000);
     CHECK(!test.state.retry_events);
     bongo_cat_windows_input_clear_devices(&test.state);
+    bongo_cat_input_destroy(&test.input);
 }
 
 int main(void) {

@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "Звуковые эффекты",
+  "pages.preference.sounds.help": "Щёлкните по клавише, чтобы прослушать звук и выбрать файл. При наведении отображается имя. Физические нажатия воспроизводят звук; назначения сохраняются автоматически.",
+  "pages.preference.sounds.unassigned": "Звук не назначен",
+  "pages.preference.sounds.choose": "Выбрать аудио",
+  "pages.preference.sounds.preview": "Прослушать",
+  "pages.preference.sounds.clear": "Удалить назначение",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis и FLAC, до 64 МБ. Не зависит от модели; доступные клавиши зависят от разрешений и раскладки.",
+  "pages.preference.sounds.pluginHint": "Назначьте звуки клавишам. Отдельный поток выполняет импорт, декодирование, воспроизведение и сохранение. Отключение сохраняет файлы и назначения.",
+  "pages.preference.sounds.saved": "Звуковой эффект сохранён",
+  "pages.preference.sounds.failed": "Не удалось обновить звуковые эффекты",
+  "pages.preference.sounds.queued": "Импорт аудио поставлен в очередь",
+  "pages.preference.sounds.busy": "Обработка аудио"
+}

@@ -165,6 +165,10 @@ function(bongo_cat_vulkan_vertex_upload_patch variable)
         }
     }
     descriptor.uniformBuffer.MemCpy(&ubo, sizeof(ModelUBO));]=] source "${source}")
+  include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CubismVulkanDescriptors.cmake")
+  bongo_cat_vulkan_compact_descriptors(source)
+  include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CubismVulkanTargets.cmake")
+  bongo_cat_vulkan_targets_patch(source)
   bongo_cat_vulkan_skip_empty_masks(source)
   bongo_cat_vertex_replace(source [=[#include "CubismRenderer_Vulkan.hpp"]=]
     [=[#include "CubismRenderer_Vulkan.hpp"

@@ -154,7 +154,7 @@ static void test_worker_recovery(HWND receiver) {
 void test_windows_raw_receiver(void) {
     test_registration_flags();
     test_registration_recovery();
-    BongoCatInputState input;
+    BongoCatInputState input = {0};
     bongo_cat_input_init(&input);
     BongoCatPlatform platform = {.input = &input};
     SDL_setenv_unsafe("BONGO_CAT_TEST_RAW_INPUT_FAILURE", "1", 1);
@@ -221,4 +221,5 @@ void test_windows_raw_receiver(void) {
         CHECK(RegisterRawInputDevices(&mouse, 1, sizeof(mouse)));
     }
     DestroyWindow(other);
+    bongo_cat_input_destroy(&input);
 }

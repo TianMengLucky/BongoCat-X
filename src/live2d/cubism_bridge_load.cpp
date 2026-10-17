@@ -64,6 +64,7 @@ extern "C" BongoCatResult bongo_cat_model_runtime_load_ex(BongoCatModelRuntime *
             return BONGO_CAT_ERROR_MEMORY;
         }
         model->set_rhi_info(runtime->rhi_info);
+        model->set_vulkan_features(runtime->vulkan_features);
         if (render_options) model->set_render_options(*render_options);
         bool dynamic_texture_resolution = texture_options &&
             texture_options->dynamic_resolution;

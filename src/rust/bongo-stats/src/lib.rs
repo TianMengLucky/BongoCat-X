@@ -1,3 +1,6 @@
+mod locale;
+pub mod ui;
+mod page_ui;
 mod metrics;
 mod page_ffi;
 mod reset_ffi;

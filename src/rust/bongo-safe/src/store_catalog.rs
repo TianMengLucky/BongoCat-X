@@ -17,6 +17,10 @@ pub struct Model {
     #[serde(alias = "previewPath")]
     pub preview_path: String,
     pub sha256: String,
+    #[serde(default, alias = "isPaid")]
+    pub paid: bool,
+    #[serde(default, alias = "purchaseUrl")]
+    pub purchase_url: String,
 }
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -33,6 +37,15 @@ fn path(value: &str) -> bool {
             .split('/')
             .all(|part| !part.is_empty() && part != "." && part != "..")
         && !value.contains(['\\', ':', '?', '#', '%'])
+}
+fn https(value: &str, capacity: usize) -> bool {
+    Url::parse(value).is_ok_and(|url| {
+        text(value, capacity)
+            && url.scheme() == "https"
+            && url.host_str().is_some()
+            && url.username().is_empty()
+            && url.password().is_none()
+    })
 }
 pub fn link(path: &str, kind: &str) -> String {
     let mut url = Url::parse("https://github.com/TianMengLucky/Awesome-BongoCat/").unwrap();
@@ -70,17 +83,13 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<Model>, ()> {
         return Err(());
     }
     for model in &models {
-        let author_valid = model.author_url.is_empty()
-            || Url::parse(&model.author_url).is_ok_and(|url| {
-                text(&model.author_url, 1024)
-                    && url.scheme() == "https"
-                    && url.host_str().is_some()
-                    && url.username().is_empty()
-                    && url.password().is_none()
-            });
+        let author_valid = model.author_url.is_empty() || https(&model.author_url, 1024);
+        let purchase_valid = model.purchase_url.is_empty() || https(&model.purchase_url, 1024);
         if !text(&model.name, 256)
             || !text(&model.author, 256)
             || !author_valid
+            || !purchase_valid
+            || (model.paid && model.purchase_url.is_empty())
             || !path(&model.repository_path)
             || !path(&model.folder_path)
             || !path(&model.preview_path)
@@ -138,5 +147,35 @@ mod tests {
             .unwrap()
             .replace("https://example.com", "javascript:alert(1)");
         assert!(parse(bad.as_bytes()).is_err());
+    }
+    #[test]
+    fn paid_models_require_an_https_purchase_link() {
+        let base = serde_json::json!({"name":"Cat", "author":"A", "repository_path":"m/c.zip",
+            "folder_path":"m", "preview_path":"m/p.png", "sha256":"a".repeat(64)});
+        let catalog = |extra: serde_json::Value| {
+            let mut value = base.clone();
+            for (key, item) in extra.as_object().unwrap() {
+                value
+                    .as_object_mut()
+                    .unwrap()
+                    .insert(key.clone(), item.clone());
+            }
+            serde_json::to_string(&vec![value]).unwrap()
+        };
+        let free = parse(catalog(serde_json::json!({})).as_bytes()).unwrap();
+        assert!(!free[0].paid && free[0].purchase_url.is_empty());
+        assert!(parse(catalog(serde_json::json!({"paid": true})).as_bytes()).is_err());
+        assert!(parse(
+            catalog(serde_json::json!({"paid": true, "purchase_url": "http://example.com/buy"}))
+                .as_bytes()
+        )
+        .is_err());
+        assert!(parse(
+            catalog(serde_json::json!({"purchase_url": "javascript:alert(1)"})).as_bytes()
+        )
+        .is_err());
+        let paid = serde_json::json!({"paid": true, "purchase_url": "https://example.com/buy"});
+        let models = parse(catalog(paid).as_bytes()).unwrap();
+        assert!(models[0].paid && models[0].purchase_url == "https://example.com/buy");
     }
 }

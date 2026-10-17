@@ -1,3 +1,4 @@
+#include "plugin_locale.h"
 #include "statistics_internal.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/preferences.h"
@@ -20,8 +21,11 @@ bool bongo_cat_statistics_retire(BongoCatApp *app, BongoCatError *error) {
     BongoCatStatistics *stats = app->statistics;
     atomic_init(&stats->retired, false);
     bongo_cat_input_metrics_enable(&app->input, false);
+    bongo_cat_i18n_unregister_plugin(app->i18n, "statistics");
+    bongo_cat_plugin_page_stop(&stats->page_ui);
     stats->retirement = SDL_CreateThread(retire_worker, "statistics-stop", stats);
     if (!stats->retirement) {
+        bongo_cat_plugin_locale_load(app->i18n, stats->library, "statistics");
         bongo_cat_input_metrics_enable(&app->input, true);
         bongo_cat_error_set(error, BONGO_CAT_ERROR_IO, "Cannot start statistics cleanup worker");
         return false;

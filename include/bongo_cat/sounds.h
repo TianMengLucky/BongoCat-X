@@ -2,7 +2,12 @@
 #define BONGO_CAT_SOUNDS_H
 #include "bongo_cat/common.h"
 #include "bongo_cat/sounds_plugin.h"
+#include "bongo_cat/plugin_ui.h"
+#include "bongo_cat/plugin_ui_page.h"
 #include "bongo_cat/input.h"
+/* Optional UI contribution the plugin may export so it can draw its own
+   management card. */
+#define BONGO_CAT_SOUNDS_UI_SYMBOL "bongo_cat_sounds_ui_query_v1"
 typedef struct BongoCatApp BongoCatApp;
 typedef struct BongoCatSoundsInfo { bool installed, enabled, active, managed; char path[BONGO_CAT_PATH_CAP]; } BongoCatSoundsInfo;
 const char *bongo_cat_sounds_filename(void);
@@ -13,6 +18,10 @@ bool bongo_cat_sounds_set_enabled(BongoCatApp *app, bool enabled, BongoCatError 
 bool bongo_cat_sounds_import_plugin(BongoCatApp *app, const char *path, bool *matched, BongoCatError *error);
 bool bongo_cat_sounds_remove_plugin(BongoCatApp *app, BongoCatError *error);
 const BongoCatSoundsPage *bongo_cat_sounds_page(BongoCatApp *app);
+/* The active plugin's optional UI contribution, or NULL when it exports none.
+   Call it after every load/unload instead of caching the pointer. */
+const BongoCatPluginUiContribution *bongo_cat_sounds_ui(BongoCatApp *app);
+const BongoCatPluginPageUiContribution *bongo_cat_sounds_page_ui(BongoCatApp *app, void **instance);
 bool bongo_cat_sounds_snapshot(BongoCatApp *app, BongoCatSoundScene *scene);
 bool bongo_cat_sounds_key(BongoCatApp *app, uint32_t index, BongoCatSoundKey *key);
 bool bongo_cat_sounds_import_audio(BongoCatApp *app, const char *key, const char *path, BongoCatError *error);

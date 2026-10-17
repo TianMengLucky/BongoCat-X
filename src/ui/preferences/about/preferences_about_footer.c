@@ -89,10 +89,10 @@ static void draw_update(BongoCatPreferences *value,
     }
     float content_x = bounds.x + (bounds.w - content_width) * .5f;
     bongo_cat_preferences_icon_draw(value, canvas, BONGO_CAT_UI_ICON_SYNC,
-        nk_rect(content_x, bounds.y + 10, 16, 16), nk_rgb(255, 255, 255));
+        nk_rect(content_x, bounds.y + 10, 16, 16), p.on_accent);
     centered(canvas, nk_rect(content_x + 24, bounds.y,
         content_width - 23, bounds.h), label, value->ui.caption_font,
-        nk_rgb(255, 255, 255));
+        p.on_accent);
     link_cursor(context, bounds);
     if (hit(context, bounds)) {
         if (snapshot->status == BONGO_CAT_UPDATE_CHECKING ||

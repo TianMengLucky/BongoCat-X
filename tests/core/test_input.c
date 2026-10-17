@@ -38,7 +38,7 @@ void test_input(void) {
     key = (RAWKEYBOARD){.VKey = 'A', .MakeCode = 0xff};
     CHECK(bongo_cat_windows_key_name(&key, key_name) == NULL);
 #endif
-    BongoCatInputState state;
+    BongoCatInputState state = {0};
     bongo_cat_input_init(&state);
     bool edges[BONGO_CAT_INPUT_KEY_STATE_CAP] = {0};
     CHECK(bongo_cat_input_edge(edges, 42, true));
@@ -159,7 +159,7 @@ void test_input(void) {
             key_z_order[key_z_count++] = output.kind;
     CHECK(key_z_count == 2 && key_z_order[0] == BONGO_CAT_INPUT_KEY_UP &&
         key_z_order[1] == BONGO_CAT_INPUT_KEY_DOWN);
-    CHECK(atomic_load(&state.dropped) == 0);
+    CHECK(bongo_cat_input_dropped(&state) == 0);
 
     memcpy(event.name, "ControlLeft", sizeof("ControlLeft"));
     for (int i = 0; i < 255; ++i) CHECK(bongo_cat_input_push(&state, &event));
@@ -174,7 +174,7 @@ void test_input(void) {
     }
     snprintf(release.name, sizeof(release.name), "RecoveryFull");
     CHECK(!bongo_cat_input_push(&state, &release));
-    CHECK(atomic_load(&state.dropped) == 2);
+    CHECK(bongo_cat_input_dropped(&state) == 2);
 
     bongo_cat_input_init(&state);
     event.kind = BONGO_CAT_INPUT_KEY_DOWN;
@@ -189,4 +189,5 @@ void test_input(void) {
     event.kind = BONGO_CAT_INPUT_KEY_UP;
     bongo_cat_input_schedule_release(&state, &event, 100);
     CHECK(!bongo_cat_input_take_scheduled_release(&state, 9999, &output));
+    bongo_cat_input_destroy(&state);
 }

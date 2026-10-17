@@ -12,15 +12,8 @@ typedef struct BongoCatPluginJob {
 /* Every instance creates its own thread. Never shared with another plugin. */
 typedef bool (*BongoCatPluginWork)(void *context, const BongoCatPluginJob *job, BongoCatError *error);
 typedef struct BongoCatPluginWorker {
-    SDL_Thread *thread;
-    SDL_Mutex *mutex, *state_mutex;
-    SDL_Condition *wake;
-    BongoCatPluginJob *jobs;
-    unsigned head, count;
-    bool stopping, running, overflow, poll_idle;
-    unsigned notices;
-    bool failed;
-    BongoCatError error;
+    void *core;
+    SDL_Mutex *state_mutex; /* Guards C plugin/UI snapshots, never the Rust queue. */
     BongoCatPluginWork work;
     void *context;
     atomic_bool changed;
@@ -29,6 +22,7 @@ typedef struct BongoCatPluginWorker {
 bool bongo_cat_plugin_worker_start(BongoCatPluginWorker *worker, const char *name,
     BongoCatPluginWork work, void *context, bool poll_idle);
 bool bongo_cat_plugin_worker_submit(BongoCatPluginWorker *worker, const BongoCatPluginJob *job);
+bool bongo_cat_plugin_worker_current(const BongoCatPluginWorker *worker);
 bool bongo_cat_plugin_worker_busy(BongoCatPluginWorker *worker);
 bool bongo_cat_plugin_worker_poll(BongoCatPluginWorker *worker, bool *failed, BongoCatError *error);
 void bongo_cat_plugin_worker_stop(BongoCatPluginWorker *worker);

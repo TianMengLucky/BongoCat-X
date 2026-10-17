@@ -91,7 +91,6 @@ void dial_select(Dial *d, int root, int child) {
     d->active = root;
     d->child = child;
     if (changed) d->child_focus = false;
-    if (child >= 0) d->child_focus = true;
     if (changed) {
         d->page = 0;
         d->changed_at = SDL_GetTicks();

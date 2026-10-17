@@ -198,7 +198,7 @@ static void draw_segments(BongoCatPreferences *value,
         nk_fill_rect(canvas, button, 8, alpha(background, opacity));
         centered(canvas, button, labels[i], value->ui.caption_font,
             alpha(bongo_cat_ui_color_mix(p.muted,
-            nk_rgb(255, 255, 255), active), opacity));
+            p.on_accent, active), opacity));
         if (hover) bongo_cat_ui_cursor_hover_rect(context, button,
             BONGO_CAT_UI_CURSOR_POINTER);
         if (hit(context, button, enabled) && value->behavior_tab != i) {

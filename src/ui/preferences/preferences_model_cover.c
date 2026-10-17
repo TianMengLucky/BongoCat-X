@@ -89,9 +89,9 @@ void bongo_cat_preferences_model_covers_begin(BongoCatApp *app) {
     cover_load_deferred = false;
 }
 
-const BongoCatModelCover *bongo_cat_preferences_cover_path(
+static const BongoCatModelCover *cover_path(
     BongoCatApp *app, const char *path,
-    int pixel_width, int pixel_height) {
+    int pixel_width, int pixel_height, bool bounded) {
     if (!path || !bongo_cat_path_is_file(path)) return NULL;
     ModelCoverSlot *empty = NULL;
     for (size_t i = 0; i < BONGO_CAT_MODEL_CAP; ++i) {
@@ -114,6 +114,12 @@ const BongoCatModelCover *bongo_cat_preferences_cover_path(
         return NULL;
     }
     cover_load_budget--;
+    if (bounded) {
+        uint64_t size = 0; int width = 0, height = 0;
+        if (!bongo_cat_path_file_size(path, &size) || size > 64u * 1024u * 1024u ||
+            !bongo_cat_image_info(path, &width, &height) || width <= 0 || height <= 0 ||
+            (uint64_t)width * (uint64_t)height > 16u * 1024u * 1024u) return NULL;
+    }
     BongoCatError ignored = {0};
     empty->image.texture = bongo_cat_ui_texture_thumbnail(ui_for(app), path,
         pixel_width, pixel_height, &empty->image.width,
@@ -124,6 +130,15 @@ const BongoCatModelCover *bongo_cat_preferences_cover_path(
     empty->requested_height = pixel_height;
     snprintf(empty->path, sizeof(empty->path), "%s", path);
     return &empty->image;
+}
+
+const BongoCatModelCover *bongo_cat_preferences_cover_path(BongoCatApp *app,
+    const char *path, int pixel_width, int pixel_height) {
+    return cover_path(app, path, pixel_width, pixel_height, false);
+}
+const BongoCatModelCover *bongo_cat_preferences_cover_path_bounded(BongoCatApp *app,
+    const char *path, int pixel_width, int pixel_height) {
+    return cover_path(app, path, pixel_width, pixel_height, true);
 }
 
 const BongoCatModelCover *bongo_cat_preferences_model_cover(

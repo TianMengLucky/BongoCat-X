@@ -48,7 +48,8 @@ void bongo_cat_preferences_assets_load(BongoCatPreferences *value) {
     int width = 0, height = 0;
     if (!value->icon_texture)
         value->icon_texture = load(value, "ui-symbols.png", 0, &width, &height);
-    value->icon_hidpi_attempted = false;
+    /* Retrying other assets must not overwrite a successful high-DPI upload. */
+    if (!value->icon_texture_hidpi) value->icon_hidpi_attempted = false;
 }
 
 void bongo_cat_preferences_qq_load(BongoCatPreferences *value) {
@@ -65,7 +66,7 @@ void bongo_cat_preferences_icon_draw(BongoCatPreferences *value,
         icon >= BONGO_CAT_UI_ICON_COUNT) return;
     bool large = bounds.w > 24.0f || bounds.h > 24.0f;
     bool needs_hidpi = large || value->ui.raster_scale > 1.05f;
-    if (needs_hidpi && !value->icon_hidpi_attempted) {
+    if (needs_hidpi && !value->icon_texture_hidpi && !value->icon_hidpi_attempted) {
         int width = 0, height = 0;
         value->icon_hidpi_attempted = true;
         int cell = SDL_clamp((int)ceilf(48*value->ui.raster_scale),48,96);
@@ -92,7 +93,6 @@ void bongo_cat_preferences_assets_clear(BongoCatPreferences *value) {
     value->asset_retry_count = 0;
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, true);
-    bongo_cat_preferences_items_preview_clear(value, true);
     clear(&value->ui, &value->logo_texture);
     clear(&value->ui, &value->qq_texture);
     value->qq_attempted = false;
@@ -106,7 +106,6 @@ void bongo_cat_preferences_assets_abandon(BongoCatPreferences *value) {
     value->asset_retry_count = 0;
     value->asset_retry_ns = 0;
     bongo_cat_about_assets_clear(value, false);
-    bongo_cat_preferences_items_preview_clear(value, false);
     value->logo_texture = 0;
     value->qq_texture = 0;
     value->qq_attempted = false;

@@ -4,6 +4,9 @@
 #include "bongo_cat/rhi.h"
 #include <SDL3/SDL_rect.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* Backend implementations behind the bongo_cat_rhi_* dispatchers. */
 bool bongo_cat_rhi_compose_foreground(const BongoCatRhi *rhi, void *pixels,
     int width, int height, size_t pitch, bool bgra, SDL_Rect *changed);
@@ -65,5 +68,9 @@ bool bongo_cat_rhi_metal_get_device_info(const BongoCatRhi *rhi,
 bool bongo_cat_rhi_metal_get_frame_info(const BongoCatRhi *rhi,
     BongoCatRhiMetalFrameInfo *info);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

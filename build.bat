@@ -8,6 +8,7 @@ set "BUILD_JOBS=%BONGOCAT_BUILD_JOBS%"
 rem Default to the CPU core count (capped at 16) instead of a fixed 2.
 if "%BUILD_JOBS%"=="" set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
 if "%BUILD_JOBS%"=="" set "BUILD_JOBS=2"
+if "%BONGOCAT_BUILD_JOBS%"=="" if %BUILD_JOBS% GTR 16 set "BUILD_JOBS=16"
 set "CLEAN_ARG="
 if /I "%BONGOCAT_CLEAN_BUILD%"=="1" set "CLEAN_ARG=-Clean"
 if /I "%~2"=="-Clean" set "CLEAN_ARG=-Clean"

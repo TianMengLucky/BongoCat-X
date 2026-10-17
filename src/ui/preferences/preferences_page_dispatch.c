@@ -1,4 +1,5 @@
 #include "preferences_page_dispatch.h"
+#include "plugin_ui_internal.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/items.h"
 #include "bongo_cat/sounds.h"
@@ -27,6 +28,14 @@ bool bongo_cat_preferences_subnavigation(BongoCatPreferences *value, struct nk_c
     return true;
 }
 
+static void plugin_page(BongoCatPreferences *value, struct nk_context *context,
+    enum BongoCatPluginUiKind kind) {
+    if (!bongo_cat_preferences_plugin_page(value, context, kind))
+        bongo_cat_pref_intro(context, bongo_cat_i18n_get(value->app->i18n,
+            "pages.preference.plugins.pageUiUnavailable",
+            "Update this plugin to display its settings page."));
+}
+
 void bongo_cat_preferences_draw_page(BongoCatPreferences *value,
     struct nk_context *context) {
     if (value->page == 4 && !bongo_cat_statistics_page(value->app)) value->page = 3;
@@ -37,9 +46,9 @@ void bongo_cat_preferences_draw_page(BongoCatPreferences *value,
     case 1: bongo_cat_preferences_page_model(value, context); break;
     case 2: bongo_cat_preferences_page_shortcuts(value, context); break;
     case 3: bongo_cat_preferences_page_plugins(value, context); break;
-    case 4: bongo_cat_preferences_page_statistics(value, context); break;
+    case 4: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_STATISTICS); break;
     case 8:
-        if (bongo_cat_store_active(value->app)) bongo_cat_preferences_page_store(value, context);
+        if (bongo_cat_store_active(value->app)) plugin_page(value, context, BONGO_CAT_PLUGIN_UI_STORE);
         else {
             bongo_cat_pref_intro(context, bongo_cat_i18n_get(value->app->i18n,
                 "pages.preference.navigation.storeUnavailable", "Enable the Store plugin on the Plugins page to browse community models."));
@@ -50,8 +59,8 @@ void bongo_cat_preferences_draw_page(BongoCatPreferences *value,
             }
         }
         break;
-    case 7: bongo_cat_preferences_page_sounds(value, context); break;
-    case 6: bongo_cat_preferences_page_items(value, context); break;
+    case 7: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_SOUNDS); break;
+    case 6: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_ITEMS); break;
     default: bongo_cat_preferences_page_about(value, context); break;
     }
 }

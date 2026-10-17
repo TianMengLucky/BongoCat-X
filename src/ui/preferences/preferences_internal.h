@@ -8,17 +8,8 @@
 #include "ui_catime.h"
 #include <SDL3/SDL.h>
 
-void bongo_cat_preferences_items_preview_clear(BongoCatPreferences *value, bool graphics);
-void bongo_cat_preferences_items_preview(BongoCatPreferences *value, struct nk_context *context, const char *asset);
-void bongo_cat_preferences_page_sounds(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_preferences_sounds_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_sounds_import(BongoCatApp *app, const char *key, const char *path);
-void bongo_cat_preferences_page_items(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_preferences_items_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_items_import(BongoCatApp *app, const char *path);
-void bongo_cat_preferences_statistics_usage(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_preferences_page_statistics(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_preferences_statistics_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_page_plugins(BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_plugin_import(BongoCatApp *app, const char *path);
 void bongo_cat_preferences_background_import(BongoCatApp *app, const char *path);
@@ -53,6 +44,14 @@ void bongo_cat_preferences_sequential_model_pref_row(
     BongoCatPreferences *value, struct nk_context *context);
 void bongo_cat_preferences_random_dialog_close(BongoCatPreferences *value);
 void bongo_cat_preferences_random_dialog_draw(
+    BongoCatPreferences *value, struct nk_context *context);
+/* Multi-key layout editor dialog: crop regions of the active side's
+   hand-layout.json, seeded with defaults when the model has none. */
+bool bongo_cat_preferences_layout_dialog_active(
+    const BongoCatPreferences *value);
+void bongo_cat_preferences_layout_dialog_open(BongoCatPreferences *value);
+void bongo_cat_preferences_layout_dialog_close(BongoCatPreferences *value);
+void bongo_cat_preferences_layout_dialog_draw(
     BongoCatPreferences *value, struct nk_context *context);
 bool bongo_cat_preferences_behavior_rename_event(
     BongoCatPreferences *value, const SDL_Event *event);
@@ -114,8 +113,5 @@ bool bongo_cat_preferences_import_status(const BongoCatImportDialog *dialog,
 bool bongo_cat_preferences_import_event(BongoCatImportDialog *dialog,
     BongoCatApp *app, const SDL_Event *event);
 
-void bongo_cat_preferences_store_cards(BongoCatPreferences *value, struct nk_context *context, unsigned count);
-void bongo_cat_preferences_page_store(BongoCatPreferences *value, struct nk_context *context);
-void bongo_cat_preferences_store_plugin_card(BongoCatPreferences *value, struct nk_context *context);
 
 #endif

@@ -88,7 +88,7 @@ int main(void) {
     if (ready_a && ready_b) {
         wait_count(&second.idle);
         CHECK(atomic_load(&first.idle) == 0);
-        CHECK(SDL_GetThreadID(a.thread) != SDL_GetThreadID(b.thread));
+        CHECK(!bongo_cat_plugin_worker_current(&a) && !bongo_cat_plugin_worker_current(&b));
         BongoCatPluginJob job = {0}; job.kind = 1;
         CHECK(bongo_cat_plugin_worker_submit(&a, &job)); wait_count(&first.started);
         CHECK(bongo_cat_plugin_worker_submit(&b, &job)); wait_count(&second.done);

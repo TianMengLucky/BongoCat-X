@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "Soundeffekte",
+  "pages.preference.sounds.help": "Taste anklicken: vorhandenen Klang anhören und Audiodatei wählen. Beim Überfahren erscheint der Dateiname. Tastendrücke spielen den Klang; Zuweisungen werden automatisch gespeichert.",
+  "pages.preference.sounds.unassigned": "Kein Klang zugewiesen",
+  "pages.preference.sounds.choose": "Audio wählen",
+  "pages.preference.sounds.preview": "Anhören",
+  "pages.preference.sounds.clear": "Zuweisung löschen",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis und FLAC, bis 64 MB. Modellunabhängig; verfügbare Tasten hängen von Eingaberechten und Tastaturlayout ab.",
+  "pages.preference.sounds.pluginHint": "Klänge einzelnen Tasten zuweisen. Ein eigener Thread übernimmt Import, Dekodierung, Wiedergabe und Speicherung. Deaktivieren erhält Dateien und Zuweisungen.",
+  "pages.preference.sounds.saved": "Soundeffekt gespeichert",
+  "pages.preference.sounds.failed": "Soundeffekte konnten nicht aktualisiert werden",
+  "pages.preference.sounds.queued": "Audioimport eingereiht",
+  "pages.preference.sounds.busy": "Audio wird verarbeitet"
+}

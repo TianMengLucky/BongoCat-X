@@ -18,6 +18,7 @@
    dropped whenever the active document changes. */
 #define I18N_CACHE_CAP 512
 #define I18N_KEY_CAP 64
+#define I18N_PLUGIN_CAP 8 /* Add-ons plus renderer locale providers. */
 
 typedef struct I18nCacheEntry {
     char key[I18N_KEY_CAP];
@@ -31,6 +32,10 @@ struct BongoCatI18n {
     BongoJsonDoc *active;
     I18nCacheEntry *cache;
     size_t cache_used;
+    struct {
+        char id[32];
+        const BongoCatPluginLocale *api;
+    } plugins[I18N_PLUGIN_CAP];
 };
 
 static BongoJsonDoc *load_locale(const char *root, BongoCatLanguage language,
@@ -71,10 +76,41 @@ BongoCatI18n *bongo_cat_i18n_create(const char *root, BongoCatLanguage language,
 
 void bongo_cat_i18n_destroy(BongoCatI18n *value) {
     if (!value) return;
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i)
+        if (value->plugins[i].api) value->plugins[i].api->release();
     if (value->active && value->active != value->fallback) bongo_json_doc_free(value->active);
     bongo_json_doc_free(value->fallback);
     free(value->cache);
     free(value);
+}
+
+bool bongo_cat_i18n_register_plugin(BongoCatI18n *value, const char *id,
+    const BongoCatPluginLocale *api) {
+    if (!value || !id || !*id || strlen(id) >= sizeof(value->plugins[0].id) || !api ||
+        api->abi_version != BONGO_CAT_PLUGIN_LOCALE_ABI || api->struct_size != sizeof(*api) ||
+        !api->prefix || !*api->prefix || !api->load || !api->text || !api->visit || !api->release) return false;
+    size_t slot = I18N_PLUGIN_CAP;
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i) {
+        if (!strcmp(value->plugins[i].id, id)) { slot = i; break; }
+        if (!value->plugins[i].api && slot == I18N_PLUGIN_CAP) slot = i;
+    }
+    if (slot == I18N_PLUGIN_CAP || !api->load(bongo_cat_language_name(value->language))) return false;
+    if (value->plugins[slot].api && value->plugins[slot].api != api)
+        value->plugins[slot].api->release();
+    snprintf(value->plugins[slot].id, sizeof(value->plugins[slot].id), "%s", id);
+    value->plugins[slot].api = api;
+    return true;
+}
+
+void bongo_cat_i18n_unregister_plugin(BongoCatI18n *value, const char *id) {
+    if (!value || !id) return;
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i) {
+        if (!value->plugins[i].api || strcmp(value->plugins[i].id, id)) continue;
+        const BongoCatPluginLocale *api = value->plugins[i].api;
+        value->plugins[i].api = NULL; value->plugins[i].id[0] = 0;
+        api->release();
+        return;
+    }
 }
 
 BongoCatResult bongo_cat_i18n_reload(BongoCatI18n *value, BongoCatLanguage language,
@@ -83,6 +119,16 @@ BongoCatResult bongo_cat_i18n_reload(BongoCatI18n *value, BongoCatLanguage langu
     BongoJsonDoc *next = language == BONGO_CAT_LANG_EN_US
         ? value->fallback : load_locale(value->root, language, error);
     if (!next) return BONGO_CAT_ERROR_FORMAT;
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i) {
+        const BongoCatPluginLocale *api = value->plugins[i].api;
+        if (api && !api->load(bongo_cat_language_name(language))) {
+            for (size_t j = 0; j < i; ++j)
+                if (value->plugins[j].api) value->plugins[j].api->load(bongo_cat_language_name(value->language));
+            if (next != value->fallback) bongo_json_doc_free(next);
+            bongo_cat_error_set(error, BONGO_CAT_ERROR_FORMAT, "Cannot load plugin locale %s", value->plugins[i].id);
+            return BONGO_CAT_ERROR_FORMAT;
+        }
+    }
     if (value->active && value->active != value->fallback) bongo_json_doc_free(value->active);
     value->active = next;
     value->language = language;
@@ -133,6 +179,16 @@ static size_t key_hash(const char *key, size_t length) {
 const char *bongo_cat_i18n_get(const BongoCatI18n *value, const char *key,
     const char *fallback) {
     if (!value || !key) return fallback;
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i) {
+        const BongoCatPluginLocale *api = value->plugins[i].api;
+        if (!api) continue;
+        bool matches = !strncmp(key, api->prefix, strlen(api->prefix)) ||
+            (api->extra_prefix && *api->extra_prefix && !strncmp(key, api->extra_prefix, strlen(api->extra_prefix)));
+        if (matches) {
+            const char *text = api->text(key, NULL);
+            if (text) return text; /* Borrowed from the plugin; bypass host cache. */
+        }
+    }
     BongoCatI18n *owner = (BongoCatI18n *)value;
     size_t length = strlen(key);
     if (!owner->cache || !length || length >= I18N_KEY_CAP) {
@@ -215,6 +271,19 @@ static int compare_point(const void *left, const void *right) {
     return a < b ? -1 : a > b;
 }
 
+typedef struct PluginGlyphCollector { uint32_t *points; size_t *count; } PluginGlyphCollector;
+static void collect_plugin_text(void *context, const char *text) {
+    PluginGlyphCollector *collector = context;
+    if (!text) return;
+    const unsigned char *cursor = (const unsigned char *)text;
+    while (*cursor) add_point(collector->points, collector->count, decode_utf8(&cursor));
+}
+static void collect_plugins(const BongoCatI18n *value, uint32_t *points, size_t *count) {
+    PluginGlyphCollector collector = {points, count};
+    for (size_t i = 0; i < I18N_PLUGIN_CAP; ++i)
+        if (value->plugins[i].api) value->plugins[i].api->visit(&collector, collect_plugin_text);
+}
+
 static size_t build_ranges(uint32_t *points, size_t count,
     uint32_t *ranges, size_t capacity) {
     size_t written = 2;
@@ -247,6 +316,7 @@ size_t bongo_cat_i18n_glyph_ranges(const BongoCatI18n *value, uint32_t *ranges,
     if (!value || !ranges || capacity < 3) return 0;
     uint32_t points[4096]; size_t count = 0;
     collect_value(bongo_json_doc_get_root(value->active), points, &count);
+    collect_plugins(value, points, &count);
     return build_ranges(points, count, ranges, capacity);
 }
 
@@ -279,6 +349,7 @@ size_t bongo_cat_i18n_all_glyph_ranges(const BongoCatI18n *value, uint32_t *rang
         while (*cursor) add_point(points, &count, decode_utf8(&cursor));
     }
     collect_value(bongo_json_doc_get_root(value->fallback), points, &count);
+    collect_plugins(value, points, &count);
     for (int language = 0; language < BONGO_CAT_LANG_COUNT; ++language) {
         if (language == BONGO_CAT_LANG_EN_US) continue;
         BongoCatError ignored = {0};

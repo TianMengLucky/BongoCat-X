@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "商店",
+  "pages.preference.store.help": "瀏覽社群模型，下載完成後驗證 SHA-256，通過後才安裝。",
+  "pages.preference.store.refresh": "重新整理",
+  "pages.preference.store.repository": "社群模型儲存庫",
+  "pages.preference.store.repositoryUrl": "GitHub 儲存庫 URL（main 分支；留空恢復預設）",
+  "pages.preference.store.applyRepository": "套用儲存庫",
+  "pages.preference.store.invalidRepository": "請輸入 GitHub 儲存庫 URL：https://github.com/owner/repository",
+  "pages.preference.store.loading": "正在載入目錄…",
+  "pages.preference.store.unpublished": "社群模型目錄尚未發布，敬請期待。",
+  "pages.preference.store.networkError": "無法載入目錄，請檢查網路或目錄格式後重試。",
+  "pages.preference.store.empty": "暫時沒有上架的模型。",
+  "pages.preference.store.pluginHint": "以 Rust 外掛提供社群模型商店，啟用後顯示商店頁面。",
+  "pages.preference.store.failed": "商店操作失敗",
+  "pages.preference.store.preview": "模型預覽",
+  "pages.preference.store.download": "下載",
+  "pages.preference.store.uninstall": "解除安裝",
+  "pages.preference.store.downloading": "正在下載…",
+  "pages.preference.store.installing": "正在安裝…",
+  "pages.preference.store.hashMismatch": "SHA-256 驗證失敗，已拒絕安裝",
+  "pages.preference.store.installed": "模型已安裝，SHA-256 驗證通過",
+  "pages.preference.store.buyFull": "購買完整版"
+}

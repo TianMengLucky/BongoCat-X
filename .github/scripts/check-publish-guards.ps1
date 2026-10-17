@@ -4,8 +4,8 @@
 #    packaging must be gated to a known upstream repository.
 # 2. The Live2D Cubism SDK is proprietary. Restoring it in CI is allowed
 #    only in release.yml (runtime-Core release builds: the maintainer has
-#    accepted the Live2D Proprietary Software License Agreement) and in
-#    mac-app-store.yml. SDK-restoring jobs must additionally be guarded to
+#    accepted the Live2D Proprietary Software License Agreement).
+#    SDK-restoring jobs must additionally be guarded to
 #    the fork, and the Core binary must never be shipped in packages.
 [CmdletBinding()]
 param([switch]$SelfTest)
@@ -34,7 +34,7 @@ $cubismSdkMarkers = @(
     'cubism.live2d.com',
     'CubismSdkForNative-'
 )
-$sdkAllowedWorkflows = @('mac-app-store.yml', 'release.yml')
+$sdkAllowedWorkflows = @('release.yml')
 
 function Get-PublishingGuardFailures {
     param(

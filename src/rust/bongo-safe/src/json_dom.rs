@@ -1,5 +1,4 @@
 //! Rust-owned JSON DOM. C only borrows stable node handles until document free.
-#[cfg(test)]
 use serde_json::Map;
 use serde_json::{Number, Value};
 use std::{ffi::c_char, ptr};
@@ -69,7 +68,6 @@ impl Doc {
         self.alloc(data)
     }
 }
-#[cfg(test)]
 pub(crate) unsafe fn to_value(node: *const Node, depth: usize) -> Result<Value, String> {
     if depth > 128 {
         return Err("JSON nesting exceeds 128 levels".into());

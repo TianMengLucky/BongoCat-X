@@ -5,7 +5,7 @@ use std::ffi::c_char;
 
 const CAP: usize = 4096;
 
-unsafe fn read(extensions: *const c_char, capacity: usize) -> Option<Map<String, Value>> {
+pub(super) unsafe fn read(extensions: *const c_char, capacity: usize) -> Option<Map<String, Value>> {
     if extensions.is_null() || capacity == 0 || capacity > CAP {
         return None;
     }
@@ -15,7 +15,10 @@ unsafe fn read(extensions: *const c_char, capacity: usize) -> Option<Map<String,
         return Some(Map::new());
     }
     let UniqueValue(value) = serde_json::from_slice(&bytes[..length]).ok()?;
-    value.as_object().cloned()
+    match value {
+        Value::Object(root) => Some(root),
+        _ => None,
+    }
 }
 
 #[no_mangle]
@@ -138,6 +141,10 @@ pub unsafe extern "C" fn bongo_safe_statistics_overlay_set(
 }
 
 unsafe fn set_bool(extensions: *mut c_char, capacity: usize, key: &str, enabled: bool) -> bool {
+    set_value(extensions, capacity, key, Value::Bool(enabled))
+}
+
+pub(super) unsafe fn set_value(extensions: *mut c_char, capacity: usize, key: &str, value: Value) -> bool {
     crate::guard(false, || {
         let Some(mut root) = read(extensions, capacity) else {
             return false;
@@ -148,7 +155,7 @@ unsafe fn set_bool(extensions: *mut c_char, capacity: usize, key: &str, enabled:
         let Some(preferences) = preferences.as_object_mut() else {
             return false;
         };
-        preferences.insert(key.into(), Value::Bool(enabled));
+        preferences.insert(key.into(), value);
         let Ok(json) = serde_json::to_vec(&root) else {
             return false;
         };
@@ -162,9 +169,153 @@ unsafe fn set_bool(extensions: *mut c_char, capacity: usize, key: &str, enabled:
     })
 }
 
+// Packed RGB; the out-of-range sentinel retains the built-in light/dark colors.
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_color_get(
+    extensions: *const c_char, capacity: usize, secondary: bool,
+) -> u32 {
+    get_color(extensions, capacity,
+        if secondary { "secondaryColor" } else { "primaryColor" })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_color_set(
+    extensions: *mut c_char, capacity: usize, secondary: bool, rgb: u32,
+) -> bool {
+    if rgb > 0x1000000 {
+        return false;
+    }
+    set_value(extensions, capacity,
+        if secondary { "secondaryColor" } else { "primaryColor" }, Value::from(rgb))
+}
+
+// Page background uses the same RGB bounds and default sentinel as accents.
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_background_get(
+    extensions: *const c_char, capacity: usize,
+) -> u32 {
+    get_color(extensions, capacity, "backgroundColor")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_text_get(
+    extensions: *const c_char, capacity: usize,
+) -> u32 {
+    get_color(extensions, capacity, "textColor")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_text_set(
+    extensions: *mut c_char, capacity: usize, rgb: u32,
+) -> bool {
+    rgb <= 0x1000000 && set_value(extensions, capacity, "textColor", Value::from(rgb))
+}
+
+unsafe fn get_color(extensions: *const c_char, capacity: usize, key: &str) -> u32 {
+    crate::guard(0x1000000, || {
+        read(extensions, capacity)
+            .and_then(|root| root.get("preferencesUi")?.get(key)?.as_u64())
+            .filter(|&rgb| rgb <= 0xffffff)
+            .map_or(0x1000000, |rgb| rgb as u32)
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_background_set(
+    extensions: *mut c_char, capacity: usize, rgb: u32,
+) -> bool {
+    rgb <= 0x1000000 && set_value(extensions, capacity, "backgroundColor", Value::from(rgb))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_compact_get(
+    extensions: *const c_char, capacity: usize,
+) -> bool {
+    get_bool(extensions, capacity, "compactLayout", false)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn bongo_safe_preferences_compact_set(
+    extensions: *mut c_char, capacity: usize, enabled: bool,
+) -> bool {
+    set_bool(extensions, capacity, "compactLayout", enabled)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compact_layout_preserves_colors_and_rejects_invalid_storage() {
+        let mut buffer = [0u8; CAP];
+        unsafe {
+            let ptr = buffer.as_mut_ptr().cast();
+            assert!(!bongo_safe_preferences_compact_get(ptr, CAP));
+            assert!(bongo_safe_preferences_background_set(ptr, CAP, 0x123456));
+            for enabled in [true, false, true] {
+                assert!(bongo_safe_preferences_compact_set(ptr, CAP, enabled));
+                assert_eq!(bongo_safe_preferences_compact_get(ptr, CAP), enabled);
+                assert_eq!(bongo_safe_preferences_background_get(ptr, CAP), 0x123456);
+            }
+            let before = buffer;
+            assert!(!bongo_safe_preferences_compact_set(ptr, 8, false));
+            assert_eq!(buffer, before);
+            assert!(!bongo_safe_preferences_compact_get(std::ptr::null(), CAP));
+            assert!(!bongo_safe_preferences_compact_set(std::ptr::null_mut(), CAP, true));
+        }
+    }
+
+    #[test]
+    fn background_round_trip_and_failed_writes_are_atomic() {
+        let mut buffer = [0u8; CAP];
+        unsafe {
+            let ptr = buffer.as_mut_ptr().cast();
+            assert_eq!(bongo_safe_preferences_background_get(ptr, CAP), 0x1000000);
+            assert_eq!(bongo_safe_preferences_text_get(ptr, CAP), 0x1000000);
+            assert!(bongo_safe_preferences_text_set(ptr, CAP, 0xabcdef));
+            assert!(bongo_safe_preferences_color_set(ptr, CAP, false, 0x123456));
+            for rgb in [0, 0xffffff, 0x1000000] {
+                assert!(bongo_safe_preferences_background_set(ptr, CAP, rgb));
+                assert_eq!(bongo_safe_preferences_background_get(ptr, CAP), rgb);
+                assert_eq!(bongo_safe_preferences_color_get(ptr, CAP, false), 0x123456);
+                assert_eq!(bongo_safe_preferences_text_get(ptr, CAP), 0xabcdef);
+            }
+            let before = buffer;
+            assert!(!bongo_safe_preferences_text_set(ptr, CAP, u32::MAX));
+            assert!(!bongo_safe_preferences_text_set(ptr, 8, 0));
+            assert!(!bongo_safe_preferences_text_set(std::ptr::null_mut(), CAP, 0));
+            assert_eq!(before, buffer);
+            assert!(!bongo_safe_preferences_background_set(ptr, CAP, u32::MAX));
+            assert!(!bongo_safe_preferences_background_set(ptr, 8, 0));
+            assert_eq!(before, buffer);
+            assert_eq!(bongo_safe_preferences_background_get(std::ptr::null(), CAP), 0x1000000);
+            for rgb in [0, 0xffffff, 0x1000000] {
+                assert!(bongo_safe_preferences_text_set(ptr, CAP, rgb));
+                assert_eq!(bongo_safe_preferences_text_get(ptr, CAP), rgb);
+            }
+        }
+    }
+
+    #[test]
+    fn theme_colors_are_bounded_and_preserve_other_settings() {
+        let mut buffer = [0u8; CAP];
+        unsafe {
+            let ptr = buffer.as_mut_ptr().cast();
+            assert!(bongo_safe_preferences_rounded_set(ptr, CAP, false));
+            assert_eq!(bongo_safe_preferences_color_get(ptr, CAP, false), 0x1000000);
+            assert!(bongo_safe_preferences_color_set(ptr, CAP, false, 0x123456));
+            assert!(bongo_safe_preferences_color_set(ptr, CAP, true, 0));
+            assert_eq!(bongo_safe_preferences_color_get(ptr, CAP, false), 0x123456);
+            assert_eq!(bongo_safe_preferences_color_get(ptr, CAP, true), 0);
+            assert!(!bongo_safe_preferences_rounded_get(ptr, CAP));
+            let before = buffer;
+            assert!(!bongo_safe_preferences_color_set(ptr, CAP, true, u32::MAX));
+            assert!(!bongo_safe_preferences_color_set(ptr, 8, false, 0));
+            assert_eq!(buffer, before);
+            assert!(bongo_safe_preferences_color_set(ptr, CAP, false, 0x1000000));
+            assert_eq!(bongo_safe_preferences_color_get(ptr, CAP, false), 0x1000000);
+        }
+    }
 
     #[test]
     fn direct_composition_is_opt_in_and_preserves_transparency() {

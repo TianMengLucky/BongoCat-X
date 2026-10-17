@@ -105,6 +105,9 @@ void bongo_cat_overlay_set_multi_key_display(BongoCatOverlay *value, bool enable
     value->left = value->right = 0;
     value->left_name[0] = value->right_name[0] = '\0';
     value->left_path[0] = value->right_path[0] = '\0';
+    /* Enabling seeds the left folder's default hand-layout.json and reloads
+       both sides, so the settings UI shows the regions in effect. */
+    if (enabled) bongo_cat_overlay_layout_load(value);
 }
 
 void bongo_cat_overlay_clear(BongoCatOverlay *value) {

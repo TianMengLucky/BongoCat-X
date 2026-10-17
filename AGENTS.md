@@ -101,12 +101,19 @@ Notes:
   need, use it directly instead of reimplementing its functionality. Keep
   custom code to necessary integration and narrowly scoped upstream fixes.
 
-- **C11, no extensions** for C sources; C++17 only under `src/live2d/`.
+- **C11, no extensions** for C sources; C++17 for `src/live2d/`, Vulkan
+  resource backends under `src/render/rhi/`, Windows COM adapters under
+  `src/platform/windows/`, and WIC adapters under `src/media/`. Rust owns
+  untrusted parsing, input queues/metrics, and generic plugin worker state.
   Cubism types stay behind opaque C handles.
 - **i18n:** user-facing strings go through `bongo_cat_i18n_get` with keys in
   `resources/assets/locales/*.json`. There are ten locales (en-US, zh-CN,
   zh-Hant, ja-JP, ko-KR, de-DE, es-ES, fr-FR, pt-BR, ru-RU) — when adding or
-  changing a key, update **all** of them in the same commit.
+  changing a key, update **all** of them in the same commit. Plugin-specific
+  translations live in each Rust plugin's `locales/*.json`, embedded and owned
+  by that plugin. `bongo_cat_i18n_get` delegates to the registered plugin locale
+  provider without caching its pointers. Update all ten plugin locales when
+  changing plugin text; host locales retain shared UI and provisioning titles.
 - **Logging:** SDL3 (`SDL_Log*`). At startup `src/runtime/lifecycle/startup.c`
   installs a custom output function (`log_output`) that appends to
   `<data>/state/runtime-diagnostics.log` and mirrors to stderr with a

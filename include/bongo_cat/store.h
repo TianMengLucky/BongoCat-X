@@ -2,6 +2,11 @@
 #define BONGO_CAT_STORE_H
 #include "bongo_cat/app.h"
 #include "bongo_cat/store_plugin.h"
+#include "bongo_cat/plugin_ui.h"
+#include "bongo_cat/plugin_ui_page.h"
+/* Optional UI contribution the plugin may export so it can draw its own
+   management card. */
+#define BONGO_CAT_STORE_UI_SYMBOL "bongo_cat_store_ui_query_v1"
 typedef struct BongoCatStoreInfo {
     bool installed, enabled, active, managed;
     char path[BONGO_CAT_PATH_CAP];
@@ -13,6 +18,10 @@ void bongo_cat_store_tick(BongoCatApp *app);
 bool bongo_cat_store_active(BongoCatApp *app);
 bool bongo_cat_store_busy(BongoCatApp *app);
 void bongo_cat_store_info(BongoCatApp *app, BongoCatStoreInfo *info);
+/* The active plugin's optional UI contribution, or NULL when it exports none.
+   Call it after every load/unload instead of caching the pointer. */
+const BongoCatPluginUiContribution *bongo_cat_store_ui(BongoCatApp *app);
+const BongoCatPluginPageUiContribution *bongo_cat_store_page_ui(BongoCatApp *app, void **instance);
 bool bongo_cat_store_set_enabled(BongoCatApp *app, bool enabled, BongoCatError *error);
 bool bongo_cat_store_refresh(BongoCatApp *app);
 unsigned bongo_cat_store_status(BongoCatApp *app, unsigned *count);

@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "効果音",
+  "pages.preference.sounds.help": "キーをクリックすると既存の音を試聴し、音声ファイルを選択できます。ホバーでファイル名を表示。実際のキー入力で再生し、割り当ては自動保存します。",
+  "pages.preference.sounds.unassigned": "効果音なし",
+  "pages.preference.sounds.choose": "音声を選択",
+  "pages.preference.sounds.preview": "試聴",
+  "pages.preference.sounds.clear": "割り当てを解除",
+  "pages.preference.sounds.formats": "WAV、MP3、Ogg Vorbis、FLAC、最大64 MB。モデルから独立。検出できるキーは入力権限とキーボード配置によります。",
+  "pages.preference.sounds.pluginHint": "キーごとに効果音を割り当てます。専用スレッドで読み込み、デコード、再生、保存を処理。無効化してもデータを保持します。",
+  "pages.preference.sounds.saved": "効果音を保存しました",
+  "pages.preference.sounds.failed": "効果音を更新できません",
+  "pages.preference.sounds.queued": "音声の読み込みを予約しました",
+  "pages.preference.sounds.busy": "音声を処理中"
+}

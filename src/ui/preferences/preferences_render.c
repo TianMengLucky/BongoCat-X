@@ -139,7 +139,6 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
         value->page_seen = true; value->last_page = value->page;
     } else if (value->last_page != value->page) {
         value->last_page = value->page;
-        value->statistics_reset_confirm = false;
         value->page_transition_ns = SDL_GetTicksNS();
         value->render_dirty = true;
     }
@@ -253,6 +252,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     bongo_cat_preferences_remove_dialog_draw(value->app, context);
     bongo_cat_preferences_behavior_dialog_draw(value, context);
     bongo_cat_preferences_random_dialog_draw(value, context);
+    bongo_cat_preferences_layout_dialog_draw(value, context);
     bongo_cat_preferences_live2d_setup_draw(value, context);
     return close_requested;
 }

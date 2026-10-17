@@ -1,4 +1,6 @@
+mod locale;
 mod abi;
+mod ui;
 mod bounds;
 mod ffi;
 mod gl_state;
@@ -41,7 +43,7 @@ pub(crate) fn log(message: &str) {
     }
 }
 static PLUGIN: Plugin = Plugin {
-    abi_version: 1,
+    abi_version: 2,
     struct_size: std::mem::size_of::<Plugin>() as u32,
     engine: 2,
     flags: 0,
@@ -104,9 +106,9 @@ pub unsafe extern "C" fn bongo_cat_model_plugin_query(
     host: *const Host,
 ) -> *const Plugin {
     guard(std::ptr::null(), || {
-        if abi != 1
+        if abi != 2
             || host.is_null()
-            || (*host).abi_version != 1
+            || (*host).abi_version != 2
             || (*host).struct_size < std::mem::size_of::<Host>() as u32
             || (*host).gl_proc.is_none()
         {

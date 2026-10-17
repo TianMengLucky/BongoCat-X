@@ -1,0 +1,23 @@
+{
+  "pages.preference.store.title": "Shop",
+  "pages.preference.store.help": "Community-Modelle durchsuchen. Downloads werden vor der Installation mit SHA-256 geprüft.",
+  "pages.preference.store.refresh": "Aktualisieren",
+  "pages.preference.store.repository": "Community-Repository",
+  "pages.preference.store.repositoryUrl": "GitHub-Repository-URL (main-Branch; leer für Standard)",
+  "pages.preference.store.applyRepository": "Repository anwenden",
+  "pages.preference.store.invalidRepository": "GitHub-Repository-URL eingeben: https://github.com/owner/repository",
+  "pages.preference.store.loading": "Katalog wird geladen…",
+  "pages.preference.store.unpublished": "Der Modellkatalog wurde noch nicht veröffentlicht.",
+  "pages.preference.store.networkError": "Katalog konnte nicht geladen werden. Verbindung oder Format prüfen und erneut versuchen.",
+  "pages.preference.store.empty": "Noch keine Modelle verfügbar.",
+  "pages.preference.store.pluginHint": "Rust-Plugin für den Modellkatalog. Die Shop-Seite erscheint, wenn das Plugin aktiviert ist.",
+  "pages.preference.store.failed": "Shop-Aktion fehlgeschlagen",
+  "pages.preference.store.preview": "Modellvorschau",
+  "pages.preference.store.download": "Herunterladen",
+  "pages.preference.store.uninstall": "Deinstallieren",
+  "pages.preference.store.downloading": "Download läuft…",
+  "pages.preference.store.installing": "Installation läuft…",
+  "pages.preference.store.hashMismatch": "SHA-256 stimmt nicht überein; Installation abgelehnt",
+  "pages.preference.store.installed": "Modell installiert und SHA-256 geprüft",
+  "pages.preference.store.buyFull": "Vollversion kaufen"
+}

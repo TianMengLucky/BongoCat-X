@@ -126,7 +126,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         /* Repaint only after the dragged color settles (present pass); the pet
            itself recolors live. */
         if (window->obs_background && bongo_cat_pref_color_picker(context,
-            "obs-background-picker", &window->obs_background_rgb)) {
+            &value->obs_color_picker, &window->obs_background_rgb)) {
             app->dirty = true;
             value->color_picker_pending_ns = SDL_GetTicksNS();
         }
@@ -209,7 +209,7 @@ static void page_display(BongoCatPreferences *value, struct nk_context *context)
         BONGO_CAT_OPTIONS_MODEL, tr(app,
         "pages.preference.cat.labels.modelSettings", "Model"),
         BONGO_CAT_PREF_ICON_SECTION_MODEL)) return;
-    bongo_cat_preferences_model_hands_rows(app, model, context);
+    bongo_cat_preferences_model_hands_rows(value, context);
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_MIRROR);
     if (bongo_cat_pref_toggle(context, "mirror", tr(app,
         "pages.preference.cat.labels.mirrorMode", "Mirror Mode"), tr(app, "pages.preference.cat.hints.mirrorMode",

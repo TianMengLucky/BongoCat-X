@@ -205,10 +205,10 @@ if(BUILD_TESTING)
     tests/core/test_input.c
     tests/core/test_models.c
     tests/core/test_mver_pointer.c
+    tests/core/test_hand_layout_file.c
     tests/core/test_shortcut.c
     tests/core/test_sound_shortcut.c
-    tests/core/test_update.c
-    src/platform/windows/windows_keys.c)
+    tests/core/test_update.c src/platform/windows/windows_keys.c)
   target_link_libraries(bongo_cat_core_tests PRIVATE
     bongo_cat_core bongo_cat_warnings $<$<PLATFORM_ID:Windows>:user32>)
   target_include_directories(bongo_cat_core_tests PRIVATE
@@ -315,7 +315,7 @@ if(BUILD_TESTING)
   target_include_directories(bongo_cat_mver_import_tests SYSTEM PRIVATE
     ${BONGO_CAT_NUKLEAR_INCLUDE_DIR} ${BONGO_CAT_STB_INCLUDE_DIR})
   target_link_libraries(bongo_cat_mver_import_tests PRIVATE
-    bongo_cat_runtime bongo_cat_archive)
+    bongo_cat_runtime bongo_cat_test_archive)
   target_compile_definitions(bongo_cat_mver_import_tests PRIVATE
     BONGO_CAT_NATIVE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
   if(MSVC)
@@ -447,13 +447,7 @@ if(BUILD_TESTING)
     add_test(NAME windows-input COMMAND bongo_cat_windows_input_tests)
     set_tests_properties(windows-input PROPERTIES TIMEOUT 30)
 
-    add_executable(bongo_cat_windows_capture_tests
-      tests/platform/test_windows_capture.c)
-    target_include_directories(bongo_cat_windows_capture_tests PRIVATE
-      src/platform/windows)
-    target_link_libraries(bongo_cat_windows_capture_tests PRIVATE
-      bongo_cat_runtime bongo_cat_warnings)
-    add_test(NAME windows-capture COMMAND bongo_cat_windows_capture_tests)
+    include(cmake/WindowsShellTests.cmake)
   endif()
 
   if(UNIX AND NOT APPLE)

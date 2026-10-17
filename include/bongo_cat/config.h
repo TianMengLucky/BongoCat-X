@@ -140,7 +140,7 @@ typedef struct BongoCatApplicationPreferences {
     bool render_parallel_recording;
     bool render_bindless;
     bool render_large_allocation;
-    /* Uses the last padding byte before theme; existing field offsets stay stable. */
+    /* Byte 8; theme is aligned at byte 12 in the C/Rust ABI. */
     bool github_download_acceleration;
     BongoCatTheme theme;
     BongoCatLanguage language;

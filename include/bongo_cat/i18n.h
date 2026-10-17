@@ -2,11 +2,16 @@
 #define BONGO_CAT_I18N_H
 
 #include "bongo_cat/config.h"
+#include "bongo_cat/plugin_locale.h"
 
 typedef struct BongoCatI18n BongoCatI18n;
 
 BongoCatI18n *bongo_cat_i18n_create(const char *root, BongoCatLanguage language, BongoCatError *error);
 void bongo_cat_i18n_destroy(BongoCatI18n *i18n);
+/* Main-thread-only registration; the plugin must remain loaded until removed.
+   The host retains callbacks, never translation strings or language files. */
+bool bongo_cat_i18n_register_plugin(BongoCatI18n *i18n, const char *id, const BongoCatPluginLocale *locale);
+void bongo_cat_i18n_unregister_plugin(BongoCatI18n *i18n, const char *id);
 BongoCatResult bongo_cat_i18n_reload(BongoCatI18n *i18n, BongoCatLanguage language,
     BongoCatError *error);
 const char *bongo_cat_i18n_get(const BongoCatI18n *i18n, const char *key,

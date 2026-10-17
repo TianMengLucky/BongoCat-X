@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "Efeitos sonoros",
+  "pages.preference.sounds.help": "Clique em uma tecla para ouvir o som atual e escolher um arquivo. Passe o mouse para ver o nome. As teclas físicas reproduzem o som; as atribuições são salvas automaticamente.",
+  "pages.preference.sounds.unassigned": "Nenhum som atribuído",
+  "pages.preference.sounds.choose": "Escolher áudio",
+  "pages.preference.sounds.preview": "Ouvir",
+  "pages.preference.sounds.clear": "Limpar atribuição",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis e FLAC, até 64 MB. Independente do modelo; teclas disponíveis dependem das permissões e do layout do teclado.",
+  "pages.preference.sounds.pluginHint": "Atribua sons às teclas. Uma thread independente processa importação, decodificação, reprodução e gravação. Desativar preserva arquivos e atribuições.",
+  "pages.preference.sounds.saved": "Efeito salvo",
+  "pages.preference.sounds.failed": "Não foi possível atualizar os efeitos",
+  "pages.preference.sounds.queued": "Importação de áudio na fila",
+  "pages.preference.sounds.busy": "Processando áudio"
+}

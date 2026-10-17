@@ -20,8 +20,9 @@ execute_process(COMMAND "${Python3_EXECUTABLE}"
 if(NOT inox_patch_result EQUAL 0)
   message(FATAL_ERROR "Cannot prepare the pinned Inox2D renderer")
 endif()
-file(GLOB inox_plugin_sources CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-inox2d/src/*")
+file(GLOB_RECURSE inox_plugin_sources CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-inox2d/src/*"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-inox2d/locales/*")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   ${inox_plugin_sources} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/prepare_inox2d.py"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/inox2d_resource_owner.rs"

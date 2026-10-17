@@ -1,3 +1,6 @@
+mod locale;
+pub mod ui;
+mod page_ui;
 use std::ffi::c_void;
 #[path = "../../bongo-safe/src/store_catalog.rs"]
 mod catalog;
@@ -14,6 +17,8 @@ pub struct Entry {
     preview_url: [u8; 2048],
     download_url: [u8; 2048],
     sha256: [u8; 65],
+    paid: u32,
+    purchase_url: [u8; 1024],
 }
 struct StoredEntry {
     model: catalog::Model,
@@ -93,6 +98,8 @@ unsafe extern "C" fn entry(instance: *mut c_void, index: u32, out: *mut Entry) -
             preview_url: buffer(&value.links[2]),
             download_url: buffer(&value.links[3]),
             sha256: buffer(&model.sha256),
+            paid: u32::from(model.paid),
+            purchase_url: buffer(&model.purchase_url),
         });
         1
     })
@@ -108,7 +115,7 @@ pub struct Api {
     entry: unsafe extern "C" fn(*mut c_void, u32, *mut Entry) -> u32,
 }
 static API: Api = Api {
-    abi_version: 1,
+    abi_version: 2,
     struct_size: std::mem::size_of::<Api>() as u32,
     create,
     destroy,
@@ -118,7 +125,7 @@ static API: Api = Api {
 };
 #[no_mangle]
 pub extern "C" fn bongo_cat_store_query(abi: u32) -> *const Api {
-    if abi == 1 {
+    if abi == 2 {
         &API
     } else {
         std::ptr::null()
@@ -153,6 +160,8 @@ mod tests {
             assert_eq!(text(&out.folder_url), catalog::link("models", "tree"));
             assert_eq!(text(&out.preview_url), catalog::raw_link("models/cat.png"));
             assert_eq!(text(&out.download_url), catalog::raw_link("models/cat.zip"));
+            assert_eq!(out.paid, 0);
+            assert_eq!(out.purchase_url[0], 0);
             let stored = &(&*instance.cast::<Vec<StoredEntry>>())[0];
             let model = &stored.model;
             let heap_bytes = [

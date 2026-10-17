@@ -28,6 +28,10 @@ extern "C" {
 
 BongoCatResult bongo_cat_image_load(const char *path, BongoCatImage *image, BongoCatError *error);
 bool bongo_cat_image_info(const char *path, int *width, int *height);
+/* Optional BC7+full-mipmap path. Zero asks the caller to use RGBA8 fallback. */
+unsigned int bongo_cat_image_texture_model_bc7(const char *path, int max_width,
+    int max_height, int *width, int *height, BongoCatImageAlphaMask *alpha,
+    BongoCatImageProgress progress, void *userdata, BongoCatError *error);
 void bongo_cat_image_free(BongoCatImage *image);
 bool bongo_cat_image_resize_rgba_take(BongoCatImage *source, int max_width,
     int max_height, BongoCatImage *target, BongoCatError *error);

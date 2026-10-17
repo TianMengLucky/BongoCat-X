@@ -1,3 +1,4 @@
+#include "plugin_locale.h"
 #include "statistics_internal.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
@@ -65,7 +66,7 @@ static void poll_metrics(void *context, BongoCatStatisticsMetrics *metrics) {
 static void poll_application(void *context, BongoCatApplicationSample *sample) {
     BongoCatInputState *input = context;
     *sample = (BongoCatApplicationSample){0};
-    if (atomic_load_explicit(&input->metrics_enabled, memory_order_acquire))
+    if (bongo_cat_input_metrics_enabled(input))
         bongo_cat_statistics_application_poll(context, sample);
 }
 static const BongoCatStatisticsUsagePlugin *usage_query(SDL_SharedObject *library) {
@@ -82,6 +83,15 @@ static const BongoCatStatisticsResetPlugin *reset_query(SDL_SharedObject *librar
     if (!entry.function) SDL_ClearError(); /* Older plugins can still count. */
     return p && p->abi_version == BONGO_CAT_STATISTICS_RESET_ABI &&
         p->struct_size == sizeof(*p) && p->reset && p->status ? p : NULL;
+}
+static const BongoCatPluginUiContribution *query_ui(SDL_SharedObject *library) {
+    union { SDL_FunctionPointer function; BongoCatPluginUiQuery query; } entry;
+    entry.function = SDL_LoadFunction(library, BONGO_CAT_STATISTICS_UI_SYMBOL);
+    if (!entry.function) return NULL;
+    const BongoCatPluginUiContribution *contribution = entry.query(BONGO_CAT_PLUGIN_UI_ABI);
+    return contribution && contribution->abi_version == BONGO_CAT_PLUGIN_UI_ABI &&
+        contribution->struct_size == sizeof(*contribution) && contribution->draw ?
+        contribution : NULL;
 }
 static bool start(BongoCatApp *app, BongoCatError *error) {
     if (!app || app->secondary_pet || app->smoke_ignore_global_input) return false;
@@ -108,6 +118,7 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
     stats->library = library; stats->plugin = plugin; stats->instance = instance;
     stats->usage = usage_query(library);
     stats->reset = reset_query(library);
+    stats->ui = query_ui(library);
     const BongoCatStatisticsPagePlugin *page = bongo_cat_statistics_page_api(library);
     stats->page.struct_size = sizeof(stats->page);
     if (!page || !page->page(instance, &stats->page) ||
@@ -133,6 +144,8 @@ static bool start(BongoCatApp *app, BongoCatError *error) {
         return false;
     }
     app->statistics = stats;
+    bongo_cat_plugin_locale_load(app->i18n, library, "statistics");
+    bongo_cat_preferences_plugin_fonts_changed(app->preferences);
     bongo_cat_input_metrics_enable(&app->input, true);
     bongo_cat_preferences_invalidate(app->preferences);
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[statistics] Rust plugin enabled");
@@ -194,6 +207,8 @@ void bongo_cat_statistics_stop(BongoCatApp *app) {
     /* Collection stops before draining, so no producer can refill the batch. */
     if (!stats->plugin->destroy(stats->instance))
         SDL_LogError(BONGO_CAT_LOG_LIFECYCLE, "[statistics] Final database flush failed");
+    bongo_cat_i18n_unregister_plugin(app->i18n, "statistics");
+    bongo_cat_plugin_page_stop(&stats->page_ui);
     SDL_UnloadObject(stats->library);
     SDL_free(stats); app->statistics = NULL;
 }
@@ -251,4 +266,13 @@ bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error) {
     app->statistics->reset_status = 1;
     bongo_cat_preferences_invalidate(app->preferences);
     return true;
+}
+const BongoCatPluginUiContribution *bongo_cat_statistics_ui(BongoCatApp *app) {
+    return app && app->statistics ? app->statistics->ui : NULL;
+}
+
+const BongoCatPluginPageUiContribution *bongo_cat_statistics_page_ui(BongoCatApp *app, void **instance) {
+    if (!app || !app->statistics) return NULL;
+    return bongo_cat_plugin_page_query(&app->statistics->page_ui, app->statistics->library,
+        "bongo_cat_statistics_page_ui_query_v1", instance);
 }

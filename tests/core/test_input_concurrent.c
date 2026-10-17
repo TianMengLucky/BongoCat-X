@@ -7,7 +7,7 @@
 #define PRODUCERS 4
 #define EVENTS 20000
 int bongo_cat_test_failures;
-static BongoCatInputState input;
+static BongoCatInputState input = {0};
 static atomic_int finished;
 static atomic_uint accepted;
 static uint64_t statistics_keys;
@@ -88,7 +88,8 @@ int main(void) {
     SDL_WaitThread(statistics, NULL);
     CHECK(statistics_keys == PRODUCERS * EVENTS / 2);
     CHECK(received == atomic_load(&accepted));
-    CHECK(received + atomic_load(&input.dropped) == PRODUCERS * EVENTS);
+    CHECK(received + bongo_cat_input_dropped(&input) == PRODUCERS * EVENTS);
     for (unsigned i = 0; i < PRODUCERS; ++i) CHECK(seen[i]);
+    bongo_cat_input_destroy(&input);
     return bongo_cat_test_failures ? 1 : 0;
 }

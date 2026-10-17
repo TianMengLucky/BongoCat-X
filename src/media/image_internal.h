@@ -5,12 +5,18 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* Reads the whole stream into an exactly-sized buffer the caller frees
    with free(); NULL on allocation or read failure. */
 unsigned char *bongo_cat_image_read_stream(FILE *file, size_t *length);
 
 BongoCatResult bongo_cat_image_decode_pixels(const char *path,
     BongoCatImage *image, BongoCatError *error);
+struct SDL_Thread;
+void bongo_cat_image_wait_for_decode(struct SDL_Thread *worker,
+    BongoCatImageProgress progress, void *userdata);
 BongoCatResult bongo_cat_image_decode_pixels_responsive(const char *path,
     BongoCatImage *image, BongoCatImageProgress progress, void *userdata,
     BongoCatError *error);
@@ -85,6 +91,10 @@ bool bongo_cat_image_decode_wic_responsive(const char *path,
 bool bongo_cat_image_decode_wic_cancellable(const char *path,
     BongoCatImage *image, int max_width, int max_height,
     BongoCatImageCancelled cancelled, void *cancel_data);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

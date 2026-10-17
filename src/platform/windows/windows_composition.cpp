@@ -154,11 +154,25 @@ bool present(Presenter &p, HWND window, const RECT &bounds,
         p.opacity = opacity;
         p.committed = true;
     }
-    hr = p.swap->Present(1, 0);
+    hr = p.swap->Present(0, 0);
     if (FAILED(hr)) return SDL_SetError("DXGI present failed (0x%08lx)", static_cast<unsigned long>(hr));
     return true;
 }
 } // namespace
+
+extern "C" bool bongo_cat_windows_composition_is_amd(void) {
+    // Match the default hardware adapter used by the composition presenter.
+    ComPtr<ID3D11Device> device;
+    ComPtr<IDXGIDevice> dxgi;
+    ComPtr<IDXGIAdapter> adapter;
+    DXGI_ADAPTER_DESC desc = {};
+    return SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0, D3D11_SDK_VERSION,
+        device.GetAddressOf(), nullptr, nullptr)) &&
+        SUCCEEDED(device.As(&dxgi)) &&
+        SUCCEEDED(dxgi->GetAdapter(adapter.GetAddressOf())) &&
+        SUCCEEDED(adapter->GetDesc(&desc)) && desc.VendorId == 0x1002;
+}
 
 extern "C" bool bongo_cat_windows_composition_present(void **state, HWND window,
     const RECT *bounds, const unsigned char *pixels, int width, int height, float opacity) {

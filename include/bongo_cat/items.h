@@ -2,6 +2,11 @@
 #define BONGO_CAT_ITEMS_H
 #include "bongo_cat/common.h"
 #include "bongo_cat/items_plugin.h"
+#include "bongo_cat/plugin_ui.h"
+#include "bongo_cat/plugin_ui_page.h"
+/* Optional UI contribution the plugin may export so it can draw its own
+   management card. */
+#define BONGO_CAT_ITEMS_UI_SYMBOL "bongo_cat_items_ui_query_v1"
 typedef struct BongoCatApp BongoCatApp;
 typedef struct BongoCatItems BongoCatItems;
 typedef struct SDL_Renderer SDL_Renderer;
@@ -17,6 +22,10 @@ bool bongo_cat_items_set_enabled(BongoCatApp *app, bool enabled, BongoCatError *
 bool bongo_cat_items_import_plugin(BongoCatApp *app, const char *path, bool *matched, BongoCatError *error);
 bool bongo_cat_items_remove_plugin(BongoCatApp *app, BongoCatError *error);
 const BongoCatItemsPage *bongo_cat_items_page(BongoCatApp *app);
+/* The active plugin's optional UI contribution, or NULL when it exports none.
+   Call it after every load/unload instead of caching the pointer. */
+const BongoCatPluginUiContribution *bongo_cat_items_ui(BongoCatApp *app);
+const BongoCatPluginPageUiContribution *bongo_cat_items_page_ui(BongoCatApp *app, void **instance);
 bool bongo_cat_items_snapshot(BongoCatApp *app, BongoCatItemScene *scene);
 bool bongo_cat_items_import_image(BongoCatApp *app, const char *path, BongoCatError *error);
 bool bongo_cat_items_update(BongoCatApp *app, uint32_t index, const BongoCatItem *item);

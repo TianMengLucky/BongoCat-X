@@ -9,9 +9,12 @@ static void pointer(Dial *d, float px, float py, bool click, int *root, int *chi
        while a wheel-selected child is still pending. */
     if (d->child_focus && radius < 190) { d->child_focus = false; d->dirty = true; }
     dial_hit(d,x,y,root,child);
-    /* A child picked with the wheel stays current while the pointer rests on
-       its parent sector, so scrolling never has to chase the child ring. */
-    if (*child < 0 && *root == d->active && d->child >= 0) *child = d->child;
+    bool focus = *child >= 0;
+    if (d->child_focus != focus) { d->child_focus = focus; d->dirty = true; }
+    /* Keep wheel selection on its parent, without extending the click target
+       into the center or the empty space beyond the parent ring. */
+    if (*child < 0 && *root == d->active && d->child >= 0 &&
+        radius >= 73 && radius <= 198) *child = d->child;
     if (click && *child < 0 && *root >= 0) {
         float angle = atan2f(y,x)-(-DIAL_PI/2+(float)*root*2*DIAL_PI/(float)d->count);
         if (radius < 73 || radius > 198 ||
@@ -99,18 +102,19 @@ static void key(Dial *d, const SDL_KeyboardEvent *event) {
     if (value == SDLK_ESCAPE) {
         if (d->active >= 0 && dial_child_count(d)) dial_select(d,-1,-1);
         else d->done = true;
-    } else if (value == SDLK_RETURN || value == SDLK_KP_ENTER || value == SDLK_SPACE) activate(d);
-    else if (value == SDLK_PAGEUP || value == SDLK_PAGEDOWN) page(d,value == SDLK_PAGEDOWN ? 1 : -1);
+    } else if (value == SDLK_RETURN || value == SDLK_KP_ENTER || value == SDLK_SPACE) {
+        if (!event->repeat) confirm(d);
+    } else if (value == SDLK_PAGEUP || value == SDLK_PAGEDOWN) page(d,value == SDLK_PAGEDOWN ? 1 : -1);
     else if (value == SDLK_DOWN || value == SDLK_S) {
         if (d->child < 0 && dial_child_count(d)) dial_select(d,d->active,0);
     } else if (value == SDLK_UP || value == SDLK_W || value == SDLK_BACKSPACE) {
         d->child_focus = false; d->dirty = true; dial_select(d,d->active,-1);
     } else if (value == SDLK_LEFT || value == SDLK_RIGHT ||
         value == SDLK_A || value == SDLK_D || value == SDLK_TAB) {
-        int direction = value == SDLK_RIGHT || value == SDLK_D ||
+        int direction = value == SDLK_LEFT || value == SDLK_A ||
             (value == SDLK_TAB && (event->mod & SDL_KMOD_SHIFT)) ? -1 : 1;
         int count = dial_child_count(d);
-        if (d->child >= 0 && count) dial_select(d,d->active,(d->child+direction+count)%count);
+        if (d->child >= 0 && count) wheel(d,direction);
         else dial_select(d,d->active < 0 ? 0 : (d->active+direction+d->count)%d->count,-1);
     }
 }

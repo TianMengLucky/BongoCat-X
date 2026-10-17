@@ -60,7 +60,7 @@ static bool draw_item(struct nk_context *context, struct nk_rect bounds,
     text(canvas, nk_rect(bounds.x + 12,
         bounds.y + (bounds.h - font->height) * .5f, bounds.w - 22,
         font->height), label, font, bongo_cat_ui_color_alpha(
-        selected || hover ? p.accent : p.text, opacity));
+        selected || hover ? p.on_selection : p.text, opacity));
     if (hover) bongo_cat_ui_cursor_hover_rect(context, bounds,
         BONGO_CAT_UI_CURSOR_POINTER);
     return hover && nk_input_is_mouse_click_in_rect(&context->input,
@@ -89,13 +89,13 @@ static void menu_background(struct nk_context *context, struct nk_rect menu,
 }
 
 int bongo_cat_pref_control_combo(struct nk_context *context, const char *id,
-    const char *const *items, int count, int selected) {
+    const char *const *items, int count, int selected, bool fill_width) {
     if (count <= 0) return selected;
     selected = NK_CLAMP(0, selected, count - 1);
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_rect widget = nk_widget_bounds(context);
-    struct nk_rect bounds = nk_rect(widget.x + NK_MAX(0.0f,
-        widget.w - 156.0f - 6.0f),
+    struct nk_rect bounds = fill_width ? widget : nk_rect(
+        widget.x + NK_MAX(0.0f, widget.w - 156.0f - 6.0f),
         widget.y - 1, NK_MIN(156.0f, widget.w), 38);
     struct nk_command_buffer *parent = nk_window_get_canvas(context);
     bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);

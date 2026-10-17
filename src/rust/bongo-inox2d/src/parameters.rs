@@ -89,16 +89,15 @@ impl Parameters {
         }
         Ok(Self { values, aliases })
     }
-    fn resolve(&self, id: &str) -> Option<Alias> {
-        if let Some(a) = self.aliases.get(id) {
-            return Some(Alias {
-                name: a.name.clone(),
-                axis: a.axis,
-                minimum: a.minimum,
-                maximum: a.maximum,
-            });
+    fn resolve<'a>(
+        values: &HashMap<String, Parameter>,
+        aliases: &'a HashMap<String, Alias>,
+        id: &'a str,
+    ) -> Option<(&'a str, usize, f32, f32)> {
+        if let Some(alias) = aliases.get(id) {
+            return Some((&alias.name, alias.axis, alias.minimum, alias.maximum));
         }
-        let (name, axis) = if self.values.contains_key(id) {
+        let (name, axis) = if values.contains_key(id) {
             (id, 0)
         } else if let Some(name) = id.strip_suffix(".x") {
             (name, 0)
@@ -107,44 +106,98 @@ impl Parameters {
         } else {
             return None;
         };
-        let parameter = self.values.get(name)?;
-        Some(Alias {
-            name: name.to_owned(),
-            axis,
-            minimum: parameter.minimum[axis],
-            maximum: parameter.maximum[axis],
-        })
+        let parameter = values.get(name)?;
+        Some((name, axis, parameter.minimum[axis], parameter.maximum[axis]))
     }
     pub fn set(&mut self, id: &str, value: f32) -> bool {
         if !value.is_finite() {
             return false;
         }
-        let Some(alias) = self.resolve(id) else {
+        let Some((name, axis, minimum, maximum)) = Self::resolve(&self.values, &self.aliases, id)
+        else {
             return false;
         };
-        let param = self.values.get_mut(&alias.name).unwrap();
-        let fraction = if alias.maximum > alias.minimum {
-            ((value - alias.minimum) / (alias.maximum - alias.minimum)).clamp(0.0, 1.0)
+        let param = self.values.get_mut(name).unwrap();
+        let fraction = if maximum > minimum {
+            ((value - minimum) / (maximum - minimum)).clamp(0.0, 1.0)
         } else {
             0.0
         };
-        param.value[alias.axis] = param.minimum[alias.axis]
-            + fraction * (param.maximum[alias.axis] - param.minimum[alias.axis]);
+        param.value[axis] =
+            param.minimum[axis] + fraction * (param.maximum[axis] - param.minimum[axis]);
         true
     }
     pub fn range(&self, id: &str) -> Option<Range> {
-        let alias = self.resolve(id)?;
-        let param = self.values.get(&alias.name)?;
-        let span = param.maximum[alias.axis] - param.minimum[alias.axis];
+        let (name, axis, minimum, maximum) = Self::resolve(&self.values, &self.aliases, id)?;
+        let param = self.values.get(name)?;
+        let span = param.maximum[axis] - param.minimum[axis];
         let fraction = if span > 0.0 {
-            (param.value[alias.axis] - param.minimum[alias.axis]) / span
+            (param.value[axis] - param.minimum[axis]) / span
         } else {
             0.0
         };
         Some(Range {
-            minimum: alias.minimum,
-            maximum: alias.maximum,
-            value: alias.minimum + fraction * (alias.maximum - alias.minimum),
+            minimum,
+            maximum,
+            value: minimum + fraction * (maximum - minimum),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn borrowed_resolution_preserves_aliases_axes_and_name_precedence() {
+        let mut parameters = Parameters {
+            values: HashMap::from([(
+                "Motion".into(),
+                Parameter {
+                    minimum: Vec2::new(-2.0, 10.0),
+                    maximum: Vec2::new(2.0, 30.0),
+                    value: Vec2::new(0.0, 20.0),
+                },
+            )]),
+            aliases: HashMap::from([(
+                "Drag".into(),
+                Alias {
+                    name: "Motion".into(),
+                    axis: 1,
+                    minimum: -1.0,
+                    maximum: 1.0,
+                },
+            )]),
+        };
+        let id = String::from("Motion.x");
+        let (name, axis, _, _) =
+            Parameters::resolve(&parameters.values, &parameters.aliases, &id).unwrap();
+        assert_eq!(name.as_ptr(), id.as_ptr());
+        assert_eq!(axis, 0);
+        let (name, _, _, _) =
+            Parameters::resolve(&parameters.values, &parameters.aliases, "Drag").unwrap();
+        assert_eq!(name.as_ptr(), parameters.aliases["Drag"].name.as_ptr());
+        assert!(parameters.set("Drag", 0.25));
+        assert_eq!(parameters.values["Motion"].value, Vec2::new(0.0, 22.5));
+        assert_eq!(parameters.range("Drag").unwrap().value, 0.25);
+        assert!(parameters.set("Drag", 2.0));
+        assert_eq!(parameters.range("Motion.y").unwrap().value, 30.0);
+        assert!(parameters.set("Motion.x", -1.0));
+        assert_eq!(parameters.range("Motion").unwrap().value, -1.0);
+        assert!(!parameters.set("Motion.z", 0.0));
+        assert!(!parameters.set("Drag", f32::NAN));
+        assert!(!parameters.set("Drag", f32::INFINITY));
+        assert!(parameters.range("missing").is_none());
+        parameters.values.insert(
+            "Motion.y".into(),
+            Parameter {
+                minimum: Vec2::ZERO,
+                maximum: Vec2::ONE,
+                value: Vec2::ZERO,
+            },
+        );
+        assert!(parameters.set("Motion.y", 0.75));
+        assert_eq!(parameters.range("Motion.y").unwrap().value, 0.75);
+        assert_eq!(parameters.values["Motion"].value.y, 30.0);
     }
 }

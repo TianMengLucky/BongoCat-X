@@ -3,6 +3,8 @@
 
 #include "preferences_internal.h"
 #include "preferences_scrollbar.h"
+#include "preferences_controls.h"
+#include "bongo_cat/safe_ffi.h"
 #include "preferences_text_session.h"
 #include "about/preferences_about.h"
 #include "ui_backend.h"
@@ -63,18 +65,12 @@ struct BongoCatPreferences {
     enum nk_collapse_states options_sections[5];
     float quality_reload_from;
     uint64_t quality_settle_deadline_ns;
-    int selected_sound;
-    uint64_t sound_glyph_hash;
-    int selected_item;
-    uint64_t item_glyph_hash;
-    unsigned int item_preview_texture;
-    int item_preview_width, item_preview_height;
-    char item_preview_asset[80];
-    uint64_t store_glyph_revision;
-    int statistics_period;
-    bool statistics_reset_confirm;
-    uint64_t statistics_glyph_hash;
+    /* UTF-8 edit contents retained for the host font atlas, independent of plugin state. */
+    char plugin_edit_ids[8][64];
+    char plugin_edit_texts[8][256];
     int style_theme;
+    uint32_t theme_colors[4];
+    int theme_color_role;
     BongoCatLanguage font_language;
     nk_rune glyph_ranges[16384];
     nk_rune heading_glyph_ranges[512];
@@ -120,6 +116,8 @@ struct BongoCatPreferences {
        repaints once the color has stayed stable for a short while instead of
        on every mouse move. */
     uint64_t color_picker_pending_ns;
+    BongoCatPrefColorState theme_color_picker;
+    BongoCatPrefColorState obs_color_picker;
     bool pending_model_multiple;
     bool pending_model_active;
     bool model_loading;
@@ -173,6 +171,17 @@ struct BongoCatPreferences {
     uint64_t random_dialog_closing_ns;
     float random_dialog_scroll;
     BongoCatPreferencesScrollbar random_dialog_scrollbar;
+    /* Multi-key layout editor: the active side's hand-layout.json crop
+       regions. Edits write the file after a short debounce, so dragging a
+       stepper does not rewrite it every frame. */
+    bool layout_dialog;
+    bool layout_dialog_input_armed;
+    bool layout_dialog_right;
+    uint64_t layout_dialog_opened_ns;
+    uint64_t layout_dialog_closing_ns;
+    uint64_t layout_dialog_write_ns;
+    char layout_dialog_directory[BONGO_CAT_PATH_CAP];
+    BongoSafeHandLayout layout_dialog_draft;
     bool native_drag;
     bool chrome_dragging;
     bool live_resize_active;
@@ -229,9 +238,9 @@ void bongo_cat_preferences_process_model_selection(BongoCatPreferences *value);
 void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
     BongoCatModelPreferences *model, struct nk_context *context);
 /* Model-section rows of the cat settings page (gamepad four-hand mode and
-   multi-key display). */
-void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
-    BongoCatModelPreferences *model, struct nk_context *context);
+   multi-key display, plus the layout editor entry). */
+void bongo_cat_preferences_model_hands_rows(BongoCatPreferences *value,
+    struct nk_context *context);
 /* Render backend row of the general page (hot-switched via the app loop). */
 void bongo_cat_preferences_mouse_range_row(BongoCatApp *app, struct nk_context *context);
 void bongo_cat_preferences_memory_row(BongoCatApp *app, struct nk_context *context);

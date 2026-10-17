@@ -20,7 +20,6 @@ set(BONGO_CAT_MEDIA_SOURCES
   src/media/audio/audio_playback.c
   src/media/image.c
   src/media/image_decode.c
-  src/media/image_wic_stream.c
   src/media/image_png_stream.c
   src/media/image_png_scaled.c
   src/media/image_texture_cache.c
@@ -28,6 +27,7 @@ set(BONGO_CAT_MEDIA_SOURCES
   src/media/image_texture_job.c
   src/media/image_info.c
   src/media/image_model.c
+  src/media/image_bc7.c
   src/media/image_mipmap.c
   src/media/image_upload.c
   src/media/image_upload_sync.c
@@ -61,12 +61,12 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
     (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
      CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")))
   list(APPEND BONGO_CAT_RENDER_SOURCES
-    src/render/rhi/rhi_vk.c src/render/rhi/rhi_vk_swapchain.c
-    src/render/rhi/rhi_vk_readback.c src/render/rhi/rhi_vk_background.c
-    src/render/rhi/rhi_vk_corners.c
-    src/render/rhi/rhi_vk_loader.c src/render/rhi/rhi_vk_frame.c
-    src/render/rhi/rhi_vk_layered.c
-  src/render/rhi/rhi_vk_sync.c src/render/rhi/rhi_vk_upload.c)
+    src/render/rhi/rhi_vk.cpp src/render/rhi/rhi_vk_swapchain.cpp
+    src/render/rhi/rhi_vk_readback.cpp src/render/rhi/rhi_vk_background.cpp
+    src/render/rhi/rhi_vk_corners.cpp
+    src/render/rhi/rhi_vk_loader.cpp src/render/rhi/rhi_vk_frame.cpp src/render/rhi/rhi_vk_debug.cpp src/render/rhi/rhi_vk_resources.cpp
+    src/render/rhi/rhi_vk_layered.cpp
+  src/render/rhi/rhi_vk_sync.cpp src/render/rhi/rhi_vk_upload.cpp)
 else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
 endif()
@@ -79,6 +79,8 @@ list(APPEND BONGO_CAT_RUNTIME_INTERNAL_INCLUDE_DIRS
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/statistics/statistics_overlay.c
   src/runtime/statistics/statistics.c
+  src/runtime/plugin_locale.c
+  src/runtime/plugin_page.c
   src/runtime/plugin_worker.c
   src/runtime/store/store.c
   src/runtime/store/store_assets.c
@@ -211,11 +213,8 @@ set(BONGO_CAT_RUNTIME_IMPORT_SOURCES
   src/runtime/model/import/mver/model_import_mver_copy.c
   src/runtime/model/import/mver/model_import_mver_discovery.c
   src/runtime/model/import/mver/model_import_mver_manifest.c
-  src/runtime/model/import/mver/model_import_mver_effect.c
   src/runtime/model/import/mver/model_import_mver_image.c
   src/runtime/model/import/mver/model_import_mver_metadata.c
-  src/runtime/model/import/mver/model_import_mver_audio.c
-  src/runtime/model/import/mver/model_import_mver_motion.c
   src/runtime/model/import/mver/model_import_mver_patch.c
   src/runtime/model/import/mver/model_import_mver_policy.c
 
@@ -333,6 +332,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_import_worker.c
   src/ui/preferences/preferences_icons.c
   src/ui/preferences/preferences_language.c
+  src/ui/preferences/preferences_layout_dialog.c
   src/ui/preferences/preferences_lifecycle.c
   src/ui/preferences/preferences_resources.c
   src/ui/preferences/preferences_live_resize.c
@@ -358,14 +358,7 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_plugins.c
   src/ui/preferences/preferences_live2d_setup.c
   src/ui/preferences/preferences_live2d_setup_dialog.c
-  src/ui/preferences/preferences_statistics.c
-  src/ui/preferences/preferences_store.c
-  src/ui/preferences/preferences_store_cards.c
-  src/ui/preferences/preferences_sounds.c
   src/ui/preferences/preferences_sounds_picker.c
-  src/ui/preferences/preferences_items.c
-  src/ui/preferences/preferences_items_preview.c
-  src/ui/preferences/preferences_statistics_usage.c
   src/ui/preferences/preferences_present.c
   src/ui/preferences/preferences_random_dialog.c
   src/ui/preferences/preferences_render.c
@@ -382,7 +375,12 @@ set(BONGO_CAT_UI_PREFERENCES_SOURCES
   src/ui/preferences/preferences_toggle.c
   src/ui/preferences/preferences_widget_shortcut.c
   src/ui/preferences/preferences_widgets.c
-  src/ui/preferences/preferences_widgets_compound.c)
+  src/ui/preferences/preferences_widgets_compound.c
+  src/ui/preferences/plugin_ui.c
+  src/ui/preferences/plugin_ui_canvas.c
+  src/ui/preferences/plugin_ui_data.c
+  src/ui/preferences/plugin_ui_pages.c
+  src/ui/preferences/plugin_ui_import.c)
 
 set(BONGO_CAT_RUNTIME_SOURCES
   src/core/app_state.c

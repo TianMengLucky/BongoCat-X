@@ -161,10 +161,48 @@ static bool contains_replacement(BongoJsonValue *value) {
     return false;
 }
 
+static unsigned plugin_releases;
+static bool plugin_chinese;
+static uint32_t plugin_load(const char *language) {
+    if (!strcmp(language, "de-DE")) return 0;
+    plugin_chinese = !strcmp(language, "zh-CN");
+    return 1;
+}
+static const char *plugin_text(const char *key, const char *fallback) {
+    return !strcmp(key, "plugin.test.title") ? (plugin_chinese ? "插件🧬" : "Plugin") : fallback;
+}
+static void plugin_visit(void *context, BongoCatPluginLocaleVisitor visitor) {
+    visitor(context, plugin_text("plugin.test.title", ""));
+}
+static void plugin_release(void) { ++plugin_releases; }
+static bool plugin_locale_lifetime(const char *root) {
+    BongoCatError error = {0};
+    BongoCatI18n *value = bongo_cat_i18n_create(root, BONGO_CAT_LANG_EN_US, &error);
+    if (!value) return false;
+    const BongoCatPluginLocale api = {
+        BONGO_CAT_PLUGIN_LOCALE_ABI, sizeof(BongoCatPluginLocale), "plugin.test.", NULL,
+        plugin_load, plugin_text, plugin_visit, plugin_release
+    };
+    bool ok = bongo_cat_i18n_register_plugin(value, "test", &api) &&
+        !strcmp(bongo_cat_i18n_get(value, "plugin.test.title", "fallback"), "Plugin") &&
+        bongo_cat_i18n_reload(value, BONGO_CAT_LANG_ZH_CN, &error) == BONGO_CAT_OK &&
+        !strcmp(bongo_cat_i18n_get(value, "plugin.test.title", "fallback"), "插件🧬") &&
+        bongo_cat_i18n_reload(value, BONGO_CAT_LANG_DE_DE, &error) != BONGO_CAT_OK &&
+        !strcmp(bongo_cat_i18n_get(value, "plugin.test.title", "fallback"), "插件🧬");
+    uint32_t ranges[4096];
+    ok = ok && bongo_cat_i18n_glyph_ranges(value, ranges, 4096) >= 3 && includes(ranges, 0x1f9ec);
+    bongo_cat_i18n_unregister_plugin(value, "test");
+    ok = ok && plugin_releases == 1 &&
+        !strcmp(bongo_cat_i18n_get(value, "plugin.test.title", "fallback"), "fallback");
+    bongo_cat_i18n_destroy(value);
+    return ok && plugin_releases == 1;
+}
+
 int main(void) {
     char root[BONGO_CAT_PATH_CAP];
     if (!bongo_cat_path_join(root, sizeof(root), BONGO_CAT_NATIVE_SOURCE_DIR,
         "resources/assets/locales")) return 1;
+    if (!plugin_locale_lifetime(root)) return 9;
     BongoJsonDoc *reference = load(root, "zh-CN");
     if (!reference) return 1;
     const char *required_ui_keys[] = {

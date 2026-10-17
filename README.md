@@ -1,15 +1,15 @@
 <div align="center">
 
-2.2.0：新增物品、键盘音效和模型商店插件，改进后台导入与自动更新。屏幕边缘反弹需开启「保持在屏幕内」；Windows OpenGL 的真透明开关使用逐像素 Alpha 合成，可能增加像素读回开销。
+2.2.2：插件页面与多语言资源独立管理，优化渲染内存、图片加载和资源回收，支持商店付费模型链接。
   <a href="https://bongocat.pet" target="_blank">
     <img src="resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
   <h1><a href="https://bongocat.pet" target="_blank">BongoCat</a></h1>
 </div>
 
-<p align="center">💘 C/C++ × SDL3 × OpenGL，搅拌在一起，尽情敲击！Bong~ Bongo Cat!!!</p>
+<p align="center">💘 C/C++ × Rust × SDL3，搅拌在一起，尽情敲击！Bong~ Bongo Cat!!!</p>
 <p align="center">
-  选择语言 ❯ <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
+  <a href="docs/README.en-US.md">English</a> • <strong>简体中文</strong> • <a href="docs/README.zh-Hant.md">繁體中文</a> • <a href="docs/README.fr-FR.md">Français</a> • <a href="docs/README.de-DE.md">Deutsch</a> • <a href="docs/README.ko-KR.md">한국어</a> • <a href="docs/README.pt-BR.md">Português</a> • <a href="docs/README.ru-RU.md">Русский</a> • <a href="docs/README.es-ES.md">Español</a> • <a href="docs/README.id-ID.md">Bahasa Indonesia</a>
 </p>
 
 > [!NOTE]
@@ -34,8 +34,6 @@
   </a>
 </p>
 
-<p align="center"><img src="https://count.getloli.com/@bongocat?name=bongocat&theme=booru-qualityhentais&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" width="400"></p>
-
 ## 💬 QQ 交流群
 
 使用 QQ 扫描下方二维码，或搜索群号 **211957388**，加入 **BongoCat-X** 交流群。
@@ -44,14 +42,16 @@
 
 ## 📥 下载
 
-- GitHub Releases ([v2.2.0](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.0))
+- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
   > [!IMPORTANT]
   > 官方 Release 为 **runtime-Core 构建**：内置 Live2D 渲染支持，但**不附带** Live2D Cubism Core 运行库（专有授权，不随包分发），**并非**无 Live2D 能力的诊断构建。未检测到 Core 时会回退到诊断后端并在设置窗口提示。
 
-  **启用 Live2D 渲染（任选其一）：**
+  **启用 Live2D 渲染：**
+
+  Windows 缺少 Core 时，启用 Live2D 插件会提示阅读官方协议；同意后可从官方地址下载 SDK 并在本机提取 Core。也可使用以下手动方式：
 
   1. **应用内导入（推荐）**：打开「设置 → 插件」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
   2. **live2d 文件夹投放**：从 [Cubism SDK 下载页面](https://www.live2d.com/en/sdk/download/native/)（需同意 Live2D 许可协议）下载 **Cubism SDK for Native**，将 zip 或解压出的 `Live2DCubismCore.dll` 放入应用目录/数据目录下的 `live2d` 文件夹，重启应用后自动识别启用。
@@ -64,7 +64,7 @@
 
 ## 🛠️ 从源码构建
 
-BongoCat 使用 CMake，需要 C11 编译器、C++17 编译器、CMake 3.24 或更高版本、桌面 OpenGL 开发文件，以及 Rust 工具链（通过 rustup 安装 cargo）：内存安全关键的解析器（SHA-256、图像解码、贡献者信息流、音频解码）位于 `src/rust/bongo-safe` crate 中，配置阶段由 Corrosion 自动构建。默认情况下，SDL3、stb、miniaudio 和 Nuklear 会在配置阶段自动下载，因此首次配置需要网络连接。
+BongoCat 使用 CMake 3.24 或更高版本，需要 C11／C++17 编译器、桌面 OpenGL 开发文件和 Rust 工具链（cargo，可通过 rustup 安装）。Corrosion 负责构建 Rust 模块；配置阶段默认下载 SDL3、stb、miniaudio、Nuklear 和 Corrosion，首次构建需要网络连接。
 
 请在项目根目录（包含 `CMakeLists.txt` 的目录）运行以下命令。
 
@@ -135,12 +135,6 @@ cmake -S . -B build -G Ninja \
 
 SDK 必须包含 Core 库、Framework 源码，以及 `cmake/Cubism.cmake` 所要求布局中的 OpenGL GLEW 第三方目录。Windows Cubism 构建需要 Visual Studio 2022。SDK 就位后照常配置即可得到带 Live2D 渲染的版本；`BONGO_CAT_REQUIRE_CUBISM=ON` 的作用是让 SDK 缺失时配置直接失败并打印导入方法（发布流水线使用），没有必要时保持默认的 `OFF` 即可。
 
-> [!TIP]
-> Windows 用户无需重新构建即可启用 Live2D 渲染：在应用内打开「设置 → 插件」页，点击「导入 Live2D Core」，选择 `Live2DCubismCore.dll` 或官方 Cubism SDK 的 zip 压缩包，导入后立即生效（无需重启）。
-
-> [!NOTE]
-> 本仓库官方 Release 提供的安装包为 runtime-Core 构建：内置 Live2D 渲染支持，但**不附带 Core 运行库**。启动时会先检查 `live2d` 文件夹——把 `Live2DCubismCore.dll` 或官方 SDK zip 放入应用目录/数据目录下的该文件夹，重启后即被自动识别启用；也可以在应用内「设置 → 插件」页点击「导入 Live2D Core」立即生效。没有检测到 Core 时会回退到诊断后端，并在设置窗口给出提示。
-
 ### ⚙️ CMake 选项
 
 | 选项 | 默认值 | 说明 |
@@ -175,101 +169,23 @@ See [Insights / Pulse](https://github.com/TianMengLucky/BongoCat-X/pulse) for li
 
 ## 📜 许可证
 
-BongoCat 源代码和本地运行时采用 [AGPL-3.0-only](../LICENSE) 许可证。
+BongoCat 源代码和本地运行时采用 [AGPL-3.0-only](LICENSE) 许可证。
 
-默认内置模型模式（`standard`）仍采用 MIT 许可证。`resources/assets/models/standard`、`keyboard` 和 `gamepad` 中捆绑的模型资源受单独的 [MIT 许可证声明](../LICENSE-MIT) 覆盖。该 MIT 许可证仅适用于模型资源及其配套美术作品，不会改变 BongoCat 源代码或本地运行时的许可证。
+默认内置模型模式（`standard`）仍采用 MIT 许可证。`resources/assets/models/standard`、`keyboard` 和 `gamepad` 中捆绑的模型资源受单独的 [MIT 许可证声明](LICENSE-MIT) 覆盖。该 MIT 许可证仅适用于模型资源及其配套美术作品，不会改变 BongoCat 源代码或本地运行时的许可证。
 
 ## 🧭 技术架构
 
-当前原生版本基于 C/C++、SDL3 和 OpenGL 构建。下图重点展示运行时数据流；构建与打包细节请参阅 CMake 文件。
+C11 宿主通过 SDL3 管理主线程事件、模型更新和呈现，设置界面使用 Nuklear。`src/rust/bongo-safe` 负责不可信数据解析、输入队列与指标以及通用插件工作线程状态。Live2D 桥接、Vulkan 资源后端和 Windows COM／WIC 适配器使用 C++17。
 
-### 🔄 运行时所有权与帧调度
+平台监听器将按键和鼠标按钮事件提交到 Rust 有界队列，单独合并指针移动，并唤醒主线程处理模型参数与 UI。模型渲染通过版本化 C ABI 加载 Live2D／Inox2D 插件，支持的平台后端为 OpenGL、Vulkan 和 Metal。
 
-每个进程拥有一个 `BongoCatApp` 和一个主线程事件/渲染循环。平台监听器在输入边界处停止：
-
-```text
-平台监听器（键盘/指针）
-            |
-            v
-  C11 输入状态（原子边沿队列 + 合并后的指针位置）
-            |
-            v
-  主线程应用 <----- SDL3 事件
-            |
-            v
-  模型参数、覆盖层和 UI 状态
-            |
-            v
-  模型更新 -> OpenGL 合成 -> 平台呈现
-```
-
-Windows Raw Input 接收器、macOS Quartz 事件 tap 和 Linux XInput2 监听器运行在主循环之外。按键和鼠标按钮边沿进入有界原子队列，移动量单独合并，并通过 SDL 事件唤醒主线程，避免高频移动挤出按键事件。Windows 使用独立消息窗口，以 `RIDEV_INPUTSINK | RIDEV_DEVNOTIFY` 订阅后台键鼠输入并保留普通窗口消息；其他程序隐藏或锁定光标时，模型使用设备上报的移动量，桌面跟随则读取 SDL 提供的系统光标位置。接收器分别管理各设备的按下状态，在设备拔出或输入桌面切换时清理。Windows 不再安装输入钩子或使用 DirectInput，也不向游戏发送输入。SDL3 窗口、偏好设置和手柄事件仍在主线程处理，平台监听器不会直接调用 Live2D、覆盖层或 UI 代码。
-
-`bongo_cat_app_run` 负责更新、关闭和次级进程参数，确保主进程的单实例所有权，分配应用状态，执行初始化，进入 `bongo_cat_app_loop`，随后按定义顺序刷新状态并销毁资源。初始化会加载配置和存储路径、定位资源、创建 SDL/OpenGL 宠物窗口、初始化平台后端、创建 Live2D/覆盖层/音频服务、扫描内置/已安装/附近的模型来源，并加载可用模型。`BongoCatApp` 持有设置、会话状态、模型和行为目录、平台句柄及运行时服务句柄。
-
-已安装的模型包使用 Mver 作为规范格式。导入流程会解析选中的文件或目录，发现并验证候选项，生成包身份指纹，将 Tauri 来源转换为 Mver，应用图像补丁，并将规范化包提交到 `models_root`。随后生成运行时适配器并刷新目录。附近来源只在不安装源目录的情况下被发现；其适配器和检查结果缓存在 `models_root` 之外的 `cache_root` 下。
-
-每次主循环迭代都会等待 SDL/原生唤醒，或等待最早的帧、UI、动画和指针命中截止时间（最长 250 毫秒）。循环分发排队的 SDL 事件，清空原子输入队列并执行释放恢复，更新窗口和模型刷新状态，然后应用输入参数。启用 Cubism 时，模型截止时间遵循 `settings.model.max_fps`（默认为 60 FPS）；诊断构建使用 100 毫秒的后备间隔。模型经过的时间最多计为 250 毫秒，并拆分为最多八个子步，每个子步目标不超过 1/30 秒。
-
-常规宠物路径仅在窗口可见、未最小化且标记为脏时渲染。每帧先清空背景，绘制模型，再合成指针、按键和效果覆盖层，最后调用平台呈现器。预览操作可以请求立即渲染，截图渲染可以跳过呈现。macOS 和 Linux 直接交换 SDL OpenGL 窗口；Windows 在未启用分层呈现时直接交换，否则读取帧缓冲并调用 `UpdateLayeredWindow`。偏好设置 UI 拥有独立的 SDL/OpenGL 窗口，并单独渲染和呈现。
-
-C 运行时调用 `include/bongo_cat/model.h` 中声明的 ABI。Live2D 桥接和 Cubism 实现在 `src/live2d` 中，仅在启用 Cubism SDK 时使用 C++17；其余本地运行时使用 C11。Cubism 类型保持在不透明 C 句柄之后；当 SDK 不可用时，`src/live2d/live2d_stub.c` 提供诊断后端。
-
-```mermaid
-flowchart TB
-  Input(["键盘 / 鼠标 / 手柄"])
-  BuiltIn(["内置模型资源"])
-  Sources(["外部模型来源<br/>Mver、Tauri、.model3.json、图像补丁"])
-  Desktop(["宠物窗口和偏好设置窗口"])
-  subgraph Runtime["BongoCat 原生运行时"]
-    direction TB
-    Entry["src/main.c<br/>bongo_cat_app_run"]
-    Startup["启动和初始化<br/>配置、存储、窗口、平台"]
-    Loop["SDL3 主循环<br/>等待、分发、更新、渲染"]
-    Shutdown["关闭<br/>刷新状态、停止服务、释放资源"]
-    InputQueue[("原子输入状态<br/>边沿队列和合并指针位置")]
-    InputDispatch["输入分发<br/>快捷键、指针映射、模型参数"]
-    State[("BongoCatApp 状态<br/>设置、会话、目录、运行时句柄")]
-    Import["模型发现和导入<br/>验证、规范化为 Mver、安装/缓存"]
-    Catalog[("模型和行为目录")]
-    Live2D["Live2D C ABI<br/>Cubism SDK 或诊断存根"]
-    Overlay["覆盖层和音频"]
-    Preferences["偏好设置和桌面外壳<br/>Nuklear UI、托盘、窗口操作"]
-    Compose["OpenGL 帧合成"]
-    Present["平台呈现"]
-    Entry --> Startup --> Loop
-    Loop --> Shutdown
-    Loop --> InputDispatch --> State
-    Loop <--> State
-    State --> Live2D
-    State --> Overlay
-    State <--> Preferences
-    Loop --> Preferences
-    Catalog --> State
-    State --> Compose
-    Live2D --> Compose
-    Overlay --> Compose
-    Compose --> Present
-    Loop --> Compose
-  end
-  subgraph Platform["平台后端"]
-    direction LR
-    Global["全局键盘/指针捕获<br/>Windows、macOS、Linux"]
-    SDL["SDL3 事件<br/>窗口和手柄事件"]
-  end
-  Input --> Global --> InputQueue --> InputDispatch
-  Input --> SDL --> Loop
-  BuiltIn --> Catalog
-  Sources --> Import --> Catalog
-  Present --> Desktop
-  Preferences --> Desktop
-```
+插件兼容性与构建细节见[渲染插件](docs/model-plugins.md)，原生后端限制及验证范围见[渲染说明](docs/live2d-vulkan-metal.md)。
 
 ## ❓ 常见问题
 
 ### 🔒 BongoCat 会记录我的键盘或鼠标输入吗？
 
-不会。BongoCat 在本地处理键盘和鼠标输入，用于驱动动画和快捷键。它不会记录或上传按键、鼠标操作或其他交互数据。配置也只保存在本地，应用不包含广告、分析工具或用户跟踪代码。执行更新检查时只会请求公开的版本元数据，不会发送输入、配置或使用数据。
+BongoCat 在本地处理键鼠输入，以驱动动画和快捷键，不上传输入或使用数据。启用统计插件后，可在本地保存按键／鼠标汇总、每日／小时趋势及前台应用时长；不保存输入文本、按键顺序、窗口标题、网址或坐标。采集可在统计页关闭，历史数据可重置或导出。详见[统计插件说明](docs/statistics-plugin.md)。更新检查仅请求公开版本元数据。
 
 ### Linux Wayland 输入
 
@@ -298,6 +214,21 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 带 Cubism SDK 的构建在 Windows / Linux x64 默认启用 `BONGO_CAT_CUBISM_VULKAN=ON`（需要 `glslangValidator` 或 `glslang`；Linux 可安装 `glslang-tools`，运行时需要 Vulkan 1.3），macOS 默认启用 `BONGO_CAT_CUBISM_METAL=ON`（需要 Xcode Metal 工具）；可将相应选项设为 `OFF` 构建 OpenGL 版本。Metal 源码与 `.metallib` 只进入 macOS 构建，Vulkan 源码与 `.spv` 只进入 Windows / Linux x64 构建，均包含混合模式变体；无 SDK 的诊断构建不会打包这些原生 Live2D 资源。GitHub Actions 按平台准备工具并检查资源。Windows 已完成构建与 GPU 回归测试；macOS 的 Metal Rust 接口已通过类型检查，尚待真机验证，详见 [集成进度与验证清单](docs/live2d-vulkan-metal.md)。
 
+## 功能与文档
+
+- **模型与渲染**：支持 Live2D、Inochi2D 和 Mver，多模型模式合并展示，支持多个 ZIP 后台排队导入。Windows 便携版请保留程序旁的 `plugins` 目录；渲染插件 ABI 为 v2，程序与插件需同步更新。见[渲染插件](docs/model-plugins.md)。
+- **设置与外观**：支持紧凑布局、统一调色板、自定义图片背景和鼠标跟随范围；快捷键位于「偏好」子页，商店位于「模型」子页。设置自动保存。
+- **统计**：键鼠总量、每日／每小时趋势、前台应用时长、自定义显示单位及 CSV 导出。数据保存在本地，可关闭采集或重置。见[统计插件](docs/statistics-plugin.md)。
+- **物品**：图片批量导入、复制、位置／缩放／旋转／透明度、前后层级与场景保存；最多 16 个物品，仅作用于主桌宠，GIF 仅取首帧。见[物品插件](docs/items-plugin.md)。
+- **音效**：按键绑定与试听 WAV／MP3／Ogg Vorbis／FLAC，动作音量可单独调整并保存。见[音效插件](docs/sounds-plugin.md)。
+- **社区商店**：模型预览、作者链接、下载／卸载及 SHA-256 校验；付费条目可提供「购买完整版」链接。见[商店插件](docs/store-plugin.md)。
+- **Mver 多按键气泡**：支持手部、外框与字符独立裁剪，镜像时字符保持可读。见[配置说明](docs/hand-layout.md)和[示例](docs/hand-layout.example.json)。
+- **自动更新**：启动时异步检查，可在设置中关闭；发现新版本后可在设置窗口更新。开发版本见 [nightly 发布页](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)。
+
+### 开发参考
+
+[语言与职责边界](docs/language-migration.md) · [Vulkan 内存与生命周期](docs/vulkan-memory.md) · [Windows 覆盖呈现](docs/windows-overlay-presentation.md)
+
 ## 🙏 特别感谢
 > [!TIP]
 > BongoCat 的每一步都得益于开源精神。我们衷心感谢所有社区贡献者的无私奉献（按贡献日期先后排序列于下方）。正是你们的支持，让桌面陪伴更加自由与真诚。❤️‍🔥
@@ -314,57 +245,3 @@ By vladelaina<br>
 Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
 Made with ❤️ & ⌨️
 </div>
-
-### 偏好选项菜单样式
-
-「偏好」页统一采用可折叠的分组卡片，窗口、模型、应用和外观选项默认全部展开。点击分组标题即可收起或展开该组选项，不再提供样式切换按钮，原有设置值保持不变。
-
-### 输入统计插件
-
-Rust 动态统计插件默认随程序构建，可在「插件」页启停或导入。新增「统计」页展示键鼠总量、每日和每小时趋势，支持本地保存及 CSV 导出。详见[统计插件说明](docs/statistics-plugin.md)。 应用使用时长按前台应用汇总，支持排行、小时分布和独立开关；统计采样、保存与导出在独立线程执行。 统计入口由插件在启用时注册，停用或卸载后自动移除。
-
-### 动态渲染插件
-
-在「设置 → 插件」中安装本地插件、启用或停用渲染引擎、移除用户安装的插件。使用中的插件需先切换到其他渲染器后再修改。Live2D 使用独立 C++ 插件；Inochi2D 使用 Rust Inox2D 插件，支持 OpenGL、Vulkan（Windows/Linux）和 Metal（macOS），不使用 wgpu。导入会先识别内容，支持 `.model3.json` 和 `.inp`／`.inx`。全部 JSON 解析和序列化由 Rust 完成。
-
-Windows 便携版为 ZIP 包，解压后请保留程序旁的 `plugins` 目录。打包方式、离线依赖、插件 ABI、参数映射与兼容限制见[动态渲染插件说明](docs/model-plugins.md)。
-
-向 `dev` 推送代码、资源或构建配置更新时，会发布 GitHub 夜间预发布版本；仅修改文档时跳过，没有定时触发。所有平台固定使用此次推送的提交，夜间版不替换最新正式版。
-
-夜间预发布固定使用 [nightly 发布页](https://github.com/TianMengLucky/BongoCat-X/releases/tag/nightly)，更新同一标签并替换固定名称的附件，不再为每次构建创建新版本；构建失败的平台保留上次产物。
-
-在「偏好设置 → 偏好 → 窗口」启用「自定义图片背景」，点击「选择图片」导入 PNG、JPEG、WebP、BMP 或 GIF（静态首帧）。图片保持比例、居中铺满窗口，并与「纯色背景」互斥。导入图片保存在应用数据目录，原文件移动不影响使用；单张图片上限为 64 MB、1600 万像素，支持 OpenGL、Vulkan 和 Metal。
-
-Live2D 自动复用几何缓冲与连续重复的渲染状态；OpenGL 动态上传、Vulkan 上传批处理与管线缓存、Metal 共享缓冲槽及原生动态遮罩无需额外开关。新增路径的性能与平台行为待实测。
-
-Vulkan 自动管理内存：Live2D 默认采用 1 MiB VMA 分配块，显式大型分配采用 16 MiB；Windows 分层呈现只保留一个绘制目标，隐藏或最小化时等待 GPU 完成后释放回读缓存，恢复绘制时按需重建。画质和动态纹理分辨率仍由各自设置控制。
-
-设置 → 桌宠 →「自定义鼠标跟随范围」支持水平/垂直 25–400%，100% 为原范围，默认关闭。Mver 绘制猫爪和鼠标可扩大实际活动范围，普通 Live2D 仍保留作者的参数边界；视线和窗口位置不变。
-
-### 多按键显示与字符裁剪
-
-Mver (OpenGL/Vulkan/Metal) 可分别裁剪手部、气泡外框和字符，将按住的按键用加号连接在同一个气泡中。外框和尾巴随模型镜像，字符保持可读，单键模式也生效。在手部图片文件夹的 `hand-layout.json` 中设置三个裁剪区域、加号两侧间距和每侧显示数量，修改后重新启动应用。详见[配置说明与示例](docs/hand-layout.md)。
-
-动作弹窗会检查动作的 `Sound` 引用和音频文件是否存在，仅在带音频的动作旁显示独立音量控件。音量范围为 0–100%，支持拖动、输入数值和双击恢复 100%；0% 静音。设置按模型和动作保存，弹窗播放、快捷键、随机动作及右键菜单使用同一音量，正在播放时也可调整；共享同一音频文件的其他动作不受影响。
-
-### 物品插件
-
-默认附带独立物品插件；在「设置 → 插件」启用后显示「物品」页面。支持图片批量导入／拖放、多物品、位置、缩放、旋转、透明度、前后层级、锁定、复制和场景保存，适用于 OpenGL、Vulkan、Metal。跟随模型视口不等于网格锚定；GIF 仅首帧，最多 16 个物品，仅作用于主桌宠。详见 [物品插件](docs/items-plugin.md)。构建选项 `BONGO_CAT_BUILD_ITEMS=OFF` 可不附带该插件。
-
-渲染内存优先级: 显存优先 / 系统内存优先. 仅适用于 Live2D Vulkan，修改后重载渲染。显存优先侧重速度，系统内存优先缓解显存压力但可能降低性能。不支持的资源自动回退；其他后端自动分配，核显使用共享内存。
-
-### 键盘音效插件
-
-在「设置 → 插件」启用「音效」，点击键盘上的按键弹窗选择音频、悬浮查看音频名，实际敲击时播放对应音效，绑定自动保存。音效与物品分别使用独立常驻工作线程。支持 WAV／MP3／Ogg Vorbis／FLAC；仅主桌宠启用。详见 [音效插件](docs/sounds-plugin.md)，可用 `BONGO_CAT_BUILD_SOUNDS=OFF` 不附带此库。
-
-社区模型商店由 Rust 插件提供：预览图卡片、作者链接、下载／卸载，下载完成后校验 SHA-256。插件启用后显示商店页面，目录尚未发布时显示预留状态。详见 [商店插件](docs/store-plugin.md)。
-
-偏好 → 应用设置中的「自动检查更新」默认开启，每次启动异步检查一次。新版本提示保留至打开设置，在右上角提供「立即更新」按钮；所有设置 Toast 均可点击关闭。
-
-模型页将同一模型包的多个模式合并为一张卡片，可通过选择框切换；默认模型的标准、键盘、手柄模式也合并显示。一次可拖入多个模型 ZIP，后台排队解压、扫描和导入；关闭设置窗口不会中断导入。退出应用时停止后续导入，等待当前源文件处理结束后释放线程和临时资源。
-
-快捷键现整合在「偏好」页，进入后用顶部「设置／快捷键」切换；社区商店整合在「模型」页，进入后用「本地模型／商店」切换。侧栏不再提供这两个独立入口，各子页保留独立滚动位置。
-
-启用 Live2D 插件而缺少 Cubism Core 时，会显示两份官方协议。Windows 用户点击「同意并继续下载」后，应用从官方 HTTPS 地址下载 Native R5 SDK，仅提取对应架构的动态 Core 并在本机启用渲染；「取消并继续」保留插件启用但不渲染。下载失败可重试，也可手动导入。应用及发布包不包含 SDK 或 Core。
-
-Windows: DirectComposition 呈现. 实验性 DXGI Alpha 合成。立即生效，失败时回退原呈现器；仍有像素读回，不能保证游戏保持 Independent Flip。

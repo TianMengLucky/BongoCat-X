@@ -1,0 +1,12 @@
+add_executable(bongo_cat_windows_capture_tests
+  tests/platform/test_windows_capture.c)
+target_include_directories(bongo_cat_windows_capture_tests PRIVATE
+  src/platform/windows)
+target_link_libraries(bongo_cat_windows_capture_tests PRIVATE
+  bongo_cat_runtime bongo_cat_warnings)
+add_test(NAME windows-capture COMMAND bongo_cat_windows_capture_tests)
+
+add_executable(bongo_cat_windows_com_tests tests/platform/test_windows_com.cpp)
+target_include_directories(bongo_cat_windows_com_tests PRIVATE src/platform/windows)
+target_link_libraries(bongo_cat_windows_com_tests PRIVATE bongo_cat_warnings ole32 uuid)
+add_test(NAME windows-com-lifetime COMMAND bongo_cat_windows_com_tests)

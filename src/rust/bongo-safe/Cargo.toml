@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.2.0"
+version = "2.2.2"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false
@@ -9,34 +9,41 @@ publish = false
 name = "bongo_safe"
 crate-type = ["staticlib", "rlib"]
 
+# The host keeps the C ABI; Rust renderers only need the bounded INP parser.
+[features]
+default = ["c-api"]
+c-api = [
+    "dep:base64", "dep:roxmltree", "dep:html2text", "dep:reqwest", "dep:tokio",
+    "dep:tempfile", "dep:zip", "dep:tar", "dep:flate2", "dep:serde", "dep:json5",
+    "dep:jsonc-parser", "dep:sha2", "dep:symphonia", "dep:naga",
+    "dep:png", "dep:intel_tex_2",
+    "image/jpeg", "image/gif", "image/bmp", "image/webp", "image/ico",
+    "image/pnm", "image/hdr",
+]
+
 [dependencies]
 inox2d = { git = "https://github.com/Inochi2D/inox2d", rev = "d4dd9dd7f16b775042cbda44370570abf9a8cf81" }
-base64 = "0.22"
+base64 = { version = "0.22", optional = true }
 image = { version = "0.25", default-features = false, features = [
     "png",
-    "jpeg",
-    "gif",
-    "bmp",
     "tga",
-    "webp",
-    "ico",
-    "pnm",
-    "hdr",
 ] }
-roxmltree = "0.20"
-html2text = "0.17.2"
-reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls-native-roots", "system-proxy"] }
-tokio = { version = "1", features = ["rt", "time", "macros"] }
-tempfile = "3"
-zip = { version = "2.4", default-features = false, features = ["deflate"] }
-tar = "0.4"
-flate2 = "1"
-serde = "1"
-json5 = "0.4"
-jsonc-parser = { version = "0.34", features = ["cst", "serde"] }
+roxmltree = { version = "0.20", optional = true }
+html2text = { version = "0.17.2", optional = true }
+reqwest = { optional = true, version = "0.12.28", default-features = false, features = ["rustls-tls-native-roots", "system-proxy"] }
+tokio = { optional = true, version = "1", features = ["rt", "time", "macros"] }
+tempfile = { version = "3", optional = true }
+# Reuse flate2 for ZIP; Zopfli encoding is unused by archive readers.
+zip = { optional = true, version = "2.4", default-features = false, features = ["deflate-flate2", "flate2"] }
+tar = { version = "0.4", optional = true }
+flate2 = { version = "1", optional = true }
+serde = { version = "1", optional = true }
+json5 = { version = "0.4", optional = true }
+jsonc-parser = { optional = true, version = "0.34", features = ["cst", "serde"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-sha2 = "0.10"
-symphonia = { version = "0.5", default-features = false, features = [
+sha2 = { version = "0.10", optional = true }
+png = { version = "0.18", optional = true }
+symphonia = { optional = true, version = "0.5", default-features = false, features = [
     "ogg",
     "wav",
     "mp3",
@@ -46,8 +53,11 @@ symphonia = { version = "0.5", default-features = false, features = [
     "vorbis",
 ] }
 
+[target.'cfg(all(target_arch = "x86_64", any(target_os = "windows", target_os = "linux")))'.dependencies]
+intel_tex_2 = { version = "0.5", optional = true }
+
 [build-dependencies]
-naga = { version = "0.19", features = ["wgsl-in", "spv-out"] }
+naga = { optional = true, version = "0.19", features = ["wgsl-in", "spv-out"] }
 
 # Keep release code compact without changing unwinding across the FFI boundary.
 [profile.release]

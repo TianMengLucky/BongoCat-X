@@ -4,6 +4,7 @@
 #include "preferences_model_cover.h"
 #include "preferences_notice.h"
 #include "preferences_widgets.h"
+#include "preferences_widgets_internal.h"
 #include "ui_icons.h"
 #include "model_import.h"
 #include "runtime.h"
@@ -321,12 +322,25 @@ void bongo_cat_preferences_page_model(BongoCatPreferences *value,
         SDL_LogWarn(SDL_LOG_CATEGORY_CUSTOM,
             "Cannot open model library: %s", SDL_GetError());
     float width = nk_window_get_content_region(context).w;
-    int columns = width >= 780 ? 4 : width >= 620 ? 3 : width >= 400 ? 2 : 1;
+    /* Keep room for translated names and mode controls at every window size. */
+    const float minimum_card_width = 232.0f;
+    const float card_gap = 14.0f;
+    int columns = NK_CLAMP(1, (int)((width + card_gap) /
+        (minimum_card_width + card_gap)), 4);
     struct nk_vec2 old_spacing = context->style.window.spacing;
     context->style.window.spacing = nk_vec2(14, 17);
-    nk_layout_row_dynamic(context, MODEL_CARD_HEIGHT, columns);
+    const float import_text_width = NK_MAX(1.0f, width - 96.0f);
+    int import_lines = bongo_cat_pref_detail_text(context, tr(app,
+        "pages.preference.model.hints.clickOrDragToImport",
+        "Click or drag a model folder or ZIP"),
+        nk_rect(0, 0, import_text_width, 0), false);
+    import_lines = NK_MAX(import_lines, bongo_cat_pref_detail_text(context, tr(app,
+        "pages.preference.model.hints.importingBackground", "Importing in background..."),
+        nk_rect(0, 0, import_text_width, 0), false));
+    nk_layout_row_dynamic(context, NK_MAX(88.0f, 32.0f + import_lines * 19.0f), 1);
     if (bongo_cat_preferences_model_import_card(value, context))
         bongo_cat_preferences_request_model_import(app->preferences);
+    nk_layout_row_dynamic(context, MODEL_CARD_HEIGHT, columns);
     bool storage_busy = bongo_cat_preferences_import_status(
         value->import_dialog, NULL, NULL, NULL) ||
         bongo_cat_app_model_refresh_busy(app);
@@ -378,11 +392,13 @@ void bongo_cat_preferences_mouse_input_rows(BongoCatApp *app,
 #endif
 }
 
-/* Model-section rows of the cat settings page: gamepad four-hand mode and
-   the multi-key display toggle. Kept here like the pointer rows so the page
-   module stays within the source size policy. */
-void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
-    BongoCatModelPreferences *model, struct nk_context *context) {
+/* Model-section rows of the cat settings page: gamepad four-hand mode, the
+   multi-key display toggle and its layout editor entry. Kept here like the
+   pointer rows so the page module stays within the source size policy. */
+void bongo_cat_preferences_model_hands_rows(BongoCatPreferences *value,
+    struct nk_context *context) {
+    BongoCatApp *app = value->app;
+    BongoCatModelPreferences *model = &app->settings.model;
     bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
     if (bongo_cat_pref_toggle(context, "gamepad-four-hands", tr(app,
         "pages.preference.cat.labels.gamepadFourHands", "Gamepad Four-Hand Mode"), tr(app,
@@ -393,11 +409,24 @@ void bongo_cat_preferences_model_hands_rows(BongoCatApp *app,
     if (bongo_cat_pref_toggle(context, "multi-key-display", tr(app,
         "pages.preference.cat.labels.multiKeyDisplay", "Multi-Key Display"), tr(app,
         "pages.preference.cat.hints.multiKeyDisplay",
-        "Mver only: join held keys with + in one bubble per side. Mirrored characters stay readable; configure crops in hand-layout.json."),
+        "Mver only: join held keys with + in one bubble per side. Mirrored characters stay readable; edit the crop regions below."),
         &model->multi_key_display)) {
         bongo_cat_overlay_set_multi_key_display(app->overlay,
             model->multi_key_display);
         bongo_cat_app_reapply_input(app);
         app->dirty = true;
+    }
+    /* The editor only appears once the model supplies a key folder to crop. */
+    if (model->multi_key_display && app->overlay &&
+        (bongo_cat_overlay_multi_key_layout_editable(app->overlay, false) ||
+         bongo_cat_overlay_multi_key_layout_editable(app->overlay, true))) {
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_GAMEPAD_FOUR_HANDS);
+        if (bongo_cat_pref_button(context, "multi-key-layout", tr(app,
+            "pages.preference.cat.labels.multiKeyLayout", "Multi-Key Layout"), tr(app,
+            "pages.preference.cat.hints.multiKeyLayout",
+            "Crop the hand, bubble and character regions of the key sprite. Saved to the model's hand-layout.json."),
+            tr(app, "pages.preference.cat.labels.multiKeyLayoutOpen",
+            "Configure")))
+            bongo_cat_preferences_layout_dialog_open(value);
     }
 }

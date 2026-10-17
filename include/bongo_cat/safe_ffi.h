@@ -27,8 +27,36 @@ bool bongo_safe_render_system_memory_get(const char *extensions, size_t capacity
 bool bongo_safe_render_system_memory_set(char *extensions, size_t capacity, bool enabled);
 bool bongo_safe_statistics_overlay_get(const char *extensions, size_t capacity);
 bool bongo_safe_statistics_overlay_set(char *extensions, size_t capacity, bool enabled);
+/* Statistics display only; labels have at most 16 Unicode characters. Empty uses the locale. */
+#define BONGO_SAFE_STATISTICS_UNIT_CAP 65 /* 16 four-byte UTF-8 characters plus NUL. */
+#define BONGO_SAFE_STATISTICS_SCALE_MIN 0.000000001
+#define BONGO_SAFE_STATISTICS_SCALE_MAX 1000000000.0
+typedef struct BongoSafeStatisticsUnits {
+    char count[BONGO_SAFE_STATISTICS_UNIT_CAP];
+    char movement[BONGO_SAFE_STATISTICS_UNIT_CAP];
+    char scroll[BONGO_SAFE_STATISTICS_UNIT_CAP];
+    double movement_scale;
+    double scroll_scale;
+} BongoSafeStatisticsUnits;
+bool bongo_safe_statistics_units_get(const char *extensions, size_t capacity,
+    BongoSafeStatisticsUnits *out);
+bool bongo_safe_statistics_units_set(char *extensions, size_t capacity,
+    const BongoSafeStatisticsUnits *units);
+/* Store URLs are validated and stored in the existing settings extensions. */
+bool bongo_safe_store_repository_get(const char *extensions, size_t capacity,
+    char *out, size_t out_capacity);
+bool bongo_safe_store_repository_set(char *extensions, size_t capacity, const char *url);
 bool bongo_safe_auto_update_get(const char *extensions, size_t capacity);
 bool bongo_safe_auto_update_set(char *extensions, size_t capacity, bool enabled);
+/* RGB values above 0xffffff select the default palette (setter: 0x1000000). */
+bool bongo_safe_preferences_compact_get(const char *extensions, size_t capacity);
+bool bongo_safe_preferences_compact_set(char *extensions, size_t capacity, bool enabled);
+uint32_t bongo_safe_preferences_text_get(const char *extensions, size_t capacity);
+bool bongo_safe_preferences_text_set(char *extensions, size_t capacity, uint32_t rgb);
+uint32_t bongo_safe_preferences_background_get(const char *extensions, size_t capacity);
+bool bongo_safe_preferences_background_set(char *extensions, size_t capacity, uint32_t rgb);
+uint32_t bongo_safe_preferences_color_get(const char *extensions, size_t capacity, bool secondary);
+bool bongo_safe_preferences_color_set(char *extensions, size_t capacity, bool secondary, uint32_t rgb);
 bool bongo_safe_preferences_rounded_get(const char *extensions, size_t capacity);
 bool bongo_safe_preferences_rounded_set(char *extensions, size_t capacity, bool enabled);
 bool bongo_safe_preferences_collapsible_get(const char *extensions, size_t capacity);
@@ -55,12 +83,27 @@ unsigned char *bongo_safe_image_decode(const unsigned char *data, size_t size,
 /* Header-only dimensions for the same formats. */
 bool bongo_safe_image_info(const unsigned char *data, size_t size, int *width,
     int *height);
-/* byte_count is width * height * 4, including every RGBA component. */
+/* UTF-8 file path; reads headers without retaining the encoded file. */
+bool bongo_safe_image_info_file(const char *path, int *width, int *height);
+/* byte_count is width*height*4 for RGBA, or size for a native payload. */
 void bongo_safe_free_pixels(unsigned char *pixels, size_t byte_count);
+/* Native atlases are premultiplied RGBA8 (format 0) or BC7 UNORM (format 1).
+   Alpha coverage retains the original image, independently of GPU compression.
+   Release pixels using size, not width*height*4. Output must be empty. */
+typedef struct BongoSafeNativeTexture {
+    unsigned char *pixels;
+    size_t size;
+    uint32_t width, height, source_width, source_height, format;
+    unsigned char alpha[128 * 128];
+} BongoSafeNativeTexture;
+typedef bool (*bongo_safe_cancelled)(void *userdata);
+void bongo_safe_native_texture_cache_root(const char *root);
+bool bongo_safe_native_texture_load(const char *path, uint32_t max_width,
+    uint32_t max_height, bool bc7, BongoSafeNativeTexture *texture,
+    bongo_safe_cancelled cancelled, void *userdata);
 
 /* --- about-page contributor feed --- */
 
-typedef bool (*bongo_safe_cancelled)(void *userdata);
 
 typedef struct bongo_safe_about_person {
     char *name;            /* UTF-8, released by bongo_safe_free_persons */

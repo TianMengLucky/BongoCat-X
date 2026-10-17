@@ -291,11 +291,13 @@ static int write_pack(const wchar_t *output, AssetList *list) {
 int wmain(int argc, wchar_t **argv) {
     AssetList list = {0};
     int result = 1;
-    if (argc != 3) {
-        fwprintf(stderr, L"usage: asset_packer ROOT OUTPUT\n");
+    if (argc != 4) {
+        fwprintf(stderr, L"usage: asset_packer ROOT OUTPUT LICENSE\n");
         return 2;
     }
-    if (collect_directory(argv[1], "", &list) && write_pack(argv[2], &list))
+    if (collect_directory(argv[1], "", &list) &&
+        append_asset(&list, argv[3], "LICENSE") &&
+        write_pack(argv[2], &list))
         result = 0;
     else fwprintf(stderr, L"cannot create asset pack\n");
     free_assets(&list);

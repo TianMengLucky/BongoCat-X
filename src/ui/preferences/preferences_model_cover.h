@@ -21,6 +21,9 @@ const BongoCatModelCover *bongo_cat_preferences_model_cover(
     int pixel_width, int pixel_height);
 const BongoCatModelCover *bongo_cat_preferences_cover_path(BongoCatApp *app,
     const char *path, int pixel_width, int pixel_height);
+/* Plugin images retain the Items import/preview bounds on cache misses. */
+const BongoCatModelCover *bongo_cat_preferences_cover_path_bounded(BongoCatApp *app,
+    const char *path, int pixel_width, int pixel_height);
 void bongo_cat_preferences_model_covers_prune(BongoCatApp *app);
 size_t bongo_cat_preferences_model_cover_usage(BongoCatApp *app, size_t *count);
 

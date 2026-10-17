@@ -209,6 +209,7 @@ typedef struct BongoCatApp {
     bool pointer_relative_active;
     bool pointer_cursor_locked;
     bool window_minimized;
+    uint64_t window_expose_next_ns;
     bool context_menu_requested;
     bool context_menu_active;
     bool context_menu_close_requested;

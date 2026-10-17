@@ -1,0 +1,14 @@
+{
+  "pages.preference.sounds.title": "Effets sonores",
+  "pages.preference.sounds.help": "Cliquez sur une touche pour écouter son son et choisir un fichier. Le survol affiche le nom. Les touches physiques jouent le son ; les affectations sont enregistrées automatiquement.",
+  "pages.preference.sounds.unassigned": "Aucun son affecté",
+  "pages.preference.sounds.choose": "Choisir un audio",
+  "pages.preference.sounds.preview": "Écouter",
+  "pages.preference.sounds.clear": "Effacer l’affectation",
+  "pages.preference.sounds.formats": "WAV, MP3, Ogg Vorbis et FLAC, jusqu’à 64 Mo. Indépendant du modèle ; les touches disponibles dépendent des permissions et de la disposition du clavier.",
+  "pages.preference.sounds.pluginHint": "Affectez un son à chaque touche. Un fil dédié traite importation, décodage, lecture et enregistrement. La désactivation conserve fichiers et affectations.",
+  "pages.preference.sounds.saved": "Effet enregistré",
+  "pages.preference.sounds.failed": "Impossible de modifier les effets sonores",
+  "pages.preference.sounds.queued": "Importation audio en attente",
+  "pages.preference.sounds.busy": "Traitement audio en cours"
+}

@@ -1,6 +1,4 @@
 <div align="center">
-
-2.2.2：插件页面与多语言资源独立管理，优化渲染内存、图片加载和资源回收，支持商店付费模型链接。
   <a href="https://bongocat.pet" target="_blank">
     <img src="resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>

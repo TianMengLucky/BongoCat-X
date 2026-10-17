@@ -240,8 +240,8 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 ---
 
 <div align="center">
-版权所有 © 2026 - **BongoCat**<br>
-By vladelaina<br>
-Fork maintained by [TianMengLucky](https://github.com/TianMengLucky)<br>
-Made with ❤️ & ⌨️
+  版权所有 © 2026 - <strong>BongoCat</strong><br>
+  By vladelaina<br>
+  Fork maintained by <a href="https://github.com/TianMengLucky">TianMengLucky</a><br>
+  Made with ❤️ &amp; ⌨️
 </div>

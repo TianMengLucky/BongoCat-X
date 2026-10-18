@@ -442,7 +442,7 @@ mod tests {
     fn page_tables_match_the_c_abi() {
         assert_eq!(size_of::<Rect>(), 16);
         assert_eq!(size_of::<Status>(), 56);
-        assert_eq!(size_of::<Host>(), 8 + 32 * size_of::<usize>());
+        assert_eq!(size_of::<Host>(), 8 + 31 * size_of::<usize>());
         assert_eq!(size_of::<Services>(), 8 + 3 * size_of::<usize>());
         assert_eq!(size_of::<Contribution>(), 8 + 3 * size_of::<usize>());
     }

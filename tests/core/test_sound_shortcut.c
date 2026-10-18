@@ -11,6 +11,18 @@ static bool edge(BongoCatSoundShortcutState *state, BongoCatInputKind kind,
 }
 
 void test_sound_shortcut(void) {
+    BongoCatSoundShortcutState boundary = {0};
+    BongoCatInputEvent long_button = {.kind = BONGO_CAT_INPUT_GAMEPAD_BUTTON, .value = 1};
+    size_t max_name = BONGO_CAT_ID_CAP - sizeof("Gamepad:");
+    memset(long_button.name, 'A', max_name);
+    CHECK(bongo_cat_sound_shortcut_update(&boundary, &long_button));
+    CHECK(strlen(boundary.held[0]) == BONGO_CAT_ID_CAP - 1);
+    CHECK(strncmp(boundary.held[0], "Gamepad:", sizeof("Gamepad:") - 1) == 0);
+    CHECK(strcmp(boundary.held[0] + sizeof("Gamepad:") - 1, long_button.name) == 0);
+    long_button.name[max_name] = 'A';
+    CHECK(!bongo_cat_sound_shortcut_update(&boundary, &long_button));
+    CHECK(boundary.count == 1);
+
     BongoCatSoundShortcutState state = {0};
     CHECK(!bongo_cat_sound_shortcut_down(&state, "A"));
     CHECK(edge(&state, BONGO_CAT_INPUT_KEY_DOWN, "KeyA"));

@@ -58,7 +58,7 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "bongo-inox2d"
-version = "2.2.2"
+version = "2.2.3"
 dependencies = [
  "ash",
  "bongo-plugin",
@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.2.2"
+version = "2.2.3"
 dependencies = [
  "image",
  "inox2d",

@@ -265,7 +265,7 @@ void bongo_cat_settings_defaults(BongoCatSettings *config) {
     config->window.sequential_model_interval_seconds =
         BONGO_CAT_DEFAULT_SEQUENTIAL_MODEL_SECONDS;
     config->app.tray_visible = true;
-    config->app.reserved_app_byte = 0;
+    config->app.radial_menu = false;
     config->app.large_render_optimization = false;
     config->app.render_parallel_recording = true;
     config->app.render_bindless = true;

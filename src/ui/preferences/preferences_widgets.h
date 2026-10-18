@@ -7,6 +7,8 @@
 #include "preferences_icons.h"
 #include "preferences_controls.h"
 
+bool bongo_cat_pref_icon_action_button(struct nk_context *context, int icon);
+
 bool bongo_cat_pref_card_begin(struct nk_context *context, const char *id,
     struct nk_style_window *saved);
 void bongo_cat_pref_card_end(struct nk_context *context, const struct nk_style_window *saved);

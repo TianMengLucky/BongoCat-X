@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2: страницы и переводы управляются плагинами, оптимизирована память при рендеринге и загрузке изображений, добавлены ссылки на покупку в магазине.
+2.2.3: отключаемое радиальное меню по правой кнопке, увеличенное окно настроек с разворачиванием и восстановлением, сброс отдельных цветов и улучшенные единицы и округление статистики.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@
 
 ## 📥 Загрузка
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
 
   Скачайте последнюю версию из [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

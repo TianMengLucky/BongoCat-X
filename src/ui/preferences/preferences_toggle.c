@@ -163,7 +163,7 @@ static bool color_picker_panel(struct nk_context *context,
         bongo_cat_ui_cursor_hover_rect(context, cell,
             BONGO_CAT_UI_CURSOR_POINTER);
     return changed;
-}
+}
 /* All color options use the same swatch button and popup. */
 bool bongo_cat_pref_color_picker(struct nk_context *context,
     BongoCatPrefColorState *state, uint32_t *rgb) {
@@ -171,9 +171,17 @@ bool bongo_cat_pref_color_picker(struct nk_context *context,
     if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);
-    if (!nk_combo_begin_color(context,
-        nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255),
-        nk_vec2(280.0f, 196.0f))) return false;
+    struct nk_style_combo saved = context->style.combo;
+    struct nk_style_item swatch = nk_style_item_color(
+        nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255));
+    context->style.combo.normal = context->style.combo.hover =
+        context->style.combo.active = swatch;
+    context->style.combo.sym_normal = context->style.combo.sym_hover =
+        context->style.combo.sym_active = NK_SYMBOL_NONE;
+    context->style.combo.rounding = 4.0f;
+    bool open = nk_combo_begin_label(context, "", nk_vec2(280.0f, 196.0f));
+    context->style.combo = saved;
+    if (!open) return false;
     bool changed = color_picker_panel(context, state, rgb);
     nk_combo_end(context);
     return changed;

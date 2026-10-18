@@ -6,6 +6,7 @@
 #include "preferences_options.h"
 #include "preferences_notice.h"
 #include "ui_tooltip.h"
+#include "../rendering/ui_icons.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/i18n.h"
 #include "bongo_cat/log.h"
@@ -35,42 +36,49 @@ static void theme_palette(BongoCatPreferences *value, struct nk_context *context
         tr(app, "native.secondaryColor", "Secondary color"),
         tr(app, "native.backgroundColor", "Page background color"),
         tr(app, "native.textColor", "Text color")};
-    value->theme_color_role = bongo_cat_pref_combo(context, "theme-color-role",
-        tr(app, "native.colorPalette", "Color palette"),
-        tr(app, "native.colorPaletteHint", "Choose a color to edit, then click its swatch to open the palette."),
-        labels, (int)(sizeof(labels) / sizeof(labels[0])), value->theme_color_role);
-    int role = value->theme_color_role;
+    bongo_cat_pref_section(context, tr(app, "native.colorPalette", "Color palette"));
     BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_color swatches[] = {palette.accent, palette.pink,
         palette.surface_glass, palette.text};
-    struct nk_color swatch = swatches[role];
-    uint32_t color = value->theme_colors[role];
-    uint32_t picked = color <= 0xffffffu ? color :
-        ((uint32_t)swatch.r << 16) | ((uint32_t)swatch.g << 8) | swatch.b;
-    nk_layout_row_dynamic(context, 30, 3);
-    nk_label(context, labels[role], NK_TEXT_LEFT);
-    bool changed = nk_button_label(context, tr(app, "native.defaultColor", "Use default color"));
-    if (changed) color = 0x1000000u;
-    if (bongo_cat_pref_color_picker(context, &value->theme_color_picker, &picked)) {
-        color = picked;
-        changed = true;
-    }
-    if (changed) {
-        bool saved;
-        if (role == THEME_BACKGROUND)
-            saved = bongo_safe_preferences_background_set(app->settings.extensions_json,
-                sizeof(app->settings.extensions_json), color);
-        else if (role == THEME_TEXT)
-            saved = bongo_safe_preferences_text_set(app->settings.extensions_json,
-                sizeof(app->settings.extensions_json), color);
-        else saved = bongo_safe_preferences_color_set(app->settings.extensions_json,
-            sizeof(app->settings.extensions_json), role == THEME_SECONDARY, color);
-        if (saved) {
-            value->theme_colors[role] = color;
-            value->style_theme = -1;
-            value->render_dirty = true;
-        } else bongo_cat_preferences_notice_show(app, tr(app,
-            "native.themeColorSaveFailed", "Unable to save theme color"), true);
+    for (int role = THEME_PRIMARY; role <= THEME_TEXT; ++role) {
+        struct nk_color swatch = swatches[role];
+        uint32_t color = value->theme_colors[role];
+        uint32_t picked = color <= 0xffffffu ? color :
+            ((uint32_t)swatch.r << 16) | ((uint32_t)swatch.g << 8) | swatch.b;
+        float width = nk_window_get_content_region(context).w;
+        nk_layout_row_begin(context, NK_STATIC, 32, 3);
+        nk_layout_row_push(context, NK_MAX(0.0f, width - 64.0f -
+            2.0f * context->style.window.spacing.x));
+        nk_label(context, labels[role], NK_TEXT_LEFT);
+        nk_layout_row_push(context, 32);
+        struct nk_rect reset_bounds = nk_widget_bounds(context);
+        bool changed = bongo_cat_pref_icon_action_button(context, BONGO_CAT_UI_ICON_SYNC);
+        if (nk_input_is_mouse_hovering_rect(&context->input, reset_bounds))
+            nk_tooltip(context, tr(app, "native.defaultColor", "Use default color"));
+        if (changed) color = 0x1000000u;
+        nk_layout_row_push(context, 32);
+        if (bongo_cat_pref_color_picker(context, &value->theme_color_picker[role], &picked)) {
+            color = picked;
+            changed = true;
+        }
+        nk_layout_row_end(context);
+        if (changed) {
+            bool saved;
+            if (role == THEME_BACKGROUND)
+                saved = bongo_safe_preferences_background_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), color);
+            else if (role == THEME_TEXT)
+                saved = bongo_safe_preferences_text_set(app->settings.extensions_json,
+                    sizeof(app->settings.extensions_json), color);
+            else saved = bongo_safe_preferences_color_set(app->settings.extensions_json,
+                sizeof(app->settings.extensions_json), role == THEME_SECONDARY, color);
+            if (saved) {
+                value->theme_colors[role] = color;
+                value->style_theme = -1;
+                value->render_dirty = true;
+            } else bongo_cat_preferences_notice_show(app, tr(app,
+                "native.themeColorSaveFailed", "Unable to save theme color"), true);
+        }
     }
 }
 
@@ -179,6 +187,12 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
         "pages.preference.general.labels.appSettings", "Application"),
         BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
     if (application_open) {
+        bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_SECTION_APPLICATION);
+        bongo_cat_pref_toggle(context, "radial-menu", tr(app,
+            "pages.preference.general.labels.radialMenu", "Right-click Radial Menu"), tr(app,
+            "pages.preference.general.hints.radialMenu",
+            "Show the radial menu when right-clicking the pet. When off, right-click does nothing and settings open automatically at startup."),
+            &options->radial_menu);
         bool old_autostart = options->autostart;
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);
         if (bongo_cat_pref_toggle(context, "autostart", tr(app,

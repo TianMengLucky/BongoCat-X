@@ -70,7 +70,6 @@ struct BongoCatPreferences {
     char plugin_edit_texts[8][256];
     int style_theme;
     uint32_t theme_colors[4];
-    int theme_color_role;
     BongoCatLanguage font_language;
     nk_rune glyph_ranges[16384];
     nk_rune heading_glyph_ranges[512];
@@ -115,7 +114,7 @@ struct BongoCatPreferences {
        repaints once the color has stayed stable for a short while instead of
        on every mouse move. */
     uint64_t color_picker_pending_ns;
-    BongoCatPrefColorState theme_color_picker;
+    BongoCatPrefColorState theme_color_picker[4];
     BongoCatPrefColorState obs_color_picker;
     bool pending_model_multiple;
     bool pending_model_active;

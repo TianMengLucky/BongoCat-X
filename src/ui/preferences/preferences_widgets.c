@@ -382,7 +382,7 @@ bool bongo_cat_pref_button(struct nk_context *context, const char *id,
     nk_layout_row_end(context); bongo_cat_pref_description(context, detail, lines);
     form_end(context, &saved); return result;
 }
-static bool icon_action_button(struct nk_context *context, int icon) {
+bool bongo_cat_pref_icon_action_button(struct nk_context *context, int icon) {
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
     struct nk_rect bounds;
     /* Consume the widget slot: a bounds peek leaves it to the next widget,
@@ -416,7 +416,7 @@ int bongo_cat_pref_button_with_icon(struct nk_context *context,
     nk_layout_row_push(context, left);
     bongo_cat_pref_form_label(context, title);
     nk_layout_row_push(context, 36);
-    bool detect = icon_action_button(context, icon);
+    bool detect = bongo_cat_pref_icon_action_button(context, icon);
     nk_layout_row_push(context, NK_MAX(140.0f, available - left - 44.0f));
     bool main = secondary_button(context, button);
     nk_layout_row_end(context);

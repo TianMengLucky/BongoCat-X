@@ -6,8 +6,8 @@
 #include <SDL3/SDL_opengl.h>
 #include <math.h>
 
-#define PREF_WIDTH 900.0f
-#define PREF_HEIGHT 680.0f
+#define PREF_WIDTH 1200.0f
+#define PREF_HEIGHT 860.0f
 #define PREF_MIN_WIDTH 720.0f
 #define PREF_MIN_HEIGHT 560.0f
 #define PREF_SCREEN_MARGIN 48.0f
@@ -57,6 +57,8 @@ static SDL_HitTestResult SDLCALL preference_hit_test(SDL_Window *window,
     const SDL_Point *point, void *data) {
     BongoCatPreferences *value = data;
     if (!value || !point || bongo_cat_preferences_remove_dialog_active(value->app))
+        return SDL_HITTEST_NORMAL;
+    if (SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED)
         return SDL_HITTEST_NORMAL;
     float scale = value->ui.layout_scale > 0.0f ? value->ui.layout_scale : 1.0f;
     int width = 0, height = 0;
@@ -237,8 +239,10 @@ bool bongo_cat_preferences_scale_event(BongoCatPreferences *value,
         value->ui.raster_scale = raster_scale;
     }
     SDL_SetWindowMinimumSize(value->window, minimum_width, minimum_height);
-    SDL_SetWindowSize(value->window, width, height);
-    fit_position(value->window, display, width, height);
+    if (!(SDL_GetWindowFlags(value->window) & SDL_WINDOW_MAXIMIZED)) {
+        SDL_SetWindowSize(value->window, width, height);
+        fit_position(value->window, display, width, height);
+    }
     SDL_SyncWindow(value->window);
     bongo_cat_platform_configure_preferences_window(value->window);
     value->live_resize_rendering = was_rendering;

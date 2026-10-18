@@ -1,6 +1,6 @@
 
 
-2.2.2: halaman dan terjemahan dikelola plugin, penggunaan memori rendering dan pemuatan gambar dioptimalkan, serta tautan pembelian di toko.
+2.2.3: menu radial klik kanan opsional, jendela pengaturan lebih besar dengan kontrol maksimalkan/pulihkan, reset tiap warna, serta perbaikan satuan dan pembulatan statistik.
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">

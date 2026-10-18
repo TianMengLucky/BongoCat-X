@@ -60,7 +60,7 @@ static bool add_model(BongoCatModelCatalog *catalog, const char *directory, bool
     BongoCatModelEntry *entry = &catalog->entries[catalog->count++];
     memset(entry, 0, sizeof(*entry));
     snprintf(entry->id, sizeof(entry->id), "%s", bongo_cat_path_name(directory));
-    snprintf(entry->package_id, sizeof(entry->package_id), "%s", entry->id);
+    memcpy(entry->package_id, entry->id, sizeof(entry->package_id));
     snprintf(entry->directory, sizeof(entry->directory), "%s", directory);
     snprintf(entry->adapter_directory, sizeof(entry->adapter_directory), "%s", directory);
     snprintf(entry->storage_directory, sizeof(entry->storage_directory), "%s", directory);

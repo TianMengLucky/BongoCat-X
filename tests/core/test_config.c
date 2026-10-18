@@ -41,6 +41,8 @@ void test_config(void) {
     bongo_cat_session_defaults(&session);
     CHECK(!settings.window.pass_through);
     CHECK(!settings.app.run_as_admin);
+    CHECK(!settings.app.radial_menu);
+    settings.app.radial_menu = true;
     settings.app.run_as_admin = true;
     CHECK(!settings.app.github_download_acceleration);
     settings.app.github_download_acceleration = true;
@@ -177,6 +179,7 @@ void test_config(void) {
         loaded_settings.window.random_motion_interval_seconds == 17.0f);
     CHECK(loaded_settings.app.language == BONGO_CAT_LANG_ZH_CN);
     CHECK(loaded_settings.app.run_as_admin);
+    CHECK(loaded_settings.app.radial_menu);
     CHECK(loaded_settings.app.github_download_acceleration);
     CHECK(loaded_settings.model.gamepad_four_hands);
     CHECK(!loaded_settings.model.dynamic_texture_resolution);

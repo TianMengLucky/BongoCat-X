@@ -42,9 +42,11 @@
 
 SDK 的导入与下载统一位于「设置 → 插件」，模型页仅管理模型。Windows 用户启用 Live2D 插件后，可点击「下载 Live2D SDK」，阅读并同意两份官方协议后自动下载并安装匹配的 Core；下载显示已接收量、总量与百分比，失败可在弹窗内重试。其他平台请手动导入兼容的 Core。外观与纯色背景共用点击色块打开的调色板弹窗。
 
+2.2.3：新增默认关闭的右键轮盘开关；加大设置窗口并支持最大化／还原；每项外观颜色可单独恢复默认；改善统计单位编辑与换算后的数值显示。
+
 ## 📥 下载
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 

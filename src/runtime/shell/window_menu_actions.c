@@ -31,6 +31,7 @@ void bongo_cat_window_show_context_menu(BongoCatApp *app) {
     if (!app || app->context_menu_active) return;
     app->context_menu_requested = false;
     app->context_menu_close_requested = false;
+    if (!app->settings.app.radial_menu && !app->smoke_context_menu) return;
     size_t capacity = app->behaviors.count ? app->behaviors.count : 1;
     char (*names)[BONGO_CAT_MENU_LABEL_CAP] = calloc(capacity * 3, sizeof(*names));
     bool *checked = calloc(capacity * 2, sizeof(*checked));

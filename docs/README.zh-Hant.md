@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2：外掛頁面與多語言資源獨立管理，最佳化渲染記憶體、圖片載入和資源回收，支援商店付費模型連結。
+2.2.3：新增右鍵輪盤開關、加大設定視窗並支援最大化／還原、各項顏色獨立重設，以及統計單位編輯與小數顯示改善。
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>

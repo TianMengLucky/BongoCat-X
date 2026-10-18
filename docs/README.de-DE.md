@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2: Plugin-eigene Seiten und Übersetzungen, optimierter Speicherverbrauch beim Rendern und Laden von Bildern sowie Kauflinks im Modellshop.
+2.2.3: optionales Rechtsklick-Radialmenü, größeres Einstellungsfenster mit Maximieren/Wiederherstellen, einzelne Farben zurücksetzen sowie verbesserte Statistikeinheiten und Rundung.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ SDK-Import und Download befinden sich unter Einstellungen → Plugins; die Model
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 

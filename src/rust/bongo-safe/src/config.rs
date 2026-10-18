@@ -86,7 +86,7 @@ struct ApplicationPreferences {
     autostart: bool,
     run_as_admin: bool,
     tray_visible: bool,
-    reserved_app_byte: u8,
+    radial_menu: bool,
     large_render_optimization: bool,
     render_parallel_recording: bool,
     render_bindless: bool,
@@ -640,7 +640,7 @@ fn read_app(object: &Map<String, Value>, value: &mut ApplicationPreferences) -> 
     meaning under the old key; the new key wins when both are present. */
     let legacy_admin = matches!(object.get("gameCompatibility"), Some(Value::Bool(true)));
     boolean(object, DESCRIPTION, "showTrayIcon", &mut value.tray_visible)?;
-    value.reserved_app_byte = 0;
+    boolean(object, DESCRIPTION, "radialMenu", &mut value.radial_menu)?;
     boolean(object, DESCRIPTION, "largeRenderOptimization", &mut value.large_render_optimization)?;
     // Older settings requested all features through the master switch.
     value.render_parallel_recording = true;
@@ -1121,6 +1121,7 @@ fn write_app(value: &ApplicationPreferences) -> Value {
         "runAsAdmin": value.run_as_admin,
         "githubDownloadAcceleration": value.github_download_acceleration,
         "showTrayIcon": value.tray_visible,
+        "radialMenu": value.radial_menu,
         "largeRenderOptimization": value.large_render_optimization,
         "largeRenderParallelRecording": value.render_parallel_recording,
         "largeRenderBindless": value.render_bindless,
@@ -1652,7 +1653,7 @@ mod tests {
     fn metal_backend_survives_settings_serialization() {
         let app = ApplicationPreferences {
             autostart: false, run_as_admin: false, tray_visible: true,
-            reserved_app_byte: 0,
+            radial_menu: false,
             large_render_optimization: false,
             render_parallel_recording: true,
             render_bindless: true,
@@ -1687,7 +1688,7 @@ mod tests {
         let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
         for legacy in [serde_json::json!(true), serde_json::json!(false), serde_json::json!("true")] {
             read_app(serde_json::json!({"lowMemoryMode": legacy}).as_object().unwrap(), &mut app).unwrap();
-            assert_eq!(app.reserved_app_byte, 0);
+            assert!(!app.radial_menu);
             assert!(write_app(&app).get("lowMemoryMode").is_none());
         }
     }
@@ -1822,6 +1823,25 @@ mod tests {
         assert!(!window.custom_background);
         let invalid = serde_json::json!({"customBackgroundPath": 42});
         assert!(read_window(invalid.as_object().unwrap(), &mut window).is_err());
+    }
+
+    #[test]
+    fn radial_menu_defaults_off_and_round_trips() {
+        let mut app: ApplicationPreferences = unsafe { std::mem::zeroed() };
+        read_app(serde_json::json!({}).as_object().unwrap(), &mut app).unwrap();
+        assert!(!app.radial_menu);
+        for enabled in [true, false] {
+            let input = serde_json::json!({"radialMenu": enabled});
+            read_app(input.as_object().unwrap(), &mut app).unwrap();
+            let saved = write_app(&app);
+            let mut restored: ApplicationPreferences = unsafe { std::mem::zeroed() };
+            read_app(saved.as_object().unwrap(), &mut restored).unwrap();
+            assert_eq!(restored.radial_menu, enabled);
+        }
+        let invalid = serde_json::json!({"radialMenu": "true"});
+        assert!(read_app(invalid.as_object().unwrap(), &mut app).is_err());
+        assert_eq!(std::mem::offset_of!(ApplicationPreferences, radial_menu), 3);
+        assert_eq!(std::mem::size_of::<ApplicationPreferences>(), 24);
     }
 
     #[test]

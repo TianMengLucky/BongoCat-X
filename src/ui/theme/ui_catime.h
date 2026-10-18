@@ -49,9 +49,14 @@ typedef void (*BongoCatUIIconDraw)(void *userdata,
 bool bongo_cat_ui_header(struct nk_context *context, const char *title,
     const struct nk_user_font *font, unsigned int logo_texture,
     bool *title_clicked, bool interactive, bool dark, bool native_chrome);
-bool bongo_cat_ui_content_header(struct nk_context *context,
+typedef enum BongoCatUIWindowAction {
+    BONGO_CAT_UI_WINDOW_NONE,
+    BONGO_CAT_UI_WINDOW_HIDE,
+    BONGO_CAT_UI_WINDOW_TOGGLE_MAXIMIZE
+} BongoCatUIWindowAction;
+BongoCatUIWindowAction bongo_cat_ui_content_header(struct nk_context *context,
     const char *title, int icon, bool interactive, bool dark,
-    bool native_chrome);
+    bool native_chrome, bool maximized);
 bool bongo_cat_ui_close_button(struct nk_context *context,
     struct nk_command_buffer *canvas, struct nk_rect bounds,
     struct nk_color normal, struct nk_color hover, bool interactive);

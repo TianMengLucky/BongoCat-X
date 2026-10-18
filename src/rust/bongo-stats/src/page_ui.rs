@@ -45,7 +45,7 @@ fn grouped(raw: &str, unit: &str) -> String {
 fn scaled(amount: f64, scale: f64, precision: usize) -> String {
     let result = format!(
         "{:.*}",
-        if scale == 1.0 { precision } else { 9 },
+        if scale == 1.0 { precision } else { 2 },
         amount * scale
     );
     if scale == 1.0 || !result.contains('.') {
@@ -135,6 +135,7 @@ impl PageState for State {
         if self.units.is_none() {
             if let Some(units) = unsafe { p.read::<units::Units>(read::UNITS, 0) } {
                 self.draft = units;
+                self.draft.fill_defaults(p);
                 self.units = Some(units);
             }
         }
@@ -276,6 +277,8 @@ mod tests {
         assert_eq!(grouped("1234567.5", "units"), "1,234,567.5 units");
         assert_eq!(scaled(123.0, 0.01, 0), "1.23");
         assert_eq!(scaled(0.0, 0.01, 0), "0");
+        assert_eq!(scaled(613238.47656, 0.001, 0), "613.24");
+        assert_eq!(scaled(1200.0, 0.001, 0), "1.2");
         assert_eq!(scaled(12.0, 1.0, 1), "12.0");
     }
 }

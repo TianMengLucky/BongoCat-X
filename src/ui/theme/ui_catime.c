@@ -123,12 +123,36 @@ bool bongo_cat_ui_header(struct nk_context *context, const char *title,
         nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, bounds);
     return false;
 }
-bool bongo_cat_ui_content_header(struct nk_context *context,
+static bool window_action_button(struct nk_context *context,
+    struct nk_command_buffer *canvas, struct nk_rect bounds,
+    BongoCatUIPalette palette, bool interactive, bool maximize, bool restored) {
+    bool hover = interactive && nk_input_is_mouse_hovering_rect(
+        &context->input, bounds);
+    struct nk_color color = hover ? palette.accent : palette.muted;
+    struct nk_rect icon = nk_rect(bounds.x + 10, bounds.y + 10, 14, 14);
+    if (maximize) {
+        if (restored) {
+            nk_stroke_rect(canvas, nk_rect(icon.x + 4, icon.y, 10, 10),
+                0, 1.5f, color);
+            icon.y += 4;
+            icon.w = icon.h = 10;
+            nk_fill_rect(canvas, icon, 0, palette.surface_glass);
+        }
+        nk_stroke_rect(canvas, icon, 0, 1.5f, color);
+    } else nk_stroke_line(canvas, icon.x, icon.y + 10,
+        icon.x + icon.w, icon.y + 10, 1.5f, color);
+    if (hover) bongo_cat_ui_cursor_hover_rect(context, bounds,
+        BONGO_CAT_UI_CURSOR_POINTER);
+    return hover && nk_input_is_mouse_click_in_rect(&context->input,
+        NK_BUTTON_LEFT, bounds);
+}
+
+BongoCatUIWindowAction bongo_cat_ui_content_header(struct nk_context *context,
     const char *title, int icon, bool interactive, bool dark,
-    bool native_chrome) {
+    bool native_chrome, bool maximized) {
     struct nk_rect bounds;
     nk_layout_row_dynamic(context, BONGO_CAT_UI_HEADER_HEIGHT, 1);
-    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return false;
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return BONGO_CAT_UI_WINDOW_NONE;
     BongoCatUIPalette p = bongo_cat_ui_palette(dark);
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     nk_fill_rect(canvas, bounds, 0,
@@ -139,13 +163,21 @@ bool bongo_cat_ui_content_header(struct nk_context *context,
     else bongo_cat_ui_fallback_icon(canvas, icon, icon_bounds, p.accent);
     const struct nk_user_font *font = bongo_cat_ui_label_font(context);
     struct nk_rect text = nk_rect(bounds.x + 52,
-        bounds.y + (bounds.h - font->height) * .5f, bounds.w - 110, font->height);
+        bounds.y + (bounds.h - font->height) * .5f, bounds.w - (native_chrome ? 72 : 186), font->height);
     nk_draw_text(canvas, text, title, nk_strlen(title), font,
         nk_rgba(0, 0, 0, 0), p.text);
-    if (native_chrome) return false;
+    if (native_chrome) return BONGO_CAT_UI_WINDOW_NONE;
     struct nk_rect close = nk_rect(bounds.x + bounds.w - 48, bounds.y + 11, 34, 34);
-    return bongo_cat_ui_close_button(context, canvas, close, p.muted,
+    bool hide = bongo_cat_ui_close_button(context, canvas, close, p.muted,
         p.accent, interactive);
+    struct nk_rect maximize = nk_rect(close.x - 38, close.y, 34, 34);
+    bool toggle = window_action_button(context, canvas, maximize, p,
+        interactive, true, maximized);
+    struct nk_rect minimize = nk_rect(close.x - 76, close.y, 34, 34);
+    hide |= window_action_button(context, canvas, minimize, p,
+        interactive, false, false);
+    return hide ? BONGO_CAT_UI_WINDOW_HIDE : toggle ?
+        BONGO_CAT_UI_WINDOW_TOGGLE_MAXIMIZE : BONGO_CAT_UI_WINDOW_NONE;
 }
 
 bool bongo_cat_ui_close_button(struct nk_context *context,
@@ -181,7 +213,7 @@ bool bongo_cat_ui_title_link_hit(float x, float y, float width) {
 
 bool bongo_cat_ui_title_drag_hit(float x, float y, float width) {
     float side = bongo_cat_ui_sidebar_width(width);
-    return x >= 8.0f + side && x <= width - 8.0f &&
+    return x >= 8.0f + side && x < width - 134.0f &&
         y >= 8.0f && y <= 8.0f + BONGO_CAT_UI_HEADER_HEIGHT &&
         !bongo_cat_ui_close_hit(x, y, width);
 }

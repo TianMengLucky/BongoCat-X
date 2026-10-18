@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2: páginas y traducciones gestionadas por los plugins, menor uso de memoria al renderizar y cargar imágenes, y enlaces de compra en la tienda.
+2.2.3: menú radial opcional con clic derecho, ventana de ajustes más grande con maximizar/restaurar, restablecimiento de cada color y mejoras en las unidades y el redondeo de estadísticas.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ La importación y descarga del SDK están en Ajustes → Plugins; la página de 
 
 ## 📥 Descarga
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
 
   Descarga la última versión desde [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

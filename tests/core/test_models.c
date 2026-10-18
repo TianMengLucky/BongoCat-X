@@ -140,6 +140,8 @@ void test_models(void) {
     CHECK(bongo_cat_models_scan(catalog, BONGO_CAT_NATIVE_SOURCE_DIR "/resources/assets/models",
         true, &error) == BONGO_CAT_OK);
     CHECK(catalog->count == 3);
+    for (size_t i = 0; i < catalog->count; ++i)
+        CHECK(strcmp(catalog->entries[i].package_id, catalog->entries[i].id) == 0);
     const BongoCatModelEntry *standard = bongo_cat_models_find(catalog, "standard");
     const BongoCatModelEntry *keyboard = bongo_cat_models_find(catalog, "keyboard");
     const BongoCatModelEntry *gamepad = bongo_cat_models_find(catalog, "gamepad");

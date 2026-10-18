@@ -265,7 +265,8 @@ static void enter_model_drop(BongoCatPreferences *value) {
 
 bool bongo_cat_preferences_chrome_drag_allowed(
     const BongoCatPreferences *value) {
-    return value && value->app && !value->native_drag &&
+    return value && value->app && value->window && !value->native_drag &&
+        !(SDL_GetWindowFlags(value->window) & SDL_WINDOW_MAXIMIZED) &&
         !bongo_cat_preferences_behavior_dialog_active(value) &&
         !bongo_cat_preferences_random_dialog_active(value) &&
         !bongo_cat_preferences_layout_dialog_active(value) &&

@@ -222,12 +222,14 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
             bongo_cat_startup_ci_failure(app, &menu_error);
         }
     }
-    if (app->smoke_preferences || !app->loaded_model[0])
+    if (app->smoke_preferences || !app->loaded_model[0] ||
+        (!app->secondary_pet && !app->smoke && !app->settings.app.radial_menu))
         bongo_cat_preferences_show(app->preferences);
     app->last_frame_ns = SDL_GetTicksNS();
     app->dirty = true;
     app->startup_raise_due_ns = !app->secondary_pet && !app->smoke &&
-        !app->autostart_launch && app->session.window.visible ?
+        !app->autostart_launch && app->session.window.visible &&
+        !bongo_cat_preferences_visible(app->preferences) ?
         app->last_frame_ns + 250000000ull : 0;
     if (app->smoke_deadline_ns) app->smoke_deadline_ns += app->last_frame_ns;
     if (!app->session.window.visible) bongo_cat_startup_ready(app);

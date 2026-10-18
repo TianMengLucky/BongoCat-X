@@ -20,6 +20,28 @@ impl Default for Units {
         }
     }
 }
+impl Units {
+    fn labels(&mut self) -> [(&mut [u8; 65], &str, &str); 3] {
+        [
+            (&mut self.count, "native.statsCountUnit", "counts"),
+            (&mut self.movement, "native.statsInputUnit", "input units"),
+            (&mut self.scroll, "native.statsWheelUnit", "wheel units"),
+        ]
+    }
+    pub(super) fn fill_defaults(&mut self, p: &Page<'_>) {
+        for (label, key, fallback) in self.labels() {
+            if text(label).is_empty() {
+                let default = p.tr(key, fallback);
+                let mut len = default.len().min(label.len() - 1);
+                while !default.is_char_boundary(len) {
+                    len -= 1;
+                }
+                label.fill(0);
+                label[..len].copy_from_slice(&default.as_bytes()[..len]);
+            }
+        }
+    }
+}
 pub(super) fn draw(state: &mut State, p: &Page<'_>) {
     if !p.tree(
         "statistics-units",
@@ -92,10 +114,18 @@ pub(super) fn draw(state: &mut State, p: &Page<'_>) {
         *draft = Units::default();
     }
     if apply || reset {
-        if unsafe { p.send(action::SET_UNITS, 0, draft) } {
+        let mut saved = *draft;
+        // Keep language defaults implicit in storage, including labels over 16 characters.
+        for (label, key, fallback) in saved.labels() {
+            if text(label) == p.tr(key, fallback) {
+                label.fill(0);
+            }
+        }
+        if unsafe { p.send(action::SET_UNITS, 0, &saved) } {
             state.units = unsafe { p.read(read::UNITS, 0) };
             if let Some(units) = state.units {
                 *draft = units;
+                draft.fill_defaults(p);
             }
             p.invalidate();
             p.unfocus();

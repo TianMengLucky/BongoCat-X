@@ -1,3 +1,4 @@
+#include "bongo_cat/log.h"
 #include "preferences_live2d_setup.h"
 #include "preferences_state.h"
 #include "preferences_render_internal.h"
@@ -147,9 +148,21 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     nk_layout_row_push(context, width - BONGO_CAT_UI_MARGIN * 2.0f - sidebar);
     bool close_requested = false;
     if (nk_group_begin(context, "preferences-content", NK_WINDOW_NO_SCROLLBAR)) {
-    close_requested = bongo_cat_ui_content_header(context,
+    bool maximized = (SDL_GetWindowFlags(value->window) & SDL_WINDOW_MAXIMIZED) != 0;
+    BongoCatUIWindowAction window_action = bongo_cat_ui_content_header(context,
         menus[selected_menu], menu_icons[selected_menu], !modal, dark,
-        native_chrome);
+        native_chrome, maximized);
+    close_requested = window_action == BONGO_CAT_UI_WINDOW_HIDE;
+    if (window_action == BONGO_CAT_UI_WINDOW_TOGGLE_MAXIMIZE) {
+        bool changed = maximized ? SDL_RestoreWindow(value->window) :
+            SDL_MaximizeWindow(value->window);
+        if (!changed) SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+            "Cannot change preferences window state: %s", SDL_GetError());
+        value->render_dirty = true;
+        nk_group_end(context);
+        nk_layout_row_end(context);
+        return false;
+    }
     if (close_requested) {
         /* Scrolled cards can overlap the header's hit area despite clipping. */
         nk_group_end(context);

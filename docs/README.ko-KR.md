@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2: 플러그인별 페이지와 번역 관리, 렌더링 및 이미지 로딩 메모리 최적화, 상점 구매 링크 지원.
+2.2.3: 오른쪽 클릭 원형 메뉴 설정, 최대화/복원을 지원하는 더 큰 설정 창, 색상별 초기화, 통계 단위 편집 및 반올림 개선.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ SDK 가져오기와 다운로드는 설정 → 플러그인에서 관리하며 �
 
 ## 📥 다운로드
 
-- GitHub Releases ([v2.2.2](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.2))
+- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 

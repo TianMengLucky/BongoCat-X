@@ -1,6 +1,6 @@
 [package]
 name = "bongo-stats"
-version = "2.2.2"
+version = "2.2.3"
 edition = "2021"
 publish = false
 description = "Local aggregate input statistics plugin for BongoCat"

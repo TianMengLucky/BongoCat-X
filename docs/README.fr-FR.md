@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.2 : pages et traductions gérées par les plugins, mémoire optimisée pour le rendu et les images, et liens d’achat dans la boutique.
+2.2.3 : menu radial optionnel au clic droit, fenêtre de paramètres agrandie avec agrandissement/restauration, réinitialisation de chaque couleur et amélioration des unités et de l’arrondi des statistiques.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>

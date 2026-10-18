@@ -5,6 +5,12 @@ fn main() {
 
 #[cfg(feature = "c-api")]
 fn main() {
+    // intel_tex_2 bundles C++ objects but does not link their runtime on Linux.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux")
+        && std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("x86_64")
+    {
+        println!("cargo:rustc-link-lib=stdc++");
+    }
     println!("cargo:rerun-if-changed=src/corners.wgsl");
     let source = std::fs::read_to_string("src/corners.wgsl").expect("corner shader");
     let module = naga::front::wgsl::parse_str(&source).expect("parse corner shader");

@@ -135,7 +135,7 @@ typedef struct BongoCatApplicationPreferences {
     /* Relaunch elevated; the registry autostart entry is independent of it. */
     bool run_as_admin;
     bool tray_visible;
-    uint8_t reserved_app_byte; /* Keep following C/Rust ABI offsets stable. */
+    bool radial_menu; /* Reuses the reserved byte; following C/Rust ABI offsets stay stable. */
     bool large_render_optimization;
     bool render_parallel_recording;
     bool render_bindless;

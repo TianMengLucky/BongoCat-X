@@ -6,8 +6,8 @@
 #include <SDL3/SDL_opengl.h>
 #include <math.h>
 
-#define PREF_WIDTH 1200.0f
-#define PREF_HEIGHT 860.0f
+#define PREF_WIDTH 900.0f
+#define PREF_HEIGHT 680.0f
 #define PREF_MIN_WIDTH 720.0f
 #define PREF_MIN_HEIGHT 560.0f
 #define PREF_SCREEN_MARGIN 48.0f

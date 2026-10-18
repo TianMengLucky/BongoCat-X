@@ -218,8 +218,8 @@ static void refresh_side(BongoCatOverlay *value, bool right) {
     active_name[0] = active_path[0] = '\0';
 #ifdef BONGO_CAT_HAS_MODEL_PLUGINS
     if (side->fallback && count) {
-        snprintf(active_name, BONGO_CAT_ID_CAP, "%s", side->keys[0].name);
-        snprintf(active_path, BONGO_CAT_PATH_CAP, "%s", side->keys[0].path);
+        memcpy(active_name, side->keys[0].name, sizeof(side->keys[0].name));
+        memcpy(active_path, side->keys[0].path, sizeof(side->keys[0].path));
         *active = bongo_cat_overlay_cached_texture(value, active_path);
         if (!*active) value->input_texture_failures++;
     }

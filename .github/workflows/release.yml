@@ -626,6 +626,9 @@ jobs:
               --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID"
           fi
 
+      # Version tags already exist; prepare-release creates the nightly tag.
+      # Omit target_commitish: an older workflow revision can require workflow
+      # write permission even when the release tag already exists.
       - name: Publish release assets
         if: github.repository == 'TianMengLucky/BongoCat-X' &&
           steps.skip-check.outputs.skip != 'true'
@@ -633,7 +636,6 @@ jobs:
         with:
           name: ${{ needs.version-check.outputs.prerelease == 'true' && 'BongoCat-X dev Nightly' || format('BongoCat-X v{0}', steps.version.outputs.version) }}
           tag_name: ${{ needs.version-check.outputs.tag }}
-          target_commitish: ${{ needs.version-check.outputs.sha }}
           prerelease: ${{ needs.version-check.outputs.prerelease == 'true' }}
           body_path: release-notes.md
           generate_release_notes: ${{ needs.version-check.outputs.prerelease != 'true' }}

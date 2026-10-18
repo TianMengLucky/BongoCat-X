@@ -199,6 +199,7 @@ if(BUILD_TESTING)
 
   add_executable(bongo_cat_core_tests
     tests/core/test_main.c
+    tests/core/test_path.c
     tests/core/test_config.c
     tests/core/test_config_validation.c
     tests/core/test_language.c

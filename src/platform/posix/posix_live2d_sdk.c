@@ -12,6 +12,7 @@
 
 #include "bongo_cat/common.h"
 #include "bongo_cat/file.h"
+#include "bongo_cat/log.h"
 #include "bongo_cat/path.h"
 #include "posix_live2d_sdk.h"
 
@@ -38,18 +39,26 @@ static bool attempted;
 static bool try_load(const char *path) {
     unsigned (*version)(void);
     if (core_handle) return true;
-    if (!path) return false;
+    if (!path || !bongo_cat_path_is_file(path)) return false;
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[live2d] Checking Core: %s", path);
     void *handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
     if (!handle) {
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-            "[live2d] Core candidate rejected (%s)", dlerror());
+        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+            "[live2d] Core candidate rejected: %s (%s)", path, dlerror());
         return false;
     }
     /* csmGetVersion returns the encoded numeric csmVersion (unsigned int),
        not a string (the smoke-test backtrace caught this dereference). */
     version = (unsigned (*)(void))(void *)dlsym(handle, "csmGetVersion");
-    unsigned encoded = version ? version() : 0;
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+    if (!version || !dlsym(handle, "csmReviveMocInPlace") ||
+        !dlsym(handle, "csmInitializeModelInPlace")) {
+        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
+            "[live2d] Core candidate rejected: %s (missing required Core symbols)", path);
+        dlclose(handle);
+        return false;
+    }
+    unsigned encoded = version();
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
         "[live2d] Cubism Core loaded (version 0x%x)", encoded);
     core_handle = handle;
     return true;

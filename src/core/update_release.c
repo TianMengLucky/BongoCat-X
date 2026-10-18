@@ -112,9 +112,10 @@ bool bongo_cat_update_parse_release(const char *json, const char *platform,
     if (valid) valid = copy_text(tag, sizeof(tag),
         bongo_json_obj_get(root, "tag_name"), true, false);
     const char *version = tag[0] == 'v' || tag[0] == 'V' ? tag + 1 : tag;
-    if (valid) valid = bongo_cat_update_version_valid(version);
-    if (valid) snprintf(release->version, sizeof(release->version), "%s",
-        version);
+    size_t version_length = strlen(version);
+    if (valid) valid = version_length < sizeof(release->version) &&
+        bongo_cat_update_version_valid(version);
+    if (valid) memcpy(release->version, version, version_length + 1);
     if (valid) valid = copy_text(release->release_url,
         sizeof(release->release_url), bongo_json_obj_get(root, "html_url"), true,
         false) &&

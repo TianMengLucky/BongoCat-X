@@ -9,6 +9,7 @@ extern int bongo_cat_test_failures;
     bongo_cat_test_failures++; \
 } } while (0)
 
+void test_path(void);
 void test_config(void);
 void test_language(void);
 void test_input(void);

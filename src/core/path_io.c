@@ -10,6 +10,7 @@
 #else
 #include <dirent.h>
 #include <errno.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef _WIN32
@@ -96,6 +97,11 @@ bool bongo_cat_path_enumerate(const char *path,
 
 bool bongo_cat_path_copy_file(const char *source, const char *target) {
     if (!source || !target || strcmp(source, target) == 0) return false;
+    /* Different spellings and links can still name the file we would truncate. */
+    struct stat source_info, target_info;
+    if (stat(source, &source_info) != 0 ||
+        (stat(target, &target_info) == 0 && source_info.st_dev == target_info.st_dev &&
+            source_info.st_ino == target_info.st_ino)) return false;
     FILE *input = fopen(source, "rb"), *output = input ? fopen(target, "wb") : NULL;
     if (!output) { if (input) fclose(input); return false; }
     unsigned char buffer[8192]; bool ok = true; size_t count;

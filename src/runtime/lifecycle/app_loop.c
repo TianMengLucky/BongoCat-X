@@ -130,7 +130,10 @@ static bool render(BongoCatApp *app, bool present) {
     /* Keep the native window hidden while diagnostics/readback finish. The
        reveal is intentionally adjacent to the swap so an uninitialised front
        buffer cannot be displayed as a black startup frame. */
-    bool pre_presented = reveal_startup &&
+    /* Wayland skips hidden-window swaps and reports success without presenting. */
+    const char *driver = SDL_GetCurrentVideoDriver();
+    bool wayland = driver && SDL_strcmp(driver, "wayland") == 0;
+    bool pre_presented = reveal_startup && !wayland &&
         bongo_cat_platform_present(&app->platform, width, height);
     if (reveal_startup)
         bongo_cat_platform_set_visible(&app->platform, true);

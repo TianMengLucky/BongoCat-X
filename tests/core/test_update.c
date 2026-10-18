@@ -28,7 +28,35 @@ static const char unix_release_json[] =
     "\"browser_download_url\":\"https://github.com/TianMengLucky/BongoCat-X/"
     "releases/download/v2.0.0/BongoCat-2.0.0-linux-x64.tar.gz\"}]}";
 
+static void test_release_version_capacity(void) {
+    char version[BONGO_CAT_UPDATE_VERSION_CAP + 1];
+    memcpy(version, "1.2.3+", 6);
+    memset(version + 6, 'a', sizeof(version) - 7);
+    version[sizeof(version) - 1] = '\0';
+    char json[512];
+    BongoCatUpdateRelease release;
+    BongoCatError error = {0};
+    for (unsigned prefix = 0; prefix < 2; ++prefix) {
+        version[BONGO_CAT_UPDATE_VERSION_CAP - 1] = '\0';
+        snprintf(json, sizeof(json),
+            "{\"tag_name\":\"%s%s\",\"draft\":false,\"prerelease\":false,"
+            "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/releases/tag/test\","
+            "\"assets\":[]}", prefix ? "v" : "", version);
+        CHECK(bongo_cat_update_parse_release(json, "linux-x64", &release, &error));
+        CHECK(strcmp(release.version, version) == 0);
+    }
+    version[BONGO_CAT_UPDATE_VERSION_CAP - 1] = 'a';
+    snprintf(json, sizeof(json),
+        "{\"tag_name\":\"%s\",\"draft\":false,\"prerelease\":false,"
+        "\"html_url\":\"https://github.com/TianMengLucky/BongoCat-X/releases/tag/test\","
+        "\"assets\":[]}", version);
+    CHECK(!bongo_cat_update_parse_release(json, "linux-x64", &release, &error));
+    CHECK(error.code == BONGO_CAT_ERROR_FORMAT);
+    CHECK(release.version[0] == '\0');
+}
+
 void test_update(void) {
+    test_release_version_capacity();
     CHECK(bongo_cat_update_version_valid("1.2.3-rc.1+build.4"));
     CHECK(!bongo_cat_update_version_valid("1"));
     CHECK(!bongo_cat_update_version_valid("1."));

@@ -97,7 +97,7 @@ jobs:
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
             -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
       - name: Verify native Rust dependencies link
-        run: cmake --build build-macos-link --target bongo_cat --parallel 2
+        run: cmake --build build-macos-link --target bongo_cat --parallel "$(getconf _NPROCESSORS_ONLN)"
 
   # The tag/version check lives in release.yml, which is the only workflow a
   # tag push triggers; keeping a second copy here would spin a runner for a
@@ -113,8 +113,71 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/check-publish-guards.ps1 -SelfTest
 
+  # Preserve the existing required status while the two analyzers run in parallel.
   quality:
     name: quality / static-analysis
+    needs: [cppcheck, gcc-analysis]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require both static analyzers to pass
+        env:
+          CPPCHECK_RESULT: ${{ needs.cppcheck.result }}
+          GCC_RESULT: ${{ needs.gcc-analysis.result }}
+        run: test "$CPPCHECK_RESULT" = success && test "$GCC_RESULT" = success
+
+  cppcheck:
+    name: quality / cppcheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Install Cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cppcheck
+
+      - name: Identify Cppcheck version
+        id: cppcheck
+        run: echo "version=$(cppcheck --version | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
+      # C/C++ have separate analysis directories. Cppcheck validates changed
+      # source; a header or option change starts a fresh cache conservatively.
+      - name: Cache Cppcheck analysis
+        uses: actions/cache@v5
+        with:
+          path: build-cppcheck
+          key: cppcheck-v1-${{ runner.os }}-${{ steps.cppcheck.outputs.version }}-${{ hashFiles('.github/workflows/ci.yml', 'include/**/*.h', 'include/**/*.hpp', 'src/**/*.h', 'src/**/*.hpp') }}-${{ github.sha }}
+          restore-keys: |
+            cppcheck-v1-${{ runner.os }}-${{ steps.cppcheck.outputs.version }}-${{ hashFiles('.github/workflows/ci.yml', 'include/**/*.h', 'include/**/*.hpp', 'src/**/*.h', 'src/**/*.hpp') }}-
+
+      - name: Check C and C++ safety with Cppcheck
+        shell: bash
+        run: |
+          mkdir -p build-cppcheck/c build-cppcheck/cpp
+          mapfile -d '' c_files < <(find src -type f -name '*.c' -print0)
+          cppcheck -j 2 --cppcheck-build-dir=build-cppcheck/c --enable=warning,performance,portability \
+            --error-exitcode=1 --inline-suppr \
+            --suppress=missingIncludeSystem --suppress=unknownMacro \
+            --std=c11 -Iinclude -Isrc/runtime \
+            -Isrc/runtime/lifecycle -Isrc/runtime/model \
+            -Isrc/runtime/model/import -Isrc/runtime/model/import/mver \
+            -Isrc/runtime/model/import/nearby -Isrc/runtime/shell \
+            -Isrc/ui/backend -Isrc/ui/preferences -Isrc/ui/rendering \
+            -Isrc/ui/theme -Isrc/platform/windows "${c_files[@]}"
+          mapfile -d '' cpp_files < <(find src -type f -name '*.cpp' -print0)
+          cppcheck -j 2 --cppcheck-build-dir=build-cppcheck/cpp --enable=warning,performance,portability \
+            --error-exitcode=1 --inline-suppr \
+            --suppress=missingIncludeSystem --suppress=unknownMacro \
+            --suppress=passedByValueCallback --std=c++17 \
+            -Iinclude -Isrc/runtime -Isrc/runtime/model/import \
+            -Isrc/ui/backend -Isrc/ui/preferences -Isrc/ui/rendering \
+            -Isrc/ui/theme "${cpp_files[@]}"
+
+  gcc-analysis:
+    name: quality / gcc-analysis
     runs-on: ubuntu-24.04
     env:
       RUSTC_WRAPPER: sccache
@@ -149,7 +212,8 @@ jobs:
           sccache --version
 
       - name: Restore compiler cache
-        uses: actions/cache@v5
+        id: compiler-cache
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/.cache/sccache
@@ -161,7 +225,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build cppcheck \
+            cmake ninja-build \
             libgl1-mesa-dev libegl1-mesa-dev libx11-dev libxi-dev libxfixes-dev libxcb-screensaver0-dev \
             libcurl4-openssl-dev libfontconfig1-dev
 
@@ -190,28 +254,8 @@ jobs:
       - name: Check Windows icon dimensions and image data
         run: python3 scripts/check-windows-icon.py
 
-      - name: Check C and C++ safety with Cppcheck
-        shell: bash
-        run: |
-          mapfile -d '' c_files < <(find src -type f -name '*.c' -print0)
-          cppcheck --enable=warning,performance,portability \
-            --error-exitcode=1 --inline-suppr \
-            --suppress=missingIncludeSystem --suppress=unknownMacro \
-            --std=c11 -Iinclude -Isrc/runtime \
-            -Isrc/runtime/lifecycle -Isrc/runtime/model \
-            -Isrc/runtime/model/import -Isrc/runtime/model/import/mver \
-            -Isrc/runtime/model/import/nearby -Isrc/runtime/shell \
-            -Isrc/ui/backend -Isrc/ui/preferences -Isrc/ui/rendering \
-            -Isrc/ui/theme -Isrc/platform/windows "${c_files[@]}"
-          mapfile -d '' cpp_files < <(find src -type f -name '*.cpp' -print0)
-          cppcheck --enable=warning,performance,portability \
-            --error-exitcode=1 --inline-suppr \
-            --suppress=missingIncludeSystem --suppress=unknownMacro \
-            --suppress=passedByValueCallback --std=c++17 \
-            -Iinclude -Isrc/runtime -Isrc/runtime/model/import \
-            -Isrc/ui/backend -Isrc/ui/preferences -Isrc/ui/rendering \
-            -Isrc/ui/theme "${cpp_files[@]}"
-
+      # Inox2D is Rust-only and is built by sanitizers; GCC gains no coverage
+      # from building it here. Keep all native targets and the host link check.
       # Translation-unit diagnostics do not need the release job's LTO link.
       - name: Configure warning-clean Linux build
         env:
@@ -224,6 +268,7 @@ jobs:
             -DBUILD_TESTING=OFF \
             -DBONGO_CAT_STATIC_ANALYZER=ON \
             -DBONGO_CAT_REQUIRE_CUBISM=OFF \
+            -DBONGO_CAT_BUILD_INOX2D=OFF \
             -DBONGO_CAT_OPTIMIZE_RELEASE_SIZE=ON \
             -DBONGO_CAT_OPTIMIZE_RELEASE_IPO=OFF \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -242,6 +287,16 @@ jobs:
 
       - name: Build and analyze C memory safety
         run: bash .github/scripts/build-unix.sh cmake --build build-quality --parallel 2
+
+      # Preserve completed compilations even when a later check fails.
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.compiler-cache.outputs.cache-primary-key != '' && steps.compiler-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ~/.cache/sccache
+            build-quality/cargo/build
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
 
   clang-tidy:
     name: quality / clang-tidy
@@ -342,7 +397,8 @@ jobs:
           sccache --version
 
       - name: Restore compiler cache
-        uses: actions/cache@v5
+        id: compiler-cache
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/.cache/sccache
@@ -412,3 +468,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Preserve completed compilations even when a later check fails.
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.compiler-cache.outputs.cache-primary-key != '' && steps.compiler-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ~/.cache/sccache
+            build-sanitizers/cargo/build
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}

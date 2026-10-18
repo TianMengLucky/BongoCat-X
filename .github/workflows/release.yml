@@ -222,7 +222,8 @@ jobs:
       # Cache only Cargo outputs, never the SDK or native CMake build tree.
       - name: Cache Rust build artifacts
         if: steps.skip-check.outputs.skip != 'true'
-        uses: actions/cache@v5
+        id: rust-cache
+        uses: actions/cache/restore@v5
         with:
           path: |
             build-release/cargo/build
@@ -274,8 +275,16 @@ jobs:
         shell: pwsh
         run: choco install sccache -y --no-progress
 
-      - name: Install Vulkan shader compiler (Windows)
+      - name: Cache Vulkan shader compiler (Windows)
         if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
+        id: glslang-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/glslang
+          key: glslang-windows-x64-16.6.0-82bf434e
+
+      - name: Install Vulkan shader compiler (Windows)
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true' && steps.glslang-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $version = '16.6.0'
@@ -287,6 +296,12 @@ jobs:
             throw 'Vulkan shader compiler checksum mismatch'
           }
           Expand-Archive -LiteralPath $archive -DestinationPath $output
+
+      - name: Add Vulkan shader compiler to PATH (Windows)
+        if: runner.os == 'Windows' && steps.skip-check.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'glslang'
           $compiler = Get-ChildItem -LiteralPath $output -Filter 'glslang*.exe' -Recurse |
             Where-Object { $_.Name -in @('glslang.exe', 'glslangValidator.exe') } |
             Select-Object -First 1
@@ -295,7 +310,8 @@ jobs:
 
       - name: Restore compiler cache
         if: steps.skip-check.outputs.skip != 'true'
-        uses: actions/cache@v5
+        id: compiler-cache
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: sccache-v2-${{ matrix.platform }}-${{ needs.version-check.outputs.sha }}
@@ -381,7 +397,7 @@ jobs:
                 -BuildDir build-release `
                 -Configuration Release `
                 -Architecture '${{ matrix.cmake_arch }}' `
-                -Jobs 2 `
+                -Jobs ([Environment]::ProcessorCount) `
                 -Target ALL_BUILD
               if ($LASTEXITCODE -eq 0) { break retry }
               if ($attempt -eq 3) { exit $LASTEXITCODE }
@@ -393,7 +409,30 @@ jobs:
 
       - name: Build Unix release
         if: runner.os != 'Windows' && steps.skip-check.outputs.skip != 'true'
-        run: bash .github/scripts/build-unix.sh cmake --build build-release --parallel 2
+        run: bash .github/scripts/build-unix.sh cmake --build build-release --parallel "$(getconf _NPROCESSORS_ONLN)"
+
+      # Flush pending cache writes before archiving the cache directory.
+      - name: Stop compiler cache server
+        if: ${{ !cancelled() && steps.compiler-cache.outputs.cache-primary-key != '' }}
+        shell: pwsh
+        run: sccache --stop-server
+
+      # Save before packaging; a failed build or package must not discard compiled work.
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.compiler-cache.outputs.cache-primary-key != '' && steps.compiler-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
+
+      - name: Save Rust build artifacts
+        if: ${{ !cancelled() && steps.rust-cache.outputs.cache-primary-key != '' && steps.rust-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            build-release/cargo/build
+            build-release/${{ matrix.cmake_arch }}/Release/cargo/build
+          key: ${{ steps.rust-cache.outputs.cache-primary-key }}
 
       - name: Report compiler cache statistics
         if: always() && steps.skip-check.outputs.skip != 'true'
@@ -544,6 +583,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: bongocat-release-${{ matrix.platform }}
+          # Packages are already compressed; recompressing wastes runner time.
+          compression-level: 0
           path: release-output/*
           if-no-files-found: error
           retention-days: 7

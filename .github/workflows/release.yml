@@ -14,6 +14,13 @@ on:
         description: 'Existing version tag to resume (for example v2.2.2)'
         required: true
         type: string
+      platforms:
+        description: 'Platforms to publish'
+        type: choice
+        default: all
+        options:
+          - all
+          - windows
   push:
     branches:
       - dev
@@ -50,6 +57,7 @@ jobs:
       sha: ${{ steps.source.outputs.sha }}
       tag: ${{ steps.source.outputs.tag }}
       prerelease: ${{ steps.source.outputs.prerelease }}
+      matrix: ${{ steps.source.outputs.matrix }}
     steps:
       - name: Checkout release source
         uses: actions/checkout@v5
@@ -68,6 +76,7 @@ jobs:
         shell: pwsh
         env:
           REQUESTED_TAG: ${{ inputs.release_tag }}
+          RELEASE_PLATFORMS: ${{ inputs.platforms }}
         run: |
           $version = (& ./packaging/get-project-version.ps1).AppVersion
           $sha = (git rev-parse HEAD).Trim()
@@ -77,6 +86,18 @@ jobs:
             "nightly"
           } elseif ($env:REQUESTED_TAG) { $env:REQUESTED_TAG }
           else { $env:GITHUB_REF_NAME }
+          $platforms = @(
+            @{ os = 'windows-2022'; platform = 'windows-x64'; cmake_arch = 'x64'; cubism_vulkan = 'ON'; cubism_metal = 'OFF' }
+            @{ os = 'windows-2022'; platform = 'windows-x86'; cmake_arch = 'Win32'; cubism_vulkan = 'ON'; cubism_metal = 'OFF' }
+            @{ os = 'ubuntu-22.04'; platform = 'linux-x64'; cmake_arch = ''; cubism_vulkan = 'ON'; cubism_metal = 'OFF' }
+            @{ os = 'macos-15-intel'; platform = 'macos-x64'; cmake_arch = 'x86_64'; cubism_vulkan = 'OFF'; cubism_metal = 'ON' }
+            @{ os = 'macos-15'; platform = 'macos-arm64'; cmake_arch = 'arm64'; cubism_vulkan = 'OFF'; cubism_metal = 'ON' }
+          )
+          if ($env:RELEASE_PLATFORMS -eq 'windows') {
+            $platforms = @($platforms | Where-Object { $_.platform -like 'windows-*' })
+          }
+          $matrix = @{ include = $platforms } | ConvertTo-Json -Compress
+          "matrix=$matrix" | Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8
           @("version=$version", "sha=$sha", "tag=$tag",
             "prerelease=$($nightly.ToString().ToLowerInvariant())") |
             Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8
@@ -118,33 +139,7 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            platform: windows-x64
-            cmake_arch: x64
-            cubism_vulkan: 'ON'
-            cubism_metal: 'OFF'
-          - os: windows-2022
-            platform: windows-x86
-            cmake_arch: Win32
-            cubism_vulkan: 'ON'
-            cubism_metal: 'OFF'
-          - os: ubuntu-22.04
-            platform: linux-x64
-            cmake_arch: ''
-            cubism_vulkan: 'ON'
-            cubism_metal: 'OFF'
-          - os: macos-15-intel
-            platform: macos-x64
-            cmake_arch: x86_64
-            cubism_vulkan: 'OFF'
-            cubism_metal: 'ON'
-          - os: macos-15
-            platform: macos-arm64
-            cmake_arch: arm64
-            cubism_vulkan: 'OFF'
-            cubism_metal: 'ON'
+      matrix: ${{ fromJSON(needs.version-check.outputs.matrix) }}
 
     env:
       # Wrap rustc too, so the bongo-safe crate shares the compiler cache.
@@ -412,7 +407,9 @@ jobs:
         run: bash .github/scripts/build-unix.sh cmake --build build-release --parallel "$(getconf _NPROCESSORS_ONLN)"
 
       # Flush pending cache writes before archiving the cache directory.
+      # An absent/idle cache server must not block packaging a successful build.
       - name: Stop compiler cache server
+        continue-on-error: true
         if: ${{ !cancelled() && steps.compiler-cache.outputs.cache-primary-key != '' }}
         shell: pwsh
         run: sccache --stop-server

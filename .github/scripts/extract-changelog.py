@@ -58,6 +58,7 @@ def main() -> None:
     links = "\n".join(
         f"- [{label}](https://github.com/{args.repository}/releases/download/"
         f"{args.tag}/BongoCat-X-{artifact_version}-{name})" for name, label in PLATFORMS)
+    links += "\n- [Linux x64 (Arch Repo)](https://bongocat.zakofox.cn/)"
 
     body = (
         f"{notes}\n\n"

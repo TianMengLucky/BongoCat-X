@@ -64,7 +64,15 @@ pub fn draw(state: &mut State, p: &Page<'_>) {
     };
     p.wrapped(&tr(p, key, fallback), 64.0);
     if let Some(mut enabled) = unsafe { p.read::<u32>(read::BACKSPACE, 0) } {
-        if p.toggle("statistics-backspace", &tr(p, "subtractBackspace", "Subtract Han characters deleted with Backspace"), &mut enabled) {
+        if p.toggle(
+            "statistics-backspace",
+            &tr(
+                p,
+                "subtractBackspace",
+                "Subtract Han characters deleted with Backspace",
+            ),
+            &mut enabled,
+        ) {
             super::act(p, action::BACKSPACE_ENABLE, enabled);
         }
         p.wrapped(&tr(p, "subtractBackspaceHint", "Off by default; saved across restarts. Only subtracts observed, counted characters in the current input. Switching focus, shortcuts or mouse clicks stop tracking. Pinyin edits, pasted and older text are excluded. Totals, frequencies and speeds change; typing time does not."), 112.0);

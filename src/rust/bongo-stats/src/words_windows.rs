@@ -29,7 +29,9 @@ use windows::{
             IUIAutomationTextEditTextChangedEventHandler_Impl, TextEditChangeType,
             TextEditChangeType_CompositionFinalized, TreeScope_Subtree,
         },
-        UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_BACK, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN},
+        UI::Input::KeyboardAndMouse::{
+            GetAsyncKeyState, VK_BACK, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN,
+        },
     },
 };
 
@@ -233,7 +235,9 @@ impl Collector {
                 .iter()
                 .any(|key| unsafe { GetAsyncKeyState(key.0 as i32) } < 0);
         let mut keys = *keys;
-        if unsafe { GetAsyncKeyState(VK_BACK.0 as i32) } < 0 { keys[8] = keys[8].max(1); }
+        if unsafe { GetAsyncKeyState(VK_BACK.0 as i32) } < 0 {
+            keys[8] = keys[8].max(1);
+        }
         // SAFETY: the collector and its ranges stay on the worker's initialized MTA.
         match unsafe { self.composition.poll(api, &keys, blocked) } {
             Ok(Some(capture)) => {
@@ -250,11 +254,16 @@ impl Collector {
 
     pub fn next_batch(&mut self) -> Option<(Batch, bool)> {
         if let Some(history) = &mut self.composition.history {
-            if let Some(batch) = history.removed.pop_front() { return Some((batch, true)); }
+            if let Some(batch) = history.removed.pop_front() {
+                return Some((batch, true));
+            }
         }
         while let Ok(capture) = self.receiver.try_recv() {
+            let element = capture.element.clone();
             if let Some(batch) = self.filter.accept(capture) {
-                if let Some(history) = &mut self.composition.history { history.committed(&batch); }
+                if let Some(history) = &mut self.composition.history {
+                    history.committed(&element, &batch);
+                }
                 return Some((batch, false));
             }
         }

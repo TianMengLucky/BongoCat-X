@@ -25,6 +25,8 @@ mod words_capture;
 mod words_text;
 mod words_ffi;
 mod words_options;
+#[cfg(test)]
+mod words_undo_tests;
 #[cfg(any(windows, test))]
 mod words_undo;
 mod words_timer;

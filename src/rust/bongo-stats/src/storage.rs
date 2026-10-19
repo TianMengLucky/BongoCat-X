@@ -70,7 +70,9 @@ pub fn open(directory: &Path) -> Result<(Connection, Store), Box<dyn std::error:
     drop(statement);
     crate::usage_storage::load(&connection, &mut store.usage)?;
     crate::keyboard::load(&connection, &mut store.keyboard, oldest)?;
-    store.words.load(&connection, date_id(today - Days::new(29)), date_id(today))?;
+    store
+        .words
+        .load(&connection, date_id(today - Days::new(29)), date_id(today))?;
     Ok((connection, store))
 }
 
@@ -133,7 +135,10 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
     crate::keyboard::save(&transaction, &keyboard, oldest)?;
     crate::words::save(&transaction, &words, date_id(today - Days::new(29)))?;
     if let Some(enabled) = backspace {
-        transaction.execute("INSERT OR REPLACE INTO statistics_options VALUES ('subtract_backspace',?1)", [enabled as u32])?;
+        transaction.execute(
+            "INSERT OR REPLACE INTO statistics_options VALUES ('subtract_backspace',?1)",
+            [enabled as u32],
+        )?;
     }
     transaction.commit()?;
     let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());

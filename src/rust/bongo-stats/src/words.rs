@@ -88,7 +88,9 @@ impl Store {
         let day = crate::metrics::date_id(batch.date);
         let mut total = 0u64;
         for (c, n) in batch.counts {
-            if !is_han(c) { continue; }
+            if !is_han(c) {
+                continue;
+            }
             let removed = self.rows.get(&(0, c)).copied().unwrap_or(0).min(n);
             total = total.saturating_add(removed);
             for id in [(0, c), (day, c)] {
@@ -130,7 +132,9 @@ impl Store {
         let mut counts = BTreeMap::<char, u64>::new();
         let (first, last) = if period == 3 { (0, 0) } else { (oldest, today) };
         for (&(day, c), &count) in self.rows.range((first, '\0')..=(last, char::MAX)) {
-            if count != 0 && ((period == 3 && day == 0) || (period < 3 && day >= oldest && day <= today)) {
+            if count != 0
+                && ((period == 3 && day == 0) || (period < 3 && day >= oldest && day <= today))
+            {
                 let value = counts.entry(c).or_default();
                 *value = value.saturating_add(count);
             }
@@ -160,7 +164,11 @@ impl Store {
     pub fn load(&mut self, db: &Connection, oldest: u32, latest: u32) -> rusqlite::Result<()> {
         db.execute_batch("CREATE TABLE IF NOT EXISTS han_counts(day INTEGER NOT NULL, codepoint INTEGER NOT NULL, count INTEGER NOT NULL CHECK(count>=0), PRIMARY KEY(day,codepoint));")?;
         db.execute_batch("CREATE TABLE IF NOT EXISTS statistics_options (name TEXT PRIMARY KEY, value INTEGER NOT NULL);")?;
-        match db.query_row("SELECT value FROM statistics_options WHERE name='subtract_backspace'", [], |row| row.get::<_, u32>(0)) {
+        match db.query_row(
+            "SELECT value FROM statistics_options WHERE name='subtract_backspace'",
+            [],
+            |row| row.get::<_, u32>(0),
+        ) {
             Ok(value @ 0..=1) => self.backspace = value != 0,
             Ok(_) => return Err(rusqlite::Error::InvalidQuery),
             Err(rusqlite::Error::QueryReturnedNoRows) => (),
@@ -206,6 +214,50 @@ pub fn save(db: &Connection, rows: &[(u32, char, u64)], oldest: u32) -> rusqlite
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn subtraction_updates_original_day_frequencies_speeds_and_stored_zero_rows() {
+        let date = NaiveDate::from_ymd_opt(2026, 10, 18).unwrap();
+        let at = Instant::now();
+        let mut store = Store::default();
+        store.ingest(Batch {
+            date,
+            at,
+            counts: [('中', 2), ('文', 1)].into(),
+        });
+        store.subtract(Batch {
+            date,
+            at,
+            counts: [('文', 1)].into(),
+        });
+        let snapshot = store.snapshot(date + Days::new(1), 3, 1);
+        assert_eq!(snapshot.total, 2);
+        assert_eq!(snapshot.recent, 2);
+        assert_eq!(snapshot.average, 120.0);
+        assert_eq!(snapshot.count, 1);
+        assert_eq!(snapshot.top[0].codepoint, '中' as u32);
+        assert_eq!(store.snapshot(date, 0, 1).total, 2);
+        assert_eq!(store.snapshot(date + Days::new(1), 0, 1).total, 0);
+        store.subtract(Batch {
+            date,
+            at,
+            counts: [('中', 2)].into(),
+        });
+        let db = Connection::open_in_memory().unwrap();
+        let mut loaded = Store::default();
+        loaded.load(&db, 0, crate::metrics::date_id(date)).unwrap();
+        save(&db, &store.pending(), 0).unwrap();
+        loaded.load(&db, 0, crate::metrics::date_id(date)).unwrap();
+        assert_eq!(loaded.snapshot(date, 3, 1).total, 0);
+        assert_eq!(loaded.snapshot(date, 3, 1).count, 0);
+        assert_eq!(store.snapshot(date, 3, 1).recent, 0);
+        assert_eq!(store.snapshot(date, 3, 1).average, 0.0);
+        store.subtract(Batch {
+            date,
+            at,
+            counts: [('中', u64::MAX)].into(),
+        });
+        assert_eq!(store.snapshot(date, 3, 1).total, 0);
+    }
     #[test]
     fn idle_gaps_empty_commits_retention_and_saturation() {
         let date = NaiveDate::from_ymd_opt(2026, 10, 18).unwrap();

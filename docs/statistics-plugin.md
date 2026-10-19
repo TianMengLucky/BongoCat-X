@@ -41,6 +41,13 @@ Rust crate：`src/rust/bongo-stats`，独立 `cdylib`，不与宿主静态链接
 
 ## 字数与速度 / Characters and typing speed
 
+「字数统计」页提供默认关闭的「扣除 Backspace 删除的汉字」开关，设置会保存。
+开启后仅扣除当前焦点输入框内、本次采集已计入且确实通过退格删除的汉字；
+修改拼音、粘贴或历史文本不会扣数。切换焦点、鼠标点击、快捷键、导航、重置或重启
+都会丢弃内存中的删除跟踪。计数、字频和速度按原提交日期扣除，打字时长不回退。
+此功能依赖可访问文本的前后变化，受已有上下文长度限制，无法观测到的删除可能漏扣；
+输入顺序和删除跟踪不写入数据库或日志。
+
 统计页新增第三个「字数统计」子页面，提供今日、近 7／30 天和累计汉字数及前 32 个常用汉字。
 Windows 优先通过 UI Automation 的 `CompositionFinalized` 事件采集输入法最终提交。
 对于未提供最终提交事件的应用，每 100 毫秒检查焦点控件的 `TextEditPattern` 组合状态，
@@ -68,6 +75,14 @@ QQ 等控件可能返回文本为空但端点不重合的选区，或返回超�
 最近 30 天每日字频及累计字频在现有 SQLite 事务内保存，沿用 30 秒保存间隔。
 「重置统计」同时事务清除字频及速度；现有 CSV 导出内容保持原有键鼠／应用数据。
 停用插件后取消订阅，等待回调释放后再卸载；不受支持的应用不会产生字数。
+
+The Characters page includes a saved, default-off option to subtract Han characters
+removed with Backspace. It only reverses observed, counted characters in the current
+focused input. Pinyin edits, pasted and historical text are excluded. Focus changes,
+mouse clicks, shortcuts, navigation, resets and restarts discard deletion tracking.
+Totals, frequencies and speeds are corrected against the original commit date; typing
+time is retained. This requires accessible text changes within the existing bounded
+context, so some deletions may be missed. No input order or deletion history is stored.
 
 The third Statistics subpage shows today/7-day/30-day/lifetime Han totals and the top
 32 characters. Windows subscribes to UI Automation `CompositionFinalized` events.

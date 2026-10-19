@@ -59,7 +59,9 @@ impl Composition {
     ) -> windows::core::Result<Option<Capture>> {
         let at = Instant::now();
         self.text.input(keys, blocked, at);
-        if let Some(history) = &mut self.history { history.input(keys, blocked, at); }
+        if let Some(history) = &mut self.history {
+            history.input(keys, blocked, at);
+        }
         let pending = self.pending.is_some();
         let result = self.observe(api);
         if result.is_err() {
@@ -74,7 +76,9 @@ impl Composition {
 
     fn reset_text(&mut self) {
         self.text.reset();
-        if let Some(history) = &mut self.history { *history = Default::default(); }
+        if let Some(history) = &mut self.history {
+            *history = Default::default();
+        }
     }
 
     unsafe fn observe(&mut self, api: &IUIAutomation3) -> windows::core::Result<Option<Capture>> {
@@ -179,7 +183,8 @@ impl Composition {
             TextPatternRangeEndpoint_Start,
             &caret,
             TextPatternRangeEndpoint_End,
-        )? != 0 && !caret.GetText(1)?.is_empty())
+        )? != 0
+            && !caret.GetText(1)?.is_empty())
             || bool::try_from(&caret.GetAttributeValue(UIA_IsReadOnlyAttributeId)?)?
         {
             self.reset_text();
@@ -229,8 +234,12 @@ impl Composition {
         }
         let element = element_id(focused)?;
         let at = Instant::now();
-        let text: Vec<_> = char::decode_utf16(text.iter().copied()).filter_map(Result::ok).collect();
-        if let Some(history) = &mut self.history { history.observe(element.clone(), &text, at); }
+        let text: Vec<_> = char::decode_utf16(text.iter().copied())
+            .filter_map(Result::ok)
+            .collect();
+        if let Some(history) = &mut self.history {
+            history.observe(element.clone(), &text, at);
+        }
         let Some(counts) = self.text.observe(element.clone(), text, at) else {
             return Ok(None);
         };

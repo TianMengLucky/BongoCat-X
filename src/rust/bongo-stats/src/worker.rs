@@ -59,12 +59,10 @@ pub fn run(
     let mut last_open = Instant::now() - Duration::from_secs(5);
     let mut pending_metrics = Metrics::default();
     let mut desired_enabled = None;
+    let mut desired_backspace = None;
     loop {
-        let command = receiver.recv_timeout(Duration::from_millis(if cfg!(windows) {
-            100
-        } else {
-            200
-        }));
+        let command =
+            receiver.recv_timeout(Duration::from_millis(if cfg!(windows) { 100 } else { 200 }));
         let stop = matches!(
             &command,
             Ok(Command::Stop) | Err(mpsc::RecvTimeoutError::Disconnected)
@@ -78,6 +76,9 @@ pub fn run(
         let now = Local::now();
         if let Ok(Command::Enable(enabled)) = &command {
             desired_enabled = Some(*enabled);
+        }
+        if let Ok(Command::Backspace(enabled)) = &command {
+            desired_backspace = Some(*enabled);
         }
         if opened.is_none() && last_open.elapsed() >= Duration::from_secs(5) {
             last_open = Instant::now();
@@ -123,16 +124,22 @@ pub fn run(
             }
         }
         if let Some((_, shared)) = &opened {
-            if let Ok(Command::Backspace(enabled)) = &command {
+            if let Some(enabled) = desired_backspace.take() {
                 let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
-                store.words.backspace = *enabled;
+                store.words.backspace = enabled;
                 store.words.options_dirty = true;
                 store.revision = store.revision.wrapping_add(1);
             }
         }
         #[cfg(windows)]
         if let Some(collector) = &mut collector {
-            let enabled = opened.as_ref().is_some_and(|(_, shared)| shared.lock().unwrap_or_else(|e| e.into_inner()).words.backspace);
+            let enabled = opened.as_ref().is_some_and(|(_, shared)| {
+                shared
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .words
+                    .backspace
+            });
             collector.set_backspace(enabled);
             collector.poll(&counts, metrics.buttons.iter().any(|&count| count != 0));
         }
@@ -144,7 +151,11 @@ pub fn run(
                 #[cfg(windows)]
                 if let Some(collector) = &mut collector {
                     while let Some((batch, subtract)) = collector.next_batch() {
-                        if subtract { store.words.subtract(batch); } else { store.words.ingest(batch); }
+                        if subtract {
+                            store.words.subtract(batch);
+                        } else {
+                            store.words.ingest(batch);
+                        }
                         store.revision = store.revision.wrapping_add(1);
                     }
                 }
@@ -182,14 +193,19 @@ pub fn run(
             let reset_ok = resetting && storage::reset(connection, shared).is_ok();
             if resetting {
                 #[cfg(windows)]
-                if let Some(collector) = &mut collector { collector.reset_tracking(); }
+                if let Some(collector) = &mut collector {
+                    collector.reset_tracking();
+                }
                 last_sample = Instant::now();
             }
             let should_save = stop
                 || last_save.elapsed() >= Duration::from_secs(30)
                 || matches!(
                     &command,
-                    Ok(Command::Flush(_)) | Ok(Command::Export(_, _)) | Ok(Command::Enable(_)) | Ok(Command::Backspace(_))
+                    Ok(Command::Flush(_))
+                        | Ok(Command::Export(_, _))
+                        | Ok(Command::Enable(_))
+                        | Ok(Command::Backspace(_))
                 );
             let mut save_ok = true;
             if should_save {
@@ -216,8 +232,10 @@ pub fn run(
                     timer: store.words.timer.snapshot(),
                     words: std::array::from_fn(|period| {
                         #[cfg(windows)]
-                        let status = collector.as_ref()
-                            .map(|c| c.status.load(Ordering::Relaxed)).unwrap_or(2);
+                        let status = collector
+                            .as_ref()
+                            .map(|c| c.status.load(Ordering::Relaxed))
+                            .unwrap_or(2);
                         #[cfg(not(windows))]
                         let status = 0;
                         store.words.snapshot(now.date_naive(), period, status)

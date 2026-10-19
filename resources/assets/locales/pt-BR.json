@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "Plugins",
-        "description": "Instale plugins de renderização e estatísticas. O tipo de modelo seleciona o renderizador automaticamente.",
+        "description": "Gerencie renderizadores e extensões. O tipo de modelo seleciona seu renderizador automaticamente.",
         "status": "Status",
         "active": "Em uso",
         "installed": "Instalado",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D exige Cubism Core. Se faltar, ele pode ser importado com o ZIP.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "Modelos Inochi2D no formato INP / INX.",
+        "renderers": "Renderizadores de modelos",
+        "extensions": "Extensões",
+        "configure": "Abrir configurações",
         "openFolder": "Abrir pasta",
         "drop": "Clique ou solte um ZIP de plugin aqui",
         "dropHint": "ZIP ou biblioteca do plugin; pacotes de renderização podem incluir o Core necessário."
@@ -221,7 +224,7 @@
           "runAsAdmin": "Melhora a captura em jogos Windows com privilégios elevados. Ao ativar solicita permissão e reinicia o aplicativo.",
           "renderBackend": "Troca imediata; em caso de falha volta ao OpenGL. Vulkan/Metal experimental também suporta fundos, cantos e camadas de teclas, efeitos e ponteiro.",
           "glTrueTransparencySaveFailed": "Não foi possível salvar a preferência de transparência",
-          "directComposition": "Composição Alpha DXGI experimental. Aplicação imediata; retorna ao método anterior em caso de falha. A leitura de pixels permanece; Independent Flip nos jogos não é garantido. Apenas GPUs AMD. Limita eventos de redesenho a intervalos de 50 ms e desativa VSync.",
+          "directComposition": "Composição alfa DXGI experimental sem leitura de pixels. Disponível para todas as marcas de GPU com interoperabilidade do driver. Usa OpenGL, passagem total do mouse e VSync desativado, sem limitar eventos expose. Em caso de falha, retorna à apresentação OpenGL direta. Independent Flip em jogos não é garantido.",
           "glTrueTransparency": "Usa composição alfa por pixel como o Vulkan. Aplicação imediata; a leitura dos pixels pode aumentar o uso de CPU/GPU.",
           "renderBackendChanged": "Alternando o backend de renderização",
           "renderBackendFallback": "O renderizador selecionado está indisponível; OpenGL foi restaurado",

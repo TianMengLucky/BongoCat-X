@@ -65,7 +65,7 @@ if(BONGO_CAT_VULKAN_INCLUDE_DIR AND (WIN32 OR
     src/render/rhi/rhi_vk_readback.cpp src/render/rhi/rhi_vk_background.cpp
     src/render/rhi/rhi_vk_corners.cpp
     src/render/rhi/rhi_vk_loader.cpp src/render/rhi/rhi_vk_frame.cpp src/render/rhi/rhi_vk_debug.cpp src/render/rhi/rhi_vk_resources.cpp
-    src/render/rhi/rhi_vk_layered.cpp
+    src/render/rhi/rhi_vk_offscreen.cpp src/render/rhi/rhi_vk_layered.cpp
   src/render/rhi/rhi_vk_sync.cpp src/render/rhi/rhi_vk_upload.cpp)
 else()
   list(APPEND BONGO_CAT_RENDER_SOURCES src/render/rhi/rhi_vk_stub.c)
@@ -84,6 +84,9 @@ set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/plugin_worker.c
   src/runtime/plugin_io.c
   src/runtime/plugin_events.c
+  src/runtime/following_overlay.c
+  src/runtime/lan.c src/runtime/lan_surface.c src/runtime/lan_native.c src/runtime/lan_graphics.c
+  src/runtime/companion.c
   src/runtime/plugin_overlay.c
   src/runtime/plugin_models.c
   src/runtime/store/store.c

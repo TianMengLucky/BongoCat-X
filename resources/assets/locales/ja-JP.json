@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "プラグイン",
-        "description": "描画・統計プラグインをインストールします。モデルの種類で描画エンジンを自動選択します。",
+        "description": "描画エンジンと拡張プラグインを管理します。モデルの種類に応じて描画エンジンを自動選択します。",
         "status": "状態",
         "active": "使用中",
         "installed": "インストール済み",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D には Cubism Core が必要です。未導入なら ZIP と一緒にインポートできます。",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "INP / INX 形式の Inochi2D モデルに対応します。",
+        "renderers": "モデル描画エンジン",
+        "extensions": "拡張プラグイン",
+        "configure": "設定を開く",
         "openFolder": "フォルダーを開く",
         "drop": "クリックまたはプラグイン ZIP をドロップ",
         "dropHint": "ZIP またはプラグインライブラリ。描画パッケージに不足する Core を含められます。"
@@ -221,7 +224,7 @@
           "runAsAdmin": "管理者権限で動作する Windows ゲームの入力取得を改善します。有効化時に権限を要求して再起動します。",
           "renderBackend": "即時に切り替え、失敗時は OpenGL に戻ります。実験的な Vulkan/Metal でも背景、角丸、キー・エフェクト・ポインターを表示できます。",
           "glTrueTransparencySaveFailed": "透過設定を保存できません",
-          "directComposition": "実験的な DXGI Alpha 合成。即時反映し、失敗時は従来の表示方式に戻ります。ピクセルの読み戻しは残り、ゲームの Independent Flip は保証されません。 AMD GPU 専用。再描画イベントを50ms間隔に制限し、垂直同期を無効にします。",
+          "directComposition": "実験的な GPU 直接転送による DXGI Alpha 合成。全 GPU ブランドで利用可能ですが、ドライバーの相互運用対応が必要です。OpenGL を使用し、ウィンドウ全体でマウスを透過し、VSync を無効にします。ピクセル読み戻しや再描画イベント制限は行いません。失敗時は直接 OpenGL 表示に戻ります。ゲームの Independent Flip は保証されません。",
           "glTrueTransparency": "Vulkan と同じピクセル単位のアルファ合成を使用します。即時反映されます。ピクセルの読み戻しにより CPU/GPU 負荷が増える場合があります。",
           "renderBackendChanged": "描画バックエンドを切り替えています",
           "renderBackendFallback": "選択した描画バックエンドを使用できないため、OpenGL に戻しました",

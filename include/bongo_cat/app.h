@@ -74,7 +74,9 @@ typedef struct BongoCatApp {
     struct BongoCatSounds *sounds;
     struct BongoCatStore *store;
     struct BongoCatItems *items;
-    struct BongoCatStatisticsOverlay *statistics_overlay;
+    struct BongoCatCompanion *companion;
+    struct BongoCatLan *lan;
+    struct BongoCatFollowingOverlay *statistics_overlay;
     uint64_t statistics_overlay_retry_ns;
     BongoCatStatistics *statistics;
     BongoCatStatistics *statistics_retiring;
@@ -209,7 +211,7 @@ typedef struct BongoCatApp {
     bool pointer_relative_active;
     bool pointer_cursor_locked;
     bool window_minimized;
-    uint64_t window_expose_next_ns;
+    uint64_t window_expose_next_ns; /* Reserved; expose events are not throttled. */
     bool context_menu_requested;
     bool context_menu_active;
     bool context_menu_close_requested;

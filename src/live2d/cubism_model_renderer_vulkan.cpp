@@ -7,6 +7,7 @@
 #include "cubism_vulkan_bindless.hpp"
 #include "cubism_vulkan_submission.hpp"
 #include <exception>
+#include <array>
 #include <cstring>
 #include <stdexcept>
 #include "bongo_cat/log.h"
@@ -252,6 +253,19 @@ void NativeModel::draw_vulkan() {
     auto *renderer = GetRenderer<Csm::Rendering::CubismRenderer_Vulkan>();
     if (!_model || !renderer || width_ <= 0 || height_ <= 0) return;
     vulkan_draw_wait(); // Retire before mutating shared geometry, masks or descriptors.
+    const auto &info = rhi_info_;
+    Csm::Rendering::CubismRenderer_Vulkan::SetConstantSettings(
+        (VkDevice)info.vulkan_device, (VkPhysicalDevice)info.vulkan_physical_device,
+        (VkCommandPool)info.vulkan_command_pool, (VkQueue)info.vulkan_queue,
+        info.image_count, VkExtent2D{info.extent_width, info.extent_height},
+        VK_NULL_HANDLE, (VkFormat)info.color_format, (VkFormat)info.depth_format);
+    std::array<VkDescriptorImageInfo, vulkan_texture_table_capacity> atlases{};
+    const size_t count = vulkan_textures_.size();
+    if (count <= atlases.size()) for (size_t i = 0; i < count; ++i)
+        atlases[i] = {vulkan_textures_[i].GetSampler(), vulkan_textures_[i].GetView(),
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    vulkan_bindless_model(atlases.data(), count,
+        !_model->IsBlendModeEnabled() && _model->GetOffscreenCount() == 0);
     vulkan_memory_next_frame();
     BongoCatRhiVulkanFrameInfo frame{};
     if (!bongo_cat_rhi_get_vulkan_frame_info(

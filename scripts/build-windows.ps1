@@ -24,6 +24,11 @@ Remove-Item Env:PATH -ErrorAction SilentlyContinue
 $env:Path = $canonicalPath
 $env:VSLANG = '1033'
 $env:MSBUILDDISABLENODEREUSE = '1'
+# Share the compiler process budget across projects instead of multiplying /MP
+# by MSBuild's project parallelism. Non-MSBuild generators ignore these.
+$env:UseMultiToolTask = 'true'
+$env:EnforceProcessCountAcrossBuilds = 'true'
+$env:MultiProcMaxCount = $Jobs.ToString()
 $root = [IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))
 if (-not $BuildDir) { $BuildDir = Join-Path $root 'build-cubism' }
 if (-not [IO.Path]::IsPathRooted($BuildDir)) {
@@ -325,14 +330,6 @@ if ($SkipConfigure) {
 }
 
 Remove-Item -LiteralPath $buildLog -Force -ErrorAction SilentlyContinue
-$projects = @(Get-ChildItem -LiteralPath $BuildDir -Recurse -Filter '*.vcxproj' `
-    -ErrorAction SilentlyContinue)
-$compileItems = 0
-foreach ($project in $projects) {
-    $compileItems += @(Select-String -LiteralPath $project.FullName `
-        -SimpleMatch '<ClCompile Include=' -ErrorAction SilentlyContinue).Count
-}
-$compileItems = [Math]::Max(1, $compileItems)
 $buildArgs = @('--build', $BuildDir, '--config', $Configuration,
     '--target') + $Target + @('--parallel', $Jobs)
 $lastPercent = 20
@@ -347,13 +344,9 @@ try {
         $buildWriter.WriteLine($line)
         $activity++
         if ($line -match '\.(c|cc|cpp|cxx)(\s|$)') { $compiled++ }
-        $compilePercent = 20 + [int][Math]::Floor(
-            [Math]::Min(1.0, $compiled / [double]$compileItems) * 75)
         $activityPercent = 20 + [int][Math]::Min(72,
             [Math]::Floor([Math]::Sqrt($activity) * 4))
-        $percent = [Math]::Min(95,
-            [Math]::Max($lastPercent,
-                [Math]::Max($compilePercent, $activityPercent)))
+        $percent = [Math]::Min(95, [Math]::Max($lastPercent, $activityPercent))
         if ($percent -ne $lastPercent) {
             $lastPercent = $percent
             $message = if ($compiled -gt 0) {

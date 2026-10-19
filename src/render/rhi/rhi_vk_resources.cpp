@@ -11,10 +11,10 @@ BongoCatVulkanBackend::~BongoCatVulkanBackend() {
     if (submit_fence && vkDestroyFence) vkDestroyFence(device, submit_fence, nullptr);
     if (fence && vkDestroyFence) vkDestroyFence(device, fence, nullptr);
     if (pool && vkDestroyCommandPool) vkDestroyCommandPool(device, pool, nullptr);
-    if (device && vkDestroyDevice) vkDestroyDevice(device, nullptr);
+    if (!borrowed_device && device && vkDestroyDevice) vkDestroyDevice(device, nullptr);
     if (surface && instance) SDL_Vulkan_DestroySurface(instance, surface, nullptr);
-    bongo_cat_rhi_vk_debug_stop(this);
-    if (instance && vkDestroyInstance) vkDestroyInstance(instance, nullptr);
-    SDL_Vulkan_UnloadLibrary();
+    if (!borrowed_device) bongo_cat_rhi_vk_debug_stop(this);
+    if (!borrowed_device && instance && vkDestroyInstance) vkDestroyInstance(instance, nullptr);
+    if (!borrowed_device) SDL_Vulkan_UnloadLibrary();
 }
 #endif

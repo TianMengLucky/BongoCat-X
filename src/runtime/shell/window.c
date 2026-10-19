@@ -2,9 +2,6 @@
 #include "bongo_cat/safe_ffi.h"
 #include <SDL3/SDL_opengl.h>
 #include <stdio.h>
-#ifdef _WIN32
-#include "../../platform/windows/windows_composition.h"
-#endif
 
 static BongoCatRhiBackend resolve_rhi_backend(BongoCatRenderBackend setting) {
     switch (setting) {
@@ -34,15 +31,16 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
     /* The dispatcher falls back to the OpenGL compatibility ladder when the
        selected backend is unavailable or fails to initialize. */
 #ifdef _WIN32
-    bool amd = bongo_cat_windows_composition_is_amd();
-    SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.AmdCompositionAdapter", amd);
     SDL_SetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition",
-        amd && bongo_safe_direct_composition_get(app->settings.extensions_json,
+        bongo_safe_direct_composition_get(app->settings.extensions_json,
             sizeof(app->settings.extensions_json)));
-    app->window_expose_next_ns = 0;
 #endif
     BongoCatRhi choice = {0};
     choice.backend = resolve_rhi_backend(app->settings.app.render_backend);
+#ifdef _WIN32
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false))
+        choice.backend = BONGO_CAT_RHI_OPENGL;
+#endif
     if (!bongo_cat_rhi_live2d_supported(&choice)) choice.backend = BONGO_CAT_RHI_OPENGL;
     BongoCatResult result = bongo_cat_rhi_create_window(
         choice.backend,
@@ -52,7 +50,8 @@ BongoCatResult bongo_cat_window_create(BongoCatApp *app, BongoCatError *error) {
 #ifdef _WIN32
     if (bongo_cat_rhi_is_gl(&app->rhi))
         app->rhi.present.requires_layered = bongo_safe_gl_true_transparency_get(
-            app->settings.extensions_json, sizeof(app->settings.extensions_json));
+            app->settings.extensions_json, sizeof(app->settings.extensions_json)) &&
+            !SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false);
 #endif
     if (app->settings.app.render_backend != BONGO_CAT_RENDER_BACKEND_AUTO &&
         app->rhi.backend == BONGO_CAT_RHI_OPENGL)
@@ -160,18 +159,6 @@ bool bongo_cat_window_event(BongoCatApp *app, const SDL_Event *event) {
             app->dirty = true;
         }
     }
-#ifdef _WIN32
-    if (event->type == SDL_EVENT_WINDOW_EXPOSED && SDL_GetBooleanProperty(
-            SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false)) {
-        uint64_t now = SDL_GetTicksNS();
-        /* DWM expose storms must not continually invalidate an idle pet. */
-        if (now < app->window_expose_next_ns) return true;
-        app->window_expose_next_ns = now + 50 * 1000000ull;
-    } else if (event->type == SDL_EVENT_WINDOW_SHOWN ||
-        event->type == SDL_EVENT_WINDOW_RESTORED) {
-        app->window_expose_next_ns = 0;
-    }
-#endif
     if (event->type == SDL_EVENT_WINDOW_EXPOSED ||
         event->type == SDL_EVENT_WINDOW_HDR_STATE_CHANGED ||
         event->type == SDL_EVENT_WINDOW_SHOWN ||

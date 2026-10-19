@@ -1,3 +1,4 @@
+#include "bongo_cat/companion.h"
 #include "runtime.h"
 #include "mouse_internal.h"
 
@@ -49,6 +50,7 @@ void bongo_cat_app_apply_mouse(BongoCatApp *app) {
     if (!app) return;
     double target_x, target_y;
     bool received = bongo_cat_input_take_mouse(&app->input, &target_x, &target_y);
+    if (received) bongo_cat_companion_event(app, BONGO_COMPANION_MOUSE);
     uint64_t now = SDL_GetTicksNS();
     if (received) {
         app->mouse_last_ns = now ? now : 1;

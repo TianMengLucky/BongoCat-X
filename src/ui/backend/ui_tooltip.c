@@ -173,6 +173,25 @@ static void tooltip_multiline(struct nk_context *context, const char *text,
     nk_tooltip_end(context);
 }
 
+void bongo_cat_ui_text_tooltip(struct nk_context *context,
+    const char *text, struct nk_rect anchor) {
+    if (!context || !context->current || !context->current->layout ||
+        context->current->widgets_disabled ||
+        (context->current->layout->flags & NK_WINDOW_ROM)) return;
+    bool hover = nk_input_is_mouse_hovering_rect(&context->input, anchor) &&
+        nk_input_is_mouse_hovering_rect(&context->input, nk_window_get_canvas(context)->clip);
+    BongoCatUIPalette palette = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    struct nk_style_item saved_background = context->style.window.fixed_background;
+    struct nk_color saved_color = context->style.window.background;
+    struct nk_color background = palette.surface;
+    background.a = 255;
+    context->style.window.fixed_background = nk_style_item_color(background);
+    context->style.window.background = background;
+    tooltip_long(context, text, anchor, hover, palette.text);
+    context->style.window.fixed_background = saved_background;
+    context->style.window.background = saved_color;
+}
+
 void bongo_cat_ui_question_tooltip(struct nk_context *context,
     const char *question, const char *reply) {
     if (!context || !question || !question[0] || !reply || !reply[0]) return;

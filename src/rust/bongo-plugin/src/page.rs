@@ -41,6 +41,7 @@ pub mod color {
     pub const DANGER_BACKGROUND: u32 = 11;
     pub const LINK: u32 = 12;
     pub const LINK_HOVER: u32 = 13;
+    pub const ON_ACCENT: u32 = 14;
 }
 pub mod read {
     pub const STATUS: u32 = 0;
@@ -54,6 +55,9 @@ pub mod read {
     pub const IMAGE: u32 = 8;
     pub const SECTION: u32 = 9;
     pub const HEATMAP: u32 = 10;
+    pub const WORDS: u32 = 11;
+    pub const TIMER: u32 = 12;
+    pub const BACKSPACE: u32 = 13;
 }
 pub mod action {
     pub const IMPORT: u32 = 0;
@@ -75,6 +79,9 @@ pub mod action {
     pub const OPEN_URL: u32 = 16;
     pub const DOWNLOAD: u32 = 17;
     pub const UNINSTALL: u32 = 18;
+    pub const COPY_TEXT: u32 = 19;
+    pub const TIMER_ENABLE: u32 = 20;
+    pub const BACKSPACE_ENABLE: u32 = 21;
 }
 #[repr(C)]
 #[derive(Default)]
@@ -235,6 +242,18 @@ impl<'a> Page<'a> {
             ) != 0
         }
     }
+    pub fn copy_text(&self, text: &str) -> bool {
+        let text = c(text);
+        unsafe {
+            (self.services.action)(
+                self.services.context,
+                action::COPY_TEXT,
+                0,
+                text.as_ptr().cast(),
+                text.as_bytes_with_nul().len() as u32,
+            ) != 0
+        }
+    }
     pub fn url(&self, url: &str) -> bool {
         let url = c(url);
         unsafe {
@@ -261,6 +280,17 @@ impl<'a> Page<'a> {
     }
     pub fn row(&self, columns: u32, height: f32) {
         unsafe { (self.widgets.row)(self.ui, columns, height) }
+    }
+    /// Wrap toolbar actions onto another row when translated labels need more room.
+    pub fn button_row(&self, labels: &[String]) {
+        let needed = labels
+            .iter()
+            .map(|s| self.measure(s, 0) + 32.)
+            .fold(80.0_f32, f32::max);
+        let columns = ((self.width() + self.spacing()) / (needed + self.spacing()))
+            .floor()
+            .max(1.) as u32;
+        self.row(columns.min(labels.len().max(1) as u32), 36.);
     }
     pub fn button(&self, id: &str, text: &str, style: u32) -> bool {
         unsafe { (self.host.button)(self.ui, c(id).as_ptr(), c(text).as_ptr(), style) != 0 }

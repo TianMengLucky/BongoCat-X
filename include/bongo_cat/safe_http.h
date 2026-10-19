@@ -39,6 +39,10 @@ bool bongo_safe_live2d_license_text(const unsigned char *bytes, size_t length,
 int bongo_safe_live2d_download(const char *target, bool x64,
     bongo_safe_cancelled cancelled, bongo_safe_http_progress progress, void *userdata,
     char *message, size_t message_capacity);
+/* Authenticated POST: HTTPS, no redirects, 30 s deadline, 64 KiB bounds.
+   No remote error body, endpoint or credentials are logged. */
+int bongo_safe_http_post_json(const char *url, const char *key, const char *body,
+    bongo_safe_cancelled cancelled, void *context, unsigned char **response, size_t *length);
 void bongo_safe_free_http_response(unsigned char *response, size_t length);
 
 #ifdef __cplusplus

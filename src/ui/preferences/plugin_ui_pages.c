@@ -4,6 +4,8 @@
 #include "bongo_cat/sounds.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/store.h"
+#include "bongo_cat/companion.h"
+#include "bongo_cat/lan.h"
 
 bool bongo_cat_preferences_plugin_page(BongoCatPreferences *value,
     struct nk_context *context, enum BongoCatPluginUiKind kind) {
@@ -15,9 +17,11 @@ bool bongo_cat_preferences_plugin_page(BongoCatPreferences *value,
     case BONGO_CAT_PLUGIN_UI_ITEMS: api = bongo_cat_items_page_ui(value->app, &instance); break;
     case BONGO_CAT_PLUGIN_UI_STATISTICS: api = bongo_cat_statistics_page_ui(value->app, &instance); break;
     case BONGO_CAT_PLUGIN_UI_STORE: api = bongo_cat_store_page_ui(value->app, &instance); break;
+    case BONGO_CAT_PLUGIN_UI_COMPANION:
+    case BONGO_CAT_PLUGIN_UI_LAN: break;
     default: return false;
     }
-    if (!api || !instance) return false;
+    if (kind != BONGO_CAT_PLUGIN_UI_COMPANION && kind != BONGO_CAT_PLUGIN_UI_LAN && (!api || !instance)) return false;
     BongoCatPluginPageBinding binding = {value, kind};
     BongoCatPluginPageUiServices services = {
         BONGO_CAT_PLUGIN_PAGE_UI_ABI, sizeof(BongoCatPluginPageUiServices), &binding,
@@ -25,8 +29,13 @@ bool bongo_cat_preferences_plugin_page(BongoCatPreferences *value,
     };
     BongoCatPluginUi ui = {0};
     ui.context = context; ui.i18n = value->app->i18n; ui.preferences = value;
-    bool drawn = api->draw(instance, &ui, bongo_cat_preferences_plugin_canvas(), &services) != 0;
+    bool drawn = kind == BONGO_CAT_PLUGIN_UI_LAN ?
+        bongo_cat_lan_settings(value->app, &ui, bongo_cat_preferences_plugin_canvas(), &services) != 0 :
+        kind == BONGO_CAT_PLUGIN_UI_COMPANION ?
+        bongo_cat_companion_settings(value->app, &ui, bongo_cat_preferences_plugin_canvas(), &services) != 0 :
+        api->draw(instance, &ui, bongo_cat_preferences_plugin_canvas(), &services) != 0;
     /* Restore a partially drawn card even if a plugin catches a panic. */
+    while (ui.disabled_depth) bongo_cat_preferences_plugin_canvas()->disabled(&ui, 0);
     if (ui.card_open) bongo_cat_pref_card_end(context, &ui.saved);
     return drawn;
 }

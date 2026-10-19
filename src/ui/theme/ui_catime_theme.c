@@ -58,6 +58,12 @@ static struct nk_color readable_color(unsigned color, struct nk_color surface) {
     return result;
 }
 
+static struct nk_color button_hover(struct nk_color color, float amount) {
+    struct nk_color target = luminance(color) > .179f ?
+        nk_rgb(255, 255, 255) : nk_rgb(0, 0, 0);
+    return bongo_cat_ui_color_mix(color, target, amount);
+}
+
 #ifdef _WIN32
 static bool high_contrast(BongoCatUIPalette *value) {
     HIGHCONTRASTW contrast = {0}; contrast.cbSize = sizeof(contrast);
@@ -72,7 +78,7 @@ static bool high_contrast(BongoCatUIPalette *value) {
     value->border = value->border_subtle = value->text = value->muted =
         NK_SYS(text);
     value->link = value->link_hover = NK_SYS(text);
-    value->on_accent = value->on_selection = NK_SYS(GetSysColor(COLOR_HIGHLIGHTTEXT));
+    value->on_secondary = value->on_accent = value->on_selection = NK_SYS(GetSysColor(COLOR_HIGHLIGHTTEXT));
     value->accent = value->accent_hover = value->accent_pressed = NK_SYS(accent);
     value->pink = value->pink_hover = NK_SYS(accent);
     value->hover = value->selection = NK_SYS(accent);
@@ -130,8 +136,8 @@ BongoCatUIPalette bongo_cat_ui_palette(bool dark) {
         unsigned accent = primary_color <= 0xffffffu ? primary_color :
             ((unsigned)value.accent.r << 16) | ((unsigned)value.accent.g << 8) | value.accent.b;
         value.accent = readable_color(accent, value.surface);
-        value.accent_hover = bongo_cat_ui_color_mix(value.accent, value.text, .12f);
-        value.accent_pressed = bongo_cat_ui_color_mix(value.accent, value.text, .24f);
+        value.accent_hover = button_hover(value.accent, .12f);
+        value.accent_pressed = button_hover(value.accent, .24f);
         value.on_accent = luminance(value.accent) > .179f ?
             nk_rgb(0, 0, 0) : nk_rgb(255, 255, 255);
         value.selection = bongo_cat_ui_color_mix(value.surface, value.accent, .12f);
@@ -142,9 +148,11 @@ BongoCatUIPalette bongo_cat_ui_palette(bool dark) {
         unsigned secondary = secondary_color <= 0xffffffu ? secondary_color :
             ((unsigned)value.pink.r << 16) | ((unsigned)value.pink.g << 8) | value.pink.b;
         value.pink = readable_color(secondary, value.surface);
-        value.pink_hover = bongo_cat_ui_color_mix(value.pink, value.text, .12f);
+        value.pink_hover = button_hover(value.pink, .12f);
         value.hover_pink = bongo_cat_ui_color_mix(value.surface, value.pink, .08f);
     }
+    value.on_secondary = luminance(value.pink) > .179f ?
+        nk_rgb(0, 0, 0) : nk_rgb(255, 255, 255);
     /* Links retain their blue affordance independently of the editable accent. */
     value.link = readable_color(dark ? 0x93C5FDu : 0x1D4ED8u, value.surface);
     value.link_hover = readable_color(dark ? 0xBFDBFEu : 0x1E40AFu, value.surface);

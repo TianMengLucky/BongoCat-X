@@ -140,12 +140,32 @@ fn card(
     if busy {
         p.fill(button, 7.0, color::HOVER);
     } else {
-        p.fill_rgba(button, 7.0, if hover { 0xff4b911d } else { 0xff56a523 });
+        p.fill(
+            button,
+            7.0,
+            if installed {
+                color::DANGER_BACKGROUND
+            } else if hover {
+                color::ACCENT_HOVER
+            } else {
+                color::ACCENT
+            },
+        );
     }
     if busy {
         p.paint_text(button, &action_title, 1, color::MUTED, 1);
     } else {
-        p.text_rgba(button, &action_title, 1, 0xffffffff, 1);
+        p.paint_text(
+            button,
+            &action_title,
+            1,
+            if installed {
+                color::DANGER
+            } else {
+                color::ON_ACCENT
+            },
+            1,
+        );
     }
     if hover && !busy {
         p.input(button, 3);
@@ -297,7 +317,7 @@ impl PageState for State {
                     0,
                 );
             }
-        } else if p.button("refresh", &tr(p, "refresh", "Refresh"), 0) {
+        } else if p.button("refresh", &tr(p, "refresh", "Refresh"), 4) {
             act(p, action::REFRESH_STORE, 0);
             status = p.status();
         }

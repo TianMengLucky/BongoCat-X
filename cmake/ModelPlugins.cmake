@@ -113,6 +113,35 @@ if(BONGO_CAT_BUILD_SOUNDS)
     set_tests_properties(plugin-workers PROPERTIES TIMEOUT 30)
   endif()
 endif()
+# Bundled by default; AI requests remain disabled until configured and enabled.
+option(BONGO_CAT_BUILD_COMPANION "Build the experimental AI companion plugin" ON)
+if(BONGO_CAT_BUILD_COMPANION)
+  corrosion_import_crate(MANIFEST_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-companion/Cargo.toml"
+    CRATE_TYPES cdylib LOCKED)
+  if(BUILD_TESTING)
+    add_test(NAME companion-rust COMMAND "${BONGO_CAT_CARGO}" test --locked
+      --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-companion/Cargo.toml"
+      --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    set_tests_properties(companion-rust PROPERTIES TIMEOUT 60 RESOURCE_LOCK cargo-rust-tests)
+  endif()
+endif()
+# LAN is opt-in; no socket is opened until the user starts a room.
+option(BONGO_CAT_BUILD_LAN "Build the LAN friends plugin" OFF)
+if(BONGO_CAT_BUILD_LAN)
+  corrosion_import_crate(MANIFEST_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-lan/Cargo.toml"
+    CRATE_TYPES cdylib LOCKED)
+  if(BUILD_TESTING)
+    add_test(NAME lan-rust COMMAND "${BONGO_CAT_CARGO}" test --locked
+      --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-lan/Cargo.toml"
+      --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    add_test(NAME lan-safe-rust COMMAND "${BONGO_CAT_CARGO}" test --locked
+      --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/src/rust/bongo-safe/Cargo.toml"
+      --no-default-features --features lan lan:: --target-dir "${CMAKE_BINARY_DIR}/rust-tests")
+    set_tests_properties(lan-rust lan-safe-rust PROPERTIES TIMEOUT 120 RESOURCE_LOCK cargo-rust-tests)
+  endif()
+endif()
 # Cargo tests share dependencies; RESOURCE_LOCK avoids parallel Cargo lock waits.
 if(BUILD_TESTING)
   # The plugin support crate is a dependency of the plugin cdylibs, so it is
@@ -130,7 +159,7 @@ function(bongo_cat_stage_model_plugins target)
   else()
     set(destination "$<TARGET_FILE_DIR:${target}>/plugins")
   endif()
-  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared bongo_stats-shared bongo_items-shared bongo_sounds-shared bongo_store-shared)
+  foreach(plugin IN ITEMS bongo_live2d bongo_inox2d-shared bongo_stats-shared bongo_items-shared bongo_sounds-shared bongo_store-shared bongo_companion-shared bongo_lan-shared)
     if(TARGET ${plugin})
       # Restage changed DLLs even when the executable needs no relink.
       add_custom_target(${target}_stage_${plugin}

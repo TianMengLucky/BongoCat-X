@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.3：新增右鍵輪盤開關、加大設定視窗並支援最大化／還原、各項顏色獨立重設，以及統計單位編輯與小數顯示改善。
+2.2.4：新增字數統計與本次打字計時器；AI 陪伴外掛預設隨包建置、設定後啟用；設定版面與外掛管理隨視窗大小調整，改善外掛頁面、調色盤與 Windows DirectComposition 呈現。
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -63,6 +63,8 @@
 SDK 的匯入與下載統一位於「設定 → 外掛」，模型頁僅管理模型。Windows 使用者啟用 Live2D 外掛後，可點選「下載 Live2D SDK」，閱讀並同意兩份官方協議後自動下載並安裝相符的 Core；下載顯示已接收量、總量與百分比，失敗可在對話框內重試。其他平台請手動匯入相容的 Core。外觀與純色背景共用點選色塊開啟的調色盤彈出視窗。
 
 ## 📥 下載
+
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
 
 ---
@@ -135,6 +137,10 @@ Rust 模型商店外掛提供預覽圖卡片、作者連結及下載／解除安
 
 啟用 Live2D 外掛而缺少 Cubism Core 時，會顯示兩份官方協議。Windows 使用者點擊「同意並繼續下載」後，應用程式從官方 HTTPS 位址下載 Native R5 SDK，僅提取對應架構的動態 Core 並在本機啟用渲染；「取消並繼續」保留外掛啟用但不渲染。下載失敗可重試，也可手動匯入。應用程式及發行套件不包含 SDK 或 Core。
 
-Windows AMD 顯示卡提供預設關閉的實驗性「DirectComposition 呈現」。DXGI Alpha 合成立即生效，啟用後將 expose 事件節流至 50 毫秒並關閉 VSync，失敗時退回原呈現器。仍使用像素讀回，無法保證遊戲維持 Independent Flip。
+DirectComposition: 實驗性 GPU 直傳 DXGI Alpha 合成，對所有顯示卡品牌開放，需驅動支援互通。使用 OpenGL、整窗滑鼠穿透並關閉垂直同步，不做像素讀回或重繪事件節流；失敗時退回直接 OpenGL 呈現。不保證遊戲維持 Independent Flip。
 
 模型渲染外掛 ABI 已升級為 v2，請同步更新或重新建置程式與 Live2D／Inox2D 外掛；舊版外掛不相容。Live2D Vulkan 支援按需離屏資源、Rust 串流 PNG 縮放及具備 RGBA8 備援的 BC7 快取，平台限制請見 [原生渲染說明](live2d-vulkan-metal.md)。
+
+> 實驗性 AI 陪伴外掛預設建置並隨發行包提供（`BONGO_CAT_BUILD_COMPANION=ON`），執行時預設關閉；設定後手動啟用才會向服務傳送事件類別與人設。設為 `OFF` 可排除外掛。詳見[陪伴外掛說明](companion-plugin.md)。
+
+> 好友連線外掛預設不建置；使用 `-DBONGO_CAT_BUILD_LAN=ON` 啟用，支援 IPv4/IPv6、好友暱稱及臨時模型快取，詳見[連線說明](lan-plugin.md)。

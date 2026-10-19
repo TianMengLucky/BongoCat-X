@@ -31,6 +31,11 @@ fn populated(directory: &std::path::Path) -> (rusqlite::Connection, Arc<Mutex<St
     let mut key_counts = [0; 256];
     key_counts[65] = 7;
     store.keyboard.ingest(now.date_naive(), key_counts);
+    store.words.ingest(crate::words::Batch {
+        date: now.date_naive(),
+        at: std::time::Instant::now(),
+        counts: [('中', 3)].into(),
+    });
     store.usage.apps.insert(
         "editor".into(),
         App {
@@ -44,6 +49,7 @@ fn populated(directory: &std::path::Path) -> (rusqlite::Connection, Arc<Mutex<St
         "editor",
         2500,
     );
+    store.words.timer.set_enabled(true, std::time::Instant::now());
     store.usage.set_enabled(false);
     let shared = Arc::new(Mutex::new(store));
     storage::save(&mut connection, &shared).unwrap();
@@ -68,6 +74,10 @@ fn reset_clears_all_history_and_preserves_settings_after_reopen() {
             .iter()
             .all(|d| d.metrics == Metrics::default()));
         assert_eq!(store.keyboard.snapshot(today, 3), [0; 256]);
+        assert_eq!(store.words.snapshot(today, 3, 1).total, 0);
+        assert_eq!(store.words.timer.snapshot().enabled, 1);
+        assert_eq!(store.words.timer.snapshot().typing_ms, 0);
+        assert_eq!(store.words.timer.snapshot().idle_ms, 0);
         assert!(!store.usage.enabled);
         assert_eq!(store.usage.snapshot(today, 3).total_ms, 0);
         assert_eq!(store.usage.snapshot(today, 3).count, 0);
@@ -79,6 +89,7 @@ fn reset_clears_all_history_and_preserves_settings_after_reopen() {
     assert_eq!(store.lifetime, Metrics::default());
     assert!(store.hours.is_empty());
     assert_eq!(store.keyboard.snapshot(today, 3), [0; 256]);
+    assert_eq!(store.words.snapshot(today, 3, 1).total, 0);
     assert!(store.usage.apps.is_empty());
     assert!(store.usage.hours.is_empty());
     assert!(!store.usage.enabled);
@@ -109,6 +120,7 @@ fn failed_reset_rolls_back_database_and_keeps_memory() {
     drop(connection);
     let (connection, store) = storage::open(&directory).unwrap();
     assert_eq!(store.lifetime.keys, 7);
+    assert_eq!(store.words.snapshot(Local::now().date_naive(), 3, 1).total, 3);
     assert_eq!(
         store.usage.snapshot(Local::now().date_naive(), 3).total_ms,
         2500

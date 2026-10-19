@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "Plugins",
-        "description": "Installez les plugins de rendu et de statistiques. Le type de modèle choisit automatiquement le moteur de rendu.",
+        "description": "Gérez les moteurs de rendu et les extensions. Le type de modèle sélectionne automatiquement son moteur.",
         "status": "État",
         "active": "Utilisé",
         "installed": "Installé",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D nécessite Cubism Core, qui peut être importé avec le ZIP si nécessaire.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "Modèles Inochi2D au format INP / INX.",
+        "renderers": "Moteurs de rendu",
+        "extensions": "Extensions",
+        "configure": "Ouvrir les paramètres",
         "openFolder": "Ouvrir le dossier",
         "drop": "Cliquez ou déposez un ZIP de plugin ici",
         "dropHint": "ZIP ou bibliothèque du plugin ; les paquets de rendu peuvent fournir le Core manquant."
@@ -221,7 +224,7 @@
           "runAsAdmin": "Améliore la capture dans les jeux Windows avec droits élevés. L’activation demande une autorisation et redémarre l’application.",
           "renderBackend": "Changement immédiat ; retour à OpenGL en cas d’échec. Vulkan/Metal expérimental gère aussi fonds, coins et couches de touches, effets et pointeur.",
           "glTrueTransparencySaveFailed": "Impossible d’enregistrer le réglage de transparence",
-          "directComposition": "Composition Alpha DXGI expérimentale. Application immédiate et retour au mode précédent en cas d’échec. La lecture des pixels demeure ; Independent Flip des jeux n’est pas garanti. GPU AMD uniquement. Limite les événements de rafraîchissement à 50 ms et désactive VSync.",
+          "directComposition": "Composition alpha DXGI expérimentale sans lecture des pixels. Disponible pour toutes les marques de GPU avec interopérabilité du pilote. Utilise OpenGL, laisse passer tous les clics et désactive VSync, sans limiter les événements expose. En cas d’échec, revient à l’affichage OpenGL direct. Independent Flip des jeux n’est pas garanti.",
           "glTrueTransparency": "Utilise la composition alpha par pixel comme Vulkan. Effet immédiat ; la lecture des pixels peut augmenter la charge CPU/GPU.",
           "renderBackendChanged": "Changement du moteur de rendu",
           "renderBackendFallback": "Le moteur choisi est indisponible ; OpenGL a été rétabli",

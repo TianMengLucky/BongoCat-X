@@ -18,6 +18,18 @@ mod usage_storage;
 #[cfg(test)]
 mod usage_tests;
 mod worker;
+mod words;
+#[cfg(any(windows, test))]
+mod words_capture;
+#[cfg(any(windows, test))]
+mod words_text;
+mod words_ffi;
+mod words_options;
+#[cfg(any(windows, test))]
+mod words_undo;
+mod words_timer;
+#[cfg(windows)]
+mod words_windows;
 use metrics::{Metrics, Snapshot};
 use std::ffi::{c_char, c_void, CStr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -32,6 +44,8 @@ enum Command {
     Keyboard(keyboard::Source),
     Ingest(Metrics),
     Enable(bool),
+    Timer(bool),
+    Backspace(bool),
     Export(PathBuf, bool),
     Flush(mpsc::Sender<bool>),
     Reset,

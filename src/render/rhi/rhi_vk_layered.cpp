@@ -10,7 +10,7 @@ bool bongo_cat_rhi_vk_create_layered_target(BongoCatRhiVk *vk, int width, int he
     if ((uint32_t)width > device.limits.maxImageDimension2D ||
         (uint32_t)height > device.limits.maxImageDimension2D) return false;
     vk->layered_target = true;
-    vk->format = VK_FORMAT_B8G8R8A8_UNORM;
+    if (!vk->borrowed_device) vk->format = VK_FORMAT_B8G8R8A8_UNORM;
     vk->extent = VkExtent2D{(uint32_t)width, (uint32_t)height};
     VkImageCreateInfo image = {};
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

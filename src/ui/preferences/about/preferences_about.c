@@ -21,44 +21,18 @@ static void text(struct nk_command_buffer *canvas, struct nk_rect bounds,
     nk_draw_text(canvas, bounds, value, nk_strlen(value), font,
         nk_rgba(0, 0, 0, 0), color);
 }
-static void centered_span(struct nk_command_buffer *canvas,
-    struct nk_rect bounds, const char *value, int length,
-    const struct nk_user_font *font, struct nk_color color) {
-    float value_width = font->width(font->userdata, font->height, value, length);
-    float target_width = NK_MIN(bounds.w, value_width + 1.0f);
-    nk_draw_text(canvas, nk_rect(bounds.x + (bounds.w - target_width) * .5f,
-        bounds.y + (bounds.h - font->height) * .5f, target_width,
-        font->height), value, length, font, nk_rgba(0, 0, 0, 0), color);
-}
-static void centered_wrapped(struct nk_command_buffer *canvas,
-    struct nk_rect bounds, const char *value,
-    const struct nk_user_font *font, struct nk_color color) {
-    int length = nk_strlen(value), split = -1; float best = 1.0e30f;
-    if (width(font, value) <= bounds.w) {
-        centered_span(canvas, bounds, value, length, font, color); return;
-    }
-    for (int i = 1; i + 1 < length; ++i) {
-        if (value[i] != ' ') continue;
-        float left = font->width(font->userdata, font->height, value, i);
-        float right = font->width(font->userdata, font->height,
-            value + i + 1, length - i - 1);
-        float widest = NK_MAX(left, right);
-        if (widest < best) { best = widest; split = i; }
-    }
-    if (split < 0) {
-        centered_span(canvas, bounds, value, length, font, color); return;
-    }
-    struct nk_rect line = nk_rect(bounds.x,
-        bounds.y + (bounds.h - font->height * 2) * .5f, bounds.w, font->height);
-    centered_span(canvas, line, value, split, font, color); line.y += font->height;
-    centered_span(canvas, line, value + split + 1, length - split - 1, font, color);
-}
 static bool hit(struct nk_context *context, struct nk_rect bounds) {
-    return nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+    return !context->current->widgets_disabled &&
+        !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+        nk_input_is_mouse_hovering_rect(&context->input, nk_window_get_canvas(context)->clip) &&
         nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, bounds);
 }
 static void link_cursor(struct nk_context *context, struct nk_rect bounds) {
-    if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
+    if (!context->current->widgets_disabled &&
+        !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+        nk_input_is_mouse_hovering_rect(&context->input, nk_window_get_canvas(context)->clip))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);
 }
@@ -149,10 +123,21 @@ static void hero_title(BongoCatPreferences *value, struct nk_context *context,
 }
 void bongo_cat_preferences_about_hero(BongoCatPreferences *value,
     struct nk_context *context) {
-    struct nk_rect bounds;
-    nk_layout_row_dynamic(context, 340, 1);
-    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
+    float available = nk_window_get_content_region(context).w;
+    const bool narrow = available < 580.0f;
+    float shift = narrow ? 56.0f : 0.0f;
+    const char *description = tr(value, "native.support.heroText",
+        "Thank you for your support. Every use and share helps BongoCat grow.");
+    float description_width = NK_MAX(1.0f, available - 72.0f);
+    float description_height = NK_MAX(40.0f,
+        bongo_cat_about_text_height(description, value->ui.caption_font, description_width));
+    float footer_y = 234.0f + shift + description_height + 26.0f;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));
+    float footer_height = bongo_cat_preferences_about_footer(value, context, NULL,
+        nk_rect(0, 0, available, 0), p);
+    struct nk_rect bounds;
+    nk_layout_row_dynamic(context, footer_y + footer_height + 12.0f, 1);
+    if (nk_widget(&bounds, context) == NK_WIDGET_INVALID) return;
     struct nk_command_buffer *canvas = nk_window_get_canvas(context);
     if (p.effects) {
         nk_push_scissor(canvas, bounds);
@@ -164,18 +149,17 @@ void bongo_cat_preferences_about_hero(BongoCatPreferences *value,
         nk_push_scissor(canvas, nk_window_get_content_region(context));
     }
     star_button(value, context, canvas,
-        nk_rect(bounds.x + bounds.w - 188, bounds.y + 6, 177, 46), p);
+        nk_rect(bounds.x + (narrow ? (bounds.w - 177) * .5f : bounds.w - 188),
+            bounds.y + 6, 177, 46), p);
     support_logo(value, context, canvas,
         nk_rect(bounds.x + (bounds.w - 168) * .5f + 3,
-        bounds.y + 10, 168, 168), p);
-    hero_title(value, context, canvas, nk_rect(bounds.x + 3, bounds.y + 190,
+        bounds.y + 10 + shift, 168, 168), p);
+    hero_title(value, context, canvas, nk_rect(bounds.x + 3, bounds.y + 190 + shift,
         bounds.w, 36), p);
-    centered_wrapped(canvas, nk_rect(bounds.x + 36, bounds.y + 234,
-        bounds.w - 72, 40),
-        tr(value, "native.support.heroText",
-        "Thank you for your support. Every use and share helps BongoCat grow."),
-        value->ui.caption_font, p.muted);
+    (void)bongo_cat_about_paragraph(context,
+        nk_rect(bounds.x + 36, bounds.y + 234 + shift, description_width, description_height),
+        description, value->ui.caption_font, p.muted, true, value->ui.caption_font->height + 6.0f);
     bongo_cat_preferences_about_footer(value, context, canvas,
-        nk_rect(bounds.x, bounds.y + 300, bounds.w, 34), p);
+        nk_rect(bounds.x, bounds.y + footer_y, bounds.w, footer_height), p);
 }
 

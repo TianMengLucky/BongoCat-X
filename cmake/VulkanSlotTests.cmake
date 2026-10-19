@@ -14,6 +14,14 @@ if(BONGO_CAT_PLATFORM_VULKAN AND BONGO_CAT_VULKAN_INCLUDE_DIR)
   target_include_directories(bongo_cat_vk_submission_tests SYSTEM PRIVATE "${BONGO_CAT_VULKAN_INCLUDE_DIR}")
   target_link_libraries(bongo_cat_vk_submission_tests PRIVATE bongo_cat_warnings)
   add_test(NAME vulkan-async-submission COMMAND bongo_cat_vk_submission_tests)
+  add_executable(bongo_cat_vk_offscreen_tests tests/platform/test_vk_offscreen_ownership.cpp
+    src/render/rhi/rhi_vk_resources.cpp)
+  target_compile_definitions(bongo_cat_vk_offscreen_tests PRIVATE BONGO_CAT_HAS_VULKAN_RHI=1)
+  target_include_directories(bongo_cat_vk_offscreen_tests PRIVATE include src/render/rhi
+    tests/support "${BONGO_CAT_GENERATED_INCLUDE_DIR}")
+  target_include_directories(bongo_cat_vk_offscreen_tests SYSTEM PRIVATE "${BONGO_CAT_VULKAN_INCLUDE_DIR}")
+  target_link_libraries(bongo_cat_vk_offscreen_tests PRIVATE SDL3::SDL3-static bongo_cat_warnings)
+  add_test(NAME vulkan-offscreen-ownership COMMAND bongo_cat_vk_offscreen_tests)
   # Test the production lazy-creation critical section without creating a GPU.
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubismVulkanLazyPipelines.cmake" lazy_patch)
   string(FIND "${lazy_patch}" "namespace {" lazy_begin)
@@ -35,9 +43,13 @@ add_test(NAME cubism-opengl-lazy-base COMMAND ${CMAKE_COMMAND} "-DSDK=${BONGO_CA
   -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckCubismOpenGLLazyBase.cmake")
 
 add_executable(bongo_cat_ui_software_tests tests/ui/test_ui_software.c)
-target_include_directories(bongo_cat_ui_software_tests PRIVATE src/ui/backend src/ui/rendering tests/support)
+target_include_directories(bongo_cat_ui_software_tests PRIVATE src/ui/backend src/ui/rendering src/ui/preferences src/ui/theme
+  src/runtime src/runtime/shell src/runtime/update tests/support)
 target_include_directories(bongo_cat_ui_software_tests SYSTEM PRIVATE ${BONGO_CAT_NUKLEAR_INCLUDE_DIR})
 target_link_libraries(bongo_cat_ui_software_tests PRIVATE bongo_cat_runtime bongo_cat_warnings)
+if(MSVC)
+  target_compile_options(bongo_cat_ui_software_tests PRIVATE /experimental:c11atomics)
+endif()
 add_test(NAME ui-software-memory COMMAND bongo_cat_ui_software_tests)
 
 add_executable(bongo_cat_gl_program_tests tests/platform/test_gl_program.c)

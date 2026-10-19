@@ -6,6 +6,7 @@
 #include "ui_backend.h"
 #include "ui_catime.h"
 #include "ui_paint.h"
+#include "ui_tooltip.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -174,10 +175,14 @@ static int capsule(struct nk_context *context, const char *id,
             int length = nk_strlen(labels[i]);
             float text_width = font->width(font->userdata, font->height,
                 labels[i], length);
+            float visible_width = NK_MAX(1.0f, NK_MIN(text_width, segment - 12.0f));
             nk_draw_text(canvas, nk_rect(bounds.x + segment * (i + .5f) -
-                text_width * .5f, bounds.y + (bounds.h - font->height) * .5f,
-                text_width, font->height), labels[i], length, font,
+                visible_width * .5f, bounds.y + (bounds.h - font->height) * .5f,
+                visible_width, font->height), labels[i], length, font,
                 nk_rgba(0, 0, 0, 0), color);
+            if (text_width > visible_width)
+                bongo_cat_ui_text_tooltip(context, labels[i],
+                    nk_rect(bounds.x + segment * i, bounds.y, segment, bounds.h));
         }
     }
     if (hover) {
@@ -195,10 +200,9 @@ static int choice_row(struct nk_context *context, const char *id,
     if (!form_begin(context, id, lines, &saved)) return selected;
     float available = nk_window_get_content_region(context).w;
     float choice_width = 176.0f;
-    float left;
     if (count >= 10) {
-        left = NK_MIN(220.0f, NK_MAX(0.0f, available - 200.0f));
-        choice_width = NK_MAX(1.0f, available - left - 8.0f);
+        float label_width = NK_MIN(220.0f, NK_MAX(0.0f, available - 200.0f));
+        choice_width = NK_MAX(1.0f, available - label_width - 8.0f);
     } else {
         if (!icons && count > 1) {
             const struct nk_user_font *font = context->style.font;
@@ -206,13 +210,13 @@ static int choice_row(struct nk_context *context, const char *id,
                 choice_width = NK_MAX(choice_width, 12.0f + count * (24.0f +
                     font->width(font->userdata, font->height, labels[i], nk_strlen(labels[i]))));
         }
-        left = NK_MAX(0.0f, available - choice_width - 8.0f);
     }
+    choice_width = NK_MIN(choice_width, available * .5f);
+    float left = NK_MAX(1.0f, available - choice_width - context->style.window.spacing.x);
     nk_layout_row_begin(context, NK_STATIC, 36, 2);
     nk_layout_row_push(context, left);
     bongo_cat_pref_form_label(context, title);
-    nk_layout_row_push(context, count >= 10 ? choice_width : NK_MAX(choice_width,
-        available - left - 8.0f));
+    nk_layout_row_push(context, choice_width);
     selected = capsule(context, id, labels, count, icons, selected, clicked, false);
     nk_layout_row_end(context);
     bongo_cat_pref_description(context, detail, lines);
@@ -237,11 +241,7 @@ static void slider_row(struct nk_context *context, const char *id,
     int lines = bongo_cat_pref_detail_lines(context, detail);
     ThemeFormStyle saved;
     if (!form_begin(context, id, lines, &saved)) return;
-    float available = nk_window_get_content_region(context).w;
-    nk_layout_row_begin(context, NK_STATIC, 36, 2);
-    nk_layout_row_push(context, NK_MAX(1.0f, available - 228.0f));
-    bongo_cat_pref_form_label(context, title);
-    nk_layout_row_push(context, 220.0f);
+    bongo_cat_pref_form_title_sized(context, title, 220.0f);
     *changed = bongo_cat_pref_control_slider(context, id, minimum, result,
         maximum, step, default_value, "", edit_maximum);
     nk_layout_row_end(context);

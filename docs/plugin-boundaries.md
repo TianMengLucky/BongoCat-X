@@ -42,6 +42,12 @@
 - 退出音效／物品／商店时仍先排空并等待各自工作线程；插件调用结束后才能销毁实例、
   播放器／状态锁或卸载动态库。
 
+实验性 AI 陪伴插件默认构建并打包（`BONGO_CAT_BUILD_COMPANION=ON`），运行时默认关闭；
+可设为 `OFF` 排除该库，配置后仍需手动启用才会发出 AI 请求。
+插件负责设置、触发策略、请求与响应 JSON、后台请求及回复布局；宿主提供通用 HTTP、
+持久原子替换、设置控件和跟随窗口。TTS 通过主线程非阻塞回调注册，首版不含语音服务。
+详见 [陪伴插件](companion-plugin.md)。
+
 ## English
 
 The four add-on plugins own their formats, import/transfer policies, scene presentation,
@@ -71,3 +77,22 @@ Targeted tests cover scene round trips, invalid records, failed-import cleanup, 
 reads, ABI layouts, mirrored placement, overlay hit bounds and nonblocking one-shot
 notifications. Builds and compiled tests were not run under the repository workflow;
 run the add-on and shared-support Cargo tests when a build is authorized.
+
+## Friends / LAN
+
+好友联机的房间、昵称、线程、传输策略和会话缓存归 `bongo-lan`；
+所有不可信协议帧、压缩包、路径校验及隐私 IPv6 识别归 `bongo-safe` 的 `lan` feature。
+宿主提供动态库生命周期、插件页面、与本机后端一致的独立模型窗口（OpenGL／Vulkan）及标准姿态采样。
+远端模型不加入宿主模型目录，接收资源不经过安装接口；先销毁渲染器再释放缓存。
+
+`bongo-lan` owns rooms, local aliases, worker lifetime and session-cache policy.
+The optional `bongo-safe/lan` feature owns untrusted frames, archives, reference
+validation and privacy-address enumeration. The host supplies lifecycle, generic
+UI, a separate model window matching the local OpenGL/Vulkan backend and fixed pose sampling. Received models never
+enter the host catalog; renderer retirement precedes session-cache release.
+
+联机协议 v2 强制使用 Noise 加密认证；不兼容旧明文帧。Vulkan 离屏目标借用主设备，
+独立拥有图像、帧池和同步对象；主设备重建前必须释放朋友窗口资源。
+Protocol v2 requires Noise authenticated encryption with no plaintext fallback.
+Vulkan companion targets borrow the primary device and own their images, frame
+pools and synchronization; release them before rebuilding the primary backend.

@@ -22,7 +22,7 @@ page extension to display settings.
 输入次数、每日／小时图表及应用时长历史，并立即刷新已发布缓存。失败时回滚且保留历史；
 统计开关设置、插件启用状态与已导出的 CSV 保留。重置使用可选的版本 1 扩展
 `include/bongo_cat/statistics_reset_plugin.h`，旧插件仍可统计，但需更新后才能重置。
-统计页分为「键鼠统计」和「应用统计」。键鼠页提供概览卡片、键盘热力图及 7／30 天折线趋势；应用页按时长排列图标、时长条和时长文字。悬浮窗采用跟随明暗主题的圆角卡片，底部可切换键鼠／应用两页；应用页仅显示今日前 3 个应用。
+统计页分为「键鼠统计」、「应用统计」和「字数统计」。键鼠页提供概览卡片、键盘热力图及 7／30 天折线趋势；应用页按时长排列图标、时长条和时长文字。悬浮窗采用跟随明暗主题的圆角卡片，底部可切换键鼠／应用两页；应用页仅显示今日前 3 个应用。
 
 The Statistics page offers Reset statistics with inline confirmation. The Rust worker
 clears input counters, daily/hourly charts and application time in one SQLite transaction,
@@ -30,14 +30,87 @@ and publishes fresh snapshots before reporting completion. Failure rolls back an
 history. Collection settings, plugin activation and previously exported CSV files are kept.
 Reset uses the optional version 1 extension in `include/bongo_cat/statistics_reset_plugin.h`;
 older plugins still collect statistics and need updating to offer reset.
-The Statistics page has Keyboard and mouse and Application statistics subpages. Input statistics include summary cards, a keyboard heatmap and 7/30-day line charts. Application rows show an icon, duration bar and duration text. The rounded floating card follows the light/dark theme, with bottom tabs for input statistics and today’s top three applications.
+The Statistics page has Keyboard and mouse, Application statistics and Character statistics subpages. Input statistics include summary cards, a keyboard heatmap and 7/30-day line charts. Application rows show an icon, duration bar and duration text. The rounded floating card follows the light/dark theme, with bottom tabs for input statistics and today’s top three applications.
 
 
 Rust crate：`src/rust/bongo-stats`，独立 `cdylib`，不与宿主静态链接。
 键鼠功能参考 [keyStats](https://github.com/debugtheworldbot/keyStats)，前台应用计时参考
 [Work-Review](https://github.com/wm94i/Work-Review) 的应用识别、空闲暂停与本地存储方式。
-仅本地记录键鼠汇总、各键累计次数、应用标识／名称、图标和时长；不记录输入文本、按键顺序、坐标、
+仅本地记录键鼠汇总、各键累计次数、应用标识／名称、图标和时长；新增字数功能仅保存无序汉字频次，不保存句子、按键顺序、坐标、
 窗口标题、网址或截图，不联网。
+
+## 字数与速度 / Characters and typing speed
+
+统计页新增第三个「字数统计」子页面，提供今日、近 7／30 天和累计汉字数及前 32 个常用汉字。
+Windows 优先通过 UI Automation 的 `CompositionFinalized` 事件采集输入法最终提交。
+对于未提供最终提交事件的应用，每 100 毫秒检查焦点控件的 `TextEditPattern` 组合状态，
+在组合结束后读取已观察到的组合范围，并与提交事件去重；空范围和仅含空白的范围不视为组合。
+同时独立检查普通 `TextPattern` 的光标前上下文，兼容 QQ 等组合状态未及时清除的控件。
+兼容路径以实际键盘输入为触发，在空格、回车、数字或标点确认候选后，按新增文本计汉字，
+不用按键数估算字数。输入框首次出现时只建立基线；快捷键、鼠标点击、删除、导航和取消会重新建立基线。
+兼容路径暂存最多 256 个文本单位的光标前上下文（上限 4096 UTF-16 单位），
+只在内存中比较，不写日志或数据库；读取范围始终限制在焦点文本控件内。
+QQ 等控件可能返回文本为空但端点不重合的选区，或返回超出自身文本范围的光标；
+这时兼容路径读取输入框末尾的有限上下文，较长输入框中间的编辑仍可能漏计。
+鼠标选词、无键盘确认的输入、过快切换焦点，以及应用不提供文本接口时可能漏计。
+订阅成功不代表当前应用支持采集。
+不支持的平台、启动失败及事件丢失会在页面提示，不会用按键数估算汉字数。
+只处理有键盘焦点的非密码控件，不扫描文档，不读取剪贴板。
+汉字按 Unicode CJK 统一及兼容表意文字范围计数；不计标点、拉丁字母和普通粘贴，
+无法仅凭字符区分中文与日文等语言中的汉字。
+
+最近一分钟速度为过去 60 秒提交的汉字数（字／分钟）。平均速度仅针对本次运行：
+汉字数除以有效输入分钟，每段输入起计 1 秒；两次提交间隔不超过 5 秒时计入间隔，
+超过 5 秒则另起一段。两种速度均不受所选历史时段影响，重启及重置后重新计算。
+这是基于提交时间的估算，不包含首次提交前的拼音输入时间。
+
+仅本地保存每日／累计无序字频；事件文本在回调内转成频次后释放，兼容路径的上下文只保留在内存中。
+最近 30 天每日字频及累计字频在现有 SQLite 事务内保存，沿用 30 秒保存间隔。
+「重置统计」同时事务清除字频及速度；现有 CSV 导出内容保持原有键鼠／应用数据。
+停用插件后取消订阅，等待回调释放后再卸载；不受支持的应用不会产生字数。
+
+The third Statistics subpage shows today/7-day/30-day/lifetime Han totals and the top
+32 characters. Windows subscribes to UI Automation `CompositionFinalized` events.
+For providers that omit finalized events, it also checks the focused control's
+`TextEditPattern` composition state every 100 ms, reads only the observed composition
+range after completion, and pairs duplicate observations across sources. Empty or
+whitespace-only ranges do not indicate an active composition.
+An independent plain `TextPattern` path supports controls such as QQ whose composition
+state can remain active after committing. Real keyboard activity arms this path;
+Space, Enter, numbers or punctuation confirm candidates, and actual inserted Han text
+is counted. Key counts never estimate character totals. Initial focus only establishes
+a baseline; shortcuts, clicks, deletion, navigation and cancellation rebase it.
+Only the focused text control's preceding 256 text units (at most 4096 UTF-16 units)
+are retained transiently in memory, never in logs or storage, and reads are clamped
+to that control's range. Providers such as QQ may return empty selections with distinct
+endpoints or carets outside their own text range; the fallback then uses the bounded
+tail of the focused input, so edits in the middle of long inputs can be missed.
+Mouse candidate selection, input without keyboard confirmation,
+rapid focus changes and apps without accessible text can be missed. Subscription alone
+does not prove coverage.
+Only focused, non-password controls are accepted. No document or clipboard reads occur.
+Han characters in other languages may count; punctuation, Latin letters and normal pastes do not.
+
+Recent speed is the Han count committed in the last 60 seconds (characters/minute).
+Session average divides Han count by active minutes: each burst starts with one second,
+commit gaps up to five seconds count, and longer gaps begin a new burst. These estimates
+exclude time before the first commit and are independent of the selected history period.
+Restart/reset clears session speeds. Daily histograms retain 30 days and lifetime counts
+remain; reset clears them transactionally. Only unordered frequencies persist locally;
+event strings are discarded in the callback, and compatibility context stays in memory only.
+Existing CSV exports retain their input/app scope.
+
+字数页的「打字计时器」默认关闭，仅记录本次运行。开启开始或继续累计，关闭暂停；
+显示打字时间和空闲时间（时:分:秒），与历史时段筛选无关。每次采集到汉字提交后
+5 秒内为打字时间，其他开启时间为空闲，未能采集的输入也会被视为空闲。
+不追溯开启前的输入；重启清零。重置统计清零时间并保留当前开关。
+
+The Character statistics page has a session-only Typing timer, off by default.
+Enabling starts/resumes accumulation; disabling pauses it. Typing and idle durations
+use HH:MM:SS, independent of the historical period. Five seconds after each captured
+Han commit count as typing; remaining enabled time is idle, including unobserved input.
+Earlier input is not billed. Restart clears the timer; Reset statistics clears its times
+and preserves the current switch. Timer operations use a separate optional v1 ABI.
 
 ## 显示单位 / Display units
 
@@ -134,8 +207,8 @@ X11／evdev 滚轮刻度。触摸板与鼠标单位可能不同，不换算物�
 The independent Rust dynamic plugin combines basic input counters inspired by
 [keyStats](https://github.com/debugtheworldbot/keyStats) with foreground app timing
 inspired by [Work-Review](https://github.com/wm94i/Work-Review). Only aggregate
-input values, unordered per-key counts, app IDs/names, icons and durations stay on this device. It collects no
-typed text, key order, coordinates, window titles, URLs or screenshots.
+input values, unordered per-key counts, app IDs/names, icons and durations stay on this device. Han statistics retain only unordered character frequencies, never sentences,
+key order, coordinates, window titles, URLs or screenshots.
 
 The Statistics page shows today, the last 7/30 calendar days including today,
 lifetime totals, input charts, app rankings and today's hourly app time.

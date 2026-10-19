@@ -1,6 +1,8 @@
 #include "runtime.h"
 #include "bongo_cat/items.h"
 #include "bongo_cat/statistics.h"
+#include "bongo_cat/companion.h"
+#include "bongo_cat/lan.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/log.h"
 #include "bongo_cat/model_memory.h"
@@ -16,6 +18,8 @@ static void handle_event(BongoCatApp *app, const SDL_Event *event) {
     if (bongo_cat_update_event(app->update, event)) return;
     if (bongo_cat_model_refresh_event(app, event)) return;
     if (bongo_cat_statistics_overlay_event(app, event)) return;
+    if (bongo_cat_companion_overlay_event(app, event)) return;
+    if (bongo_cat_lan_event(app, event)) return;
     if (bongo_cat_preferences_event(app->preferences, event)) return;
     if (!bongo_cat_window_event(app, event)) app->running = false;
     if (event->type >= SDL_EVENT_GAMEPAD_AXIS_MOTION &&
@@ -218,6 +222,7 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_diagnostics_phase("loop-prepare");
         int wait_ms = bongo_cat_window_wait_timeout(app, SDL_GetTicksNS());
         if (app->secondary_pet && wait_ms > 100) wait_ms = 100;
+        if (app->lan && (wait_ms < 0 || wait_ms > 33)) wait_ms = 33;
         if (bongo_cat_preferences_imports_busy(app->preferences) &&
             (wait_ms < 0 || wait_ms > 100)) wait_ms = 100;
         if ((app->statistics_overlay || app->statistics_overlay_retry_ns) &&
@@ -312,6 +317,8 @@ void bongo_cat_app_loop(BongoCatApp *app) {
         bongo_cat_diagnostics_phase("model-selection");
         bongo_cat_preferences_process_model_selection(app->preferences);
         bongo_cat_statistics_overlay_update(app);
+        bongo_cat_companion_update(app);
+        bongo_cat_lan_update(app);
         if (app->session.window.visible && !app->window_minimized && app->dirty)
             render(app, true);
         bongo_cat_diagnostics_phase("tray-and-config-save");

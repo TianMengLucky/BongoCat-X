@@ -154,7 +154,8 @@ BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int 
         if (chosen) {
             VkPhysicalDeviceProperties properties;
             vk->vkGetPhysicalDeviceProperties(devices[i], &properties);
-            snprintf(vk->describe, sizeof(vk->describe), "Vulkan %s",
+            snprintf(vk->describe, sizeof(vk->describe), "Vulkan %.*s",
+                static_cast<int>(sizeof(vk->describe) - sizeof("Vulkan ")),
                 properties.deviceName);
         }
     }

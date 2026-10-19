@@ -24,7 +24,7 @@ endforeach()
 list(REMOVE_DUPLICATES KEYS)
 
 file(GLOB LOCALES "${ROOT}/resources/assets/locales/*.json")
-set(PLUGIN_IDS items sounds stats store inox2d)
+set(PLUGIN_IDS items sounds stats store inox2d companion lan)
 if(NOT LOCALES)
   message(FATAL_ERROR "No locale files found")
 endif()

@@ -42,11 +42,11 @@
 
 SDK 的导入与下载统一位于「设置 → 插件」，模型页仅管理模型。Windows 用户启用 Live2D 插件后，可点击「下载 Live2D SDK」，阅读并同意两份官方协议后自动下载并安装匹配的 Core；下载显示已接收量、总量与百分比，失败可在弹窗内重试。其他平台请手动导入兼容的 Core。外观与纯色背景共用点击色块打开的调色板弹窗。
 
-2.2.3：新增默认关闭的右键轮盘开关；加大设置窗口并支持最大化／还原；每项外观颜色可单独恢复默认；改善统计单位编辑与换算后的数值显示。
+2.2.4：新增字数统计与本次打字计时器；AI 陪伴插件默认随包构建、配置后启用；设置布局与插件管理随窗口大小自适应，改进插件页面、取色器与 Windows DirectComposition 呈现。
 
 ## 📥 下载
 
-- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
   从 [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) 下载最新版本。
 
@@ -180,11 +180,13 @@ C11 宿主通过 SDL3 管理主线程事件、模型更新和呈现，设置界�
 
 插件兼容性与构建细节见[渲染插件](docs/model-plugins.md)，原生后端限制及验证范围见[渲染说明](docs/live2d-vulkan-metal.md)。
 
+Windows 提供默认关闭的「DirectComposition 呈现」。实验性 GPU 直传 DXGI Alpha 合成，对所有显卡品牌开放，需驱动支持互操作。使用 OpenGL、整窗鼠标穿透并关闭垂直同步，不做像素回读或重绘事件节流；失败时回退直接 OpenGL 呈现。不保证游戏保持 Independent Flip。
+
 ## ❓ 常见问题
 
 ### 🔒 BongoCat 会记录我的键盘或鼠标输入吗？
 
-BongoCat 在本地处理键鼠输入，以驱动动画和快捷键，不上传输入或使用数据。启用统计插件后，可在本地保存按键／鼠标汇总、每日／小时趋势及前台应用时长；不保存输入文本、按键顺序、窗口标题、网址或坐标。采集可在统计页关闭，历史数据可重置或导出。详见[统计插件说明](docs/statistics-plugin.md)。更新检查仅请求公开版本元数据。
+BongoCat 在本地处理键鼠输入，以驱动动画和快捷键，不上传输入或使用数据。启用统计插件后，可在本地保存按键／鼠标汇总、每日／小时趋势及前台应用时长；可保存 Windows 输入法提交的无序汉字字频，不保存句子、按键顺序、窗口标题、网址或坐标。采集可在统计页关闭，历史数据可重置或导出。详见[统计插件说明](docs/statistics-plugin.md)。更新检查仅请求公开版本元数据。
 
 ### Linux Wayland 输入
 
@@ -209,7 +211,7 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
 
 - **模型与渲染**：支持 Live2D、Inochi2D 和 Mver，多模型模式合并展示，支持多个 ZIP 后台排队导入。Windows 便携版请保留程序旁的 `plugins` 目录；渲染插件 ABI 为 v2，程序与插件需同步更新。见[渲染插件](docs/model-plugins.md)。
 - **设置与外观**：支持紧凑布局、统一调色板、自定义图片背景和鼠标跟随范围；快捷键位于「偏好」子页，商店位于「模型」子页。设置自动保存。
-- **统计**：键鼠总量、每日／每小时趋势、前台应用时长、自定义显示单位及 CSV 导出。数据保存在本地，可关闭采集或重置。见[统计插件](docs/statistics-plugin.md)。
+- **统计**：键鼠总量、每日／每小时趋势、前台应用时长、自定义显示单位及 CSV 导出；Windows 支持汉字字频、打字速度和本次打字／空闲计时。数据保存在本地，可关闭采集或重置。见[统计插件](docs/statistics-plugin.md)。
 - **物品**：图片批量导入、复制、位置／缩放／旋转／透明度、前后层级与场景保存；最多 16 个物品，仅作用于主桌宠，GIF 仅取首帧。见[物品插件](docs/items-plugin.md)。
 - **音效**：按键绑定与试听 WAV／MP3／Ogg Vorbis／FLAC，动作音量可单独调整并保存。见[音效插件](docs/sounds-plugin.md)。
 - **社区商店**：模型预览、作者链接、下载／卸载及 SHA-256 校验；付费条目可提供「购买完整版」链接。见[商店插件](docs/store-plugin.md)。
@@ -236,3 +238,7 @@ BONGOCAT_ENABLE_EVDEV=1 ./build/BongoCat
   Fork maintained by <a href="https://github.com/TianMengLucky">TianMengLucky</a><br>
   Made with ❤️ &amp; ⌨️
 </div>
+
+> 实验性 AI 陪伴插件默认构建并随发行包提供（`BONGO_CAT_BUILD_COMPANION=ON`），运行时默认关闭；配置后手动启用才会向服务发送事件类别和人设。可设为 `OFF` 排除插件。详见[陪伴插件说明](docs/companion-plugin.md)。
+
+> 好友联机插件默认不构建；使用 `-DBONGO_CAT_BUILD_LAN=ON` 启用，支持 IPv4/IPv6、朋友昵称及临时模型缓存，详见[联机说明](docs/lan-plugin.md)。

@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.3 : menu radial optionnel au clic droit, fenêtre de paramètres agrandie avec agrandissement/restauration, réinitialisation de chaque couleur et amélioration des unités et de l’arrondi des statistiques.
+2.2.4 : statistiques de caractères et minuteur de saisie de la session, compagnon IA fourni à configurer et activer, paramètres et grille de plugins adaptés à la taille de la fenêtre et améliorations des pages de plugins, du sélecteur de couleurs et de DirectComposition sous Windows.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -61,6 +61,8 @@ Scannez le QR code avec QQ ou recherchez le groupe **211957388** pour rejoindre 
 L’importation et le téléchargement du SDK se trouvent dans Paramètres → Plugins ; la page Modèles gère les modèles. Sous Windows, activez le plugin Live2D, choisissez Télécharger le SDK Live2D, puis lisez et acceptez les deux accords officiels pour installer le Core adapté. La progression affiche le volume reçu, le total et le pourcentage ; les erreurs peuvent être réessayées dans la boîte de dialogue. Sur les autres plateformes, importez un Core compatible manuellement. Les couleurs de l’apparence et du fond uni partagent une palette qui s’ouvre en cliquant sur l’échantillon de couleur.
 
 ## 📥 Téléchargement
+
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
 
 ---
@@ -133,6 +135,10 @@ Les raccourcis sont intégrés aux préférences, via Réglages / Raccourcis. La
 
 L’activation de Live2D sans Cubism Core affiche les deux accords officiels. Sous Windows, Accepter et télécharger récupère le SDK Native R5 via HTTPS officiel, extrait uniquement le Core dynamique compatible et active le rendu local. Annuler et continuer garde le plugin activé sans rendu. Le téléchargement peut être retenté et l’import manuel reste disponible. L’application et les paquets ne contiennent ni SDK ni Core.
 
-Sous Windows avec un GPU AMD, la présentation DirectComposition expérimentale est désactivée par défaut. La composition alpha DXGI s’applique immédiatement, limite les événements expose à 50 ms et désactive VSync ; un échec rétablit la présentation précédente. La lecture des pixels reste nécessaire ; Independent Flip des jeux n’est pas garanti.
+DirectComposition: Composition alpha DXGI expérimentale sans lecture des pixels. Disponible pour toutes les marques de GPU avec interopérabilité du pilote. Utilise OpenGL, laisse passer tous les clics et désactive VSync, sans limiter les événements expose. En cas d’échec, revient à l’affichage OpenGL direct. Independent Flip des jeux n’est pas garanti.
 
 L’ABI des plugins de rendu passe à v2 : mettez à jour ou recompilez ensemble l’application et les plugins Live2D/Inox2D ; les anciens plugins sont incompatibles. Live2D Vulkan propose des ressources hors écran à la demande, le redimensionnement PNG en flux avec Rust et un cache BC7 avec repli RGBA8 ; voir les [détails du rendu](live2d-vulkan-metal.md) pour les limites des plateformes.
+
+> Le compagnon IA expérimental est compilé et fourni par défaut (`BONGO_CAT_BUILD_COMPANION=ON`), mais désactivé à l’exécution. Après configuration et activation explicite, il envoie les catégories d’événements et la personnalité au service choisi. Utilisez `OFF` pour l’exclure. Voir [la documentation](companion-plugin.md).
+
+> Le plugin amis optionnel utilise `-DBONGO_CAT_BUILD_LAN=ON` : IPv4/IPv6, surnoms et cache temporaire des modèles. Voir [le guide LAN](lan-plugin.md).

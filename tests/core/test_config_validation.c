@@ -96,6 +96,19 @@ static void check_defaults_and_validation(void) {
     bongo_cat_settings_validate(&settings);
     bongo_cat_session_validate(&session);
     CHECK(session.window.content_left == 0 && session.window.content_top == 0);
+    /* Repeated save/load validation must retain a tight frame's crop origin. */
+    session.window.width = 400;
+    session.window.height = 200;
+    session.window.content_left = -100;
+    session.window.content_top = -80;
+    for (int restart = 0; restart < 3; ++restart) {
+        bongo_cat_session_validate(&session);
+        CHECK(session.window.content_left == -100 && session.window.content_top == -80);
+    }
+    session.window.content_left = -10000;
+    session.window.content_top = 10000;
+    bongo_cat_session_validate(&session);
+    CHECK(session.window.content_left == -212 && session.window.content_top == 0);
     CHECK(settings.model.max_fps == 60);
     /* Free numeric input clamps to 1-360; -1 keeps following the display. */
     const int old_fps[] = {-2, BONGO_CAT_DISPLAY_MAX_FPS, 0, 1, 24, 30, 31, 60, 120, 240, 361};

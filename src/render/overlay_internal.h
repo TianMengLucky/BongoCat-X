@@ -67,6 +67,8 @@ typedef struct OverlayKeySide {
 } OverlayKeySide;
 
 struct BongoCatOverlay {
+    float pointer_snapshot_x, pointer_snapshot_y;
+    uint32_t pointer_snapshot_buttons;
     BongoCatOverlayItemsDraw items_draw;
     void *items_userdata;
     uint64_t items_revision;

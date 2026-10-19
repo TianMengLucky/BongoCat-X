@@ -1,4 +1,4 @@
-use crate::{SoundScene, SOUND_KEYS};
+use crate::{SoundKey, SoundScene, SOUND_KEYS};
 use bongo_plugin::page::{action, color, read, text, Page, PageState, Rect};
 
 #[derive(Default)]
@@ -13,6 +13,23 @@ fn act(p: &Page<'_>, op: u32, index: usize) {
     if !p.act(op, index as u32) {
         p.notice(&tr(p, "failed", "Unable to update sound effects"), true);
     }
+}
+// Move navigation and numpad keys below the main block in narrow windows.
+fn key_position(key: &SoundKey, copy: u32, compact: bool) -> Option<(f32, f32, u32)> {
+    let (mut x, width, mut row) = if copy == 0 {
+        (key.x, key.width, key.row)
+    } else if text(&key.id) == "Return" {
+        (22.0, 1.0, 4)
+    } else if text(&key.id) == "Meta" {
+        (11.75, 1.25, key.row)
+    } else {
+        return None;
+    };
+    if compact && x >= 15.5 {
+        x -= 15.5;
+        row += 6;
+    }
+    Some((x, width, row))
 }
 impl PageState for State {
     fn draw(&mut self, p: &Page<'_>) {
@@ -41,21 +58,23 @@ impl PageState for State {
             .collect();
         p.glyphs(&names, &mut self.glyph_hash);
         self.selected = self.selected.min(count - 1);
-        for row in 0..6 {
+        let compact = p.width() < 760.0;
+        for row in 0..if compact { 12 } else { 6 } {
             p.row(1, 42.0);
             let Some((area, enabled)) = p.region() else {
                 continue;
             };
-            let unit = area.w / 23.0;
+            let columns = if !compact {
+                23.0
+            } else if row < 6 {
+                15.0
+            } else {
+                7.5
+            };
+            let unit = area.w / columns;
             for (i, key) in SOUND_KEYS[..count].iter().enumerate() {
                 for copy in 0..2 {
-                    let (x, width, key_row) = if copy == 0 {
-                        (key.x, key.width, key.row)
-                    } else if text(&key.id) == "Return" {
-                        (22.0, 1.0, 4)
-                    } else if text(&key.id) == "Meta" {
-                        (11.75, 1.25, key.row)
-                    } else {
+                    let Some((x, width, key_row)) = key_position(key, copy, compact) else {
                         continue;
                     };
                     if key_row != row {
@@ -102,12 +121,16 @@ impl PageState for State {
                         );
                     }
                     if hover {
-                        p.tooltip(&if bound {
-                            names[i].to_owned()
-                        } else {
-                            tr(p, "unassigned", "No sound assigned")
-                        });
-                        if enabled && status.blocked == 0 && p.input(r, 1) {
+                        p.tooltip(&format!(
+                            "{} · {}",
+                            text(&key.label),
+                            if bound {
+                                names[i].to_owned()
+                            } else {
+                                tr(p, "unassigned", "No sound assigned")
+                            }
+                        ));
+                        if enabled && status.busy == 0 && status.blocked == 0 && p.input(r, 1) {
                             self.selected = i;
                             if bound {
                                 act(p, action::PREVIEW_SOUND, i);
@@ -120,34 +143,76 @@ impl PageState for State {
             }
         }
         let key = &SOUND_KEYS[self.selected];
-        p.row(2, 30.0);
-        if let Some((r, _)) = p.region() {
-            p.paint_text(r, text(&key.id), 0, color::TEXT, 0);
-        }
-        if let Some((r, _)) = p.region() {
-            p.paint_text(
-                r,
-                &if names[self.selected].is_empty() {
-                    tr(p, "unassigned", "No sound assigned")
-                } else {
-                    names[self.selected].to_owned()
-                },
-                0,
-                color::TEXT,
-                0,
-            );
-        }
-        p.row(3, 32.0);
-        for (id, title, op) in [
+        p.label(text(&key.id));
+        p.label(&if names[self.selected].is_empty() {
+            tr(p, "unassigned", "No sound assigned")
+        } else {
+            names[self.selected].to_owned()
+        });
+        let actions = [
             ("choose", "Choose audio", action::IMPORT),
             ("preview", "Preview", action::PREVIEW_SOUND),
             ("clear", "Clear binding", action::CLEAR_SOUND),
-        ] {
-            if p.button(id, &tr(p, id, title), 0) {
+        ];
+        let labels: Vec<_> = actions
+            .iter()
+            .map(|(id, title, _)| tr(p, id, title))
+            .collect();
+        p.button_row(&labels);
+        for ((id, _, op), label) in actions.into_iter().zip(labels.iter()) {
+            let blocked = status.busy != 0
+                || status.blocked != 0
+                || (op != action::IMPORT && scene.bindings[self.selected].asset[0] == 0);
+            if blocked {
+                p.disabled(true);
+            }
+            if p.button(
+                id,
+                label,
+                if op == action::CLEAR_SOUND {
+                    1
+                } else if op == action::PREVIEW_SOUND {
+                    4
+                } else {
+                    0
+                },
+            ) {
                 act(p, op, self.selected);
+            }
+            if blocked {
+                p.disabled(false);
             }
         }
         p.wrapped(&tr(p, "formats", "WAV, MP3, Ogg Vorbis and FLAC, up to 64 MB. Sound runs independently of the selected model. Key availability depends on global input permission and keyboard layout."), 58.0);
     }
 }
 bongo_plugin::export_page!(bongo_cat_sounds_page_ui_query_v1, State);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn keyboard_layout_keeps_all_bindings_inside_each_width() {
+        for compact in [false, true] {
+            for key in &SOUND_KEYS {
+                for copy in 0..2 {
+                    if let Some((x, width, row)) = key_position(key, copy, compact) {
+                        let columns = if !compact {
+                            23.0
+                        } else if row < 6 {
+                            15.0
+                        } else {
+                            7.5
+                        };
+                        assert!(x >= 0.0 && x + width <= columns);
+                        assert!(row < if compact { 12 } else { 6 });
+                        if copy == 0 {
+                            assert_eq!(row % 6, key.row);
+                        }
+                    } else {
+                        assert_eq!(copy, 1);
+                    }
+                }
+            }
+        }
+    }
+}

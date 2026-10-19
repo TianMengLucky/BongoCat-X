@@ -36,18 +36,31 @@ static uint32_t edit(BongoCatPluginUi *ui, const char *id, char *text,
     uint32_t capacity, uint32_t ascii) {
     if (!text || !capacity || capacity > 4096) return 0;
     text[capacity - 1] = 0;
+    struct nk_style_edit saved = ui->context->style.edit;
+    BongoCatUIPalette colors = bongo_cat_ui_palette(bongo_cat_ui_dark(ui->context));
+    ui->context->style.edit.normal = nk_style_item_color(colors.field);
+    ui->context->style.edit.hover = nk_style_item_color(colors.field);
+    ui->context->style.edit.active = nk_style_item_color(colors.field);
+    ui->context->style.edit.border_color = colors.border_subtle;
+    ui->context->style.edit.text_normal = colors.text;
+    ui->context->style.edit.text_hover = colors.text;
+    ui->context->style.edit.text_active = colors.text;
     nk_flags flags = nk_edit_string_zero_terminated(ui->context, NK_EDIT_FIELD,
         text, (int)capacity, ascii ? nk_filter_ascii : nk_filter_default);
+    ui->context->style.edit = saved;
     if (flags & NK_EDIT_ACTIVATED) SDL_StartTextInput(ui->preferences->window);
     if (flags & NK_EDIT_ACTIVE) ui->preferences->render_dirty = true;
     if (!ascii && id) {
         BongoCatPreferences *value = ui->preferences;
-        for (size_t i = 0; i < SDL_arraysize(value->plugin_edit_ids); ++i) {
-            if (!value->plugin_edit_ids[i][0] || !strcmp(value->plugin_edit_ids[i], id)) {
-                SDL_strlcpy(value->plugin_edit_ids[i], id, sizeof(value->plugin_edit_ids[i]));
-                SDL_strlcpy(value->plugin_edit_texts[i], text, sizeof(value->plugin_edit_texts[i]));
-                break;
-            }
+        size_t slot = SDL_arraysize(value->plugin_edit_ids);
+        for (size_t i = 0; i < SDL_arraysize(value->plugin_edit_ids); ++i)
+            if (!strcmp(value->plugin_edit_ids[i], id)) {slot = i; break;}
+        if (slot == SDL_arraysize(value->plugin_edit_ids))
+            slot = value->plugin_edit_cursor++ % SDL_arraysize(value->plugin_edit_ids);
+        SDL_strlcpy(value->plugin_edit_ids[slot], id, sizeof(value->plugin_edit_ids[slot]));
+        if (strcmp(value->plugin_edit_texts[slot], text)) {
+            SDL_strlcpy(value->plugin_edit_texts[slot], text, sizeof(value->plugin_edit_texts[slot]));
+            if (!bongo_cat_preferences_model_glyphs_ready(value, text)) value->font_reload_pending = true;
         }
     }
     return (flags & NK_EDIT_ACTIVE) != 0;
@@ -56,7 +69,7 @@ static void number(BongoCatPluginUi *ui, const char *id, const char *title,
     double *value, double minimum, double maximum) {
     if (!value) return;
     struct nk_context *ctx = ui->context;
-    nk_layout_row_dynamic(ctx, 30, 1); nk_label(ctx, title, NK_TEXT_LEFT);
+    bongo_cat_preferences_plugin_widgets()->label(ui, title);
     nk_layout_row_dynamic(ctx, 32, 1);
     struct nk_rect bounds;
     if (nk_widget(&bounds, ctx) == NK_WIDGET_INVALID) return;
@@ -73,8 +86,18 @@ static void number(BongoCatPluginUi *ui, const char *id, const char *title,
             ctx->style.font, nk_rgba(0, 0, 0, 0), p.text);
 }
 static void disabled(BongoCatPluginUi *ui, uint32_t begin) {
-    if (begin) nk_widget_disable_begin(ui->context);
-    else nk_widget_disable_end(ui->context);
+    if (begin) {
+        if (!ui->disabled_depth++) {
+            ui->disabled_panel = ui->context->current->layout;
+            ui->disabled_was_rom = (ui->context->current->layout->flags & NK_WINDOW_ROM) != 0;
+            ui->disabled_was_active = ui->context->current->widgets_disabled != 0;
+            if (!ui->disabled_was_active) nk_widget_disable_begin(ui->context);
+            ui->context->current->layout->flags |= NK_WINDOW_ROM;
+        }
+    } else if (ui->disabled_depth && !--ui->disabled_depth) {
+        if (!ui->disabled_was_active) nk_widget_disable_end(ui->context);
+        if (!ui->disabled_was_rom) ui->disabled_panel->flags &= ~(nk_flags)NK_WINDOW_ROM;
+    }
 }
 static uint32_t region(BongoCatPluginUi *ui, BongoCatPluginUiRect *out) {
     if (!out) return 0;
@@ -99,15 +122,22 @@ static void line(BongoCatPluginUi *ui, BongoCatPluginUiRect r, float width, uint
 }
 static void draw_text(BongoCatPluginUi *ui, BongoCatPluginUiRect r, const char *text,
     uint32_t type, uint32_t c, uint32_t align) {
-    if (!text) return;
+    if (!text || r.w <= 0 || r.h <= 0) return;
     const struct nk_user_font *f = font(ui, type);
     float width = f->width(f->userdata, f->height, text, nk_strlen(text));
     if (align == 1) r.x += NK_MAX(0, (r.w - width) * .5f);
     else if (align == 2) r.x += NK_MAX(0, r.w - width);
     r.w = NK_MIN(r.w, width + 1);
     r.y += (r.h - f->height) * .5f; r.h = f->height;
-    nk_draw_text(nk_window_get_canvas(ui->context), rect(r), text, nk_strlen(text),
-        f, nk_rgba(0, 0, 0, 0), color(c));
+    struct nk_command_buffer *canvas = nk_window_get_canvas(ui->context);
+    struct nk_rect saved = canvas->clip;
+    struct nk_rect bounds = rect(r);
+    float left = NK_MAX(saved.x, bounds.x), top = NK_MAX(saved.y, bounds.y);
+    float right = NK_MIN(saved.x + saved.w, bounds.x + bounds.w);
+    float bottom = NK_MIN(saved.y + saved.h, bounds.y + bounds.h);
+    nk_push_scissor(canvas, nk_rect(left, top, NK_MAX(0, right-left), NK_MAX(0, bottom-top)));
+    nk_draw_text(canvas, bounds, text, nk_strlen(text), f, nk_rgba(0, 0, 0, 0), color(c));
+    nk_push_scissor(canvas, saved);
 }
 static float measure(BongoCatPluginUi *ui, const char *text, uint32_t type) {
     const struct nk_user_font *f = font(ui, type);
@@ -119,7 +149,7 @@ static uint32_t input(BongoCatPluginUi *ui, BongoCatPluginUiRect r, uint32_t kin
     if (!nk_input_is_mouse_hovering_rect(&ctx->input, nk_window_get_canvas(ctx)->clip) ||
         !nk_input_is_mouse_hovering_rect(&ctx->input, rect(r))) return 0;
     if (kind == BONGO_UI_HOVERED) return 1;
-    if (ctx->current->layout->flags & NK_WINDOW_ROM) return 0;
+    if (ctx->current->widgets_disabled || (ctx->current->layout->flags & NK_WINDOW_ROM)) return 0;
     if (kind == BONGO_UI_POINTER) {
         bongo_cat_ui_cursor_hover_rect(ctx, rect(r), BONGO_CAT_UI_CURSOR_POINTER);
         return 1;
@@ -137,7 +167,7 @@ static uint32_t palette(BongoCatPluginUi *ui, uint32_t role) {
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(ui->context));
     const struct nk_color colors[] = {p.text, p.muted, p.surface, p.field, p.hover,
         p.selection, p.border, p.border_subtle, p.accent, p.accent_hover, p.danger,
-        p.danger_background, p.link, p.link_hover};
+        p.danger_background, p.link, p.link_hover, p.on_accent};
     struct nk_color c = colors[role < SDL_arraysize(colors) ? role : 0];
     return (uint32_t)c.r | (uint32_t)c.g << 8 | (uint32_t)c.b << 16 | (uint32_t)c.a << 24;
 }
@@ -146,12 +176,18 @@ static float spacing(BongoCatPluginUi *ui) { return ui->context->style.window.sp
 static uint32_t button(BongoCatPluginUi *ui, const char *id, const char *text, uint32_t kind) {
     (void)id;
     struct nk_context *ctx = ui->context;
-    if (!kind) return nk_button_label(ctx, text) != 0;
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(ctx));
     struct nk_style_button s = ctx->style.button;
     s.normal = nk_style_item_color(p.field);
     s.hover = s.active = nk_style_item_color(kind == BONGO_UI_BUTTON_DANGER ? p.danger_background : p.hover);
     s.text_normal = s.text_hover = s.text_active = kind == BONGO_UI_BUTTON_DANGER ? p.danger : p.link;
+    if (kind == BONGO_UI_BUTTON || kind == BONGO_UI_BUTTON_SECONDARY) {
+        bool secondary = kind == BONGO_UI_BUTTON_SECONDARY;
+        s.normal = nk_style_item_color(secondary ? p.pink : p.accent);
+        s.hover = nk_style_item_color(secondary ? p.pink_hover : p.accent_hover);
+        s.active = nk_style_item_color(secondary ? p.pink_hover : p.accent_pressed);
+        s.text_normal = s.text_hover = s.text_active = secondary ? p.on_secondary : p.on_accent;
+    }
     if (kind == BONGO_UI_BUTTON_SUCCESS) {
         s.normal = nk_style_item_color(nk_rgb(35, 165, 86));
         s.hover = s.active = nk_style_item_color(nk_rgb(29, 145, 75));

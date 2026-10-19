@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "bongo-items"
-version = "2.2.3"
+version = "2.2.4"
 dependencies = [
  "bongo-plugin",
 ]

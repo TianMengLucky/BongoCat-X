@@ -125,8 +125,20 @@ bool bongo_cat_overlay_mver_pointer_left_handed(const BongoCatOverlay *value) {
     return bongo_cat_overlay_mver_pointer_enabled(value) &&
         bongo_cat_mver_pointer_overlay_left_handed(value->mver_pointer);
 }
+bool bongo_cat_overlay_pointer_snapshot(const BongoCatOverlay *value,
+    float *x, float *y, uint32_t *buttons) {
+    if (!value || !x || !y || !buttons || !bongo_cat_overlay_mver_pointer_enabled(value))
+        return false;
+    *x = value->pointer_snapshot_x; *y = value->pointer_snapshot_y;
+    *buttons = value->pointer_snapshot_buttons;
+    return true;
+}
 void bongo_cat_overlay_set_mver_pointer(BongoCatOverlay *value,
     float x_ratio, float y_ratio, bool left, bool right, bool side) {
+    if (value) {
+        value->pointer_snapshot_x = x_ratio; value->pointer_snapshot_y = y_ratio;
+        value->pointer_snapshot_buttons = (left ? 1u : 0u) | (right ? 2u : 0u) | (side ? 4u : 0u);
+    }
     if (bongo_cat_overlay_mver_pointer_enabled(value)) {
         float inputs[5] = {x_ratio, y_ratio, left ? 1.0f : 0.0f,
             right ? 1.0f : 0.0f, side ? 1.0f : 0.0f};

@@ -27,6 +27,8 @@ const char *bongo_cat_rhi_gl_describe(const BongoCatRhi *rhi);
 BongoCatResult bongo_cat_rhi_vk_create_window(const char *title, int width, int height,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);
 void bongo_cat_rhi_vk_shutdown(BongoCatRhi *rhi);
+bool bongo_cat_rhi_vk_create_offscreen(const BongoCatRhi *, SDL_Window *,
+    int, int, BongoCatRhi *, BongoCatError *);
 bool bongo_cat_rhi_vk_make_current(BongoCatRhi *rhi);
 void bongo_cat_rhi_vk_detach(const BongoCatRhi *rhi);
 void bongo_cat_rhi_vk_prepare_frame(BongoCatRhi *rhi, int width, int height);

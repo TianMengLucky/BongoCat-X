@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "Plugins",
-        "description": "Instala complementos de renderizado y estadísticas. El tipo de modelo elige su renderizador automáticamente.",
+        "description": "Gestiona renderizadores y extensiones. El tipo de modelo selecciona su renderizador automáticamente.",
         "status": "Estado",
         "active": "En uso",
         "installed": "Instalado",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D requiere Cubism Core. Si falta, puede importarse con el ZIP.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "Modelos Inochi2D en formato INP / INX.",
+        "renderers": "Renderizadores de modelos",
+        "extensions": "Extensiones",
+        "configure": "Abrir ajustes",
         "openFolder": "Abrir carpeta",
         "drop": "Haz clic o arrastra un ZIP de plugin aquí",
         "dropHint": "ZIP o biblioteca del complemento; los paquetes de renderizado pueden incluir Core."
@@ -221,7 +224,7 @@
           "runAsAdmin": "Mejora la captura de entrada en juegos Windows con privilegios elevados. Al activar solicita permiso y reinicia la aplicación.",
           "renderBackend": "Cambio inmediato; si falla vuelve a OpenGL. Vulkan/Metal experimental también admite fondos, esquinas y capas de teclas, efectos y puntero.",
           "glTrueTransparencySaveFailed": "No se pudo guardar la preferencia de transparencia",
-          "directComposition": "Composición Alpha DXGI experimental. Se aplica inmediatamente; vuelve al método anterior si falla. Se mantiene la lectura de píxeles; no garantiza Independent Flip en juegos. Solo GPU AMD. Limita los eventos de redibujado a intervalos de 50 ms y desactiva VSync.",
+          "directComposition": "Composición alfa DXGI experimental sin lectura de píxeles. Disponible para todas las marcas de GPU con interoperabilidad del controlador. Usa OpenGL, paso completo del ratón y VSync desactivado, sin limitar eventos expose. Si falla, vuelve a la presentación OpenGL directa. No garantiza Independent Flip en juegos.",
           "glTrueTransparency": "Usa composición alfa por píxel como Vulkan. Se aplica al instante; leer los píxeles puede aumentar el uso de CPU/GPU.",
           "renderBackendChanged": "Cambiando el backend de renderizado",
           "renderBackendFallback": "El renderizador seleccionado no está disponible; se restauró OpenGL",

@@ -111,14 +111,21 @@ void bongo_cat_session_validate(BongoCatSessionState *session) {
         session->window.content_width = 8192;
     if (session->window.content_height > 8192)
         session->window.content_height = 8192;
-    int maximum_left = session->window.width - session->window.content_width;
-    int maximum_top = session->window.height - session->window.content_height;
+    /* Insets are signed: tight frames crop inside the authored canvas. */
+    int horizontal = session->window.width - session->window.content_width;
+    int vertical = session->window.height - session->window.content_height;
+    int maximum_left = horizontal > 0 ? horizontal : 0;
+    int maximum_top = vertical > 0 ? vertical : 0;
+    int minimum_left = horizontal < 0 ? horizontal : 0;
+    int minimum_top = vertical < 0 ? vertical : 0;
     if (session->window.content_left > maximum_left)
         session->window.content_left = maximum_left;
     if (session->window.content_top > maximum_top)
         session->window.content_top = maximum_top;
-    if (session->window.content_left < 0) session->window.content_left = 0;
-    if (session->window.content_top < 0) session->window.content_top = 0;
+    if (session->window.content_left < minimum_left)
+        session->window.content_left = minimum_left;
+    if (session->window.content_top < minimum_top)
+        session->window.content_top = minimum_top;
     /* An empty selection is valid when every installed model was deleted. */
     if (!normalize_text(session->active_model_id,
             sizeof(session->active_model_id)))

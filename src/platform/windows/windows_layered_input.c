@@ -24,7 +24,8 @@ void bongo_cat_windows_layered_sync_input(BongoCatPlatform *platform) {
     BongoCatWindowsLayered *value = platform ? platform->presenter : NULL;
     if (!value || !value->proxy) return;
     LONG_PTR style = GetWindowLongPtrW(value->proxy, GWL_EXSTYLE);
-    LONG_PTR next = value->forced ? style | WS_EX_TRANSPARENT : style & ~WS_EX_TRANSPARENT;
+    bool transparent = value->forced || (value->composition_requested && !value->composition_failed);
+    LONG_PTR next = transparent ? style | WS_EX_TRANSPARENT : style & ~WS_EX_TRANSPARENT;
     if (next != style) SetWindowLongPtrW(value->proxy, GWL_EXSTYLE, next);
 }
 
@@ -117,7 +118,7 @@ LRESULT CALLBACK bongo_cat_windows_layered_window_proc(HWND window,
     }
     if (!source || !IsWindow(source)) return DefWindowProcW(window, message, wparam, lparam);
     if (message == WM_NCHITTEST) {
-        if (value->forced) return HTTRANSPARENT;
+        if (value->forced || value->composition_requested) return HTTRANSPARENT;
         /* The layered bitmap already excludes blank pixels, for every button
            and across processes. A cached pointer sample from the SDL source
            may belong to an earlier cursor position/frame and must not override

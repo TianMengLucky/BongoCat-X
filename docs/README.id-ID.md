@@ -1,6 +1,6 @@
 
 
-2.2.3: menu radial klik kanan opsional, jendela pengaturan lebih besar dengan kontrol maksimalkan/pulihkan, reset tiap warna, serta perbaikan satuan dan pembulatan statistik.
+2.2.4: statistik karakter dan pengatur waktu mengetik sesi, pendamping AI disertakan untuk dikonfigurasi dan diaktifkan, tata letak pengaturan dan kisi plugin yang menyesuaikan ukuran jendela, serta perbaikan halaman plugin, pemilih warna dan DirectComposition Windows.
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
@@ -64,6 +64,8 @@ Pindai kode QR dengan QQ atau cari grup **211957388** untuk bergabung dengan kom
 Impor dan unduhan SDK tersedia di Pengaturan → Plugin; halaman Model mengelola model. Di Windows, aktifkan plugin Live2D, pilih Unduh SDK Live2D, lalu baca dan setujui kedua perjanjian resmi untuk memasang Core yang sesuai. Progres menampilkan jumlah unduhan, ukuran total, dan persentase; kegagalan dapat dicoba ulang dalam dialog. Pada platform lain, impor Core yang kompatibel secara manual. Warna tampilan dan latar solid menggunakan popup palet yang sama, dibuka dengan mengeklik contoh warna.
 
 ## 📥 Unduh
+
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
 
 ---
@@ -136,6 +138,10 @@ Pintasan kini berada di Preferensi melalui Pengaturan / Pintasan. Toko berada di
 
 Mengaktifkan Live2D tanpa Cubism Core menampilkan kedua perjanjian resmi. Di Windows, Setuju dan unduh mengambil SDK Native R5 melalui HTTPS resmi, mengekstrak hanya Core dinamis yang sesuai dan mengaktifkan rendering lokal. Batal dan lanjutkan mempertahankan plugin aktif tanpa rendering. Unduhan dapat dicoba kembali dan impor manual tetap tersedia. Aplikasi dan paket tidak menyertakan SDK atau Core.
 
-Windows dengan GPU AMD menyediakan presentasi DirectComposition eksperimental, default nonaktif. Komposisi alfa DXGI langsung berlaku, membatasi event expose menjadi 50 ms dan menonaktifkan VSync; kegagalan memulihkan presenter lama. Pembacaan piksel tetap digunakan; Independent Flip game tidak dijamin.
+DirectComposition: Presentasi alfa DXGI eksperimental tanpa pembacaan piksel. Tersedia untuk semua merek GPU dengan dukungan interoperabilitas driver. Menggunakan OpenGL, penerusan seluruh klik mouse dan VSync nonaktif, tanpa pembatasan event expose. Jika gagal, kembali ke presentasi OpenGL langsung. Independent Flip game tidak dijamin.
 
 ABI plugin renderer kini v2: perbarui atau bangun ulang aplikasi dan plugin Live2D/Inox2D bersama-sama; plugin lama tidak kompatibel. Live2D Vulkan mendukung sumber daya offscreen sesuai kebutuhan, penskalaan PNG streaming Rust, serta cache BC7 dengan fallback RGBA8; batas platform dijelaskan pada [rincian rendering](live2d-vulkan-metal.md).
+
+> Pendamping AI eksperimental dibangun dan disertakan secara bawaan (`BONGO_CAT_BUILD_COMPANION=ON`), tetapi dinonaktifkan saat dijalankan. Setelah dikonfigurasi dan diaktifkan, kategori peristiwa dan persona dikirim ke layanan pilihan Anda. Gunakan `OFF` untuk mengecualikannya. Lihat [dokumentasi plugin](companion-plugin.md).
+
+> Plugin teman opsional memakai `-DBONGO_CAT_BUILD_LAN=ON`: IPv4/IPv6, nama teman dan cache model sementara. Lihat [panduan LAN](lan-plugin.md).

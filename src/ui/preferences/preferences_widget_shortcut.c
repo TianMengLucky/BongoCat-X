@@ -33,6 +33,7 @@ int bongo_cat_pref_edit(struct nk_context *context, const char *id,
         return false;
     }
     const float effect_margin = 6.0f;
+    control_width = NK_MIN(control_width, bounds.w);
     bounds = nk_rect(bounds.x + bounds.w - control_width, bounds.y,
         control_width - effect_margin, bounds.h);
     BongoCatUIPalette p = bongo_cat_ui_palette(bongo_cat_ui_dark(context));

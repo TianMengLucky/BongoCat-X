@@ -273,3 +273,11 @@ bool bongo_cat_rhi_background_matches(const BongoCatRhi *rhi, int width, int hei
     return rhi && rhi->backend == BONGO_CAT_RHI_VULKAN &&
         bongo_cat_rhi_vk_background_matches(rhi,width,height,revision);
 }
+
+bool bongo_cat_rhi_create_offscreen(const BongoCatRhi *source, SDL_Window *window,
+    int width, int height, BongoCatRhi *target, BongoCatError *error) {
+    if (!source || !window || !target || !error || source == target ||
+        width <= 0 || height <= 0 || source->backend != BONGO_CAT_RHI_VULKAN) return false;
+    memset(target, 0, sizeof(*target));
+    return bongo_cat_rhi_vk_create_offscreen(source, window, width, height, target, error);
+}

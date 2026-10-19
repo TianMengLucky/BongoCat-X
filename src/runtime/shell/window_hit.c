@@ -5,11 +5,17 @@
 #include <SDL3/SDL_opengl.h>
 
 static bool needs_pointer_hit_sample(const BongoCatApp *app) {
+#ifdef _WIN32
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false)) return false;
+#endif
     return !bongo_cat_platform_native_hit_test(&app->platform) &&
         bongo_cat_platform_dynamic_hit_supported();
 }
 
 static bool visible_at_pointer(BongoCatApp *app, float x, float y, bool pending_frame) {
+#ifdef _WIN32
+    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false)) return false;
+#endif
     if (app->window_snapshot) return bongo_cat_window_snapshot_hit(app, x, y);
     int width, height, pixel_width, pixel_height;
     if (!SDL_GetWindowSize(app->window, &width, &height) ||
@@ -138,6 +144,9 @@ void bongo_cat_window_schedule_hit_check(BongoCatApp *app) {
 void bongo_cat_window_sync_click_through(BongoCatApp *app) {
     if (!app || !app->window) return;
     bool forced = app->settings.window.pass_through || app->hover_hidden;
+#ifdef _WIN32
+    forced = forced || SDL_GetBooleanProperty(SDL_GetGlobalProperties(), "BongoCat.DirectComposition", false);
+#endif
     if (forced) bongo_cat_window_resize_end(app);
     if (forced && app->window_snapshot) bongo_cat_window_snapshot_end(app);
     if (!forced && !needs_pointer_hit_sample(app)) {

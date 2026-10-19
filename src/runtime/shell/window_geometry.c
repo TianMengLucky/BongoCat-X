@@ -42,9 +42,9 @@ bool bongo_cat_window_frame_size(BongoCatApp *app,
         frame_height > WINDOW_MAX_DIMENSION) return false;
     *width = round_dimension(frame_width);
     *height = round_dimension(frame_height);
-    if (left) *left = round_dimension(content_width * frame.left);
-    if (top) *top = round_dimension(content_height *
-        (app && app->settings.model.vertical_flip ? frame.bottom : frame.top));
+    if (left) *left = (int)lround(content_width * (double)frame.left);
+    if (top) *top = (int)lround(content_height *
+        (double)(app && app->settings.model.vertical_flip ? frame.bottom : frame.top));
     return true;
 }
 

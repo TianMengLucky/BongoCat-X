@@ -10,6 +10,7 @@ void checked(VkResult result, const char *message) {
     if (result != VK_SUCCESS) throw std::runtime_error(message);
 }
 struct Table {
+    std::array<VkDescriptorImageInfo, vulkan_texture_table_capacity> images{};
     explicit Table(VkDevice value) : device(value) {}
     ~Table() {
         vkDeviceWaitIdle(device);
@@ -78,6 +79,13 @@ bool vulkan_bindless_active() { return table && table->active; }
 VkDescriptorSetLayout vulkan_bindless_layout() { return table ? table->layout : VK_NULL_HANDLE; }
 bool vulkan_bindless_model(const VkDescriptorImageInfo *images, size_t count, bool compatible) {
     if (!table) return false;
+    bool same = compatible && images && count && count <= vulkan_texture_table_capacity &&
+        table->active && table->count == count;
+    for (size_t i = 0; same && i < count; ++i)
+        same = table->images[i].imageView == images[i].imageView &&
+            table->images[i].sampler == images[i].sampler &&
+            table->images[i].imageLayout == images[i].imageLayout;
+    if (same) return true;
     table->active = false;
     table->count = 0;
     if (!compatible || !images || !count || count > vulkan_texture_table_capacity) return false;
@@ -98,6 +106,7 @@ bool vulkan_bindless_model(const VkDescriptorImageInfo *images, size_t count, bo
     write.descriptorCount = vulkan_texture_table_capacity;
     write.pImageInfo = slots.data();
     vkUpdateDescriptorSets(table->device, 1, &write, 0, nullptr);
+    table->images = slots;
     table->count = count;
     table->active = true;
     return true;

@@ -43,7 +43,7 @@ bool bongo_cat_pref_control_toggle_rect(struct nk_context *context,
 typedef struct BongoCatPrefColorState {
     float hue, saturation, value;
     uint32_t rgb;
-    bool initialized;
+    bool initialized, open;
 } BongoCatPrefColorState;
 /* Current-color button opens a shared HSV popup; updates while dragging. */
 bool bongo_cat_pref_color_picker(struct nk_context *context,

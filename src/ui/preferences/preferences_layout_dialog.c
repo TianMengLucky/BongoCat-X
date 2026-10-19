@@ -22,6 +22,11 @@
 #define LAYOUT_DIALOG_WRITE_NS 250000000ull
 #define LAYOUT_ROW_HEIGHT 44.0f
 #define LAYOUT_SECTION_HEIGHT 26.0f
+#define LAYOUT_HEADER_HEIGHT 64.0f /* Title and top padding. */
+#define LAYOUT_TABS_HEIGHT 48.0f /* Side selector and spacing. */
+#define LAYOUT_FOOTER_HEIGHT 76.0f /* Reset button and vertical padding. */
+#define LAYOUT_FIELDS_HEIGHT (3 * (LAYOUT_SECTION_HEIGHT + 2 * LAYOUT_ROW_HEIGHT) + \
+    LAYOUT_ROW_HEIGHT) /* Three rectangles followed by gap and key count. */
 
 typedef struct LayoutField {
     const char *label;
@@ -75,6 +80,8 @@ static void reset_state(BongoCatPreferences *value) {
     value->layout_dialog_opened_ns = 0;
     value->layout_dialog_closing_ns = 0;
     value->layout_dialog_write_ns = 0;
+    value->layout_dialog_scroll = 0;
+    bongo_cat_preferences_scrollbar_reset(&value->layout_dialog_scrollbar);
     value->layout_dialog_directory[0] = '\0';
 }
 
@@ -133,6 +140,8 @@ void bongo_cat_preferences_layout_dialog_open(BongoCatPreferences *value) {
     value->layout_dialog_input_armed = false;
     value->layout_dialog_opened_ns = SDL_GetTicksNS();
     value->layout_dialog_closing_ns = 0;
+    value->layout_dialog_scroll = 0;
+    bongo_cat_preferences_scrollbar_reset(&value->layout_dialog_scrollbar);
     snprintf(value->layout_dialog_directory,
         sizeof(value->layout_dialog_directory), "%s", overlay_directory(value));
     load_draft(value);
@@ -252,9 +261,34 @@ static void draw_section(struct nk_context *context, struct nk_command_buffer *c
 
 static void draw_fields(BongoCatPreferences *value, struct nk_context *context,
     struct nk_command_buffer *canvas, struct nk_rect panel,
-    BongoCatUIPalette p, float opacity, bool tabs) {
-    float x = panel.x + 20.0f, w = panel.w - 40.0f;
-    float y = panel.y + (tabs ? 112.0f : 64.0f);
+    BongoCatUIPalette p, float opacity, bool tabs, bool enabled) {
+    float top = LAYOUT_HEADER_HEIGHT + (tabs ? LAYOUT_TABS_HEIGHT : 0.0f);
+    struct nk_rect viewport = nk_rect(panel.x + 20.0f, panel.y + top,
+        panel.w - 40.0f, panel.h - top - LAYOUT_FOOTER_HEIGHT);
+    BongoCatPreferencesScrollbarResult scroll =
+        bongo_cat_preferences_scrollbar_draw(context, canvas, viewport,
+            LAYOUT_FIELDS_HEIGHT, value->layout_dialog_scroll,
+            &value->layout_dialog_scrollbar, p.accent, opacity, enabled);
+    value->layout_dialog_scroll = scroll.offset;
+    if (scroll.changed) {
+        bongo_cat_pref_controls_reset(context);
+        value->render_dirty = true;
+    }
+    /* Scrolling the fields must not also change the hovered number. */
+    if (enabled && scroll.scrollable &&
+        nk_input_is_mouse_hovering_rect(&context->input, viewport))
+        context->input.mouse.scroll_delta.y = 0;
+    float x = viewport.x, w = bongo_cat_preferences_scrollbar_content_width(
+        viewport, LAYOUT_FIELDS_HEIGHT);
+    float y = viewport.y - scroll.offset;
+    struct nk_rect clip = canvas->clip;
+    nk_push_scissor(canvas, nk_rect(viewport.x, viewport.y, w, viewport.h));
+    bool was_rom = (context->current->layout->flags & NK_WINDOW_ROM) != 0;
+    bool was_disabled = context->current->widgets_disabled != 0;
+    if (!enabled) {
+        if (!was_disabled) nk_widget_disable_begin(context);
+        context->current->layout->flags |= NK_WINDOW_ROM;
+    }
     BongoSafeHandLayout fallback;
     bongo_cat_hand_layout_defaults(&fallback);
     BongoSafeHandLayout *draft = &value->layout_dialog_draft;
@@ -283,6 +317,11 @@ static void draw_fields(BongoCatPreferences *value, struct nk_context *context,
         "pages.preference.cat.labels.layoutMaxKeys", "Max Keys"),
         "layout-max-keys", &draft->max_keys, 1, 8, 1, fallback.max_keys};
     draw_pair(context, canvas, value, p, opacity, x, y, w, &gap, &max_keys);
+    if (!enabled) {
+        if (!was_disabled) nk_widget_disable_end(context);
+        if (!was_rom) context->current->layout->flags &= ~(nk_flags)NK_WINDOW_ROM;
+    }
+    nk_push_scissor(canvas, clip);
 }
 
 static bool draw_reset(BongoCatPreferences *value, struct nk_context *context,
@@ -315,8 +354,8 @@ void bongo_cat_preferences_layout_dialog_draw(BongoCatPreferences *value,
     struct nk_rect region = nk_window_get_bounds(context);
     bool tabs = side_editable(value, false) && side_editable(value, true);
     float width = NK_MIN(LAYOUT_DIALOG_WIDTH, region.w - 48.0f);
-    float height = NK_MIN(64.0f + (tabs ? 48.0f : 0.0f) + 462.0f,
-        region.h - 48.0f);
+    float height = NK_MIN(LAYOUT_HEADER_HEIGHT + (tabs ? LAYOUT_TABS_HEIGHT : 0.0f) +
+        LAYOUT_FIELDS_HEIGHT + LAYOUT_FOOTER_HEIGHT, region.h - 48.0f);
     BongoCatOverlayFrame frame = bongo_cat_preferences_overlay_frame(region,
         width, height, value->layout_dialog_opened_ns,
         value->layout_dialog_closing_ns);
@@ -340,7 +379,7 @@ void bongo_cat_preferences_layout_dialog_draw(BongoCatPreferences *value,
     BongoSafeHandLayout before = value->layout_dialog_draft;
     nk_push_scissor(canvas, frame.panel);
     draw_tabs(value, context, canvas, frame.panel, p, opacity, enabled);
-    draw_fields(value, context, canvas, frame.panel, p, opacity, tabs);
+    draw_fields(value, context, canvas, frame.panel, p, opacity, tabs, enabled);
     bool reset = draw_reset(value, context, canvas, frame.panel, p, opacity,
         enabled);
     nk_push_scissor(canvas, nk_window_get_content_region(context));

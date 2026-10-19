@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "플러그인",
-        "description": "렌더러와 통계 플러그인을 설치합니다. 모델 유형에 맞는 렌더러가 자동으로 선택됩니다.",
+        "description": "모델 렌더러와 확장 플러그인을 관리합니다. 모델 유형에 맞는 렌더러가 자동으로 선택됩니다.",
         "status": "상태",
         "active": "사용 중",
         "installed": "설치됨",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D에는 Cubism Core가 필요합니다. 없으면 ZIP과 함께 가져올 수 있습니다.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "INP / INX 형식의 Inochi2D 모델을 지원합니다.",
+        "renderers": "모델 렌더러",
+        "extensions": "확장 플러그인",
+        "configure": "설정 열기",
         "openFolder": "폴더 열기",
         "drop": "클릭하거나 플러그인 ZIP을 드롭하세요",
         "dropHint": "ZIP 또는 플러그인 라이브러리. 렌더러 패키지에 필요한 Core를 포함할 수 있습니다."
@@ -221,7 +224,7 @@
           "runAsAdmin": "관리자 권한 Windows 게임의 입력 감지를 개선합니다. 켜면 권한을 요청하고 앱을 재시작합니다.",
           "renderBackend": "즉시 전환하며 실패하면 OpenGL로 돌아갑니다. 실험적인 Vulkan/Metal도 배경, 둥근 모서리, 키·효과·포인터를 지원합니다.",
           "glTrueTransparencySaveFailed": "투명도 설정을 저장할 수 없습니다",
-          "directComposition": "실험적 DXGI Alpha 합성입니다. 즉시 적용되며 실패 시 기존 방식으로 복귀합니다. 픽셀 읽기는 유지되며 게임의 Independent Flip은 보장되지 않습니다. AMD GPU 전용입니다. 다시 그리기 이벤트를 50ms 간격으로 제한하고 수직 동기화를 끕니다.",
+          "directComposition": "실험적 GPU 직접 전송 DXGI Alpha 합성입니다. 모든 GPU 브랜드에 제공되며 드라이버 상호 운용 지원이 필요합니다. OpenGL과 창 전체 마우스 통과를 사용하고 VSync를 끕니다. 픽셀 읽기나 다시 그리기 이벤트 제한은 없습니다. 실패하면 직접 OpenGL 표시로 복귀합니다. 게임 Independent Flip은 보장되지 않습니다.",
           "glTrueTransparency": "Vulkan과 같은 픽셀별 알파 합성을 사용합니다. 즉시 적용되며 픽셀 읽기로 CPU/GPU 사용량이 늘어날 수 있습니다.",
           "renderBackendChanged": "렌더 백엔드를 전환하는 중",
           "renderBackendFallback": "선택한 렌더러를 사용할 수 없어 OpenGL로 복원했습니다",

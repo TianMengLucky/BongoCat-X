@@ -54,8 +54,19 @@ void bongo_cat_rhi_vk_destroy_swapchain_objects(BongoCatRhiVk *vk) {
     }
 }
 
+static bool create_offscreen_targets(BongoCatRhiVk *vk, int width, int height,
+    BongoCatError *error) {
+    if (!bongo_cat_rhi_vk_create_layered_target(vk, width, height)) {
+        bongo_cat_error_set(error, BONGO_CAT_ERROR_PLATFORM, "Cannot allocate Vulkan offscreen target");
+        return false;
+    }
+    vk->image_count = 1;
+    return create_render_pass(vk, error) && create_targets(vk, error);
+}
+
 bool bongo_cat_rhi_vk_create_swapchain(BongoCatRhiVk *vk, int width, int height,
     BongoCatError *error) {
+    if (vk->borrowed_device) return create_offscreen_targets(vk, width, height, error);
 #ifdef _WIN32
     /* Layered presentation consumes readback pixels, never WSI images.
        Keep one full-size color target instead of an unused swapchain. */

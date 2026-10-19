@@ -36,6 +36,8 @@ mod hand_layout;
 #[cfg(feature = "c-api")]
 mod http;
 #[cfg(feature = "c-api")]
+mod http_post;
+#[cfg(feature = "c-api")]
 mod image;
 #[cfg(feature = "c-api")]
 mod image_cache_storage;
@@ -127,3 +129,6 @@ mod allocation_tests {
         assert!(unsafe { reclaim_exact::<u8>(std::ptr::null_mut(), 0) }.is_empty());
     }
 }
+
+#[cfg(feature = "lan")]
+pub mod lan;

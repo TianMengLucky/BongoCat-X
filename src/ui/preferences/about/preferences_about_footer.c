@@ -39,19 +39,25 @@ static float logs_content_width(const struct nk_user_font *font,
 static void centered(struct nk_command_buffer *canvas, struct nk_rect bounds,
     const char *value, const struct nk_user_font *font, struct nk_color color) {
     float text_width = width(font, value);
-    nk_draw_text(canvas, nk_rect(bounds.x + (bounds.w - text_width) * .5f,
+    nk_draw_text(canvas, nk_rect(bounds.x + NK_MAX(0.0f, (bounds.w - text_width) * .5f),
         bounds.y + (bounds.h - font->height) * .5f,
         NK_MIN(text_width + 1.0f, bounds.w), font->height), value,
         nk_strlen(value), font, nk_rgba(0, 0, 0, 0), color);
 }
 
 static bool hit(struct nk_context *context, struct nk_rect bounds) {
-    return nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+    return !context->current->widgets_disabled &&
+        !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+        nk_input_is_mouse_hovering_rect(&context->input, nk_window_get_canvas(context)->clip) &&
         nk_input_is_mouse_click_in_rect(&context->input, NK_BUTTON_LEFT, bounds);
 }
 
 static void link_cursor(struct nk_context *context, struct nk_rect bounds) {
-    if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
+    if (!context->current->widgets_disabled &&
+        !(context->current->layout->flags & NK_WINDOW_ROM) &&
+        nk_input_is_mouse_hovering_rect(&context->input, bounds) &&
+        nk_input_is_mouse_hovering_rect(&context->input, nk_window_get_canvas(context)->clip))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);
 }
@@ -87,6 +93,7 @@ static void draw_update(BongoCatPreferences *value,
         nk_fill_circle(canvas, nk_rect(bounds.x + bounds.w - 9.0f,
             bounds.y + 5.0f, 6.0f, 6.0f), p.danger);
     }
+    content_width = NK_MIN(content_width, NK_MAX(1.0f, bounds.w - 16.0f));
     float content_x = bounds.x + (bounds.w - content_width) * .5f;
     bongo_cat_preferences_icon_draw(value, canvas, BONGO_CAT_UI_ICON_SYNC,
         nk_rect(content_x, bounds.y + 10, 16, 16), p.on_accent);
@@ -196,7 +203,7 @@ static void draw_links(BongoCatPreferences *value,
     if (hit(context, logs)) open_logs(value);
 }
 
-void bongo_cat_preferences_about_footer(BongoCatPreferences *value,
+float bongo_cat_preferences_about_footer(BongoCatPreferences *value,
     struct nk_context *context, struct nk_command_buffer *canvas,
     struct nk_rect bounds, BongoCatUIPalette p) {
     const char *version_label = tr(value,
@@ -223,25 +230,30 @@ void bongo_cat_preferences_about_footer(BongoCatPreferences *value,
     float info_width = label_width + version_width + 8.0f;
     float total = info_width + actions_width + 14.0f;
     bool stacked = total > bounds.w;
-    float info_x = bounds.x + (bounds.w -
-        (stacked ? info_width : total)) * .5f;
-    float info_y = bounds.y + (stacked ? -8.0f : 0.0f);
-    centered(canvas, nk_rect(info_x, info_y, label_width, 36), version_label,
+    bool split_links = actions_width > bounds.w;
+    float height = split_links ? 124.0f : stacked ? 80.0f : 36.0f;
+    if (!canvas) return height;
+    float info_x = bounds.x + NK_MAX(0.0f, (bounds.w -
+        (stacked ? info_width : total)) * .5f);
+    centered(canvas, nk_rect(info_x, bounds.y, label_width, 36), version_label,
         value->ui.caption_font, p.muted);
-    centered(canvas, nk_rect(info_x + label_width + 8, info_y,
+    centered(canvas, nk_rect(info_x + label_width + 8, bounds.y,
         version_width, 36), version, value->ui.label_font, p.text);
 
-    float actions_x = stacked ? bounds.x +
-        (bounds.w - actions_width) * .5f : info_x + info_width + 14.0f;
-    float actions_y = bounds.y + (stacked ? 22.0f : 0.0f);
-    struct nk_rect update_button = nk_rect(actions_x, actions_y,
-        update_width, 36);
+    update_width = NK_MIN(update_width, bounds.w);
+    float actions_x = split_links ? bounds.x + (bounds.w - update_width) * .5f :
+        stacked ? bounds.x + (bounds.w - actions_width) * .5f : info_x + info_width + 14.0f;
+    float actions_y = bounds.y + (stacked ? 44.0f : 0.0f);
+    struct nk_rect update_button = nk_rect(actions_x, actions_y, update_width, 36);
     draw_update(value, context, canvas, update_button, update,
         update_content_width, p, &update_snapshot);
-    struct nk_rect feedback_link = nk_rect(actions_x + update_width + 14,
-        actions_y, feedback_width, 36);
+    float links_x = split_links ? bounds.x + (bounds.w - links_width) * .5f :
+        actions_x + update_width + 14.0f;
+    float links_y = actions_y + (split_links ? 44.0f : 0.0f);
+    struct nk_rect feedback_link = nk_rect(links_x, links_y, feedback_width, 36);
     struct nk_rect logs_link = nk_rect(feedback_link.x + feedback_width + 20,
-        actions_y, logs_width, 36);
+        links_y, logs_width, 36);
     draw_links(value, context, canvas, feedback_link, logs_link,
         feedback, logs, p);
+    return height;
 }

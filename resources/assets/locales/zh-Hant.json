@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "外掛",
-        "description": "安裝渲染與統計外掛，模型類型會自動選擇對應渲染器。",
+        "description": "管理模型渲染器與擴充外掛，模型類型會自動選擇對應渲染器。",
         "status": "狀態",
         "active": "使用中",
         "installed": "已安裝",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D 模型需要 Cubism Core，缺少時可隨 ZIP 一起匯入。",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "支援 INP / INX 格式的 Inochi2D 模型。",
+        "renderers": "模型渲染器",
+        "extensions": "擴充外掛",
+        "configure": "開啟設定",
         "openFolder": "開啟目錄",
         "drop": "點擊或拖入外掛 ZIP",
         "dropHint": "ZIP 或外掛動態函式庫；渲染外掛包也可提供缺少的 Core。"
@@ -221,7 +224,7 @@
           "runAsAdmin": "改善管理員權限遊戲中的輸入擷取；開啟時請求權限並重新啟動應用程式。",
           "renderBackend": "切換立即生效，失敗時恢復 OpenGL；實驗性 Vulkan/Metal 也支援背景、圓角及按鍵、特效、指標覆蓋層。",
           "glTrueTransparencySaveFailed": "無法儲存透明設定",
-          "directComposition": "實驗性 DXGI Alpha 合成。立即生效，失敗時退回原呈現器；仍有像素讀回，無法保證遊戲維持 Independent Flip。 僅限 AMD 顯示卡；啟用 50ms 重繪事件節流並停用垂直同步。",
+          "directComposition": "實驗性 GPU 直傳 DXGI Alpha 合成，對所有顯示卡品牌開放，需驅動支援互通。使用 OpenGL、整窗滑鼠穿透並關閉垂直同步，不做像素讀回或重繪事件節流；失敗時退回直接 OpenGL 呈現。不保證遊戲維持 Independent Flip。",
           "glTrueTransparency": "使用與 Vulkan 相同的逐像素 Alpha 合成。立即生效；像素讀回可能增加 CPU/GPU 負擔。",
           "renderBackendChanged": "正在切換渲染後端",
           "renderBackendFallback": "所選渲染後端無法使用，已恢復 OpenGL",

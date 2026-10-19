@@ -99,7 +99,10 @@ pub(super) fn draw(state: &mut State, p: &Page<'_>) {
         ],
         &mut state.unit_glyph_hash,
     );
-    p.row(2, 36.0);
+    p.button_row(&[
+        p.tr("native.statisticsApplyUnits", "Apply units"),
+        p.tr("native.statisticsDefaultUnits", "Use default units"),
+    ]);
     let apply = p.button(
         "apply-units",
         &p.tr("native.statisticsApplyUnits", "Apply units"),
@@ -108,7 +111,7 @@ pub(super) fn draw(state: &mut State, p: &Page<'_>) {
     let reset = p.button(
         "default-units",
         &p.tr("native.statisticsDefaultUnits", "Use default units"),
-        0,
+        4,
     );
     if reset {
         *draft = Units::default();

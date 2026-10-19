@@ -4,24 +4,27 @@
 #include "bongo_cat/items.h"
 #include "bongo_cat/sounds.h"
 #include "bongo_cat/store.h"
+#include "bongo_cat/companion.h"
 #include "preferences_theme.h"
 #include "preferences_widgets.h"
 
 bool bongo_cat_preferences_subnavigation(BongoCatPreferences *value, struct nk_context *context) {
     bool preferences = value->page == 0 || value->page == 2;
     bool models = value->page == 1 || value->page == 8;
-    bool statistics = value->page == 4 || value->page == 9;
+    bool statistics = value->page == 4 || value->page == 9 || value->page == 10;
     if (statistics) {
         const char *labels[] = {
             bongo_cat_i18n_get(value->app->i18n,
                 "pages.preference.statistics.input", "Keyboard and mouse"),
             bongo_cat_i18n_get(value->app->i18n,
-                "pages.preference.statistics.applications", "Application usage")};
+                "pages.preference.statistics.applications", "Application usage"),
+            bongo_cat_i18n_get(value->app->i18n,
+                "pages.preference.statistics.words", "Character statistics")};
         nk_layout_row_dynamic(context, 42, 1);
-        int current = value->page == 9;
-        int selected = bongo_cat_pref_page_tabs(context, "statistics-sections", labels, 2, current);
+        int current = value->page == 10 ? 2 : (value->page == 9);
+        int selected = bongo_cat_pref_page_tabs(context, "statistics-sections", labels, 3, current);
         if (selected != current) {
-            value->page = selected ? 9 : 4;
+            value->page = selected == 2 ? 10 : (selected ? 9 : 4);
             value->render_dirty = true;
         }
         return true;
@@ -54,14 +57,17 @@ static void plugin_page(BongoCatPreferences *value, struct nk_context *context,
 
 void bongo_cat_preferences_draw_page(BongoCatPreferences *value,
     struct nk_context *context) {
-    if ((value->page == 4 || value->page == 9) && !bongo_cat_statistics_page(value->app)) value->page = 3;
+    if ((value->page == 4 || value->page == 9 || value->page == 10) && !bongo_cat_statistics_page(value->app)) value->page = 3;
     if (value->page == 6 && !bongo_cat_items_page(value->app)) value->page = 3;
     if (value->page == 7 && !bongo_cat_sounds_page(value->app)) value->page = 3;
+    if (value->page == 11 && !bongo_cat_companion_active(value->app)) value->page = 3;
+    if (value->page == 12 && !value->app->lan) value->page = 3;
     switch (value->page) {
     case 0: bongo_cat_preferences_page_settings(value, context); break;
     case 1: bongo_cat_preferences_page_model(value, context); break;
     case 2: bongo_cat_preferences_page_shortcuts(value, context); break;
     case 3: bongo_cat_preferences_page_plugins(value, context); break;
+    case 10:
     case 9:
     case 4: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_STATISTICS); break;
     case 8:
@@ -76,6 +82,8 @@ void bongo_cat_preferences_draw_page(BongoCatPreferences *value,
             }
         }
         break;
+    case 12: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_LAN); break;
+    case 11: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_COMPANION); break;
     case 7: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_SOUNDS); break;
     case 6: plugin_page(value, context, BONGO_CAT_PLUGIN_UI_ITEMS); break;
     default: bongo_cat_preferences_page_about(value, context); break;

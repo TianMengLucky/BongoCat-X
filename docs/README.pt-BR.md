@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.3: menu radial opcional com clique direito, janela de configurações maior com maximizar/restaurar, redefinição individual de cores e melhorias nas unidades e no arredondamento das estatísticas.
+2.2.4: estatísticas de caracteres e cronômetro de digitação da sessão, companheiro IA incluído para configurar e ativar, layouts de configurações e grade de plugins adaptáveis ao tamanho da janela e melhorias nas páginas, no seletor de cores e no DirectComposition do Windows.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ A importação e o download do SDK ficam em Configurações → Plugins; a pági
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
   Baixe a versão mais recente nas [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -269,6 +269,10 @@ Os atalhos ficam em Preferências, com Configurações / Atalhos no topo. A loja
 
 Ao ativar Live2D sem Cubism Core, os dois contratos oficiais são exibidos. No Windows, Aceitar e baixar obtém o SDK Native R5 via HTTPS oficial, extrai apenas o Core dinâmico compatível e ativa a renderização local. Cancelar e continuar mantém o plugin ativo sem renderização. É possível tentar novamente ou importar manualmente. O aplicativo e os pacotes não incluem SDK nem Core.
 
-Windows com GPU AMD oferece apresentação DirectComposition experimental, desativada por padrão. A composição alfa DXGI aplica-se imediatamente, limita eventos expose a 50 ms e desativa VSync; falhas restauram a apresentação anterior. A leitura de pixels permanece; Independent Flip em jogos não é garantido.
+DirectComposition: Composição alfa DXGI experimental sem leitura de pixels. Disponível para todas as marcas de GPU com interoperabilidade do driver. Usa OpenGL, passagem total do mouse e VSync desativado, sem limitar eventos expose. Em caso de falha, retorna à apresentação OpenGL direta. Independent Flip em jogos não é garantido.
 
 A ABI dos plugins de renderização agora é v2: atualize ou recompile juntos o aplicativo e os plugins Live2D/Inox2D; plugins antigos são incompatíveis. Live2D Vulkan oferece recursos fora da tela sob demanda, redimensionamento PNG em fluxo com Rust e cache BC7 com alternativa RGBA8; consulte os [detalhes de renderização](live2d-vulkan-metal.md) para os limites de plataforma.
+
+> O companheiro IA experimental é compilado e incluído por padrão (`BONGO_CAT_BUILD_COMPANION=ON`), mas permanece desativado em execução. Após configurar e ativar, envia categorias de eventos e a personalidade ao serviço escolhido. Use `OFF` para excluí-lo. Veja [a documentação](companion-plugin.md).
+
+> O plugin opcional de amigos usa `-DBONGO_CAT_BUILD_LAN=ON`: IPv4/IPv6, apelidos e cache temporário de modelos. Veja [o guia LAN](lan-plugin.md).

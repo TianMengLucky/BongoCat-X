@@ -1,6 +1,7 @@
 #include "runtime.h"
 #include "model_cover.h"
 #include "bongo_cat/audio.h"
+#include "bongo_cat/companion.h"
 #include "bongo_cat/overlay.h"
 
 bool bongo_cat_app_run_behavior(BongoCatApp *app,
@@ -20,6 +21,7 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
             SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "%s", error.message);
             return false;
         }
+        bongo_cat_companion_event(app, BONGO_COMPANION_BEHAVIOR);
         return true;
     } else if (behavior->kind == BONGO_CAT_BEHAVIOR_MOTION) {
         bool started = bongo_cat_model_runtime_start_motion(app->model_runtime,
@@ -36,6 +38,7 @@ bool bongo_cat_app_run_behavior(BongoCatApp *app,
             behavior->index ? -1 : behavior->index;
         if (!bongo_cat_model_runtime_set_expression(app->model_runtime, expression)) return false;
     }
+    bongo_cat_companion_event(app, BONGO_COMPANION_BEHAVIOR);
     bongo_cat_app_capture_behavior_state(app);
     if (behavior->kind == BONGO_CAT_BEHAVIOR_MOTION ||
         behavior->kind == BONGO_CAT_BEHAVIOR_EXPRESSION)

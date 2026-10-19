@@ -249,15 +249,27 @@ impl PageState for State {
         }
         self.count = count;
         p.intro(&tr(p, "help", "Import images and arrange props around your pet. Drag the positioning pad or use the controls. Up to 16 items; GIF uses its first frame."));
-        p.row(3, 36.0);
-        for (id, title, op) in [
+        let actions = [
             ("add", "Add item", action::IMPORT),
             ("save", "Save scene", action::SAVE),
             ("folder", "Open items folder", action::OPEN_FOLDER),
-        ] {
-            if p.button(id, &tr(p, id, title), 0) {
+        ];
+        let labels: Vec<_> = actions
+            .iter()
+            .map(|(id, title, _)| tr(p, id, title))
+            .collect();
+        p.button_row(&labels);
+        let busy = p.status().busy != 0 || p.status().blocked != 0;
+        if busy {
+            p.disabled(true);
+        }
+        for ((id, _, op), label) in actions.into_iter().zip(labels.iter()) {
+            if p.button(id, label, if op == action::OPEN_FOLDER { 4 } else { 0 }) {
                 act(p, op, 0);
             }
+        }
+        if busy {
+            p.disabled(false);
         }
         if count == 0 {
             p.wrapped(

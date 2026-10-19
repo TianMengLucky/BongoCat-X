@@ -7,6 +7,8 @@ mod charts;
 mod keyboard;
 #[path = "page_ui_units.rs"]
 mod units;
+#[path = "page_ui_words.rs"]
+mod words;
 #[derive(Default)]
 struct State {
     period: u32,
@@ -18,6 +20,9 @@ struct State {
     draft: units::Units,
     glyph_hash: u64,
     unit_glyph_hash: u64,
+    word_glyph_hash: u64,
+    word_cache: Option<crate::words::Snapshot>,
+    word_period: u32,
 }
 fn tr(p: &Page<'_>, key: &str, fallback: &str) -> String {
     p.tr(&format!("pages.preference.statistics.{key}"), fallback)
@@ -55,6 +60,25 @@ fn scaled(amount: f64, scale: f64, precision: usize) -> String {
             .trim_end_matches('0')
             .trim_end_matches('.')
             .to_owned()
+    }
+}
+fn metric_cards(p: &Page<'_>, id: &str, cards: &[(String, String)]) {
+    let needed = cards.iter().fold(180.0_f32, |width, (title, number)| {
+        width.max(p.measure(title, 1).max(p.measure(number, 0)) + 28.0)
+    });
+    if needed > p.width() {
+        // Reuse host wrapping for values or translated titles wider than a whole card.
+        for (index, (title, number)) in cards.iter().enumerate() {
+            p.status_row(&format!("{id}-{index}"), title, number);
+        }
+        return;
+    }
+    let columns = ((p.width() + p.spacing()) / (needed + p.spacing()))
+        .floor()
+        .max(1.0) as u32;
+    p.row(columns.min(cards.len().max(1) as u32), 104.0);
+    for (title, number) in cards {
+        metric_card(p, title, number);
     }
 }
 fn metric_card(p: &Page<'_>, title: &str, number: &str) {
@@ -109,8 +133,11 @@ impl State {
         }
         if self.reset_confirm {
             p.wrapped(&tr(p, "resetConfirm", "Clear all input counts, charts and application time history? This cannot be undone. Settings are kept."), 56.0);
-            p.row(2, 36.0);
-            if p.button("reset-cancel", &tr(p, "resetCancel", "Cancel"), 0) {
+            p.button_row(&[
+                tr(p, "resetCancel", "Cancel"),
+                tr(p, "resetConfirmButton", "Clear all history"),
+            ]);
+            if p.button("reset-cancel", &tr(p, "resetCancel", "Cancel"), 4) {
                 self.reset_confirm = false;
             }
             if p.button(
@@ -139,7 +166,7 @@ impl PageState for State {
                 self.units = Some(units);
             }
         }
-        p.intro(&tr(p, "privacy", "Local input totals, app names and durations. No typed text, key order, coordinates, window titles, URLs or screenshots."));
+        p.intro(&tr(p, "privacy", "Local input totals, app names/durations and Han character frequencies. No sentences, input order, coordinates, window titles, URLs or screenshots are stored."));
         let section = unsafe { p.read::<u32>(read::SECTION, 0) };
         let applications = section == Some(1);
         let mut overlay = p.status().overlay;
@@ -171,6 +198,10 @@ impl PageState for State {
                 self.period,
             )
             .min(3);
+        if section == Some(2) {
+            words::draw(self, p);
+            return;
+        }
         if applications {
             charts::usage(self, p);
             return;
@@ -189,40 +220,31 @@ impl PageState for State {
         let count_unit = unit(&units.count, "native.statsCountUnit", "counts");
         let movement_unit = unit(&units.movement, "native.statsInputUnit", "input units");
         let scroll_unit = unit(&units.scroll, "native.statsWheelUnit", "wheel units");
-        p.row(
-            if p.width() >= 760.0 {
-                5
-            } else if p.width() >= 600.0 {
-                3
-            } else {
-                2
-            },
-            104.0,
-        );
-        metric_card(
+        metric_cards(
             p,
-            &tr(p, "keys", "Key presses"),
-            &grouped(&m.keys.to_string(), &count_unit),
-        );
-        metric_card(
-            p,
-            &tr(p, "left", "Left button"),
-            &grouped(&m.buttons[0].to_string(), &count_unit),
-        );
-        metric_card(
-            p,
-            &tr(p, "right", "Right button"),
-            &grouped(&m.buttons[1].to_string(), &count_unit),
-        );
-        metric_card(
-            p,
-            &tr(p, "overlayMovement", "Pointer travel"),
-            &grouped(&scaled(m.movement, units.movement_scale, 0), &movement_unit),
-        );
-        metric_card(
-            p,
-            &tr(p, "overlayScroll", "Scroll"),
-            &grouped(&scaled(m.scroll, units.scroll_scale, 1), &scroll_unit),
+            "input-metric",
+            &[
+                (
+                    tr(p, "keys", "Key presses"),
+                    grouped(&m.keys.to_string(), &count_unit),
+                ),
+                (
+                    tr(p, "left", "Left button"),
+                    grouped(&m.buttons[0].to_string(), &count_unit),
+                ),
+                (
+                    tr(p, "right", "Right button"),
+                    grouped(&m.buttons[1].to_string(), &count_unit),
+                ),
+                (
+                    tr(p, "overlayMovement", "Pointer travel"),
+                    grouped(&scaled(m.movement, units.movement_scale, 0), &movement_unit),
+                ),
+                (
+                    tr(p, "overlayScroll", "Scroll"),
+                    grouped(&scaled(m.scroll, units.scroll_scale, 1), &scroll_unit),
+                ),
+            ],
         );
         keyboard::draw(self, p);
         p.row(1, 40.0);
@@ -254,15 +276,18 @@ impl PageState for State {
         }
         units::draw(self, p);
         p.wrapped(&tr(p, "unitsHint", "Movement uses desktop pixels/points, or raw device units with Linux evdev. Wheel units vary by device; neither value is a physical distance."), 96.0);
-        p.row(2, 36.0);
-        if p.button("export", &tr(p, "export", "Export CSV"), 0) && act(p, action::EXPORT_STATS, 0)
+        p.button_row(&[
+            tr(p, "export", "Export CSV"),
+            tr(p, "openFolder", "Open data folder"),
+        ]);
+        if p.button("export", &tr(p, "export", "Export CSV"), 4) && act(p, action::EXPORT_STATS, 0)
         {
             p.notice(
                 &tr(p, "exportQueued", "Export queued in the background"),
                 false,
             );
         }
-        if p.button("folder", &tr(p, "openFolder", "Open data folder"), 0) {
+        if p.button("folder", &tr(p, "openFolder", "Open data folder"), 4) {
             act(p, action::OPEN_FOLDER, 0);
         }
     }

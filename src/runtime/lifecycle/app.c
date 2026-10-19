@@ -4,6 +4,8 @@
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/items.h"
 #include "bongo_cat/sounds.h"
+#include "bongo_cat/companion.h"
+#include "bongo_cat/lan.h"
 #include "bongo_cat/store.h"
 #include "bongo_cat/file.h"
 #include "bongo_cat/i18n.h"
@@ -153,6 +155,8 @@ bool bongo_cat_app_initialize(BongoCatApp *app, int argc, char **argv,
     bongo_cat_items_start(app);
     bongo_cat_sounds_start(app);
     bongo_cat_store_start(app);
+    bongo_cat_companion_start(app);
+    bongo_cat_lan_start(app);
     if (!app->overlay) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
         "Overlay disabled: %s", optional.message);
     optional = (BongoCatError){0}; app->audio = bongo_cat_audio_create(&optional);

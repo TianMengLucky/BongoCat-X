@@ -43,11 +43,15 @@ static bool valid_text(const char *text, bool integer, bool negative) {
 bool bongo_cat_pref_number_edit(struct nk_context *context, const char *id,
     struct nk_rect bounds, const char *formatted, bool integer,
     double minimum, double maximum, double *value) {
-    bool hover = nk_input_is_mouse_hovering_rect(&context->input, bounds);
-    bool pressed = nk_input_is_mouse_pressed(&context->input, NK_BUTTON_LEFT);
+    bool interactive = !context->current->widgets_disabled &&
+        !(context->current->layout->flags & NK_WINDOW_ROM);
+    bool hover = interactive && nk_input_is_mouse_hovering_rect(&context->input,
+        nk_window_get_canvas(context)->clip) &&
+        nk_input_is_mouse_hovering_rect(&context->input, bounds);
+    bool pressed = interactive && nk_input_is_mouse_pressed(&context->input, NK_BUTTON_LEFT);
     bool active = number_edit.context == context &&
         strcmp(number_edit.id, id) == 0;
-    if (active && ((pressed && !hover) ||
+    if (active && (!interactive || (pressed && !hover) ||
         (unsigned int)(context->seq - number_edit.frame) > 1)) {
         bongo_cat_pref_number_edit_reset(context);
         nk_edit_unfocus(context);

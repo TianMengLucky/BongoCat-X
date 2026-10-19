@@ -66,15 +66,14 @@ void bongo_cat_preferences_render_backend_row(BongoCatApp *app,
             "Switching the render backend"), false);
     }
 #ifdef _WIN32
-    if (SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
-            "BongoCat.AmdCompositionAdapter", false)) {
+    {
         bool composition = bongo_safe_direct_composition_get(app->settings.extensions_json,
             sizeof(app->settings.extensions_json));
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_RENDER_QUALITY);
         if (bongo_cat_pref_toggle(context, "direct-composition", tr(app,
                 "pages.preference.general.labels.directComposition", "DirectComposition presentation"),
                 tr(app, "pages.preference.general.hints.directComposition",
-                    "Experimental DXGI alpha presentation. Applies immediately; falls back on failure. Pixel readback remains; game Independent Flip is not guaranteed. AMD only. Enables 50 ms expose throttling and disables VSync."),
+                    "Experimental GPU-only DXGI alpha presentation. Available on all GPU brands with driver interop support. Uses OpenGL, full mouse click-through and no VSync, without expose throttling. Failure restores direct OpenGL. Game Independent Flip is not guaranteed."),
                 &composition)) {
             if (bongo_safe_direct_composition_set(app->settings.extensions_json,
                     sizeof(app->settings.extensions_json), composition))

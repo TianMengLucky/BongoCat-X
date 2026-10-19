@@ -1,0 +1,19 @@
+[package]
+name = "bongo-lan"
+version = "2.2.4"
+edition = "2021"
+publish = false
+
+[lib]
+name = "bongo_lan"
+crate-type = ["cdylib"]
+
+[dependencies]
+bongo-plugin = { path = "../bongo-plugin" }
+bongo-safe = { path = "../bongo-safe", default-features = false, features = ["lan"] }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

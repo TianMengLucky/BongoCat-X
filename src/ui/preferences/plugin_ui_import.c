@@ -17,7 +17,7 @@ void bongo_cat_preferences_items_import(BongoCatApp *app, const char *path) {
             "pages.preference.items.failed", "Unable to update items"), true);
 }
 void bongo_cat_preferences_statistics_invalidate(BongoCatPreferences *value) {
-    if (value && value->visible && (value->page == 4 || value->page == 9)) value->render_dirty = true;
+    if (value && value->visible && (value->page == 4 || value->page == 9 || value->page == 10)) value->render_dirty = true;
 }
 
 void bongo_cat_preferences_plugin_fonts_changed(BongoCatPreferences *value) {

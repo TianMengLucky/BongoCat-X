@@ -26,6 +26,7 @@ typedef struct BongoCatUIPalette {
     struct nk_color accent_pressed;
     struct nk_color pink;
     struct nk_color pink_hover;
+    struct nk_color on_secondary;
     struct nk_color hover;
     struct nk_color hover_pink;
     struct nk_color selection;

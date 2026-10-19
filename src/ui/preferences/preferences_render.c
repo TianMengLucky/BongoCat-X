@@ -14,6 +14,7 @@
 #include "bongo_cat/items.h"
 #include "bongo_cat/sounds.h"
 #include "bongo_cat/store.h"
+#include "bongo_cat/companion.h"
 #include "bongo_cat/tray.h"
 #include "update_service.h"
 #include <SDL3/SDL_opengl.h>
@@ -61,15 +62,15 @@ static void root_style_restore(struct nk_context *context,
 static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     float width, float height, bool dark) {
     static const char *page_ids[] = {
-        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-statistics", "page-about", "page-items", "page-sounds", "page-store", "page-statistics-applications"};
-    int menu_icons[7] = {BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
+        "page-settings", "page-model", "page-shortcuts", "page-plugins", "page-statistics", "page-about", "page-items", "page-sounds", "page-store", "page-statistics-applications", "page-statistics-words", "page-companion", "page-lan"};
+    int menu_icons[9] = {BONGO_CAT_UI_ICON_CAT, BONGO_CAT_UI_ICON_WAND,
         BONGO_CAT_UI_ICON_SETTINGS, BONGO_CAT_UI_ICON_HEART};
-    const char *menus[7] = {
+    const char *menus[9] = {
         tr(value, "pages.preference.cat.title", "Preferences"),
         tr(value, "pages.preference.model.title", "Model"),
         tr(value, "pages.preference.plugins.title", "Plugins"),
         tr(value, "native.support.title", "Support the Developer")};
-    int page_numbers[7] = {0, 1, 3, 5};
+    int page_numbers[9] = {0, 1, 3, 5};
     int menu_count = 4;
     const BongoCatStatisticsPage *contribution = bongo_cat_statistics_page(value->app);
     if (contribution) {
@@ -77,7 +78,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
         menus[3] = tr(value, contribution->title_key, contribution->title);
         menu_icons[3] = BONGO_CAT_UI_ICON_SYNC;
         page_numbers[3] = 4; menu_count = 5;
-    } else if (value->page == 4 || value->page == 9) value->page = 3;
+    } else if (value->page == 4 || value->page == 9 || value->page == 10) value->page = 3;
     const BongoCatItemsPage *items = bongo_cat_items_page(value->app);
     if (items) {
         int last = menu_count - 1;
@@ -96,13 +97,30 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
         menu_icons[last] = BONGO_CAT_UI_ICON_PLAY; page_numbers[last] = 7;
         ++menu_count;
     } else if (value->page == 7) value->page = 3;
+    if (bongo_cat_companion_active(value->app)) {
+        int last = menu_count - 1;
+        menus[menu_count] = menus[last]; menu_icons[menu_count] = menu_icons[last];
+        page_numbers[menu_count] = page_numbers[last];
+        menus[last] = tr(value, "pages.preference.companion.title", "AI companion (experimental)");
+        menu_icons[last] = BONGO_CAT_UI_ICON_SMILE; page_numbers[last] = 11;
+        ++menu_count;
+    } else if (value->page == 11) value->page = 3;
+    if (value->app->lan) {
+        int last = menu_count - 1;
+        menus[menu_count] = menus[last]; menu_icons[menu_count] = menu_icons[last];
+        page_numbers[menu_count] = page_numbers[last];
+        menus[last] = tr(value, "pages.preference.lan.title", "Friends / LAN");
+        menu_icons[last] = BONGO_CAT_UI_ICON_SYNC; page_numbers[last] = 12;
+        ++menu_count;
+    } else if (value->page == 12) value->page = 3;
     int selected_menu = 0;
-    int parent_page = value->page == 2 ? 0 : value->page == 8 ? 1 : value->page == 9 ? 4 : value->page;
+    int parent_page = value->page == 2 ? 0 : value->page == 8 ? 1 : (value->page == 9 || value->page == 10) ? 4 : value->page;
     for (int i = 0; i < menu_count; ++i)
         if (page_numbers[i] == parent_page) selected_menu = i;
     int previous_menu = selected_menu;
     bool modal = bongo_cat_preferences_remove_dialog_active(value->app) ||
         bongo_cat_preferences_behavior_dialog_active(value) ||
+        bongo_cat_preferences_layout_dialog_active(value) ||
         bongo_cat_preferences_random_dialog_active(value) || bongo_cat_preferences_live2d_setup_active(value);
     const bool native_chrome = bongo_cat_ui_native_chrome(); BongoCatUIPalette p = bongo_cat_ui_palette(dark);
     bongo_cat_ui_shell_draw(context, width, height, dark,
@@ -189,7 +207,7 @@ static bool draw_shell(BongoCatPreferences *value, struct nk_context *context,
     context->style.window.group_padding = nk_vec2(24,
         16 + 6.0f * (1.0f - page_progress));
     context->style.window.spacing = nk_vec2(10, 10);
-    int scroll_page = NK_CLAMP(0, value->page, 9);
+    int scroll_page = NK_CLAMP(0, value->page, 12);
     bool scroll_animating = fabsf(value->scroll_current[scroll_page] - value->scroll_target[scroll_page]) > .5f;
     struct nk_style_scrollbar saved_scrollv = context->style.scrollv;
     struct nk_rect scrollbar_hit = nk_rect(body_bounds.x + body_bounds.w - 14, body_bounds.y, 14, body_bounds.h);

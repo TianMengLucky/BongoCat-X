@@ -38,6 +38,7 @@ static void ui_intro(BongoCatPluginUi *ui, const char *text) {
 static uint32_t ui_card_begin(BongoCatPluginUi *ui, const char *id) {
     if (ui->card_open) return 1;
     ui->card_open = bongo_cat_pref_card_begin(ui->context, id, &ui->saved);
+    if (ui->card_open) ui->context->current->layout->flags &= ~(nk_flags)NK_WINDOW_NO_SCROLLBAR;
     return ui->card_open ? 1u : 0u;
 }
 
@@ -47,13 +48,44 @@ static void ui_card_end(BongoCatPluginUi *ui) {
     ui->card_open = false;
 }
 
+/* Wrap whole words when possible and split long UTF-8 words at glyph boundaries. */
+float bongo_cat_preferences_plugin_text_height(BongoCatPluginUi *ui,
+    const char *text, float width, float minimum) {
+    const struct nk_user_font *font = ui->context->style.font;
+    float line = 0; unsigned lines = 1;
+    width = NK_MAX(1.0f, width - ui->context->style.text.padding.x * 2);
+    int remaining = text ? nk_strlen(text) : 0;
+    while (remaining > 0) {
+        if (*text == '\n') { lines++; line = 0; text++; remaining--; continue; }
+        int length = 1;
+        if (*text != ' ' && *text != '\t')
+            while (length < remaining && text[length] != ' ' && text[length] != '\t' && text[length] != '\n') length++;
+        float word = font->width(font->userdata, font->height, text, length);
+        if (line > 0 && line + word > width) {lines++; line = 0;}
+        if (word <= width) {line += word; text += length; remaining -= length; continue;}
+        while (length > 0) {
+            nk_rune rune;
+            int bytes = nk_utf_decode(text, &rune, length);
+            if (bytes <= 0) bytes = 1;
+            float glyph = font->width(font->userdata, font->height, text, bytes);
+            if (line > 0 && line + glyph > width) {lines++; line = 0;}
+            line += glyph; text += bytes; remaining -= bytes; length -= bytes;
+        }
+    }
+    return NK_MAX(minimum, lines * (font->height + 2.0f) + ui->context->style.text.padding.y * 2);
+}
+
 static void ui_label(BongoCatPluginUi *ui, const char *text) {
-    nk_layout_row_dynamic(ui->context, 30.0f, 1);
-    nk_label(ui->context, text, NK_TEXT_LEFT);
+    float height = bongo_cat_preferences_plugin_text_height(ui, text,
+        nk_window_get_content_region(ui->context).w, 30);
+    nk_layout_row_dynamic(ui->context, height, 1);
+    nk_label_wrap(ui->context, text);
 }
 
 static void ui_label_wrapped(BongoCatPluginUi *ui, const char *text, float height) {
-    nk_layout_row_dynamic(ui->context, height > 0.0f ? height : 30.0f, 1);
+    height = bongo_cat_preferences_plugin_text_height(ui, text,
+        nk_window_get_content_region(ui->context).w, height > 0 ? height : 30);
+    nk_layout_row_dynamic(ui->context, height, 1);
     nk_label_wrap(ui->context, text);
 }
 
@@ -68,31 +100,31 @@ static void ui_row(BongoCatPluginUi *ui, uint32_t columns, float height) {
 }
 
 static uint32_t ui_button(BongoCatPluginUi *ui, const char *id, const char *text) {
-    (void)id;
-    return nk_button_label(ui->context, text) ? 1u : 0u;
-}
-
-static uint32_t ui_toggle(BongoCatPluginUi *ui, const char *id, const char *text,
-    uint32_t *value) {
-    if (!value) return 0;
-    nk_layout_row_dynamic(ui->context, 30.0f, 2);
-    nk_label(ui->context, text, NK_TEXT_LEFT);
-    bool on = *value != 0;
-    bool changed = bongo_cat_pref_control_toggle(ui->context, id, &on);
-    *value = on ? 1u : 0u;
-    return changed ? 1u : 0u;
+    return bongo_cat_preferences_plugin_canvas()->button(ui, id, text,
+        id && SDL_strncmp(id, "remove-", 7) == 0 ? BONGO_UI_BUTTON_DANGER : BONGO_UI_BUTTON);
 }
 
 static uint32_t ui_toggle_available(BongoCatPluginUi *ui, const char *id,
     const char *text, uint32_t *value, uint32_t available) {
     if (!value) return 0;
-    nk_layout_row_dynamic(ui->context, 30.0f, 2);
-    nk_label(ui->context, text, NK_TEXT_LEFT);
+    struct nk_context *ctx = ui->context;
+    float width = nk_window_get_content_region(ctx).w;
+    float control = NK_MIN(72.0f, width * .5f);
+    float label = NK_MAX(1.0f, width - control - ctx->style.window.spacing.x);
+    float height = bongo_cat_preferences_plugin_text_height(ui, text, label, 36);
+    nk_layout_row_begin(ctx, NK_STATIC, height, 2);
+    nk_layout_row_push(ctx, label); nk_label_wrap(ctx, text);
+    nk_layout_row_push(ctx, control);
     bool on = *value != 0;
-    bool changed = bongo_cat_pref_control_toggle_available(ui->context, id, &on,
-        available != 0);
+    bool changed = bongo_cat_pref_control_toggle_available(ctx, id, &on, available != 0 &&
+        !ctx->current->widgets_disabled && !(ctx->current->layout->flags & NK_WINDOW_ROM));
+    nk_layout_row_end(ctx);
     *value = on ? 1u : 0u;
     return changed ? 1u : 0u;
+}
+static uint32_t ui_toggle(BongoCatPluginUi *ui, const char *id, const char *text,
+    uint32_t *value) {
+    return ui_toggle_available(ui, id, text, value, 1);
 }
 
 static uint32_t ui_slider(BongoCatPluginUi *ui, const char *id, const char *title,

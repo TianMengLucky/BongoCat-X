@@ -62,6 +62,7 @@ pub struct Store {
     pub oldest_day: u32,
     pub usage: crate::usage::Usage,
     pub keyboard: crate::keyboard::Store,
+    pub words: crate::words::Store,
 }
 
 impl Store {

@@ -196,7 +196,13 @@ pub(super) fn activity(p: &Page<'_>, data: &Snapshot, hourly: bool, week: bool) 
             ));
         }
     }
-    p.row(3, 24.0);
+    let legend_width = series.iter().fold(1.0_f32, |width, (name, _, _)| {
+        width.max(p.measure(name, 1) + 13.0)
+    });
+    let columns = ((p.width() + p.spacing()) / (legend_width + p.spacing()))
+        .floor()
+        .max(1.0) as u32;
+    p.row(columns.min(series.len() as u32), 24.0);
     for (name, _, role) in &series {
         if let Some((r, _)) = p.region() {
             p.circle(Rect::new(r.x, r.y + 8.0, 7.0, 7.0), *role);

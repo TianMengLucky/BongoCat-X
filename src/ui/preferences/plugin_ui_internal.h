@@ -16,14 +16,18 @@ enum BongoCatPluginUiKind {
     BONGO_CAT_PLUGIN_UI_ITEMS = 1,
     BONGO_CAT_PLUGIN_UI_STATISTICS = 2,
     BONGO_CAT_PLUGIN_UI_STORE = 3,
-    BONGO_CAT_PLUGIN_UI_INOX2D = 4
+    BONGO_CAT_PLUGIN_UI_INOX2D = 4,
+    BONGO_CAT_PLUGIN_UI_COMPANION = 5,
+    BONGO_CAT_PLUGIN_UI_LAN = 6
 };
 
 struct BongoCatPluginUi {
     struct nk_context *context;
     const BongoCatI18n *i18n;
     struct nk_style_window saved;
-    bool card_open;
+    bool card_open, disabled_was_rom, disabled_was_active;
+    uint32_t disabled_depth;
+    struct nk_panel *disabled_panel;
     BongoCatPreferences *preferences;
 };
 
@@ -32,6 +36,7 @@ typedef struct BongoCatPluginPageBinding {
     enum BongoCatPluginUiKind kind;
 } BongoCatPluginPageBinding;
 
+float bongo_cat_preferences_plugin_text_height(BongoCatPluginUi *, const char *, float, float);
 const BongoCatPluginUiHost *bongo_cat_preferences_plugin_widgets(void);
 const BongoCatPluginPageUiHost *bongo_cat_preferences_plugin_canvas(void);
 bool bongo_cat_preferences_plugin_page(BongoCatPreferences *value,

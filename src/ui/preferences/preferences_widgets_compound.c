@@ -89,11 +89,12 @@ static bool toggle_float_row(struct nk_context *context, const char *id,
     float content_width = nk_window_get_content_region(context).w;
     bool configured = configure && *enabled;
     int columns = *enabled ? (configured ? 4 : 3) : 2;
-    float input_width = *enabled ? 122.0f : 0.0f;
+    float input_width = *enabled ? NK_MIN(124.0f, content_width * .3f) : 0.0f;
     float config_width = configured ? 36.0f : 0.0f;
-    float spacing = 8.0f * (columns - 1);
-    float left = NK_MAX(220.0f,
-        content_width - config_width - input_width - 80.0f - spacing);
+    float spacing = context->style.window.spacing.x * (columns - 1);
+    float toggle_width = NK_MIN(80.0f, content_width * .25f);
+    float left = NK_MAX(1.0f,
+        content_width - config_width - input_width - toggle_width - spacing);
     nk_layout_row_begin(context, NK_STATIC, 36, columns);
     nk_layout_row_push(context, left);
     char label[512];
@@ -112,8 +113,7 @@ static bool toggle_float_row(struct nk_context *context, const char *id,
         changed = bongo_cat_pref_control_float(context, id,
             minimum, value, maximum, step, default_value);
     }
-    nk_layout_row_push(context, NK_MAX(80.0f,
-        content_width - left - config_width - input_width - spacing));
+    nk_layout_row_push(context, toggle_width);
     changed = bongo_cat_pref_control_toggle_available(context, id, enabled,
         available) || changed;
     nk_layout_row_end(context);

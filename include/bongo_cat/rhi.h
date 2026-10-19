@@ -95,6 +95,10 @@ BongoCatResult bongo_cat_rhi_create_window(BongoCatRhiBackend backend,
     const char *title, int width, int height, bool fallback_ladder,
     SDL_Window **window, BongoCatRhi *rhi, BongoCatError *error);
 void bongo_cat_rhi_destroy(BongoCatRhi *rhi);
+/* Vulkan target sharing the source device/queue, with independent images and
+   command pools. Never changes the active backend. Destroy before source. */
+bool bongo_cat_rhi_create_offscreen(const BongoCatRhi *source, SDL_Window *window,
+    int width, int height, BongoCatRhi *target, BongoCatError *error);
 
 /* Device-level handles for the Live2D bridge's Cubism Vulkan/Metal
    renderers (see docs/live2d-vulkan-metal.md). Filled by the active

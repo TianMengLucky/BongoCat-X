@@ -111,7 +111,8 @@ static bool color_picker_update(struct nk_context *context,
 /* Shared theme/OBS picker; apply input before painting the gradient and markers. */
 static bool color_picker_panel(struct nk_context *context,
     BongoCatPrefColorState *state, uint32_t *rgb) {
-    nk_layout_row_dynamic(context, 172.0f, 1);
+    nk_layout_row_dynamic(context, NK_MIN(172.0f,
+        nk_window_get_content_region(context).h), 1);
     struct nk_rect cell;
     enum nk_widget_layout_states widget = nk_widget(&cell, context);
     if (widget == NK_WIDGET_INVALID) return false;
@@ -164,25 +165,49 @@ static bool color_picker_panel(struct nk_context *context,
             BONGO_CAT_UI_CURSOR_POINTER);
     return changed;
 }
-/* All color options use the same swatch button and popup. */
+/* Popups use parent-local coordinates; keep the full picker inside the root. */
+static struct nk_rect color_picker_bounds(struct nk_context *context,
+    struct nk_rect trigger) {
+    struct nk_panel *root = context->current->layout;
+    while (root->parent) root = root->parent;
+    struct nk_rect clip = root->clip;
+    const float margin = 8.0f;
+    float width = NK_MIN(280.0f, NK_MAX(0.0f, clip.w - margin * 2));
+    float height = NK_MIN(196.0f, NK_MAX(0.0f, clip.h - margin * 2));
+    float x = NK_CLAMP(clip.x + margin, trigger.x + trigger.w - width,
+        clip.x + clip.w - margin - width);
+    float y = trigger.y + trigger.h + 4.0f;
+    if (y + height > clip.y + clip.h - margin) y = trigger.y - height - 4.0f;
+    y = NK_CLAMP(clip.y + margin, y, clip.y + clip.h - margin - height);
+    return nk_rect(x, y, width, height);
+}
+
+/* All color options use the same swatch button and bounded popup. */
 bool bongo_cat_pref_color_picker(struct nk_context *context,
     BongoCatPrefColorState *state, uint32_t *rgb) {
     struct nk_rect bounds = nk_widget_bounds(context);
     if (nk_input_is_mouse_hovering_rect(&context->input, bounds))
         bongo_cat_ui_cursor_hover_rect(context, bounds,
             BONGO_CAT_UI_CURSOR_POINTER);
-    struct nk_style_combo saved = context->style.combo;
-    struct nk_style_item swatch = nk_style_item_color(
+    bool clicked = nk_button_color(context,
         nk_rgb((*rgb >> 16) & 255, (*rgb >> 8) & 255, *rgb & 255));
-    context->style.combo.normal = context->style.combo.hover =
-        context->style.combo.active = swatch;
-    context->style.combo.sym_normal = context->style.combo.sym_hover =
-        context->style.combo.sym_active = NK_SYMBOL_NONE;
-    context->style.combo.rounding = 4.0f;
-    bool open = nk_combo_begin_label(context, "", nk_vec2(280.0f, 196.0f));
-    context->style.combo = saved;
-    if (!open) return false;
+    if (clicked) state->open = true;
+    if (!state->open) return false;
+    struct nk_rect popup = color_picker_bounds(context, bounds);
+    struct nk_rect local = popup;
+    local.x -= context->current->layout->clip.x;
+    local.y -= context->current->layout->clip.y;
+    if (!nk_popup_begin(context, NK_POPUP_STATIC, "##color-picker",
+        NK_WINDOW_NO_SCROLLBAR, local)) {
+        state->open = false;
+        return false;
+    }
     bool changed = color_picker_panel(context, state, rgb);
-    nk_combo_end(context);
+    if (!clicked && nk_input_is_mouse_pressed(&context->input, NK_BUTTON_LEFT) &&
+        !nk_input_is_mouse_hovering_rect(&context->input, popup)) {
+        state->open = false;
+        nk_popup_close(context);
+    }
+    nk_popup_end(context);
     return changed;
 }

@@ -3,6 +3,7 @@
 
 #include "bongo_cat/common.h"
 #include "bongo_cat/statistics_plugin.h"
+#include "bongo_cat/statistics_words_plugin.h"
 #include "bongo_cat/statistics_page_plugin.h"
 #include "bongo_cat/statistics_usage_plugin.h"
 #include "bongo_cat/plugin_ui.h"
@@ -45,6 +46,11 @@ bool bongo_cat_statistics_reset_available(const BongoCatApp *app);
 bool bongo_cat_statistics_reset_busy(const BongoCatApp *app);
 bool bongo_cat_statistics_reset(BongoCatApp *app, BongoCatError *error);
 
+bool bongo_cat_statistics_timer_snapshot(BongoCatApp *app, BongoCatStatisticsTimerSnapshot *snapshot);
+bool bongo_cat_statistics_backspace_snapshot(BongoCatApp *app, uint32_t *enabled);
+bool bongo_cat_statistics_backspace_enable(BongoCatApp *app, bool enabled);
+bool bongo_cat_statistics_timer_enable(BongoCatApp *app, bool enabled);
+bool bongo_cat_statistics_words_snapshot(BongoCatApp *app, unsigned period, BongoCatStatisticsWordsSnapshot *snapshot);
 bool bongo_cat_statistics_keyboard_snapshot(BongoCatApp *app, unsigned period, uint64_t counts[256]);
 bool bongo_cat_statistics_usage_icon(BongoCatApp *app, unsigned period, unsigned index, char *path);
 bool bongo_cat_statistics_icon_path(const char *root, const char *id, char *path);

@@ -74,3 +74,9 @@ bool bongo_cat_rhi_vk_get_frame_info(const BongoCatRhi *rhi,
 bool bongo_cat_rhi_vk_background_matches(const BongoCatRhi *rhi, int w, int h, uint64_t revision) {
     (void)rhi; (void)w; (void)h; (void)revision; return false;
 }
+
+bool bongo_cat_rhi_vk_create_offscreen(const BongoCatRhi *source, SDL_Window *window,
+    int width, int height, BongoCatRhi *target, BongoCatError *error) {
+    (void)source; (void)window; (void)width; (void)height; (void)target; (void)error;
+    return false;
+}

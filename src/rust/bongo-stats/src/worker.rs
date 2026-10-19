@@ -21,6 +21,9 @@ pub struct Cache {
     pub metrics: crate::metrics::Snapshot,
     pub usage: [usage::Snapshot; 4],
     pub keyboard: [crate::keyboard::Counts; 4],
+    pub words: [crate::words::Snapshot; 4],
+    pub backspace: u32,
+    pub timer: crate::words_timer::Snapshot,
 }
 impl Default for Cache {
     fn default() -> Self {
@@ -28,6 +31,9 @@ impl Default for Cache {
             metrics: crate::metrics::Store::default().snapshot(Local::now().date_naive(), false),
             usage: std::array::from_fn(|_| usage::Snapshot::default()),
             keyboard: [[0; 256]; 4],
+            words: [crate::words::Snapshot::default(); 4],
+            backspace: 0,
+            timer: crate::words_timer::Snapshot::default(),
         }
     }
 }
@@ -39,6 +45,10 @@ pub fn run(
     export_status: Arc<AtomicU32>,
     reset_status: Arc<AtomicU32>,
 ) -> bool {
+    #[cfg(all(windows, not(test)))]
+    let mut collector = crate::words_windows::Collector::new().ok();
+    #[cfg(all(windows, test))]
+    let mut collector: Option<crate::words_windows::Collector> = None;
     let mut opened = None;
     let mut source: Option<Source> = None;
     let mut keyboard: Option<crate::keyboard::Source> = None;
@@ -50,11 +60,21 @@ pub fn run(
     let mut pending_metrics = Metrics::default();
     let mut desired_enabled = None;
     loop {
-        let command = receiver.recv_timeout(Duration::from_millis(200));
+        let command = receiver.recv_timeout(Duration::from_millis(if cfg!(windows) {
+            100
+        } else {
+            200
+        }));
         let stop = matches!(
             &command,
             Ok(Command::Stop) | Err(mpsc::RecvTimeoutError::Disconnected)
         );
+        #[cfg(windows)]
+        if stop {
+            if let Some(collector) = &mut collector {
+                collector.stop();
+            }
+        }
         let now = Local::now();
         if let Ok(Command::Enable(enabled)) = &command {
             desired_enabled = Some(*enabled);
@@ -79,8 +99,8 @@ pub fn run(
                 poll: value.poll,
             });
         }
+        let mut counts = [0; 256];
         if let Some(source) = &keyboard {
-            let mut counts = [0; 256];
             unsafe {
                 (source.poll)(source.context, counts.as_mut_ptr());
             }
@@ -88,8 +108,8 @@ pub fn run(
                 *value = value.saturating_add(count).min(i64::MAX as u64);
             }
         }
+        let mut metrics = Metrics::default();
         if let Some(source) = &source {
-            let mut metrics = Metrics::default();
             unsafe {
                 (source.metrics)(source.context, &mut metrics);
             }
@@ -102,11 +122,37 @@ pub fn run(
                 pending_metrics.add(*metrics);
             }
         }
+        if let Some((_, shared)) = &opened {
+            if let Ok(Command::Backspace(enabled)) = &command {
+                let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
+                store.words.backspace = *enabled;
+                store.words.options_dirty = true;
+                store.revision = store.revision.wrapping_add(1);
+            }
+        }
+        #[cfg(windows)]
+        if let Some(collector) = &mut collector {
+            let enabled = opened.as_ref().is_some_and(|(_, shared)| shared.lock().unwrap_or_else(|e| e.into_inner()).words.backspace);
+            collector.set_backspace(enabled);
+            collector.poll(&counts, metrics.buttons.iter().any(|&count| count != 0));
+        }
         if let Some((connection, shared)) = &mut opened {
             let resetting = matches!(&command, Ok(Command::Reset));
             let sampling = !resetting && last_sample.elapsed() >= Duration::from_secs(1);
             {
                 let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
+                #[cfg(windows)]
+                if let Some(collector) = &mut collector {
+                    while let Some((batch, subtract)) = collector.next_batch() {
+                        if subtract { store.words.subtract(batch); } else { store.words.ingest(batch); }
+                        store.revision = store.revision.wrapping_add(1);
+                    }
+                }
+                if let Ok(Command::Timer(enabled)) = &command {
+                    store.words.timer.set_enabled(*enabled, Instant::now());
+                }
+                store.words.timer.tick(Instant::now());
+                store.words.prune(now.date_naive(), Instant::now());
                 store.ingest(now.date_naive(), now.hour(), pending_metrics);
                 pending_metrics = Metrics::default();
                 store.keyboard.ingest(now.date_naive(), pending_keys);
@@ -135,13 +181,15 @@ pub fn run(
             }
             let reset_ok = resetting && storage::reset(connection, shared).is_ok();
             if resetting {
+                #[cfg(windows)]
+                if let Some(collector) = &mut collector { collector.reset_tracking(); }
                 last_sample = Instant::now();
             }
             let should_save = stop
                 || last_save.elapsed() >= Duration::from_secs(30)
                 || matches!(
                     &command,
-                    Ok(Command::Flush(_)) | Ok(Command::Export(_, _)) | Ok(Command::Enable(_))
+                    Ok(Command::Flush(_)) | Ok(Command::Export(_, _)) | Ok(Command::Enable(_)) | Ok(Command::Backspace(_))
                 );
             let mut save_ok = true;
             if should_save {
@@ -160,10 +208,20 @@ pub fn run(
                 };
                 export_status.store(if ok { 2 } else { 3 }, Ordering::Release);
             }
-            if sampling || should_save || resetting {
+            if sampling || should_save || resetting || matches!(&command, Ok(Command::Timer(_))) {
                 let store = shared.lock().unwrap_or_else(|e| e.into_inner());
                 let updated = Cache {
                     metrics: store.snapshot(now.date_naive(), failed.load(Ordering::Relaxed)),
+                    backspace: store.words.backspace as u32,
+                    timer: store.words.timer.snapshot(),
+                    words: std::array::from_fn(|period| {
+                        #[cfg(windows)]
+                        let status = collector.as_ref()
+                            .map(|c| c.status.load(Ordering::Relaxed)).unwrap_or(2);
+                        #[cfg(not(windows))]
+                        let status = 0;
+                        store.words.snapshot(now.date_naive(), period, status)
+                    }),
                     keyboard: std::array::from_fn(|period| {
                         store.keyboard.snapshot(now.date_naive(), period)
                     }),

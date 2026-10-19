@@ -3,7 +3,8 @@
 
 #include "preferences_internal.h"
 
-void bongo_cat_preferences_about_footer(BongoCatPreferences *value,
+/* Returns the required height; pass a NULL canvas to measure without drawing. */
+float bongo_cat_preferences_about_footer(BongoCatPreferences *value,
     struct nk_context *context, struct nk_command_buffer *canvas,
     struct nk_rect bounds, BongoCatUIPalette palette);
 

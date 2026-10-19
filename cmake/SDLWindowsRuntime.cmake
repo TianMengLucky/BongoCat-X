@@ -95,6 +95,17 @@ function(bongo_cat_trim_sdl_windows target source_root)
 }
 
 ]=])
+  # A background window must not release another process's cursor confinement.
+  # SDL's desktop-origin shortcut mistakes a game's monitor for an unowned clip.
+  bongo_cat_sdl_replace_section(window
+    "    // This is verbatim translation of the old logic,"
+    "    SDL_Mouse *mouse = SDL_GetMouse();"
+    [=[    if (!win_have_focus || !cursor_confine) {
+        WIN_UnclipCursorForWindow(window);
+        return;
+    }
+
+]=])
   bongo_cat_sdl_generated_source(${target} "${window_path}"
     "${output_dir}/SDL_windowswindow.c" "${window}")
 

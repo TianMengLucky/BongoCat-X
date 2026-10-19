@@ -70,17 +70,20 @@ pub fn open(directory: &Path) -> Result<(Connection, Store), Box<dyn std::error:
     drop(statement);
     crate::usage_storage::load(&connection, &mut store.usage)?;
     crate::keyboard::load(&connection, &mut store.keyboard, oldest)?;
+    store.words.load(&connection, date_id(today - Days::new(29)), date_id(today))?;
     Ok((connection, store))
 }
 
 pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite::Result<()> {
-    let (revision, rows, lifetime, usage, keyboard) = {
+    let (revision, rows, lifetime, usage, keyboard, words, backspace) = {
         let store = shared.lock().unwrap_or_else(|e| e.into_inner());
         if store.dirty.is_empty()
             && store.usage.dirty.is_empty()
             && store.usage.changed.is_empty()
             && !store.usage.options_dirty
             && store.keyboard.dirty.is_empty()
+            && store.words.dirty.is_empty()
+            && !store.words.options_dirty
         {
             return Ok(());
         }
@@ -95,6 +98,8 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
             store.lifetime,
             crate::usage_storage::pending(&store.usage),
             store.keyboard.pending(),
+            store.words.pending(),
+            store.words.options_dirty.then_some(store.words.backspace),
         )
     };
     let transaction = connection.transaction()?;
@@ -126,11 +131,17 @@ pub fn save(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlite
     transaction.execute("DELETE FROM metrics WHERE day>0 AND day<?1", [oldest])?;
     crate::usage_storage::write(&transaction, &usage)?;
     crate::keyboard::save(&transaction, &keyboard, oldest)?;
+    crate::words::save(&transaction, &words, date_id(today - Days::new(29)))?;
+    if let Some(enabled) = backspace {
+        transaction.execute("INSERT OR REPLACE INTO statistics_options VALUES ('subtract_backspace',?1)", [enabled as u32])?;
+    }
     transaction.commit()?;
     let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
     if store.revision == revision {
         store.dirty.clear();
         store.keyboard.dirty.clear();
+        store.words.dirty.clear();
+        store.words.options_dirty = false;
         crate::usage_storage::clear(&mut store.usage);
     }
     Ok(())
@@ -141,13 +152,17 @@ pub fn reset(connection: &mut Connection, shared: &Arc<Mutex<Store>>) -> rusqlit
     let mut store = shared.lock().unwrap_or_else(|e| e.into_inner());
     let transaction = connection.transaction()?;
     transaction.execute_batch(
-        "DELETE FROM metrics; DELETE FROM application_hours; DELETE FROM applications; DELETE FROM keyboard_counts;",
+        "DELETE FROM metrics; DELETE FROM application_hours; DELETE FROM applications; DELETE FROM keyboard_counts; DELETE FROM han_counts;",
     )?;
     transaction.commit()?;
     let mut empty = Store::default();
     empty.oldest_day = store.oldest_day;
     empty.revision = store.revision.wrapping_add(1);
     empty.usage.enabled = store.usage.enabled;
+    empty.words.backspace = store.words.backspace;
+    empty.words.options_dirty = store.words.options_dirty;
+    empty.words.timer = std::mem::take(&mut store.words.timer);
+    empty.words.timer.reset(std::time::Instant::now());
     *store = empty;
     Ok(())
 }

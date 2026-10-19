@@ -1,0 +1,20 @@
+[package]
+name = "bongo-companion"
+version = "2.2.4"
+edition = "2021"
+publish = false
+description = "Experimental AI companion plugin for BongoCat"
+
+[lib]
+name = "bongo_companion"
+crate-type = ["cdylib"]
+
+[dependencies]
+bongo-plugin = { path = "../bongo-plugin" }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "Plugins",
-        "description": "Renderer- und Statistik-Plugins installieren. Der Modelltyp wählt den Renderer automatisch.",
+        "description": "Renderer und Erweiterungen verwalten. Der Modelltyp wählt den Renderer automatisch.",
         "status": "Status",
         "active": "In Verwendung",
         "installed": "Installiert",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D benötigt Cubism Core. Fehlender Core kann mit der ZIP importiert werden.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "Inochi2D-Modelle im INP-/INX-Format.",
+        "renderers": "Modell-Renderer",
+        "extensions": "Erweiterungen",
+        "configure": "Einstellungen öffnen",
         "openFolder": "Ordner öffnen",
         "drop": "Klicken oder Plugin-ZIP hier ablegen",
         "dropHint": "ZIP oder Plugin-Bibliothek; Renderer-Pakete können fehlenden Core mitliefern."
@@ -221,7 +224,7 @@
           "runAsAdmin": "Eingaben in Windows-Spielen mit Administratorrechten besser erfassen. Aktivierung fordert Rechte an und startet die App neu.",
           "renderBackend": "Sofort wechseln; bei Fehler zurück zu OpenGL. Experimentelles Vulkan/Metal unterstützt auch Hintergründe, Rundungen und Tasten-, Effekt- und Zeigeranzeigen.",
           "glTrueTransparencySaveFailed": "Transparenzeinstellung konnte nicht gespeichert werden",
-          "directComposition": "Experimentelle DXGI-Alpha-Komposition. Sofort wirksam; bei Fehlern Rückfall auf den bisherigen Presenter. Pixel-Rücklesen bleibt; Independent Flip für Spiele ist nicht garantiert. Nur für AMD-GPUs. Begrenzt Neuzeichnungsereignisse auf 50 ms und deaktiviert VSync.",
+          "directComposition": "Experimentelle DXGI-Alpha-Komposition ohne Pixel-Rücklesen. Für alle GPU-Marken mit Treiber-Interop verfügbar. Verwendet OpenGL, vollständige Mausdurchleitung und kein VSync; keine Begrenzung der Expose-Ereignisse. Bei Fehlern direkte OpenGL-Darstellung. Independent Flip in Spielen wird nicht garantiert.",
           "glTrueTransparency": "Verwendet wie Vulkan Alpha-Komposition pro Pixel. Wirkt sofort; das Zurücklesen der Pixel kann die CPU/GPU-Auslastung erhöhen.",
           "renderBackendChanged": "Wechsle das Render-Backend",
           "renderBackendFallback": "Der gewählte Renderer ist nicht verfügbar; OpenGL wurde wiederhergestellt",

@@ -1,6 +1,6 @@
 
 
-2.2.3: optional right-click radial menu, larger settings window with maximize/restore controls, per-color reset buttons, and improved statistics unit editing and rounding.
+2.2.4: character statistics and a session typing timer, a bundled AI companion that requires configuration and activation, adaptive settings layouts and a plugin grid, and improvements to plugin pages, the color picker and Windows DirectComposition.
 
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
@@ -62,7 +62,7 @@ SDK import and download are managed in Settings → Plugins; the Models page man
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 
@@ -233,7 +233,7 @@ See [renderer plugins](model-plugins.md) for compatibility and build details, an
 
 ### 🔒 Does BongoCat record my keyboard or mouse input?
 
-BongoCat processes keyboard and mouse input locally for animations and shortcuts and does not upload input or usage data. When enabled, the statistics plugin can save local aggregate counts, daily/hourly trends and foreground application time. It does not save typed text, key order, window titles, URLs or coordinates. Collection can be disabled and history reset or exported on the Statistics page. See [Statistics plugin](statistics-plugin.md). Update checks request public release metadata.
+BongoCat processes keyboard and mouse input locally for animations and shortcuts and does not upload input or usage data. When enabled, the statistics plugin can save local aggregate counts, daily/hourly trends and foreground application time. Windows character statistics can save unordered Han character frequencies; sentences, key order, window titles, URLs and coordinates are not saved. Collection can be disabled and history reset or exported on the Statistics page. See [Statistics plugin](statistics-plugin.md). Update checks request public release metadata.
 
 ### Linux Wayland Input
 
@@ -342,6 +342,10 @@ Shortcuts is now a subpage of Preferences: enter Preferences, then switch Settin
 
 Enabling Live2D without Cubism Core opens both official license agreements. On Windows, Agree and download fetches the Native R5 SDK over official HTTPS, extracts only the matching dynamic Core and enables rendering locally. Cancel and continue keeps the plugin enabled without rendering. Failed downloads can be retried, and manual import remains available. The application and packages contain no SDK or Core.
 
-Windows AMD graphics offer experimental DirectComposition presentation, off by default. DXGI alpha composition applies immediately, throttles expose events to 50 ms and disables VSync; failures restore the previous presenter. Pixel readback remains, and game Independent Flip is not guaranteed.
+DirectComposition: Experimental GPU-only DXGI alpha presentation. Available on all GPU brands with driver interop support. Uses OpenGL, full mouse click-through and no VSync, without expose throttling. Failure restores direct OpenGL. Game Independent Flip is not guaranteed.
 
 Renderer plugin ABI is now v2: update or rebuild the application and Live2D/Inox2D plugins together; older plugins are incompatible. Live2D Vulkan supports on-demand offscreen resources, Rust streaming PNG scaling and BC7 caching with RGBA8 fallback; see [native rendering details](live2d-vulkan-metal.md) for platform limits.
+
+> The experimental AI companion is built and packaged by default (`BONGO_CAT_BUILD_COMPANION=ON`), but disabled at runtime. Configure and explicitly enable it to send event categories and the personality prompt to your chosen service. Set `OFF` to omit the plugin. See [companion plugin](companion-plugin.md).
+
+> The optional friends plugin uses `-DBONGO_CAT_BUILD_LAN=ON` and supports IPv4/IPv6, friend nicknames and temporary model caching. See [the LAN guide](lan-plugin.md).

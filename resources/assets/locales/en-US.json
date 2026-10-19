@@ -47,7 +47,7 @@
       },
       "plugins": {
         "title": "Plugins",
-        "description": "Install renderer and statistics plugins. Model type selects its renderer automatically.",
+        "description": "Manage renderers and extensions. Model type selects its renderer automatically.",
         "status": "Status",
         "active": "In use",
         "installed": "Installed",
@@ -64,6 +64,9 @@
         "liveDescription": "Live2D models require Cubism Core. Missing Core can be imported with the ZIP.",
         "inoxTitle": "Inochi2D / Inox2D",
         "inoxDescription": "Inochi2D models in INP / INX containers.",
+        "renderers": "Model renderers",
+        "extensions": "Extensions",
+        "configure": "Open settings",
         "openFolder": "Open folder",
         "drop": "Click or drop a plugin ZIP here",
         "dropHint": "ZIP or plugin library; renderer packages can also supply missing Core."
@@ -221,7 +224,7 @@
           "runAsAdmin": "Improve input capture in elevated Windows games. Enabling requests permission and restarts the app.",
           "renderBackend": "Switch immediately; failure restores OpenGL. Experimental Vulkan/Metal also support backgrounds, corners and key/effect/pointer overlays.",
           "glTrueTransparencySaveFailed": "Unable to save the transparency preference",
-          "directComposition": "Experimental DXGI alpha presentation. Applies immediately; falls back on failure. Pixel readback remains; game Independent Flip is not guaranteed. AMD only. Enables 50 ms expose throttling and disables VSync.",
+          "directComposition": "Experimental GPU-only DXGI alpha presentation. Available on all GPU brands with driver interop support. Uses OpenGL, full mouse click-through and no VSync, without expose throttling. Failure restores direct OpenGL. Game Independent Flip is not guaranteed.",
           "glTrueTransparency": "Use per-pixel alpha composition like Vulkan. Applies immediately; pixel readback may increase CPU/GPU usage.",
           "renderBackendChanged": "Switching the render backend",
           "renderBackendFallback": "The selected renderer failed; restored OpenGL",

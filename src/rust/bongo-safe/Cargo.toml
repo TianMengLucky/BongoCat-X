@@ -1,6 +1,6 @@
 [package]
 name = "bongo-safe"
-version = "2.2.3"
+version = "2.2.4"
 edition = "2021"
 description = "Memory-safety-critical parsers for BongoCat (SHA-256, image decoding, the about-page contributor feed, audio decoding, Live2D expression files), exposed over the C ABI"
 publish = false
@@ -12,6 +12,7 @@ crate-type = ["staticlib", "rlib"]
 # The host keeps the C ABI; Rust renderers only need the bounded INP parser.
 [features]
 default = ["c-api"]
+lan = ["dep:sha2", "dep:snow", "dep:tempfile", "dep:zip", "dep:windows-sys", "dep:libc", "dep:if-addrs", "dep:json5"]
 c-api = [
     "dep:base64", "dep:roxmltree", "dep:html2text", "dep:reqwest", "dep:tokio",
     "dep:tempfile", "dep:zip", "dep:tar", "dep:flate2", "dep:serde", "dep:json5",
@@ -22,6 +23,7 @@ c-api = [
 ]
 
 [dependencies]
+snow = { version = "0.9.6", optional = true }
 inox2d = { git = "https://github.com/Inochi2D/inox2d", rev = "d4dd9dd7f16b775042cbda44370570abf9a8cf81" }
 base64 = { version = "0.22", optional = true }
 image = { version = "0.25", default-features = false, features = [
@@ -65,3 +67,10 @@ opt-level = "s"
 lto = "thin"
 codegen-units = 1
 strip = "debuginfo"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", optional = true, features = ["Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = { version = "0.2", optional = true }
+if-addrs = { version = "0.14", optional = true }

@@ -2,6 +2,7 @@
 #include "bongo_cat/preferences.h"
 #include "bongo_cat/statistics.h"
 #include "bongo_cat/sounds.h"
+#include "bongo_cat/companion.h"
 #include "bongo_cat/store.h"
 #include "bongo_cat/items.h"
 #include "bongo_cat/shortcut.h"
@@ -129,6 +130,10 @@ void bongo_cat_app_drain_input(BongoCatApp *app, bool allow_shortcuts) {
             if (keyboard) app->input_diagnostics.ignored_keys++;
             continue;
         }
+        if (event.kind == BONGO_CAT_INPUT_KEY_DOWN)
+            bongo_cat_companion_event(app, BONGO_COMPANION_KEYBOARD);
+        else if (event.kind == BONGO_CAT_INPUT_MOUSE_DOWN)
+            bongo_cat_companion_event(app, BONGO_COMPANION_MOUSE);
         bongo_cat_sounds_input(app, &event, allow_shortcuts &&
             !bongo_cat_preferences_shortcuts_blocked(app->preferences) &&
             !bongo_cat_preferences_sounds_blocked(app->preferences));

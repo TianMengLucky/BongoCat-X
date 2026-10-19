@@ -1,6 +1,7 @@
 #include "preferences_state.h"
 #include "preferences_notice.h"
 #include "preferences_overlay.h"
+#include "about/preferences_about_internal.h"
 #include "ui_backend.h"
 #include "ui_icons.h"
 #include "bongo_cat/i18n.h"
@@ -20,6 +21,8 @@ typedef struct RemoveDialog {
 } RemoveDialog;
 
 static RemoveDialog remove_dialog;
+#define REMOVE_DIALOG_PROMPT_TOP 75.0f /* Header and gap before the confirmation. */
+#define REMOVE_DIALOG_FOOTER_HEIGHT 76.0f /* Action buttons and surrounding gaps. */
 
 static const char *tr(BongoCatApp *app, const char *key,
     const char *fallback) {
@@ -132,7 +135,15 @@ void bongo_cat_preferences_remove_dialog_draw(BongoCatApp *app,
         !app->preferences) return;
     bongo_cat_ui_cursor_reset(context);
     struct nk_rect region = nk_window_get_bounds(context);
-    float width = NK_MIN(420.0f, region.w - 48.0f), height = 202.0f;
+    float width = NK_MIN(420.0f, region.w - 48.0f);
+    char prompt[sizeof(remove_dialog.model_name) + 128];
+    snprintf(prompt, sizeof(prompt), tr(app,
+        "pages.preference.model.hints.deleteModel",
+        "Are you sure you want to delete \"%s\"?"), remove_dialog.model_name);
+    const struct nk_user_font *font = app->preferences->ui.body_font;
+    float prompt_height = bongo_cat_about_text_height(prompt, font, width - 40.0f);
+    float height = NK_MIN(NK_MAX(202.0f, REMOVE_DIALOG_PROMPT_TOP +
+        prompt_height + REMOVE_DIALOG_FOOTER_HEIGHT), region.h - 48.0f);
     BongoCatOverlayFrame frame = bongo_cat_preferences_overlay_frame(
         region, width, height, remove_dialog.opened_ns, remove_dialog.closing_ns);
     if (frame.finished) {
@@ -149,13 +160,10 @@ void bongo_cat_preferences_remove_dialog_draw(BongoCatApp *app,
     text(canvas, nk_rect(frame.panel.x + 20, frame.panel.y + 21,
         frame.panel.w - 74, 24), tr(app, "native.delete", "Delete"),
         app->preferences->ui.label_font, alpha(p.text, opacity));
-    char prompt[sizeof(remove_dialog.model_name) + 128];
-    snprintf(prompt, sizeof(prompt), tr(app,
-        "pages.preference.model.hints.deleteModel",
-        "Are you sure you want to delete \"%s\"?"), remove_dialog.model_name);
-    text(canvas, nk_rect(frame.panel.x + 20, frame.panel.y + 75,
-        frame.panel.w - 40, 44), prompt, app->preferences->ui.body_font,
-        alpha(p.text, opacity));
+    (void)bongo_cat_about_paragraph(context, nk_rect(frame.panel.x + 20,
+        frame.panel.y + REMOVE_DIALOG_PROMPT_TOP, frame.panel.w - 40,
+        frame.panel.h - REMOVE_DIALOG_PROMPT_TOP - REMOVE_DIALOG_FOOTER_HEIGHT),
+        prompt, font, alpha(p.text, opacity), false, font->height + 6.0f);
     const char *cancel = tr(app, "native.cancel", "Cancel");
     const char *remove = tr(app, "native.delete", "Delete");
     struct nk_rect remove_bounds = nk_rect(frame.panel.x + frame.panel.w - 108,

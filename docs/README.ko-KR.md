@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.3: 오른쪽 클릭 원형 메뉴 설정, 최대화/복원을 지원하는 더 큰 설정 창, 색상별 초기화, 통계 단위 편집 및 반올림 개선.
+2.2.4: 글자 통계와 세션 타이핑 타이머, 설정 후 활성화하는 기본 포함 AI 친구, 창 크기에 맞춰 조정되는 설정 화면과 플러그인 목록, 플러그인 페이지·색상 선택기·Windows DirectComposition 개선.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ SDK 가져오기와 다운로드는 설정 → 플러그인에서 관리하며 �
 
 ## 📥 다운로드
 
-- GitHub Releases ([v2.2.3](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.3))
+- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 
@@ -269,6 +269,10 @@ Rust 모델 스토어는 미리보기, 작성자 링크, 다운로드 및 제거
 
 Cubism Core 없이 Live2D를 활성화하면 두 공식 계약이 표시됩니다. Windows에서 동의하고 다운로드를 누르면 공식 HTTPS로 Native R5 SDK를 받아 호환되는 동적 Core만 추출하고 로컬 렌더링을 활성화합니다. 취소하고 계속은 렌더링 없이 플러그인을 활성화합니다. 다시 시도하거나 수동으로 가져올 수 있습니다. 앱과 패키지에는 SDK나 Core가 포함되지 않습니다.
 
-Windows AMD 그래픽에서 실험적 DirectComposition 표시를 제공하며 기본은 꺼짐입니다. DXGI 알파 합성을 즉시 적용하고 expose 이벤트를 50 ms로 제한하며 VSync를 끕니다. 실패하면 기존 표시 방식으로 복구합니다. 픽셀 읽기는 유지되며 게임 Independent Flip은 보장되지 않습니다.
+DirectComposition: 실험적 GPU 직접 전송 DXGI Alpha 합성입니다. 모든 GPU 브랜드에 제공되며 드라이버 상호 운용 지원이 필요합니다. OpenGL과 창 전체 마우스 통과를 사용하고 VSync를 끕니다. 픽셀 읽기나 다시 그리기 이벤트 제한은 없습니다. 실패하면 직접 OpenGL 표시로 복귀합니다. 게임 Independent Flip은 보장되지 않습니다.
 
 렌더러 플러그인 ABI가 v2로 변경되었습니다. 앱과 Live2D/Inox2D 플러그인을 함께 업데이트하거나 다시 빌드해야 하며 이전 플러그인은 호환되지 않습니다. Live2D Vulkan은 필요할 때만 만드는 오프스크린 리소스, Rust 스트리밍 PNG 크기 조정, RGBA8 대체 경로를 갖춘 BC7 캐시를 지원합니다. 플랫폼 제한은 [렌더링 설명](live2d-vulkan-metal.md)을 참고하세요.
+
+> 실험적 AI 친구는 기본 빌드와 배포에 포함됩니다(`BONGO_CAT_BUILD_COMPANION=ON`). 실행 시에는 기본적으로 꺼져 있으며, 설정하고 직접 활성화한 후에만 이벤트 유형과 성격 프롬프트를 선택한 서비스로 보냅니다. `OFF`로 제외할 수 있습니다. [플러그인 문서](companion-plugin.md)를 참고하세요.
+
+> 선택적 친구 플러그인은 `-DBONGO_CAT_BUILD_LAN=ON`으로 빌드하며 IPv4/IPv6, 친구 이름 및 임시 모델 캐시를 지원합니다. [LAN 안내](lan-plugin.md)를 참고하세요.

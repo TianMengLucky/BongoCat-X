@@ -34,6 +34,7 @@ void *bongo_cat_windows_layered_create(bool pixel_hit_test) {
     value->composition_requested = SDL_GetBooleanProperty(SDL_GetGlobalProperties(),
         "BongoCat.DirectComposition", false);
     value->pixel_hit_test = pixel_hit_test || value->composition_requested;
+    if (value->composition_requested) return value;
     value->memory_dc = CreateCompatibleDC(NULL);
     if (value->memory_dc) return value;
     free(value);
@@ -118,7 +119,7 @@ static bool ensure_proxy(BongoCatPlatform *platform) {
     wchar_t title[128] = L"BongoCat-X - Pet";
     GetWindowTextW(source, title, (int)(sizeof(title) / sizeof(title[0])));
     DWORD style = WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
-    if (value->forced) style |= WS_EX_TRANSPARENT;
+    if (value->forced || value->composition_requested) style |= WS_EX_TRANSPARENT;
     value->topmost = (GetWindowLongPtrW(source, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
     if (value->topmost) style |= WS_EX_TOPMOST;
     value->proxy = CreateWindowExW(style, proxy_class, title, WS_POPUP,
@@ -145,31 +146,17 @@ static bool ensure_proxy(BongoCatPlatform *platform) {
 }
 bool bongo_cat_windows_layered_update_proxy(BongoCatPlatform *platform,
     BongoCatWindowsLayered *value) {
+    if (value && value->composition) {
+        if (!bongo_cat_windows_composition_opacity(value->composition, platform->window_opacity)) return false;
+        value->applied_alpha = (BYTE)(platform->window_opacity * 255.0f + 0.5f);
+        value->applied_alpha_valid = true;
+        return true;
+    }
     HWND source_window = native_window(platform);
     RECT bounds;
     if (!source_window || !value || !value->proxy || !value->bitmap ||
         !GetWindowRect(source_window, &bounds))
         return SDL_SetError("Cannot locate the Windows layered window");
-    if (value->composition_requested && !value->composition_failed) {
-        if (bongo_cat_windows_composition_present(&value->composition, value->proxy,
-                &bounds, value->pixels, value->width, value->height,
-                platform->window_opacity)) {
-            value->applied_alpha = (BYTE)(platform->window_opacity * 255.0f + 0.5f);
-            value->applied_alpha_valid = true;
-            return true;
-        }
-        SDL_LogWarn(BONGO_CAT_LOG_LIFECYCLE,
-            "DirectComposition failed; falling back to UpdateLayeredWindow: %s", SDL_GetError());
-        bongo_cat_windows_composition_destroy(value->composition);
-        value->composition = NULL;
-        value->composition_failed = true;
-        SetWindowRgn(value->proxy, NULL, FALSE);
-        LONG_PTR style = GetWindowLongPtrW(value->proxy, GWL_EXSTYLE);
-        SetWindowLongPtrW(value->proxy, GWL_EXSTYLE,
-            (style & ~WS_EX_NOREDIRECTIONBITMAP) | WS_EX_LAYERED);
-        SetWindowPos(value->proxy, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE |
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    }
     POINT destination = {bounds.left, bounds.top};
     POINT source = {0, 0};
     SIZE size = {value->width, value->height};
@@ -329,6 +316,14 @@ static bool present_layered(BongoCatPlatform *platform, int width, int height,
     if (!GetWindowRect(source, &bounds)) return false;
     int display_width = bounds.right - bounds.left,
         display_height = bounds.bottom - bounds.top;
+    if (value->composition_requested) {
+        if (!ensure_proxy(platform) || !bongo_cat_windows_composition_present(
+                &value->composition, value->proxy, &bounds, width, height,
+                platform->window_opacity)) return false;
+        value->has_frame = true;
+        if (!IsWindowVisible(value->proxy)) ShowWindow(value->proxy, SW_SHOWNOACTIVATE);
+        return IsWindowVisible(value->proxy) && make_source_transparent(platform);
+    }
     if (!ensure_proxy(platform) || width <= 0 || height <= 0 ||
         display_width <= 0 || display_height <= 0 ||
         display_width > INT_MAX / 4 ||
@@ -442,6 +437,11 @@ bool bongo_cat_platform_present(BongoCatPlatform *platform, int width, int heigh
     SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Layered presentation failed; restoring WGL: %s", SDL_GetError());
     value->active = false;
     value->has_frame = false;
+    if (value->composition_requested) {
+        bongo_cat_windows_composition_destroy(value->composition);
+        value->composition = NULL;
+        value->composition_failed = true;
+    }
     if (required) {
         return false;
     }

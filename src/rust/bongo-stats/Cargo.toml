@@ -1,6 +1,6 @@
 [package]
 name = "bongo-stats"
-version = "2.2.3"
+version = "2.2.4"
 edition = "2021"
 publish = false
 description = "Local aggregate input statistics plugin for BongoCat"
@@ -8,6 +8,10 @@ description = "Local aggregate input statistics plugin for BongoCat"
 [lib]
 name = "bongo_stats"
 crate-type = ["cdylib"]
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.62.2"
+windows = { version = "0.62.2", features = ["Win32_UI_Accessibility", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Variant"] }
 
 [dependencies]
 bongo-plugin = { path = "../bongo-plugin" }

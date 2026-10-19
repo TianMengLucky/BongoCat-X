@@ -1,6 +1,7 @@
 /* Rebuild the pet render stack at a frame boundary; settings, input and
    tray remain alive. A native model/device failure retries with OpenGL. */
 #include "runtime.h"
+#include "bongo_cat/lan.h"
 #include "bongo_cat/items.h"
 #include "preferences_notice.h"
 #include "bongo_cat/log.h"
@@ -10,6 +11,7 @@
 #include <string.h>
 
 static void release_stack(BongoCatApp *app) {
+    bongo_cat_lan_release_graphics(app);
     if (app->gl_context) SDL_GL_MakeCurrent(app->window, app->gl_context);
     bongo_cat_rhi_wait_idle(&app->rhi);
     bongo_cat_items_release_graphics(app);

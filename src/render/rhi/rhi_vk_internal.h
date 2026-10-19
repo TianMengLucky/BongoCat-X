@@ -71,6 +71,7 @@ typedef struct BongoCatRhiVk {
     VkQueue queue BONGO_CAT_VK_INIT;
     VkSwapchainKHR swapchain BONGO_CAT_VK_INIT;
     bool layered_target BONGO_CAT_VK_INIT;
+    bool borrowed_device BONGO_CAT_VK_INIT;
     VkImage layered_image BONGO_CAT_VK_INIT;
     VkDeviceMemory layered_memory BONGO_CAT_VK_INIT;
     VkFormat format BONGO_CAT_VK_INIT;
@@ -86,6 +87,7 @@ typedef struct BongoCatRhiVk {
     VkPipelineLayout corner_layout BONGO_CAT_VK_INIT;
     VkFramebuffer *corner_framebuffers BONGO_CAT_VK_INIT;
     VkCommandPool pool BONGO_CAT_VK_INIT;
+    VkCommandPool bridge_pool BONGO_CAT_VK_INIT;
     VkCommandBuffer idle_command BONGO_CAT_VK_INIT;
     BongoCatRhiVkFrame frames[BONGO_CAT_VK_FRAMES] BONGO_CAT_VK_INIT;
     BongoCatRhiVkReadback readbacks[BONGO_CAT_VK_FRAMES] BONGO_CAT_VK_INIT;

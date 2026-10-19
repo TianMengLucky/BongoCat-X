@@ -67,7 +67,8 @@ struct BongoCatPreferences {
     uint64_t quality_settle_deadline_ns;
     /* UTF-8 edit contents retained for the host font atlas, independent of plugin state. */
     char plugin_edit_ids[8][64];
-    char plugin_edit_texts[8][256];
+    char plugin_edit_texts[8][4096];
+    uint32_t plugin_edit_cursor;
     int style_theme;
     uint32_t theme_colors[4];
     BongoCatLanguage font_language;
@@ -140,9 +141,9 @@ struct BongoCatPreferences {
     float pending_raster_scale;
     uint64_t raster_retry_ns;
     uint64_t render_retry_ns;
-    float scroll_current[10];
-    float scroll_target[10];
-    bool scroll_ready[10];
+    float scroll_current[13];
+    float scroll_target[13];
+    bool scroll_ready[13];
     bool page_seen;
     int last_page;
     uint64_t page_transition_ns;
@@ -178,6 +179,8 @@ struct BongoCatPreferences {
     uint64_t layout_dialog_opened_ns;
     uint64_t layout_dialog_closing_ns;
     uint64_t layout_dialog_write_ns;
+    float layout_dialog_scroll;
+    BongoCatPreferencesScrollbar layout_dialog_scrollbar;
     char layout_dialog_directory[BONGO_CAT_PATH_CAP];
     BongoSafeHandLayout layout_dialog_draft;
     bool native_drag;

@@ -18,6 +18,8 @@ bool bongo_cat_pref_form_begin(struct nk_context *context, const char *id,
 void bongo_cat_pref_form_end(struct nk_context *context,
     const FormStyle *saved);
 void bongo_cat_pref_form_label(struct nk_context *context, const char *title);
+int bongo_cat_pref_title_text(const struct nk_context *context, const char *title,
+    struct nk_rect bounds, bool draw);
 void bongo_cat_pref_row_icon_clear(struct nk_context *context);
 int bongo_cat_pref_detail_lines(const struct nk_context *context,
     const char *text);

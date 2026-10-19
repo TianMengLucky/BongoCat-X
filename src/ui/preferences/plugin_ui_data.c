@@ -59,12 +59,18 @@ uint32_t bongo_cat_preferences_plugin_read(void *context, uint32_t operation,
         }
         break;
     case BONGO_CAT_PLUGIN_UI_STATISTICS:
+        if (operation == BONGO_UI_READ_BACKSPACE && size == sizeof(uint32_t))
+            return bongo_cat_statistics_backspace_snapshot(app, output);
+        if (operation == BONGO_UI_READ_TIMER && size == sizeof(BongoCatStatisticsTimerSnapshot))
+            return bongo_cat_statistics_timer_snapshot(app, output);
+        if (operation == BONGO_UI_READ_WORDS && size == sizeof(BongoCatStatisticsWordsSnapshot))
+            return bongo_cat_statistics_words_snapshot(app, index, output);
         if (operation == BONGO_UI_READ_HEATMAP && size == 256 * sizeof(uint64_t))
             return bongo_cat_statistics_keyboard_snapshot(app, index, output);
         if (operation == BONGO_UI_READ_IMAGE && size == BONGO_CAT_PATH_CAP)
             return bongo_cat_statistics_usage_icon(app, index >> 16, index & 0xffffu, output);
         if (operation == BONGO_UI_READ_SECTION && size == sizeof(uint32_t)) {
-            *(uint32_t *)output = binding->preferences->page == 9;
+            *(uint32_t *)output = binding->preferences->page == 10 ? 2u : (binding->preferences->page == 9);
             return 1;
         }
         if (operation == BONGO_UI_READ_SNAPSHOT && size == sizeof(BongoCatStatisticsSnapshot))
@@ -131,6 +137,8 @@ static bool statistics_action(BongoCatPreferences *value, uint32_t op,
     BongoCatApp *app = value->app;
     BongoCatError error = {0};
     switch (op) {
+    case BONGO_UI_BACKSPACE_ENABLE: return bongo_cat_statistics_backspace_enable(app, index != 0);
+    case BONGO_UI_TIMER_ENABLE: return bongo_cat_statistics_timer_enable(app, index != 0);
     case BONGO_UI_RESET_STATS: return bongo_cat_statistics_reset(app, &error);
     case BONGO_UI_EXPORT_STATS: return bongo_cat_statistics_export(app, &error);
     case BONGO_UI_OPEN_FOLDER: return bongo_cat_platform_open_directory(app->data_root);
@@ -177,6 +185,11 @@ uint32_t bongo_cat_preferences_plugin_action(void *context, uint32_t operation,
     BongoCatPluginPageBinding *binding = context;
     if (!binding || !binding->preferences) return 0;
     BongoCatPreferences *value = binding->preferences;
+    if (operation == BONGO_UI_COPY_TEXT) {
+        if (!data || size < 2 || size > 4096 || ((const char *)data)[size - 1] != '\0' ||
+            memchr(data, '\0', size - 1)) return 0;
+        return SDL_SetClipboardText(data);
+    }
     bool ok = false;
     switch (binding->kind) {
     case BONGO_CAT_PLUGIN_UI_SOUNDS: ok = sounds_action(value, operation, index); break;

@@ -4,8 +4,14 @@ use bongo_plugin::{
     ui::Ui,
 };
 use std::ffi::c_void;
+pub const ANY_ADDRESS: &str = "[::]:39027";
 pub fn local_addresses() -> String {
     let mut addresses = bongo_safe::lan::addresses::temporary();
+    // Fall back to stable addresses when the machine has no preferred privacy address:
+    // an empty list leaves the host with nothing to share and no usable listen address.
+    if addresses.is_empty() {
+        addresses = bongo_safe::lan::addresses::stable();
+    }
     addresses.sort();
     addresses.dedup();
     addresses

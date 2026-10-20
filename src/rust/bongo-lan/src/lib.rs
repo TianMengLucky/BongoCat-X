@@ -135,7 +135,10 @@ unsafe extern "C" fn create(cache: *const c_char) -> *mut c_void {
             return std::ptr::null_mut();
         }
         let addresses = settings::local_addresses();
-        let address = buffer(addresses.lines().next().unwrap_or("127.0.0.1:39027"));
+        // Listen on the wildcard address instead of one advertised IP: a host bound to a
+        // single temporary address stops accepting connections as soon as that address
+        // rotates, and it never matches a friend who was given any other address.
+        let address = buffer(settings::ANY_ADDRESS);
         Box::into_raw(Box::new(Instance {
             shared: Arc::new(Mutex::new(Shared::default())),
             cancel: Arc::new(AtomicBool::new(false)),

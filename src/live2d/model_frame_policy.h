@@ -180,7 +180,7 @@ static inline bool bongo_cat_frame_from_geometry(int window_width,
     BongoCatModelRuntimeFrame *frame) {
     if (!frame || window_width <= 0 || window_height <= 0 ||
         content_width <= 0 || content_height <= 0) return false;
-    BongoCatModelRuntimeFrame f = {0};
+    BongoCatModelRuntimeFrame f = {0.0f, 0.0f, 0.0f, 0.0f};
     f.left = (float)content_left / (float)content_width;
     /* The stored inset is the physical top edge; flipped sessions store the
        frame's bottom margin there instead. */

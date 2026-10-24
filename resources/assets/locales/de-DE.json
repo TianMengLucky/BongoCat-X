@@ -242,7 +242,7 @@
           "autoCheckUpdatesSaveFailed": "Die Einstellung zur automatischen Updateprüfung konnte nicht gespeichert werden",
           "launchOnStartup": "BongoCat-X bei der Anmeldung automatisch starten.",
           "portableModeSummary": "Daten neben der Programmdatei speichern. Beim Aktivieren vorhandene Daten kopieren; der Speicherort gilt nach einem Neustart.",
-          "radialMenu": "Zeigt beim Rechtsklick auf das Haustier das Kreismenü. Wenn deaktiviert, öffnet ein Rechtsklick nichts; die Einstellungen öffnen sich automatisch beim Start.",
+          "radialMenu": "Zeigt beim Rechtsklick auf das Haustier das Kreismenü. Wenn deaktiviert, öffnet ein Rechtsklick nichts; die Einstellungen erreichst du über das Tray-Symbol oder Strg+Komma.",
           "githubDownloadAcceleration": "GitHub-Updateprüfungen, Update-Downloads und Mitwirkendenbilder über gh-proxy.com beschleunigen. Gilt ab der nächsten Anfrage.",
           "parallelRecording": "Vulkan-Befehle auf mehreren Threads aufzeichnen, wenn Modell und Renderer dies unterstützen.",
           "bindless": "Bei Unterstützung eine Vulkan-Texturtabelle nutzen. Live2D hat Modell- und Gerätelimits; Inox2D implementiert diese Option noch nicht.",

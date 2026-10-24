@@ -242,7 +242,7 @@
           "autoCheckUpdatesSaveFailed": "Impossible d’enregistrer la recherche automatique des mises à jour",
           "launchOnStartup": "Lance BongoCat-X automatiquement à l’ouverture de session.",
           "portableModeSummary": "Stocke les données près de l’exécutable. L’activation copie les données existantes ; redémarrez pour utiliser l’emplacement choisi.",
-          "radialMenu": "Affiche le menu radial lors d’un clic droit sur la mascotte. Si désactivé, le clic droit n’ouvre rien et les paramètres s’ouvrent automatiquement au démarrage.",
+          "radialMenu": "Affiche le menu radial lors d’un clic droit sur la mascotte. Si désactivé, le clic droit n’ouvre rien ; ouvrez les paramètres depuis l’icône de la zone de notification ou avec Ctrl+Virgule.",
           "githubDownloadAcceleration": "Utiliser gh-proxy.com pour accélérer la recherche de mises à jour, les téléchargements et les images des contributeurs GitHub. S’applique dès la prochaine requête.",
           "parallelRecording": "Enregistre les commandes Vulkan sur plusieurs threads si le modèle et le moteur le permettent.",
           "bindless": "Utilise une table de textures Vulkan si disponible. Live2D impose des limites de modèle et d’appareil ; Inox2D ne propose pas encore cette option.",

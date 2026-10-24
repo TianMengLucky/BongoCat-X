@@ -191,7 +191,7 @@ void bongo_cat_preferences_page_general(BongoCatApp *app, struct nk_context *con
         bongo_cat_pref_toggle(context, "radial-menu", tr(app,
             "pages.preference.general.labels.radialMenu", "Right-click Radial Menu"), tr(app,
             "pages.preference.general.hints.radialMenu",
-            "Show the radial menu when right-clicking the pet. When off, right-click does nothing and settings open automatically at startup."),
+            "Show the radial menu when right-clicking the pet. When off, right-click does nothing; open settings from the tray icon or Ctrl+Comma."),
             &options->radial_menu);
         bool old_autostart = options->autostart;
         bongo_cat_pref_row_icon(context, BONGO_CAT_PREF_ICON_AUTOSTART);

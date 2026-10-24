@@ -242,7 +242,7 @@
           "autoCheckUpdatesSaveFailed": "自動更新確認の設定を保存できません",
           "launchOnStartup": "サインイン時に BongoCat-X を自動起動します。",
           "portableModeSummary": "実行ファイルの隣にデータを保存します。有効化時に既存データをコピーし、再起動後に保存先を切り替えます。",
-          "radialMenu": "ペットを右クリックすると円形メニューを表示します。オフの場合は右クリックでは何も開かず、起動時に設定画面を自動的に開きます。",
+          "radialMenu": "ペットを右クリックすると円形メニューを表示します。オフの場合は右クリックでは何も開きません。設定画面はトレイアイコンまたは Ctrl+, から開けます。",
           "githubDownloadAcceleration": "gh-proxy.com 経由で GitHub の更新確認、更新ファイルのダウンロード、貢献者画像の取得を高速化します。次のリクエストから適用されます。",
           "parallelRecording": "モデルと描画プラグインが対応する場合、複数スレッドで Vulkan コマンドを記録します。",
           "bindless": "対応環境で Vulkan テクスチャテーブルを使います。Live2D にはモデル・機器の制限があり、Inox2D は未実装です。",

@@ -242,7 +242,7 @@
           "autoCheckUpdatesSaveFailed": "Não foi possível salvar a verificação automática de atualizações",
           "launchOnStartup": "Inicia o BongoCat-X automaticamente ao entrar no sistema.",
           "portableModeSummary": "Salva os dados junto ao executável. Ao ativar copia os dados existentes; reinicie para usar o local escolhido.",
-          "radialMenu": "Mostra o menu radial ao clicar com o botão direito no pet. Quando desativado, o clique direito não abre nada e as configurações abrem automaticamente ao iniciar.",
+          "radialMenu": "Mostra o menu radial ao clicar com o botão direito no pet. Quando desativado, o clique direito não abre nada; abra as configurações pelo ícone da bandeja ou com Ctrl+Vírgula.",
           "githubDownloadAcceleration": "Usar gh-proxy.com para acelerar verificações de atualização, downloads e imagens de colaboradores do GitHub. Aplicado a partir da próxima solicitação.",
           "parallelRecording": "Grava comandos Vulkan em várias threads quando o modelo e o renderizador permitem.",
           "bindless": "Usa uma tabela de texturas Vulkan quando disponível. Live2D tem limites de modelo e dispositivo; Inox2D ainda não implementa esta opção.",

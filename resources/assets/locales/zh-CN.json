@@ -242,7 +242,7 @@
           "autoCheckUpdatesSaveFailed": "无法保存自动检查更新设置",
           "launchOnStartup": "登录系统后自动启动 BongoCat-X。",
           "portableModeSummary": "将数据保存在程序旁；开启时复制已有数据，重启后使用所选位置。",
-          "radialMenu": "开启后右键桌宠显示轮盘；关闭时右键不打开菜单或设置，并在每次启动时自动打开设置窗口。",
+          "radialMenu": "开启后右键桌宠显示轮盘；关闭时右键不打开菜单或设置，可从托盘图标或 Ctrl+, 打开设置。",
           "githubDownloadAcceleration": "通过 gh-proxy.com 加速 GitHub 更新检查、更新包下载和贡献者头像；从下一次请求起生效。",
           "parallelRecording": "模型和渲染器支持时，使用多个线程录制 Vulkan 命令。",
           "bindless": "支持时使用 Vulkan 纹理表；Live2D 有模型和设备限制，Inox2D 尚未实现此选项。",

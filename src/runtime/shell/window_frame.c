@@ -46,9 +46,49 @@ void bongo_cat_window_limit_initial_frame(BongoCatApp *app,
     if (!app || !app->window ||
         !bongo_cat_model_runtime_frame(app->model_runtime, &requested_frame))
         return;
+    /* A negative margin is a crop restored from the session, not a measured
+       request: the coarse 1/8 budget grid would quantize it back outwards and
+       undo the saved tight geometry. */
+    if (requested_frame.left < 0.0f || requested_frame.right < 0.0f ||
+        requested_frame.top < 0.0f || requested_frame.bottom < 0.0f) return;
     BongoCatModelRuntimeFrame limited = limit_frame(app, empty, requested_frame,
         content_width, content_height);
     bongo_cat_model_runtime_set_frame(app->model_runtime, &limited);
+}
+
+/* Restore the settled tight crop saved in the session. Without this a fresh
+   runtime starts from a zero frame, so the window first grows back to the full
+   authored canvas and only then shrinks again: that is the reported "position
+   is wrong after a restart", and the same load path runs on every render
+   backend rebuild (the mid-session re-scaling) and on every model reload.
+   Must run BEFORE set_tight_frame: that call freezes required_frame_ from the
+   current frame, and a stale zero target would animate the window back to the
+   full canvas on the next tick. Skipped for a model switch, where the saved
+   crop belongs to the previous model's canvas. */
+bool bongo_cat_window_restore_tight_frame(BongoCatApp *app,
+    bool replacing_model) {
+    if (!app || !app->window || !app->model_runtime || replacing_model ||
+        !app->settings.window.tight_frame) return false;
+    BongoCatWindowState *state = &app->session.window;
+    /* Only a cropped session describes a tight window; a session saved with
+       tight mode off keeps the ordinary grow-only envelope path. One axis may
+       be flush with the canvas, so require both to be larger to bail out. */
+    if (state->width <= 0 || state->height <= 0 ||
+        state->content_width <= 0 || state->content_height <= 0 ||
+        (state->width >= state->content_width &&
+         state->height >= state->content_height)) return false;
+    BongoCatModelRuntimeFrame frame = {0};
+    if (!bongo_cat_frame_from_geometry(state->width, state->height,
+            state->content_width, state->content_height,
+            state->content_left, state->content_top,
+            app->settings.model.vertical_flip, &frame)) return false;
+    bongo_cat_model_runtime_set_frame(app->model_runtime, &frame);
+    SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE,
+        "[tight] restored crop l=%.4f t=%.4f r=%.4f b=%.4f from %dx%d/%dx%d",
+        frame.left, frame.top, frame.right, frame.bottom,
+        state->width, state->height,
+        state->content_width, state->content_height);
+    return true;
 }
 
 /* Preserve the content origin near a screen edge. If there is insufficient

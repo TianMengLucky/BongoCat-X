@@ -79,6 +79,8 @@ void bongo_cat_window_update_model_frame(BongoCatApp *app);
 void bongo_cat_window_store_content_origin(BongoCatApp *app);
 void bongo_cat_window_limit_initial_frame(BongoCatApp *app,
     int content_width, int content_height);
+bool bongo_cat_window_restore_tight_frame(BongoCatApp *app,
+    bool replacing_model);
 void bongo_cat_window_wheel(BongoCatApp *app, const SDL_MouseWheelEvent *event);
 void bongo_cat_window_update_wheel_animation(BongoCatApp *app, uint64_t now);
 void bongo_cat_window_cancel_wheel_animation(BongoCatApp *app);

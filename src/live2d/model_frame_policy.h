@@ -167,4 +167,31 @@ static inline BongoCatFrameViewport bongo_cat_frame_viewport(
     return v;
 }
 
+/* Inverse of the tight-crop geometry: rebuild the frame a saved session
+   describes from its window, content size and content origin, so a restart
+   or a model reload starts from the settled crop instead of re-running the
+   observe/converge cycle (which visibly re-expanded the window to the
+   default size before shrinking again). content_left/top are the only
+   asymmetric part the session stores; the opposite edges follow from the
+   window size. */
+static inline bool bongo_cat_frame_from_geometry(int window_width,
+    int window_height, int content_width, int content_height,
+    int content_left, int content_top, bool flip,
+    BongoCatModelRuntimeFrame *frame) {
+    if (!frame || window_width <= 0 || window_height <= 0 ||
+        content_width <= 0 || content_height <= 0) return false;
+    BongoCatModelRuntimeFrame f = {0};
+    f.left = (float)content_left / (float)content_width;
+    /* The stored inset is the physical top edge; flipped sessions store the
+       frame's bottom margin there instead. */
+    float vertical_inset = (float)content_top / (float)content_height;
+    if (flip) f.bottom = vertical_inset; else f.top = vertical_inset;
+    f.right = (float)window_width / (float)content_width - 1.0f - f.left;
+    float remaining = (float)window_height / (float)content_height - 1.0f;
+    if (flip) f.top = remaining - f.bottom; else f.bottom = remaining - f.top;
+    if (!bongo_cat_frame_valid(f)) return false;
+    *frame = f;
+    return true;
+}
+
 #endif

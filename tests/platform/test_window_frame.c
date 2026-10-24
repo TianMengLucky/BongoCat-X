@@ -163,6 +163,46 @@ int main(void) {
     fail_resize = false; ticks += 1000000000ull;
     bongo_cat_window_update_model_frame(app);
     CHECK(resize_calls == 2 && allocated.left == .25f && viewport.scale == 1.0f);
+
+    /* A tight session resumes its saved crop instead of re-expanding. */
+    reset(app);
+    app->model_runtime = (BongoCatModelRuntime *)app;
+    app->settings.window.tight_frame = true;
+    app->session.window.width = 320;
+    app->session.window.height = 200;
+    app->session.window.content_width = 640;
+    app->session.window.content_height = 320;
+    app->session.window.content_left = -96;
+    app->session.window.content_top = -40;
+    CHECK(bongo_cat_window_restore_tight_frame(app, false));
+    CHECK(fabsf(allocated.left + .15f) < 1e-6f);
+    CHECK(fabsf(allocated.right + .35f) < 1e-6f);
+    CHECK(fabsf(allocated.top + .125f) < 1e-6f);
+    CHECK(fabsf(allocated.bottom + .25f) < 1e-6f);
+    /* The initial-frame budget must not quantize the restored crop away. */
+    bongo_cat_window_limit_initial_frame(app, 640, 320);
+    CHECK(fabsf(allocated.left + .15f) < 1e-6f);
+    /* Round trip: the restored frame reproduces the saved window. */
+    int w = 0, h = 0, l = 0, t = 0;
+    CHECK(bongo_cat_window_frame_size(app, 640, 320, &w, &h, &l, &t));
+    CHECK(w == 320 && h == 200 && l == -96 && t == -40);
+    /* A model switch must not inherit the previous model's crop. */
+    CHECK(!bongo_cat_window_restore_tight_frame(app, true));
+
+    /* Vertically flipped sessions store the bottom margin as content_top. */
+    reset(app);
+    app->model_runtime = (BongoCatModelRuntime *)app;
+    app->settings.window.tight_frame = true;
+    app->settings.model.vertical_flip = flipped = true;
+    app->session.window.width = 320;
+    app->session.window.height = 200;
+    app->session.window.content_width = 640;
+    app->session.window.content_height = 320;
+    app->session.window.content_left = -96;
+    app->session.window.content_top = -40;
+    CHECK(bongo_cat_window_restore_tight_frame(app, false));
+    CHECK(fabsf(allocated.bottom + .125f) < 1e-6f);
+    CHECK(fabsf(allocated.top + .25f) < 1e-6f);
     free(app);
     return bongo_cat_test_failures ? 1 : 0;
 }

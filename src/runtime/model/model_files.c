@@ -266,6 +266,13 @@ static bool select_model_with_error(BongoCatApp *app, const char *id,
     bongo_cat_model_runtime_set_render_options(app->model_runtime, &render_options);
     SDL_LogInfo(BONGO_CAT_LOG_LIFECYCLE, "[tight] model-select reapply -> %d",
         app->settings.window.tight_frame ? 1 : 0);
+    /* Reload of the same model (startup, render backend rebuild, quality
+       reload): resume the crop saved in the session before the tight frame is
+       frozen, so the window keeps its shrunken size instead of re-expanding to
+       the full canvas and shrinking again. A switch to a different model must
+       not inherit the previous model's crop. */
+    bongo_cat_window_restore_tight_frame(app,
+        strcmp(app->session.active_model_id, entry->id) != 0);
     bongo_cat_model_runtime_set_tight_frame(app->model_runtime, app->settings.window.tight_frame);
     if (app->loaded_model[0] && app->behavior_catalog_valid) {
         const BongoCatModelEntry *previous_entry = bongo_cat_models_find(

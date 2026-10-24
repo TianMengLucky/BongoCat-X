@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.4: статистика символов и таймер набора за сеанс, встроенный ИИ-компаньон с ручной настройкой и включением, адаптивные страницы настроек и сетка плагинов и улучшения их страниц, выбора цвета и Windows DirectComposition.
+2.2.5: восстановлен тихий запуск — отключение кругового меню больше не открывает настройки при каждом старте; комнаты LAN слушают широковещательные адреса IPv4/IPv6; исправлена плотная обрезка после запуска и смены модели.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@
 
 ## 📥 Загрузка
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
   Скачайте последнюю версию из [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

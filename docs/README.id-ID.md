@@ -1,6 +1,6 @@
 
 
-2.2.4: statistik karakter dan pengatur waktu mengetik sesi, pendamping AI disertakan untuk dikonfigurasi dan diaktifkan, tata letak pengaturan dan kisi plugin yang menyesuaikan ukuran jendela, serta perbaikan halaman plugin, pemilih warna dan DirectComposition Windows.
+2.2.5: startup senyap dipulihkan - menonaktifkan menu radial tidak lagi membuka pengaturan setiap kali dijalankan; ruang LAN mendengarkan alamat wildcard IPv4/IPv6; pemangkasan ketat setelah startup dan ganti model diperbaiki.
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
@@ -65,7 +65,7 @@ Impor dan unduhan SDK tersedia di Pengaturan → Plugin; halaman Model mengelola
 
 ## 📥 Unduh
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
 
 ---

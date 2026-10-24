@@ -84,7 +84,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-lan"
-version = "2.2.4"
+version = "2.2.5"
 dependencies = [
  "bongo-plugin",
  "bongo-safe",
@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.2.4"
+version = "2.2.5"
 dependencies = [
  "if-addrs",
  "image",

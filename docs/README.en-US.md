@@ -1,6 +1,6 @@
 
 
-2.2.4: character statistics and a session typing timer, a bundled AI companion that requires configuration and activation, adaptive settings layouts and a plugin grid, and improvements to plugin pages, the color picker and Windows DirectComposition.
+2.2.5: silent startup restored - disabling the right-click radial menu no longer opens settings on every launch; LAN rooms listen on IPv4/IPv6 wildcard addresses; fixed the tight crop after startup and model reload.
 
 <div align="center">
   <a href="https://bongocat.pet" target="_blank">
@@ -62,7 +62,7 @@ SDK import and download are managed in Settings → Plugins; the Models page man
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
   Download the latest release from [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest).
 

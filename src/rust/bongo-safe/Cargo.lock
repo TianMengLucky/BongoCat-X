@@ -123,7 +123,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-safe"
-version = "2.2.4"
+version = "2.2.5"
 dependencies = [
  "base64",
  "flate2",

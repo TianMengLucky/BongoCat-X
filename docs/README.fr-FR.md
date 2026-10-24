@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.4 : statistiques de caractères et minuteur de saisie de la session, compagnon IA fourni à configurer et activer, paramètres et grille de plugins adaptés à la taille de la fenêtre et améliorations des pages de plugins, du sélecteur de couleurs et de DirectComposition sous Windows.
+2.2.5 : démarrage silencieux rétabli — désactiver le menu radial n’ouvre plus les paramètres à chaque lancement ; les salons LAN écoutent sur des adresses génériques IPv4/IPv6 ; recadrage serré corrigé au démarrage et au changement de modèle.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -62,7 +62,7 @@ L’importation et le téléchargement du SDK se trouvent dans Paramètres → P
 
 ## 📥 Téléchargement
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
 
 ---

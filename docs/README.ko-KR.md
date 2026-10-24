@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.4: 글자 통계와 세션 타이핑 타이머, 설정 후 활성화하는 기본 포함 AI 친구, 창 크기에 맞춰 조정되는 설정 화면과 플러그인 목록, 플러그인 페이지·색상 선택기·Windows DirectComposition 개선.
+2.2.5: 조용한 시작 복원 — 오른쪽 클릭 원형 메뉴를 끄면 더 이상 실행할 때마다 설정 창이 열리지 않습니다. LAN 방은 IPv4/IPv6 와일드카드 주소에서 수신하며, 시작 및 모델 전환 후의 타이트 크롭을 수정했습니다.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ SDK 가져오기와 다운로드는 설정 → 플러그인에서 관리하며 �
 
 ## 📥 다운로드
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
   [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest)에서 최신 버전을 다운로드하세요.
 

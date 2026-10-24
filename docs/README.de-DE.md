@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.4: Zeichenstatistik und Sitzungs-Tipptimer, mitgelieferter KI-Begleiter zur manuellen Einrichtung und Aktivierung, anpassbare Einstellungsseiten und Plugin-Raster sowie Verbesserungen an Plugin-Seiten, Farbauswahl und Windows DirectComposition.
+2.2.5: Stiller Start wiederhergestellt - das Deaktivieren des Kreismenüs öffnet die Einstellungen nicht mehr bei jedem Start; LAN-Räume lauschen auf IPv4/IPv6-Wildcard-Adressen; der enge Zuschnitt nach Start und Modellwechsel ist repariert.
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -44,7 +44,7 @@ SDK-Import und Download befinden sich unter Einstellungen → Plugins; die Model
 
 ## 📥 Download
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
   Lade die neueste Version von den [GitHub Releases](https://github.com/TianMengLucky/BongoCat-X/releases/latest) herunter.
 

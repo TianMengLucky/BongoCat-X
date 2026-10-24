@@ -11,7 +11,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-store"
-version = "2.2.4"
+version = "2.2.5"
 dependencies = [
  "bongo-plugin",
  "serde",

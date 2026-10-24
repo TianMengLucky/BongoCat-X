@@ -1,6 +1,6 @@
 <div align="center">
 
-2.2.4：新增字數統計與本次打字計時器；AI 陪伴外掛預設隨包建置、設定後啟用；設定版面與外掛管理隨視窗大小調整，改善外掛頁面、調色盤與 Windows DirectComposition 呈現。
+2.2.5：修復關閉右鍵輪盤後每次啟動彈出設定視窗的問題，恢復靜默啟動；聯機房間支援 IPv4／IPv6 通配位址監聽；修復啟動與切換模型後的緊貼裁剪。
   <a href="https://bongocat.pet" target="_blank">
     <img src="../resources/assets/bongocat.png" alt="BongoCat" width="249">
   </a>
@@ -64,7 +64,7 @@ SDK 的匯入與下載統一位於「設定 → 外掛」，模型頁僅管理�
 
 ## 📥 下載
 
-- GitHub Releases ([v2.2.4](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.4))
+- GitHub Releases ([v2.2.5](https://github.com/TianMengLucky/BongoCat-X/releases/tag/v2.2.5))
 
 
 ---
